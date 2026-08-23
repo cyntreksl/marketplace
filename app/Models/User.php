@@ -81,6 +81,16 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return $this->hasMany(Watchlist::class, 'buyer_id');
     }
 
+    /**
+     * The buyer's active shopping cart.
+     *
+     * @return HasOne<Cart, $this>
+     */
+    public function cart(): HasOne
+    {
+        return $this->hasOne(Cart::class, 'buyer_id');
+    }
+
     public function hasRole(string $role): bool
     {
         return $this->roles->contains('name', $role);

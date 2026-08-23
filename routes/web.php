@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\AuctionBidController;
+use App\Http\Controllers\BuyerDashboardController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\SellerListingController;
 use App\Http\Controllers\SellerOnboardingController;
 use App\Http\Controllers\StorefrontController;
@@ -24,6 +27,10 @@ Route::middleware(['auth', 'verified'])->prefix('seller')->name('seller.')->grou
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/cart', [CartController::class, 'show'])->name('cart.show');
+    Route::post('/cart/items', [CartController::class, 'store'])->name('cart.items.store');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::get('/buyer/orders', [BuyerDashboardController::class, 'index'])->name('buyer.orders.index');
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
 });
 

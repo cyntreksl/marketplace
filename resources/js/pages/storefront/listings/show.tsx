@@ -1,9 +1,11 @@
-import { Link } from '@inertiajs/react';
+import { Form, Link, usePage } from '@inertiajs/react';
+import { store as addCartItem } from '@/actions/App/Http/Controllers/CartController';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { login } from '@/routes';
 
 export default function ListingShow({ listing }: { listing: any }) {
     const price = listing.auction?.currentPrice ?? listing.price;
+    const { auth } = usePage().props;
 
     return (
         <StorefrontLayout title={listing.title}>
@@ -45,14 +47,45 @@ export default function ListingShow({ listing }: { listing: any }) {
                                 ).toLocaleString()}
                             </p>
                         )}
-                        <Link
-                            href={login()}
-                            className="mt-6 inline-flex rounded-full bg-amber-400 px-5 py-3 font-bold text-stone-950"
-                        >
-                            {listing.auction
-                                ? 'Sign in to bid'
-                                : 'Sign in to buy'}
-                        </Link>
+                        {!auth.user ? (
+                            <Link
+                                href={login()}
+                                className="mt-6 inline-flex rounded-full bg-amber-400 px-5 py-3 font-bold text-stone-950"
+                            >
+                                {listing.auction
+                                    ? 'Sign in to bid'
+                                    : 'Sign in to buy'}
+                            </Link>
+                        ) : listing.auction ? (
+                            <p className="mt-6 rounded-full bg-stone-950 px-5 py-3 text-center font-bold text-white dark:bg-stone-50 dark:text-stone-950">
+                                Bidding is available from the auction panel.
+                            </p>
+                        ) : (
+                            <Form {...addCartItem.form()} className="mt-6">
+                                {({ processing }) => (
+                                    <>
+                                        <input
+                                            type="hidden"
+                                            name="listing_id"
+                                            value={listing.id}
+                                        />
+                                        <input
+                                            type="hidden"
+                                            name="quantity"
+                                            value="1"
+                                        />
+                                        <button
+                                            disabled={processing}
+                                            className="rounded-full bg-amber-400 px-5 py-3 font-bold text-stone-950 disabled:opacity-50"
+                                        >
+                                            {processing
+                                                ? 'Adding…'
+                                                : 'Add to cart'}
+                                        </button>
+                                    </>
+                                )}
+                            </Form>
+                        )}
                     </div>
                     <dl className="mt-8 grid grid-cols-2 gap-5 text-sm">
                         <div>
