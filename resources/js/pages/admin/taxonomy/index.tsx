@@ -20,8 +20,8 @@ export default function Taxonomy({
     return (
         <PortalLayout portal="admin" title="Google taxonomy">
             <Head title="Google taxonomy" />
-            <main className="mx-auto grid max-w-7xl gap-8 xl:grid-cols-[24rem_1fr]">
-                <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <main className="mx-auto grid max-w-7xl gap-8 xl:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
+                <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                     <p className="text-sm font-semibold text-primary">
                         Super admin
                     </p>
@@ -32,7 +32,7 @@ export default function Taxonomy({
                     </p>
                     <Form
                         {...store.form()}
-                        className="mt-5 grid gap-3"
+                        className="mt-5 grid min-w-0 gap-3"
                         encType="multipart/form-data"
                     >
                         {({ errors, processing, progress }) => (
@@ -41,7 +41,7 @@ export default function Taxonomy({
                                     required
                                     name="version"
                                     placeholder="Taxonomy version"
-                                    className="rounded-xl border p-3"
+                                    className="w-full min-w-0 rounded-xl border p-3"
                                 />
                                 <input type="hidden" name="locale" value="en" />
                                 <input
@@ -49,7 +49,7 @@ export default function Taxonomy({
                                     name="taxonomy_file"
                                     type="file"
                                     accept=".txt,text/plain"
-                                    className="rounded-xl border p-3"
+                                    className="w-full min-w-0 rounded-xl border p-3 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200 dark:file:bg-slate-800 dark:file:text-slate-100 dark:hover:file:bg-slate-700"
                                 />
                                 {progress && (
                                     <progress
@@ -64,7 +64,7 @@ export default function Taxonomy({
                                 )}
                                 <button
                                     disabled={processing}
-                                    className="rounded-xl bg-primary px-4 py-3 font-semibold text-primary-foreground"
+                                    className="w-full rounded-xl bg-primary px-4 py-3 font-semibold text-primary-foreground"
                                 >
                                     Import for review
                                 </button>
@@ -72,7 +72,7 @@ export default function Taxonomy({
                         )}
                     </Form>
                 </section>
-                <section>
+                <section className="min-w-0">
                     <p className="text-sm font-semibold text-primary">
                         Versioned imports
                     </p>
@@ -104,7 +104,7 @@ export default function Taxonomy({
                                     {!version.is_active && (
                                         <Form
                                             {...activate.form(version.id)}
-                                            className="flex gap-2"
+                                            className="flex min-w-0 flex-col gap-2 sm:flex-row"
                                         >
                                             {({ processing }) => (
                                                 <>
@@ -112,7 +112,7 @@ export default function Taxonomy({
                                                         required
                                                         name="reason"
                                                         placeholder="Activation reason"
-                                                        className="rounded-xl border p-2 text-sm"
+                                                        className="min-w-0 rounded-xl border p-2 text-sm"
                                                     />
                                                     <button
                                                         disabled={processing}
