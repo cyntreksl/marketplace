@@ -66,7 +66,9 @@
             "npm run lint:check",
             "npm run format:check",
             "npm run types:check",
-            "@test"
+            "@lint:check",
+            "@types:check",
+            "@test:coverage"
         ],
         "types:check": [
             "phpstan analyse"
@@ -76,6 +78,10 @@
             "@lint:check",
             "@types:check",
             "@php artisan test"
+        ],
+        "test:coverage": [
+            "@php artisan config:clear --ansi",
+            "@php artisan test --coverage --min=80"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

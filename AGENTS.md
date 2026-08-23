@@ -192,4 +192,29 @@ Use Wayfinder to generate TypeScript functions for Laravel routes. Import from `
 
 - IMPORTANT: Activate `inertia-react-development` when working with Inertia React client-side patterns.
 
+=== application-architecture rules ===
+
+# Application Architecture
+
+- Apply SOLID principles and clean-code practices to all new or modified code. Keep classes and methods focused, use descriptive names, prefer early returns, remove duplication and dead code, and depend on abstractions at system boundaries.
+- Controllers must contain HTTP orchestration only: authorize the request, consume data validated by Form Requests, delegate to a service, and return an HTTP, API Resource, redirect, or Inertia response. Controllers must not contain business rules, persistence queries, or transaction workflows.
+- Place business workflows and use-case orchestration in focused classes under `app/Services`. Use constructor injection instead of resolving dependencies through `app()` or `resolve()` inside methods.
+- Access persistence through repository contracts under `app/Contracts/Repositories` with implementations under `app/Repositories`. Services must depend on repository contracts, and every contract-to-implementation mapping must be registered in a service provider.
+- Keep Eloquent-specific querying and persistence inside repository implementations. Do not leak Eloquent builders across repository boundaries.
+- Apply this architecture to new and modified backend functionality. Do not refactor unrelated existing code solely to conform to these rules.
+
+=== quality-and-delivery rules ===
+
+# Testing, Coverage, and Git Delivery
+
+- Every behavioral change must add or update automated tests. Unit test services and isolated business rules; use feature tests for HTTP, database, and integration behavior.
+- During development, run the narrowest relevant tests first. Before each logical milestone commit, run the complete applicable quality suite and all tests.
+- PHP line coverage for the code under `app/` must remain at or above 80%. Run `composer test:coverage` with a coverage-enabled PHP runtime; under Laravel Herd, use `XDEBUG_MODE=coverage herd composer test:coverage`. A missing coverage driver, a failed test, or coverage below 80% blocks the commit and push.
+- When frontend code changes, run `npm run lint:check`, `npm run format:check`, `npm run types:check`, and `npm run build` before committing.
+- Commit and push after every verified logical milestone. Use the currently active branch; do not create or switch branches automatically.
+- Inspect the working tree and staged diff before committing. Stage and commit only files and hunks belonging to the current task, and never include unrelated user changes.
+- Use Conventional Commit subjects in imperative form, such as `feat(scope): add seller approval` or `fix(auction): prevent stale bids`. Include a non-empty commit body describing the intent, key changes, and verification performed.
+- Push to the active branch's configured upstream. If it has no upstream, set `origin/<active-branch>` on the first push. Never force-push.
+- If any required check fails, coverage is below 80%, or the staged diff contains unintended changes, do not commit or push. Fix the issue or report the blocker.
+
 </laravel-boost-guidelines>
