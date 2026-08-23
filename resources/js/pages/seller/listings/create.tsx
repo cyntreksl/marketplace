@@ -3,7 +3,7 @@ import {
     index,
     store,
 } from '@/actions/App/Http/Controllers/SellerListingController';
-import { StorefrontLayout } from '@/components/storefront-layout';
+import { PortalLayout } from '@/components/portal-layout';
 
 type Category = { id: number; name: string; commission_percentage: string };
 type Brand = { id: number; name: string };
@@ -16,9 +16,9 @@ export default function CreateSellerListing({
     brands: Brand[];
 }) {
     return (
-        <StorefrontLayout title="Create listing">
+        <PortalLayout portal="seller" title="Create listing">
             <Head title="Create listing" />
-            <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+            <main className="mx-auto max-w-3xl">
                 <Link
                     href={index()}
                     className="text-sm font-bold text-amber-700"
@@ -229,6 +229,6 @@ export default function CreateSellerListing({
                     )}
                 </Form>
             </main>
-        </StorefrontLayout>
+        </PortalLayout>
     );
 }

@@ -1,6 +1,6 @@
 import { Form, Head } from '@inertiajs/react';
 import { update } from '@/actions/App/Http/Controllers/SellerOnboardingController';
-import { StorefrontLayout } from '@/components/storefront-layout';
+import { PortalLayout } from '@/components/portal-layout';
 
 export default function SellerOnboarding({
     seller,
@@ -8,9 +8,9 @@ export default function SellerOnboarding({
     seller: Record<string, string> | null;
 }) {
     return (
-        <StorefrontLayout title="Become a seller">
+        <PortalLayout portal="seller" title="Become a seller">
             <Head title="Seller onboarding" />
-            <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+            <main className="mx-auto max-w-3xl">
                 <p className="text-sm font-bold tracking-wider text-amber-700 uppercase">
                     Seller portal
                 </p>
@@ -123,6 +123,6 @@ export default function SellerOnboarding({
                     )}
                 </Form>
             </main>
-        </StorefrontLayout>
+        </PortalLayout>
     );
 }

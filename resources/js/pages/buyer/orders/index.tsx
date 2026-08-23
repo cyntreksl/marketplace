@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { StorefrontLayout } from '@/components/storefront-layout';
+import { PortalLayout } from '@/components/portal-layout';
 import { show as cartShow } from '@/routes/cart';
 
 type Order = {
@@ -17,9 +17,9 @@ type Order = {
 
 export default function BuyerOrders({ orders }: { orders: { data: Order[] } }) {
     return (
-        <StorefrontLayout title="Your orders">
+        <PortalLayout portal="buyer" title="Your orders">
             <Head title="Your orders" />
-            <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+            <main className="mx-auto max-w-6xl">
                 <div className="flex items-end justify-between">
                     <div>
                         <p className="text-sm font-bold tracking-wider text-amber-700 uppercase">
@@ -92,6 +92,6 @@ export default function BuyerOrders({ orders }: { orders: { data: Order[] } }) {
                     )}
                 </div>
             </main>
-        </StorefrontLayout>
+        </PortalLayout>
     );
 }

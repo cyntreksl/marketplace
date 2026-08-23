@@ -1,6 +1,6 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { update } from '@/actions/App/Http/Controllers/AdminSellerController';
-import { StorefrontLayout } from '@/components/storefront-layout';
+import { PortalLayout } from '@/components/portal-layout';
 import { dashboard } from '@/routes/admin';
 
 type Seller = {
@@ -17,9 +17,9 @@ export default function AdminSellers({
     sellers: { data: Seller[] };
 }) {
     return (
-        <StorefrontLayout title="Seller verification">
+        <PortalLayout portal="admin" title="Seller verification">
             <Head title="Seller verification" />
-            <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+            <main className="mx-auto max-w-7xl">
                 <Link
                     href={dashboard()}
                     className="text-sm font-bold text-amber-700"
@@ -92,6 +92,6 @@ export default function AdminSellers({
                     ))}
                 </div>
             </main>
-        </StorefrontLayout>
+        </PortalLayout>
     );
 }

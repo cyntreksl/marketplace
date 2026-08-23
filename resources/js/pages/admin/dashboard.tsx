@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { StorefrontLayout } from '@/components/storefront-layout';
+import { PortalLayout } from '@/components/portal-layout';
 import { index as listingsIndex } from '@/routes/admin/listings';
 import { index as sellersIndex } from '@/routes/admin/sellers';
 
@@ -32,35 +32,35 @@ export default function AdminDashboard({
     ];
 
     return (
-        <StorefrontLayout title="Operations">
+        <PortalLayout portal="admin" title="Operations">
             <Head title="Operations" />
-            <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-                <p className="text-sm font-bold tracking-wider text-amber-700 uppercase">
+            <main className="mx-auto max-w-7xl">
+                <p className="text-sm font-semibold tracking-wider text-primary uppercase">
                     Admin portal
                 </p>
-                <h1 className="mt-2 text-4xl font-black">
+                <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
                     Operations overview
                 </h1>
-                <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
                     {cards.map((card) => (
                         <Link
                             key={card.label}
                             href={card.href}
-                            className="rounded-2xl border border-stone-200 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md dark:border-stone-800 dark:bg-stone-900"
+                            className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10 dark:border-slate-800 dark:bg-slate-900"
                         >
-                            <p className="text-sm text-stone-500">
+                            <p className="text-sm font-medium text-muted-foreground">
                                 {card.label}
                             </p>
-                            <p className="mt-2 text-3xl font-black">
+                            <p className="mt-3 text-4xl font-bold tracking-tight">
                                 {card.value}
                             </p>
-                            <p className="mt-4 text-sm font-bold text-amber-700">
+                            <p className="mt-6 text-sm font-semibold text-primary">
                                 Open queue →
                             </p>
                         </Link>
                     ))}
                 </div>
             </main>
-        </StorefrontLayout>
+        </PortalLayout>
     );
 }

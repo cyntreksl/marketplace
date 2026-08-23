@@ -1,6 +1,6 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { update } from '@/actions/App/Http/Controllers/AdminListingController';
-import { StorefrontLayout } from '@/components/storefront-layout';
+import { PortalLayout } from '@/components/portal-layout';
 import { dashboard } from '@/routes/admin';
 
 type Listing = {
@@ -18,9 +18,9 @@ export default function AdminListings({
     listings: { data: Listing[] };
 }) {
     return (
-        <StorefrontLayout title="Listing moderation">
+        <PortalLayout portal="admin" title="Listing moderation">
             <Head title="Listing moderation" />
-            <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+            <main className="mx-auto max-w-7xl">
                 <Link
                     href={dashboard()}
                     className="text-sm font-bold text-amber-700"
@@ -95,6 +95,6 @@ export default function AdminListings({
                     ))}
                 </div>
             </main>
-        </StorefrontLayout>
+        </PortalLayout>
     );
 }

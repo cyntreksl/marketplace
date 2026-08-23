@@ -1,6 +1,6 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { ready } from '@/actions/App/Http/Controllers/SellerOrderController';
-import { StorefrontLayout } from '@/components/storefront-layout';
+import { PortalLayout } from '@/components/portal-layout';
 import { index as walletIndex } from '@/routes/seller/wallet';
 
 type SellerOrder = {
@@ -17,9 +17,9 @@ export default function SellerOrders({
     orders: { data: SellerOrder[] };
 }) {
     return (
-        <StorefrontLayout title="Seller orders">
+        <PortalLayout portal="seller" title="Seller orders">
             <Head title="Seller orders" />
-            <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+            <main className="mx-auto max-w-7xl">
                 <div className="flex items-end justify-between">
                     <div>
                         <p className="text-sm font-bold tracking-wider text-amber-700 uppercase">
@@ -106,6 +106,6 @@ export default function SellerOrders({
                     )}
                 </div>
             </main>
-        </StorefrontLayout>
+        </PortalLayout>
     );
 }

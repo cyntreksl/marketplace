@@ -1,6 +1,6 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { store } from '@/actions/App/Http/Controllers/SellerWalletController';
-import { StorefrontLayout } from '@/components/storefront-layout';
+import { PortalLayout } from '@/components/portal-layout';
 import { index as ordersIndex } from '@/routes/seller/orders';
 
 type Entry = {
@@ -27,9 +27,9 @@ export default function SellerWallet({
     payouts: Payout[];
 }) {
     return (
-        <StorefrontLayout title="Seller wallet">
+        <PortalLayout portal="seller" title="Seller wallet">
             <Head title="Seller wallet" />
-            <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+            <main className="mx-auto max-w-7xl">
                 <Link
                     href={ordersIndex()}
                     className="text-sm font-bold text-amber-700"
@@ -138,6 +138,6 @@ export default function SellerWallet({
                     </aside>
                 </div>
             </main>
-        </StorefrontLayout>
+        </PortalLayout>
     );
 }

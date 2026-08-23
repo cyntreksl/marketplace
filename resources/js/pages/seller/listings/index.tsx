@@ -3,7 +3,7 @@ import {
     create,
     submit,
 } from '@/actions/App/Http/Controllers/SellerListingController';
-import { StorefrontLayout } from '@/components/storefront-layout';
+import { PortalLayout } from '@/components/portal-layout';
 
 type Listing = {
     id: number;
@@ -24,9 +24,9 @@ export default function SellerListings({
     listings: { data: Listing[] };
 }) {
     return (
-        <StorefrontLayout title="Seller listings">
+        <PortalLayout portal="seller" title="Your listings">
             <Head title="Seller listings" />
-            <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+            <main className="mx-auto max-w-7xl">
                 <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
                     <div>
                         <p className="text-sm font-bold tracking-wider text-amber-700 uppercase">
@@ -121,6 +121,6 @@ export default function SellerListings({
                     )}
                 </div>
             </main>
-        </StorefrontLayout>
+        </PortalLayout>
     );
 }

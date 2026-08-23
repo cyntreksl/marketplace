@@ -1,6 +1,6 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { store as checkout } from '@/actions/App/Http/Controllers/CheckoutController';
-import { StorefrontLayout } from '@/components/storefront-layout';
+import { PortalLayout } from '@/components/portal-layout';
 import { index as ordersIndex } from '@/routes/buyer/orders';
 
 type CartItem = {
@@ -20,9 +20,9 @@ export default function BuyerCart({ cart }: { cart: { items: CartItem[] } }) {
     );
 
     return (
-        <StorefrontLayout title="Your cart">
+        <PortalLayout portal="buyer" title="Your cart">
             <Head title="Your cart" />
-            <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+            <main className="mx-auto max-w-6xl">
                 <div className="flex items-end justify-between gap-5">
                     <div>
                         <p className="text-sm font-bold tracking-wider text-amber-700 uppercase">
@@ -184,6 +184,6 @@ export default function BuyerCart({ cart }: { cart: { items: CartItem[] } }) {
                     </div>
                 )}
             </main>
-        </StorefrontLayout>
+        </PortalLayout>
     );
 }
