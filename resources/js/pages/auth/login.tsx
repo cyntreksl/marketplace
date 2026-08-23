@@ -24,16 +24,30 @@ export default function Login({ status, canResetPassword }: Props) {
 
             <PasskeyVerify />
 
+            {status && (
+                <div
+                    role="status"
+                    className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-950/50 dark:text-emerald-300"
+                >
+                    {status}
+                </div>
+            )}
+
             <Form
                 {...store.form()}
                 resetOnSuccess={['password']}
-                className="flex flex-col gap-6"
+                className="flex flex-col gap-5"
             >
                 {({ processing, errors }) => (
                     <>
-                        <div className="grid gap-6">
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                        <div className="grid gap-5">
+                            <div className="grid gap-2.5">
+                                <Label
+                                    htmlFor="email"
+                                    className="font-semibold"
+                                >
+                                    Email address
+                                </Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -43,17 +57,23 @@ export default function Login({ status, canResetPassword }: Props) {
                                     tabIndex={1}
                                     autoComplete="email"
                                     placeholder="email@example.com"
+                                    className="h-11 rounded-xl bg-background px-3.5"
                                 />
                                 <InputError message={errors.email} />
                             </div>
 
-                            <div className="grid gap-2">
+                            <div className="grid gap-2.5">
                                 <div className="flex items-center">
-                                    <Label htmlFor="password">Password</Label>
+                                    <Label
+                                        htmlFor="password"
+                                        className="font-semibold"
+                                    >
+                                        Password
+                                    </Label>
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
-                                            className="ml-auto text-sm"
+                                            className="ml-auto text-sm font-medium text-primary decoration-primary/30"
                                             tabIndex={5}
                                         >
                                             Forgot your password?
@@ -67,22 +87,28 @@ export default function Login({ status, canResetPassword }: Props) {
                                     tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder="Password"
+                                    className="h-11 rounded-xl bg-background px-3.5"
                                 />
                                 <InputError message={errors.password} />
                             </div>
 
-                            <div className="flex items-center space-x-3">
+                            <div className="flex items-center gap-3">
                                 <Checkbox
                                     id="remember"
                                     name="remember"
                                     tabIndex={3}
                                 />
-                                <Label htmlFor="remember">Remember me</Label>
+                                <Label
+                                    htmlFor="remember"
+                                    className="cursor-pointer text-sm font-medium"
+                                >
+                                    Keep me signed in
+                                </Label>
                             </div>
 
                             <Button
                                 type="submit"
-                                className="mt-4 w-full"
+                                className="mt-2 h-11 w-full rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
@@ -92,26 +118,24 @@ export default function Login({ status, canResetPassword }: Props) {
                             </Button>
                         </div>
 
-                        <div className="text-center text-sm text-muted-foreground">
+                        <div className="border-t pt-5 text-center text-sm text-muted-foreground">
                             Don't have an account?{' '}
-                            <TextLink href={register()} tabIndex={5}>
+                            <TextLink
+                                href={register()}
+                                className="font-semibold text-primary decoration-primary/30"
+                                tabIndex={5}
+                            >
                                 Sign up
                             </TextLink>
                         </div>
                     </>
                 )}
             </Form>
-
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
         </>
     );
 }
 
 Login.layout = {
-    title: 'Log in to your account',
-    description: 'Enter your email and password below to log in',
+    title: 'Welcome back',
+    description: 'Log in to continue browsing, buying, and selling.',
 };
