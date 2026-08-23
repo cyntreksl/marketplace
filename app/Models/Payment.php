@@ -7,13 +7,14 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /** @property numeric-string $amount */
 #[Fillable(['customer_order_id', 'method', 'status', 'provider_reference', 'idempotency_key', 'amount', 'proof_path', 'provider_payload', 'paid_at'])]
 class Payment extends Model
 {
     /** @use HasFactory<PaymentFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected function casts(): array
     {
@@ -23,6 +24,6 @@ class Payment extends Model
     /** @return BelongsTo<CustomerOrder, $this> */
     public function customerOrder(): BelongsTo
     {
-        return $this->belongsTo(CustomerOrder::class);
+        return $this->belongsTo(CustomerOrder::class)->withTrashed();
     }
 }

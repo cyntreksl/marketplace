@@ -2,18 +2,24 @@
 
 namespace App\Models;
 
-use Database\Factories\ListingMediaFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Database\Factories\WatchlistFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['listing_id', 'disk', 'path', 'type', 'sort_order'])]
-class ListingMedia extends Model
+class Watchlist extends Model
 {
-    /** @use HasFactory<ListingMediaFactory> */
+    /** @use HasFactory<WatchlistFactory> */
     use HasFactory, SoftDeletes;
+
+    protected $fillable = ['buyer_id', 'listing_id'];
+
+    /** @return BelongsTo<User, $this> */
+    public function buyer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'buyer_id')->withTrashed();
+    }
 
     /** @return BelongsTo<Listing, $this> */
     public function listing(): BelongsTo

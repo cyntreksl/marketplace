@@ -9,13 +9,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['user_id', 'seller_type', 'store_name', 'slug', 'phone', 'pickup_address', 'return_address', 'bank_account_name', 'bank_account_details', 'documents', 'terms_accepted_at'])]
 #[Hidden(['bank_account_name', 'bank_account_details', 'documents'])]
 class SellerProfile extends Model
 {
     /** @use HasFactory<SellerProfileFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected function casts(): array
     {
@@ -32,7 +33,7 @@ class SellerProfile extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withTrashed();
     }
 
     /**

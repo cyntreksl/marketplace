@@ -10,12 +10,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['seller_profile_id', 'category_id', 'brand_id', 'title', 'slug', 'description', 'condition', 'listing_type', 'status', 'location', 'specifications', 'warranty', 'stock_quantity', 'reserved_quantity', 'price', 'sale_price', 'commission_percentage', 'moderation_reason', 'submitted_at', 'approved_at'])]
 class Listing extends Model
 {
     /** @use HasFactory<ListingFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected function casts(): array
     {
@@ -32,19 +33,19 @@ class Listing extends Model
     /** @return BelongsTo<SellerProfile, $this> */
     public function sellerProfile(): BelongsTo
     {
-        return $this->belongsTo(SellerProfile::class);
+        return $this->belongsTo(SellerProfile::class)->withTrashed();
     }
 
     /** @return BelongsTo<Category, $this> */
     public function category(): BelongsTo
     {
-        return $this->belongsTo(Category::class);
+        return $this->belongsTo(Category::class)->withTrashed();
     }
 
     /** @return BelongsTo<Brand, $this> */
     public function brand(): BelongsTo
     {
-        return $this->belongsTo(Brand::class);
+        return $this->belongsTo(Brand::class)->withTrashed();
     }
 
     /** @return HasMany<ListingMedia, $this> */

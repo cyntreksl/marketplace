@@ -8,12 +8,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['number', 'buyer_id', 'status', 'subtotal', 'shipping_total', 'total', 'shipping_address'])]
 class CustomerOrder extends Model
 {
     /** @use HasFactory<CustomerOrderFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected function casts(): array
     {
@@ -23,7 +24,7 @@ class CustomerOrder extends Model
     /** @return BelongsTo<User, $this> */
     public function buyer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'buyer_id');
+        return $this->belongsTo(User::class, 'buyer_id')->withTrashed();
     }
 
     /** @return HasMany<SellerOrder, $this> */

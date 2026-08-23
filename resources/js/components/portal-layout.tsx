@@ -1,11 +1,13 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     ClipboardCheck,
+    FolderTree,
     LayoutDashboard,
     Menu,
     Package,
     Plus,
     ShieldCheck,
+    Tags,
     ShoppingBag,
     Store,
     WalletCards,
@@ -31,8 +33,11 @@ import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import { home } from '@/routes';
 import { dashboard as adminDashboard } from '@/routes/admin';
+import { index as adminBrandsIndex } from '@/routes/admin/brands';
+import { index as adminCategoriesIndex } from '@/routes/admin/categories';
 import { index as adminListingsIndex } from '@/routes/admin/listings';
 import { index as adminSellersIndex } from '@/routes/admin/sellers';
+import { index as adminTaxonomyIndex } from '@/routes/admin/taxonomy';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
 import { show as cartShow } from '@/routes/cart';
 import {
@@ -78,6 +83,17 @@ const portalDetails: Record<Portal, PortalDetails> = {
                 title: 'Listing reviews',
                 href: adminListingsIndex(),
                 icon: ClipboardCheck,
+            },
+            {
+                title: 'Categories',
+                href: adminCategoriesIndex(),
+                icon: FolderTree,
+            },
+            { title: 'Brands', href: adminBrandsIndex(), icon: Tags },
+            {
+                title: 'Google taxonomy',
+                href: adminTaxonomyIndex(),
+                icon: FolderTree,
             },
         ],
     },

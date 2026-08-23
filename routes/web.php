@@ -1,8 +1,11 @@
 <?php
 
+use App\Http\Controllers\AdminBrandController;
+use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminListingController;
 use App\Http\Controllers\AdminSellerController;
+use App\Http\Controllers\AdminTaxonomyController;
 use App\Http\Controllers\AuctionBidController;
 use App\Http\Controllers\BuyerDashboardController;
 use App\Http\Controllers\CartController;
@@ -49,6 +52,20 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::patch('/sellers/{seller}', [AdminSellerController::class, 'update'])->name('sellers.update');
     Route::get('/listings', [AdminListingController::class, 'index'])->name('listings.index');
     Route::patch('/listings/{listing}', [AdminListingController::class, 'update'])->name('listings.update');
+    Route::get('/catalog/categories', [AdminCategoryController::class, 'index'])->name('categories.index');
+    Route::post('/catalog/categories', [AdminCategoryController::class, 'store'])->name('categories.store');
+    Route::patch('/catalog/categories/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
+    Route::delete('/catalog/categories/{category}', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');
+    Route::post('/catalog/categories/{category}/restore', [AdminCategoryController::class, 'restore'])->name('categories.restore');
+    Route::get('/catalog/brands', [AdminBrandController::class, 'index'])->name('brands.index');
+    Route::post('/catalog/brands', [AdminBrandController::class, 'store'])->name('brands.store');
+    Route::patch('/catalog/brands/{brand}', [AdminBrandController::class, 'update'])->name('brands.update');
+    Route::delete('/catalog/brands/{brand}', [AdminBrandController::class, 'destroy'])->name('brands.destroy');
+    Route::post('/catalog/brands/{brand}/restore', [AdminBrandController::class, 'restore'])->name('brands.restore');
+    Route::get('/taxonomy', [AdminTaxonomyController::class, 'index'])->name('taxonomy.index');
+    Route::post('/taxonomy', [AdminTaxonomyController::class, 'store'])->name('taxonomy.store');
+    Route::post('/taxonomy/{taxonomy}/activate', [AdminTaxonomyController::class, 'activate'])->name('taxonomy.activate');
+    Route::delete('/taxonomy/{taxonomy}', [AdminTaxonomyController::class, 'destroy'])->name('taxonomy.destroy');
 });
 
 require __DIR__.'/settings.php';

@@ -9,12 +9,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['number', 'customer_order_id', 'seller_profile_id', 'status', 'subtotal', 'shipping_charge', 'seller_earnings', 'ready_to_ship_at', 'completed_at'])]
 class SellerOrder extends Model
 {
     /** @use HasFactory<SellerOrderFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected function casts(): array
     {
@@ -24,13 +25,13 @@ class SellerOrder extends Model
     /** @return BelongsTo<CustomerOrder, $this> */
     public function customerOrder(): BelongsTo
     {
-        return $this->belongsTo(CustomerOrder::class);
+        return $this->belongsTo(CustomerOrder::class)->withTrashed();
     }
 
     /** @return BelongsTo<SellerProfile, $this> */
     public function sellerProfile(): BelongsTo
     {
-        return $this->belongsTo(SellerProfile::class);
+        return $this->belongsTo(SellerProfile::class)->withTrashed();
     }
 
     /** @return HasMany<OrderItem, $this> */

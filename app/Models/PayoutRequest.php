@@ -7,12 +7,13 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['seller_profile_id', 'amount', 'status', 'payment_reference', 'proof_path', 'reason', 'reviewed_by', 'settled_at'])]
 class PayoutRequest extends Model
 {
     /** @use HasFactory<PayoutRequestFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected function casts(): array
     {
@@ -22,6 +23,6 @@ class PayoutRequest extends Model
     /** @return BelongsTo<SellerProfile, $this> */
     public function sellerProfile(): BelongsTo
     {
-        return $this->belongsTo(SellerProfile::class);
+        return $this->belongsTo(SellerProfile::class)->withTrashed();
     }
 }

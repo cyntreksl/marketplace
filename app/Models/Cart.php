@@ -8,17 +8,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['buyer_id'])]
 class Cart extends Model
 {
     /** @use HasFactory<CartFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /** @return BelongsTo<User, $this> */
     public function buyer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'buyer_id');
+        return $this->belongsTo(User::class, 'buyer_id')->withTrashed();
     }
 
     /** @return HasMany<CartItem, $this> */
