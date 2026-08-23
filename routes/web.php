@@ -9,6 +9,8 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\SellerListingController;
 use App\Http\Controllers\SellerOnboardingController;
+use App\Http\Controllers\SellerOrderController;
+use App\Http\Controllers\SellerWalletController;
 use App\Http\Controllers\StorefrontController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +29,10 @@ Route::middleware(['auth', 'verified'])->prefix('seller')->name('seller.')->grou
     Route::get('/listings/create', [SellerListingController::class, 'create'])->name('listings.create');
     Route::post('/listings', [SellerListingController::class, 'store'])->name('listings.store');
     Route::post('/listings/submit', [SellerListingController::class, 'submit'])->name('listings.submit');
+    Route::get('/orders', [SellerOrderController::class, 'index'])->name('orders.index');
+    Route::post('/orders/{sellerOrder}/ready', [SellerOrderController::class, 'ready'])->name('orders.ready');
+    Route::get('/wallet', [SellerWalletController::class, 'index'])->name('wallet.index');
+    Route::post('/wallet/payouts', [SellerWalletController::class, 'store'])->name('wallet.payouts.store');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

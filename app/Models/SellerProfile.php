@@ -58,4 +58,10 @@ class SellerProfile extends Model
     {
         return $this->hasMany(SellerLedgerEntry::class);
     }
+
+    /** @return HasMany<PayoutRequest, $this> */
+    public function payoutRequests(): HasMany
+    {
+        return $this->hasMany(PayoutRequest::class);
+    }
 }
