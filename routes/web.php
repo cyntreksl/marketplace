@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminListingController;
+use App\Http\Controllers\AdminSellerController;
 use App\Http\Controllers\AuctionBidController;
 use App\Http\Controllers\BuyerDashboardController;
 use App\Http\Controllers\CartController;
@@ -32,6 +35,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
     Route::get('/buyer/orders', [BuyerDashboardController::class, 'index'])->name('buyer.orders.index');
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
+});
+
+Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function (): void {
+    Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/sellers', [AdminSellerController::class, 'index'])->name('sellers.index');
+    Route::patch('/sellers/{seller}', [AdminSellerController::class, 'update'])->name('sellers.update');
+    Route::get('/listings', [AdminListingController::class, 'index'])->name('listings.index');
+    Route::patch('/listings/{listing}', [AdminListingController::class, 'update'])->name('listings.update');
 });
 
 require __DIR__.'/settings.php';
