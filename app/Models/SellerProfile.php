@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['seller_type', 'store_name', 'slug', 'phone', 'pickup_address', 'return_address', 'bank_account_name', 'bank_account_details', 'documents', 'terms_accepted_at'])]
+#[Fillable(['user_id', 'seller_type', 'store_name', 'slug', 'phone', 'pickup_address', 'return_address', 'bank_account_name', 'bank_account_details', 'documents', 'terms_accepted_at'])]
 #[Hidden(['bank_account_name', 'bank_account_details', 'documents'])]
 class SellerProfile extends Model
 {
