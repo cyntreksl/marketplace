@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuctionBidController;
+use App\Http\Controllers\SellerListingController;
 use App\Http\Controllers\SellerOnboardingController;
 use App\Http\Controllers\StorefrontController;
 use Illuminate\Support\Facades\Route;
@@ -16,6 +17,10 @@ Route::post('/auctions/{auction}/bids', [AuctionBidController::class, 'store'])
 Route::middleware(['auth', 'verified'])->prefix('seller')->name('seller.')->group(function (): void {
     Route::get('/onboarding', [SellerOnboardingController::class, 'edit'])->name('onboarding.edit');
     Route::put('/onboarding', [SellerOnboardingController::class, 'update'])->name('onboarding.update');
+    Route::get('/listings', [SellerListingController::class, 'index'])->name('listings.index');
+    Route::get('/listings/create', [SellerListingController::class, 'create'])->name('listings.create');
+    Route::post('/listings', [SellerListingController::class, 'store'])->name('listings.store');
+    Route::post('/listings/submit', [SellerListingController::class, 'submit'])->name('listings.submit');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

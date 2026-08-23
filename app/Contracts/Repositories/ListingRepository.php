@@ -3,6 +3,7 @@
 namespace App\Contracts\Repositories;
 
 use App\Models\Listing;
+use App\Models\SellerProfile;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 interface ListingRepository
@@ -14,4 +15,8 @@ interface ListingRepository
     public function paginatePublic(array $filters, int $perPage = 18): LengthAwarePaginator;
 
     public function findPublicBySlug(string $slug): Listing;
+
+    public function save(Listing $listing): Listing;
+
+    public function findForSellerOrFail(SellerProfile $seller, int $listingId): Listing;
 }

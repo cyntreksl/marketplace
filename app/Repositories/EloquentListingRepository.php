@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\ListingRepository;
 use App\Models\Listing;
+use App\Models\SellerProfile;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class EloquentListingRepository implements ListingRepository
@@ -45,5 +46,19 @@ class EloquentListingRepository implements ListingRepository
             ])
             ->where('slug', $slug)
             ->firstOrFail();
+    }
+
+    public function save(Listing $listing): Listing
+    {
+        $listing->save();
+
+        return $listing;
+    }
+
+    public function findForSellerOrFail(SellerProfile $seller, int $listingId): Listing
+    {
+        return $seller->listings()
+            ->with(['category:id,name,slug,commission_percentage', 'brand:id,name,slug', 'auction'])
+            ->findOrFail($listingId);
     }
 }
