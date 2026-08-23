@@ -15,11 +15,13 @@ use App\Http\Controllers\SellerOnboardingController;
 use App\Http\Controllers\SellerOrderController;
 use App\Http\Controllers\SellerWalletController;
 use App\Http\Controllers\StorefrontController;
+use App\Http\Controllers\VendorRegistrationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StorefrontController::class, 'home'])->name('home');
 Route::get('/listings', [StorefrontController::class, 'index'])->name('listings.index');
 Route::get('/listings/{listing}', [StorefrontController::class, 'show'])->name('listings.show');
+Route::get('/vendor/register', [VendorRegistrationController::class, 'create'])->middleware('guest')->name('vendor.register');
 
 Route::post('/auctions/{auction}/bids', [AuctionBidController::class, 'store'])
     ->middleware(['auth', 'verified', 'throttle:auction-bids'])

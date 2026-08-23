@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
     Box,
@@ -13,6 +13,8 @@ import {
 import { ListingCard } from '@/components/listing-card';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { index as listingsIndex } from '@/routes/listings';
+import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
+import { register as vendorRegister } from '@/routes/vendor';
 
 export default function StorefrontHome({
     featuredListings,
@@ -22,6 +24,10 @@ export default function StorefrontHome({
     categories: { id: number; name: string; slug: string }[];
 }) {
     const categoryIcons = [Smartphone, Cpu, Headphones, Gamepad2, House, Box];
+    const { auth } = usePage().props;
+    const vendorRegistration = auth.user
+        ? sellerOnboardingEdit()
+        : vendorRegister();
 
     return (
         <StorefrontLayout
@@ -121,6 +127,29 @@ export default function StorefrontHome({
                                 </Link>
                             </div>
                         </div>
+                    </div>
+                </section>
+                <section className="px-4 pb-7 sm:px-7">
+                    <div className="mx-auto flex max-w-none flex-col justify-between gap-5 rounded-2xl bg-slate-950 px-6 py-7 text-white shadow-xl shadow-slate-950/15 sm:flex-row sm:items-center sm:px-8">
+                        <div>
+                            <p className="text-sm font-bold tracking-wider text-cyan-300 uppercase">
+                                Grow with CircuitMarket
+                            </p>
+                            <h2 className="mt-2 text-2xl font-black tracking-tight">
+                                Have products to sell?
+                            </h2>
+                            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
+                                Open your store and submit your details for our
+                                vendor review.
+                            </p>
+                        </div>
+                        <Link
+                            href={vendorRegistration}
+                            className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-5 font-bold text-slate-950 transition hover:bg-cyan-200"
+                        >
+                            Become a vendor
+                            <ArrowRight className="size-4" />
+                        </Link>
                     </div>
                 </section>
                 <section className="px-4 pb-7 sm:px-7">

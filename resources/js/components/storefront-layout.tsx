@@ -19,6 +19,8 @@ import { useState } from 'react';
 import { dashboard, home, login, register } from '@/routes';
 import { show as cartShow } from '@/routes/cart';
 import { index as listingsIndex } from '@/routes/listings';
+import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
+import { register as vendorRegister } from '@/routes/vendor';
 
 type StorefrontCategory = {
     id: number;
@@ -258,6 +260,16 @@ export function StorefrontLayout({
                             </div>
                         </div>
                         <div className="flex items-center gap-1 text-sm font-semibold">
+                            <Link
+                                className="hidden items-center gap-1 rounded-full px-3 py-2 text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 sm:flex dark:text-slate-300 dark:hover:bg-slate-900"
+                                href={
+                                    auth.user
+                                        ? sellerOnboardingEdit()
+                                        : vendorRegister()
+                                }
+                            >
+                                Become a vendor
+                            </Link>
                             <Link
                                 className="hidden items-center gap-1 rounded-full px-3 py-2 text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 sm:flex dark:text-slate-300 dark:hover:bg-slate-900"
                                 href={listingsIndex({

@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\Role;
+use App\Models\SellerProfile;
+use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 use Laravel\Fortify\Features;
 
@@ -27,4 +30,49 @@ test('new users can register', function () {
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('dashboard', absolute: false));
+});
+
+test('vendor registration screen can be rendered', function () {
+    $response = $this->get(route('vendor.register'));
+
+    $response
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('auth/vendor-register')
+            ->has('passwordRules'),
+        );
+});
+
+test('new vendors can register with their store details', function () {
+    Role::factory()->create([
+        'name' => Role::BusinessSeller,
+        'label' => 'Business Seller',
+    ]);
+
+    $response = $this->post(route('register.store'), [
+        'registration_type' => 'vendor',
+        'name' => 'Vendor Owner',
+        'email' => 'vendor@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+        'seller_type' => 'business',
+        'store_name' => 'Vendor Devices',
+        'phone' => '0771234567',
+        'pickup_address' => 'Colombo 03',
+        'return_address' => 'Colombo 03',
+        'bank_account_name' => 'Vendor Owner',
+        'bank_account_details' => 'Account 123',
+        'accept_terms' => 'on',
+    ]);
+
+    $vendor = User::query()->where('email', 'vendor@example.com')->firstOrFail();
+
+    $this->assertAuthenticatedAs($vendor);
+    $response->assertRedirect(route('dashboard', absolute: false));
+
+    expect(SellerProfile::query()->where('user_id', $vendor->id)->firstOrFail())
+        ->store_name->toBe('Vendor Devices')
+        ->status->toBe('pending_review');
+
+    expect($vendor->roles()->pluck('name')->all())->toContain(Role::BusinessSeller);
 });

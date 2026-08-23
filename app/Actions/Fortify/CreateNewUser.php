@@ -4,13 +4,19 @@ namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
+use App\Concerns\SellerProfileValidationRules;
 use App\Models\User;
+use App\Services\SellerOnboardingService;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
 class CreateNewUser implements CreatesNewUsers
 {
-    use PasswordValidationRules, ProfileValidationRules;
+    use PasswordValidationRules, ProfileValidationRules, SellerProfileValidationRules;
+
+    public function __construct(private SellerOnboardingService $sellerOnboarding) {}
 
     /**
      * Validate and create a newly registered user.
@@ -19,15 +25,30 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input): User
     {
-        Validator::make($input, [
+        $rules = [
             ...$this->profileRules(),
             'password' => $this->passwordRules(),
-        ])->validate();
+            'registration_type' => ['nullable', Rule::in(['vendor'])],
+        ];
 
-        return User::create([
-            'name' => $input['name'],
-            'email' => $input['email'],
-            'password' => $input['password'],
-        ]);
+        if (($input['registration_type'] ?? null) === 'vendor') {
+            $rules = [...$rules, ...$this->sellerProfileRules()];
+        }
+
+        $validated = Validator::make($input, $rules)->validate();
+
+        return DB::transaction(function () use ($validated): User {
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => $validated['password'],
+            ]);
+
+            if (($validated['registration_type'] ?? null) === 'vendor') {
+                $this->sellerOnboarding->store($user, $validated);
+            }
+
+            return $user;
+        });
     }
 }

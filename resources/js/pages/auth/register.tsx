@@ -39,7 +39,7 @@ export default function Register({ passwordRules }: Props) {
                                     autoComplete="name"
                                     name="name"
                                     placeholder="Full name"
-                                    className="h-11 rounded-xl bg-background px-3.5"
+                                    className="h-12 rounded-xl bg-background px-3.5"
                                 />
                                 <InputError message={errors.name} />
                             </div>
@@ -59,7 +59,7 @@ export default function Register({ passwordRules }: Props) {
                                     autoComplete="email"
                                     name="email"
                                     placeholder="email@example.com"
-                                    className="h-11 rounded-xl bg-background px-3.5"
+                                    className="h-12 rounded-xl bg-background px-3.5"
                                 />
                                 <InputError message={errors.email} />
                             </div>
@@ -79,7 +79,7 @@ export default function Register({ passwordRules }: Props) {
                                     name="password"
                                     placeholder="Password"
                                     passwordrules={passwordRules}
-                                    className="h-11 rounded-xl bg-background px-3.5"
+                                    className="h-12 rounded-xl bg-background px-3.5"
                                 />
                                 <InputError message={errors.password} />
                             </div>
@@ -99,7 +99,7 @@ export default function Register({ passwordRules }: Props) {
                                     name="password_confirmation"
                                     placeholder="Confirm password"
                                     passwordrules={passwordRules}
-                                    className="h-11 rounded-xl bg-background px-3.5"
+                                    className="h-12 rounded-xl bg-background px-3.5"
                                 />
                                 <InputError
                                     message={errors.password_confirmation}
@@ -108,7 +108,7 @@ export default function Register({ passwordRules }: Props) {
 
                             <Button
                                 type="submit"
-                                className="mt-2 h-11 w-full rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
+                                className="mt-2 h-12 w-full rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
                                 tabIndex={5}
                                 data-test="register-user-button"
                             >
