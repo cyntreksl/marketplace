@@ -1,7 +1,10 @@
 <?php
 
-test('returns a successful response', function () {
-    $response = $this->get(route('home'));
-
-    $response->assertOk();
+test('guests can visit the storefront home page', function () {
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('storefront/home')
+            ->has('featuredListings.data', 0)
+            ->has('categories', 0));
 });

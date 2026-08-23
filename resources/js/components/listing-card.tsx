@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import { ArrowUpRight, MapPin } from 'lucide-react';
 import { show as listingShow } from '@/routes/listings';
 
 type Listing = {
@@ -18,34 +19,38 @@ export function ListingCard({ listing }: { listing: Listing }) {
     return (
         <Link
             href={listingShow(listing.slug)}
-            className="group overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-stone-800 dark:bg-stone-900"
+            className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-200/50 transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-950/10 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none"
         >
-            <div className="aspect-[4/3] bg-gradient-to-br from-amber-100 via-stone-100 to-stone-200 dark:from-amber-950 dark:via-stone-900 dark:to-stone-800">
+            <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-blue-100 via-slate-100 to-cyan-100 dark:from-blue-950 dark:via-slate-900 dark:to-slate-800">
                 {listing.media[0] && (
                     <img
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                         src={`/storage/${listing.media[0].path}`}
                         alt=""
                     />
                 )}
+                <span className="absolute top-3 left-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-extrabold tracking-wider text-blue-700 uppercase shadow-sm backdrop-blur dark:bg-slate-950/80 dark:text-blue-300">
+                    {listing.listingType === 'auction'
+                        ? 'Live auction'
+                        : 'Buy now'}
+                </span>
             </div>
             <div className="space-y-3 p-4">
-                <div className="flex items-center justify-between gap-2 text-xs font-bold tracking-wider text-stone-500 uppercase">
+                <div className="flex items-center justify-between gap-2 text-xs font-bold tracking-wider text-slate-500 uppercase">
                     <span>{listing.condition}</span>
-                    <span className="rounded-full bg-amber-100 px-2 py-1 text-amber-900 dark:bg-amber-900 dark:text-amber-100">
-                        {listing.listingType === 'auction'
-                            ? 'Auction'
-                            : 'Buy now'}
-                    </span>
+                    <ArrowUpRight className="size-4 text-blue-600 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </div>
-                <h2 className="line-clamp-2 font-bold group-hover:text-amber-700">
+                <h2 className="line-clamp-2 min-h-10 font-bold text-slate-900 transition group-hover:text-blue-700 dark:text-white dark:group-hover:text-blue-300">
                     {listing.title}
                 </h2>
                 <div className="flex items-end justify-between gap-2">
-                    <p className="text-lg font-black">
+                    <p className="text-lg font-black text-blue-700 dark:text-blue-300">
                         Rs. {Number(price ?? 0).toLocaleString()}
                     </p>
-                    <p className="text-xs text-stone-500">{listing.location}</p>
+                    <p className="flex items-center gap-1 text-xs text-slate-500">
+                        <MapPin className="size-3" />
+                        {listing.location}
+                    </p>
                 </div>
             </div>
         </Link>
