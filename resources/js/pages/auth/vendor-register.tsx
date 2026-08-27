@@ -1,4 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
+import { useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -13,7 +14,93 @@ type Props = {
     passwordRules: string;
 };
 
+const steps = [
+    {
+        title: 'Account',
+        description: 'Create your login',
+    },
+    {
+        title: 'Store',
+        description: 'Tell us about your business',
+    },
+    {
+        title: 'Payout',
+        description: 'Add payment details',
+    },
+];
+
+const accountFields = ['name', 'email', 'password', 'password_confirmation'];
+const storeFields = [
+    'seller_type',
+    'store_name',
+    'phone',
+    'pickup_address',
+    'return_address',
+];
+
 export default function VendorRegister({ passwordRules }: Props) {
+    const [currentStep, setCurrentStep] = useState(1);
+    const stepReferences = useRef<Record<number, HTMLElement | null>>({});
+    const passwordInputReference = useRef<HTMLInputElement>(null);
+
+    function validateCurrentStep(): boolean {
+        const currentSection = stepReferences.current[currentStep];
+
+        if (!currentSection) {
+            return false;
+        }
+
+        const passwordConfirmation =
+            currentSection.querySelector<HTMLInputElement>(
+                '#password_confirmation',
+            );
+
+        if (passwordConfirmation) {
+            passwordConfirmation.setCustomValidity(
+                passwordConfirmation.value ===
+                    passwordInputReference.current?.value
+                    ? ''
+                    : 'Password confirmation does not match.',
+            );
+        }
+
+        const fields = currentSection.querySelectorAll<
+            HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+        >('input, select, textarea');
+
+        for (const field of fields) {
+            if (!field.checkValidity()) {
+                field.reportValidity();
+
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function moveToNextStep(): void {
+        if (validateCurrentStep()) {
+            setCurrentStep((step) => Math.min(step + 1, steps.length));
+        }
+    }
+
+    function showFirstStepWithErrors(errors: Record<string, string>): void {
+        if (accountFields.some((field) => field in errors)) {
+            setCurrentStep(1);
+
+            return;
+        }
+
+        if (storeFields.some((field) => field in errors)) {
+            setCurrentStep(2);
+
+            return;
+        }
+
+        setCurrentStep(3);
+    }
+
     return (
         <>
             <Head title="Become a vendor" />
@@ -21,6 +108,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                 {...store.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
+                onError={showFirstStepWithErrors}
                 className="flex flex-col gap-6"
             >
                 {({ processing, errors }) => (
@@ -31,12 +119,71 @@ export default function VendorRegister({ passwordRules }: Props) {
                             value="vendor"
                         />
 
-                        <section className="grid gap-5">
+                        <ol
+                            aria-label="Vendor registration progress"
+                            className="grid grid-cols-3 gap-2"
+                        >
+                            {steps.map((step, index) => {
+                                const stepNumber = index + 1;
+                                const isComplete = stepNumber < currentStep;
+                                const isCurrent = stepNumber === currentStep;
+
+                                return (
+                                    <li key={step.title}>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (isComplete) {
+                                                    setCurrentStep(stepNumber);
+                                                }
+                                            }}
+                                            disabled={!isComplete}
+                                            aria-current={
+                                                isCurrent ? 'step' : undefined
+                                            }
+                                            className="grid w-full gap-1 text-left disabled:cursor-default"
+                                        >
+                                            <span
+                                                className={`h-1 rounded-full ${
+                                                    isComplete || isCurrent
+                                                        ? 'bg-primary'
+                                                        : 'bg-muted'
+                                                }`}
+                                            />
+                                            <span
+                                                className={`text-xs font-semibold ${
+                                                    isCurrent
+                                                        ? 'text-foreground'
+                                                        : 'text-muted-foreground'
+                                                }`}
+                                            >
+                                                {stepNumber}. {step.title}
+                                            </span>
+                                            <span className="hidden text-xs text-muted-foreground sm:block">
+                                                {step.description}
+                                            </span>
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ol>
+
+                        <section
+                            ref={(element) => {
+                                stepReferences.current[1] = element;
+                            }}
+                            hidden={currentStep !== 1}
+                            aria-labelledby="account-step-title"
+                            className="grid gap-5"
+                        >
                             <div>
                                 <p className="text-sm font-semibold text-primary">
-                                    Your account
+                                    Step 1 of 3
                                 </p>
-                                <h2 className="mt-1 text-lg font-bold">
+                                <h2
+                                    id="account-step-title"
+                                    className="mt-1 text-lg font-bold"
+                                >
                                     Create your vendor login
                                 </h2>
                             </div>
@@ -88,6 +235,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                 </Label>
                                 <PasswordInput
                                     id="password"
+                                    ref={passwordInputReference}
                                     required
                                     tabIndex={3}
                                     autoComplete="new-password"
@@ -122,12 +270,22 @@ export default function VendorRegister({ passwordRules }: Props) {
                             </div>
                         </section>
 
-                        <section className="grid gap-5 border-t pt-6">
+                        <section
+                            ref={(element) => {
+                                stepReferences.current[2] = element;
+                            }}
+                            hidden={currentStep !== 2}
+                            aria-labelledby="store-step-title"
+                            className="grid gap-5"
+                        >
                             <div>
                                 <p className="text-sm font-semibold text-primary">
-                                    Your store
+                                    Step 2 of 3
                                 </p>
-                                <h2 className="mt-1 text-lg font-bold">
+                                <h2
+                                    id="store-step-title"
+                                    className="mt-1 text-lg font-bold"
+                                >
                                     Tell us about your business
                                 </h2>
                                 <p className="mt-1 text-sm text-muted-foreground">
@@ -237,6 +395,31 @@ export default function VendorRegister({ passwordRules }: Props) {
                                 />
                                 <InputError message={errors.return_address} />
                             </div>
+                        </section>
+
+                        <section
+                            ref={(element) => {
+                                stepReferences.current[3] = element;
+                            }}
+                            hidden={currentStep !== 3}
+                            aria-labelledby="payout-step-title"
+                            className="grid gap-5"
+                        >
+                            <div>
+                                <p className="text-sm font-semibold text-primary">
+                                    Step 3 of 3
+                                </p>
+                                <h2
+                                    id="payout-step-title"
+                                    className="mt-1 text-lg font-bold"
+                                >
+                                    Add your payout details
+                                </h2>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                    Check your details, then submit your vendor
+                                    application for review.
+                                </p>
+                            </div>
 
                             <div className="grid gap-5 sm:grid-cols-2">
                                 <div className="grid gap-2.5">
@@ -282,6 +465,11 @@ export default function VendorRegister({ passwordRules }: Props) {
                                 </div>
                             </div>
 
+                            <div className="rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground">
+                                Your account and store information will be
+                                reviewed before you can publish listings.
+                            </div>
+
                             <label className="flex items-start gap-3 text-sm leading-6">
                                 <input
                                     required
@@ -298,17 +486,42 @@ export default function VendorRegister({ passwordRules }: Props) {
                             <InputError message={errors.accept_terms} />
                         </section>
 
-                        <Button
-                            type="submit"
-                            className="h-12 w-full rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
-                            tabIndex={13}
-                            data-test="register-vendor-button"
-                        >
-                            {processing && <Spinner />}
-                            Submit vendor application
-                        </Button>
+                        <div className="flex gap-3 border-t pt-5">
+                            {currentStep > 1 && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() =>
+                                        setCurrentStep((step) => step - 1)
+                                    }
+                                    className="h-12 flex-1 rounded-xl text-sm font-semibold"
+                                >
+                                    Back
+                                </Button>
+                            )}
 
-                        <div className="border-t pt-5 text-center text-sm text-muted-foreground">
+                            {currentStep < steps.length ? (
+                                <Button
+                                    type="button"
+                                    onClick={moveToNextStep}
+                                    className="h-12 flex-1 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
+                                >
+                                    Continue
+                                </Button>
+                            ) : (
+                                <Button
+                                    type="submit"
+                                    className="h-12 flex-1 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
+                                    tabIndex={13}
+                                    data-test="register-vendor-button"
+                                >
+                                    {processing && <Spinner />}
+                                    Submit vendor application
+                                </Button>
+                            )}
+                        </div>
+
+                        <div className="text-center text-sm text-muted-foreground">
                             Already have an account?{' '}
                             <TextLink
                                 href={login()}
