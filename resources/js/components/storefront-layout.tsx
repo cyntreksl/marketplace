@@ -120,7 +120,7 @@ export function StorefrontLayout({
                                 type="button"
                                 onClick={() => setIsCategoryMenuOpen(false)}
                                 aria-expanded="true"
-                                className="flex h-12 w-full items-center gap-3 rounded-full bg-blue-600 px-4 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 focus:bg-blue-700"
+                                className="flex h-12 w-full items-center gap-3 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/25 transition hover:bg-primary/90 focus:bg-primary/90"
                             >
                                 <Menu className="size-6 shrink-0" />
                                 All categories
@@ -133,7 +133,7 @@ export function StorefrontLayout({
                                         <Link
                                             href={category.href}
                                             key={category.name}
-                                            className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 dark:text-slate-200 dark:hover:bg-slate-900 dark:hover:text-blue-300 dark:focus:bg-slate-900 dark:focus:text-blue-300"
+                                            className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-slate-700 transition hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary dark:text-slate-200 dark:hover:bg-slate-900 dark:focus:bg-slate-900"
                                         >
                                             <CategoryIcon className="size-5 shrink-0 text-slate-900 dark:text-slate-100" />
                                             <span>{category.name}</span>
@@ -150,7 +150,7 @@ export function StorefrontLayout({
                                 onClick={() => setIsCategoryMenuOpen(true)}
                                 aria-label="Browse categories"
                                 aria-expanded="false"
-                                className="grid size-12 place-items-center rounded-full bg-blue-600 text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-700 focus:bg-blue-700"
+                                className="grid size-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition hover:bg-primary/90 focus:bg-primary/90"
                             >
                                 <Menu className="size-6" />
                             </button>
@@ -186,7 +186,7 @@ export function StorefrontLayout({
                                             }
                                             key={label as string}
                                             aria-label={label as string}
-                                            className="grid size-11 place-items-center rounded-xl text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-blue-300 dark:focus:bg-slate-900 dark:focus:text-blue-300"
+                                            className="grid size-11 place-items-center rounded-xl text-slate-600 transition hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary dark:text-slate-300 dark:hover:bg-slate-900 dark:focus:bg-slate-900"
                                         >
                                             <RailIcon className="size-5" />
                                         </Link>
@@ -209,10 +209,10 @@ export function StorefrontLayout({
                             href={home()}
                             className="flex shrink-0 items-center gap-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white"
                         >
-                            <span className="grid size-8 place-items-center rounded-lg bg-blue-600 text-sm text-white shadow-lg shadow-blue-600/25">
+                            <span className="grid size-8 place-items-center rounded-lg bg-primary text-sm text-primary-foreground shadow-lg shadow-primary/25">
                                 C
                             </span>
-                            Circuit<span className="text-blue-600">Market</span>
+                            Circuit<span className="text-primary">Market</span>
                         </Link>
                         <Form
                             {...listingsIndex.form()}
@@ -224,11 +224,11 @@ export function StorefrontLayout({
                                 <input
                                     name="search"
                                     placeholder="Search for products, brands and more"
-                                    className="h-11 w-full rounded-full border border-slate-200 bg-slate-50 py-2 pr-12 pl-11 text-sm transition outline-none placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:focus:bg-slate-950 dark:focus:ring-blue-950"
+                                    className="h-11 w-full rounded-full border border-slate-200 bg-slate-50 py-2 pr-12 pl-11 text-sm transition outline-none placeholder:text-slate-400 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-900 dark:focus:bg-slate-950"
                                 />
                                 <button
                                     type="submit"
-                                    className="absolute top-1.5 right-1.5 grid size-8 place-items-center rounded-full bg-blue-600 text-white transition hover:bg-blue-700"
+                                    className="absolute top-1.5 right-1.5 grid size-8 place-items-center rounded-full bg-primary text-primary-foreground transition hover:bg-primary/90"
                                     aria-label="Search products"
                                 >
                                     <ChevronRight className="size-4" />
@@ -237,23 +237,23 @@ export function StorefrontLayout({
                         </Form>
                         <div className="ml-auto hidden items-center gap-6 xl:flex">
                             <div className="flex items-center gap-2 text-sm">
-                                <Headphones className="size-7 text-blue-700" />
+                                <Headphones className="size-7 text-primary" />
                                 <span>
                                     <span className="block font-bold">
                                         24 Support
                                     </span>
-                                    <span className="text-blue-600">
+                                    <span className="text-primary">
                                         077 216 6166
                                     </span>
                                 </span>
                             </div>
                             <div className="flex items-center gap-2 text-sm">
-                                <Globe2 className="size-7 text-blue-700" />
+                                <Globe2 className="size-7 text-primary" />
                                 <span>
                                     <span className="block font-bold">
                                         Islandwide Delivery
                                     </span>
-                                    <span className="text-blue-600">
+                                    <span className="text-primary">
                                         Within 24 hours
                                     </span>
                                 </span>
@@ -261,7 +261,7 @@ export function StorefrontLayout({
                         </div>
                         <div className="flex items-center gap-1 text-sm font-semibold">
                             <Link
-                                className="hidden items-center gap-1 rounded-full px-3 py-2 text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 sm:flex dark:text-slate-300 dark:hover:bg-slate-900"
+                                className="hidden items-center gap-1 rounded-full px-3 py-2 text-slate-600 transition hover:bg-primary/10 hover:text-primary sm:flex dark:text-slate-300 dark:hover:bg-slate-900"
                                 href={
                                     auth.user
                                         ? sellerOnboardingEdit()
@@ -271,7 +271,7 @@ export function StorefrontLayout({
                                 Become a vendor
                             </Link>
                             <Link
-                                className="hidden items-center gap-1 rounded-full px-3 py-2 text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 sm:flex dark:text-slate-300 dark:hover:bg-slate-900"
+                                className="hidden items-center gap-1 rounded-full px-3 py-2 text-slate-600 transition hover:bg-primary/10 hover:text-primary sm:flex dark:text-slate-300 dark:hover:bg-slate-900"
                                 href={listingsIndex({
                                     query: { listing_type: 'auction' },
                                 })}
@@ -281,14 +281,14 @@ export function StorefrontLayout({
                             {auth.user ? (
                                 <>
                                     <Link
-                                        className="grid size-10 place-items-center rounded-full text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-900"
+                                        className="grid size-10 place-items-center rounded-full text-slate-600 transition hover:bg-primary/10 hover:text-primary dark:text-slate-300 dark:hover:bg-slate-900"
                                         href={cartShow()}
                                         aria-label="Shopping bag"
                                     >
                                         <ShoppingBag className="size-5" />
                                     </Link>
                                     <Link
-                                        className="hidden items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 sm:flex"
+                                        className="hidden items-center gap-2 rounded-full bg-primary px-4 py-2 text-primary-foreground shadow-sm shadow-primary/25 transition hover:bg-primary/90 sm:flex"
                                         href={dashboard()}
                                     >
                                         <UserRound className="size-4" />
@@ -298,20 +298,20 @@ export function StorefrontLayout({
                             ) : (
                                 <>
                                     <Link
-                                        className="grid size-10 place-items-center rounded-full text-slate-600 transition hover:bg-blue-50 hover:text-blue-700 sm:hidden dark:text-slate-300 dark:hover:bg-slate-900"
+                                        className="grid size-10 place-items-center rounded-full text-slate-600 transition hover:bg-primary/10 hover:text-primary sm:hidden dark:text-slate-300 dark:hover:bg-slate-900"
                                         href={login()}
                                         aria-label="Sign in"
                                     >
                                         <UserRound className="size-5" />
                                     </Link>
                                     <Link
-                                        className="hidden px-3 py-2 text-slate-600 hover:text-blue-700 sm:block dark:text-slate-300"
+                                        className="hidden px-3 py-2 text-slate-600 hover:text-primary sm:block dark:text-slate-300"
                                         href={login()}
                                     >
                                         Sign in
                                     </Link>
                                     <Link
-                                        className="hidden rounded-full bg-blue-600 px-4 py-2 text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 sm:block"
+                                        className="hidden rounded-full bg-primary px-4 py-2 text-primary-foreground shadow-sm shadow-primary/25 transition hover:bg-primary/90 sm:block"
                                         href={register()}
                                     >
                                         Join now
@@ -320,13 +320,13 @@ export function StorefrontLayout({
                             )}
                         </div>
                     </nav>
-                    <div className="border-y border-blue-100 bg-blue-50/80 dark:border-slate-800 dark:bg-slate-900">
+                    <div className="border-y border-primary/20 bg-primary/10 dark:border-slate-800 dark:bg-slate-900">
                         <div className="mx-auto flex max-w-none items-center gap-1 overflow-x-auto px-4 py-2 sm:px-7">
                             <Link
                                 href={listingsIndex()}
                                 className="flex shrink-0 items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-100"
                             >
-                                <span className="grid size-7 place-items-center rounded-full bg-blue-600 text-white">
+                                <span className="grid size-7 place-items-center rounded-full bg-primary text-primary-foreground">
                                     <Menu className="size-4" />
                                 </span>
                                 All categories
@@ -341,14 +341,14 @@ export function StorefrontLayout({
                                 <Link
                                     href={listingsIndex()}
                                     key={category}
-                                    className="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-white hover:text-blue-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                                    className="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-white hover:text-primary dark:text-slate-300 dark:hover:bg-slate-800"
                                 >
                                     {category}
                                 </Link>
                             ))}
                             <Link
                                 href={cartShow()}
-                                className="ml-auto hidden shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-white hover:text-blue-700 sm:flex dark:text-slate-300 dark:hover:bg-slate-800"
+                                className="ml-auto hidden shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-white hover:text-primary sm:flex dark:text-slate-300 dark:hover:bg-slate-800"
                             >
                                 <ShoppingBag className="size-4" />
                                 Cart
@@ -364,7 +364,7 @@ export function StorefrontLayout({
                     {children}
                 </div>
                 <footer
-                    className={`border-t border-blue-100 bg-white py-10 transition-[padding] duration-300 dark:border-slate-800 dark:bg-slate-950 ${
+                    className={`border-t border-primary/20 bg-white py-10 transition-[padding] duration-300 dark:border-slate-800 dark:bg-slate-950 ${
                         isCategoryMenuOpen ? 'lg:pl-[22.75rem]' : 'lg:pl-20'
                     }`}
                 >

@@ -37,18 +37,18 @@ export default function StorefrontHome({
             <main className="overflow-hidden bg-slate-100/70 dark:bg-slate-950">
                 <section className="px-4 py-7 sm:px-7">
                     <div className="mx-auto grid max-w-none gap-5 xl:grid-cols-2">
-                        <div className="relative min-h-[32rem] overflow-hidden rounded-2xl bg-blue-700 p-7 text-white shadow-xl shadow-blue-950/15 sm:p-10 lg:min-h-[38rem]">
+                        <div className="relative min-h-[32rem] overflow-hidden rounded-2xl bg-primary p-7 text-primary-foreground shadow-xl shadow-primary/15 sm:p-10 lg:min-h-[38rem]">
                             <div className="absolute -top-24 -right-20 size-64 rounded-full bg-cyan-300/20 blur-2xl" />
                             <div className="absolute -bottom-28 left-1/2 size-72 rounded-full bg-indigo-950/30 blur-2xl" />
                             <div className="relative flex h-full max-w-2xl flex-col justify-center">
-                                <p className="flex items-center gap-2 text-sm font-bold tracking-[.18em] text-blue-100 uppercase">
+                                <p className="flex items-center gap-2 text-sm font-bold tracking-[.18em] text-primary-foreground/80 uppercase">
                                     <Sparkles className="size-4" />
                                     Everyday marketplace deals
                                 </p>
                                 <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
                                     Find something brilliant, every day.
                                 </h1>
-                                <p className="mt-5 max-w-xl text-base leading-7 text-blue-100 sm:text-lg">
+                                <p className="mt-5 max-w-xl text-base leading-7 text-primary-foreground/80 sm:text-lg">
                                     Shop verified electronics, join live
                                     auctions, and get your next great find
                                     delivered to your door.
@@ -56,7 +56,7 @@ export default function StorefrontHome({
                                 <div className="mt-8 flex flex-wrap gap-3">
                                     <Link
                                         href={listingsIndex()}
-                                        className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-bold text-blue-700 shadow-lg shadow-blue-950/20 transition hover:bg-blue-50"
+                                        className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-bold text-primary shadow-lg shadow-primary/20 transition hover:bg-primary-foreground/10"
                                     >
                                         Explore deals
                                         <ArrowRight className="size-4" />
@@ -74,9 +74,9 @@ export default function StorefrontHome({
                         </div>
                         <div className="grid min-h-[32rem] gap-5 sm:grid-cols-2 lg:min-h-[38rem] xl:grid-cols-1 xl:grid-rows-[1.85fr_1fr]">
                             <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 via-amber-50 to-stone-200 p-7 text-slate-950 shadow-lg shadow-slate-950/5 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 dark:text-white">
-                                <div className="absolute -right-10 -bottom-16 size-72 rounded-full border-[30px] border-blue-400/25" />
+                                <div className="absolute -right-10 -bottom-16 size-72 rounded-full border-[30px] border-primary/25" />
                                 <div className="relative max-w-sm">
-                                    <p className="text-sm font-bold tracking-wider text-blue-700 uppercase dark:text-blue-300">
+                                    <p className="text-sm font-bold tracking-wider text-primary uppercase">
                                         Everyday essentials
                                     </p>
                                     <p className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
@@ -90,7 +90,7 @@ export default function StorefrontHome({
                                     </p>
                                     <Link
                                         href={listingsIndex()}
-                                        className="mt-7 inline-flex rounded-lg border-2 border-blue-600 px-5 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-600 hover:text-white dark:text-blue-300"
+                                        className="mt-7 inline-flex rounded-lg border-2 border-primary px-5 py-2.5 text-sm font-bold text-primary transition hover:bg-primary hover:text-primary-foreground"
                                     >
                                         Shop now
                                     </Link>
@@ -99,15 +99,15 @@ export default function StorefrontHome({
                             <div className="grid gap-5 sm:col-span-2 sm:grid-cols-2 xl:col-span-1">
                                 <Link
                                     href={listingsIndex()}
-                                    className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-700 via-blue-500 to-cyan-300 p-6 text-white shadow-lg shadow-blue-950/10"
+                                    className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-primary/50 p-6 text-primary-foreground shadow-lg shadow-primary/10"
                                 >
-                                    <p className="text-sm font-bold tracking-wider text-blue-100 uppercase">
+                                    <p className="text-sm font-bold tracking-wider text-primary-foreground/80 uppercase">
                                         Member rewards
                                     </p>
                                     <p className="mt-3 text-3xl font-black">
                                         10% back
                                     </p>
-                                    <p className="mt-1 text-sm text-blue-50">
+                                    <p className="mt-1 text-sm text-primary-foreground/80">
                                         On selected marketplace finds.
                                     </p>
                                 </Link>
@@ -160,7 +160,7 @@ export default function StorefrontHome({
                             ['24/7 support', '0'],
                         ].map(([title, value]) => (
                             <div className="text-center" key={title}>
-                                <p className="text-4xl font-black text-blue-600">
+                                <p className="text-4xl font-black text-primary">
                                     {value}
                                 </p>
                                 <p className="mt-2 text-sm font-bold text-slate-800 capitalize dark:text-white">
@@ -171,7 +171,7 @@ export default function StorefrontHome({
                     </div>
                 </section>
                 <section className="px-4 pb-7 sm:px-7">
-                    <div className="mx-auto flex max-w-none items-center gap-5 overflow-hidden rounded-sm bg-gradient-to-r from-blue-700 via-blue-500 to-cyan-400 px-5 py-3 text-sm font-bold text-white">
+                    <div className="mx-auto flex max-w-none items-center gap-5 overflow-hidden rounded-sm bg-gradient-to-r from-primary via-primary/80 to-primary/50 px-5 py-3 text-sm font-bold text-primary-foreground">
                         <span className="flex shrink-0 items-center gap-2 rounded bg-white/15 px-3 py-1.5 text-xs tracking-wider uppercase">
                             <Zap className="size-4" /> Live offers
                         </span>
@@ -192,7 +192,7 @@ export default function StorefrontHome({
                     <div className="mx-auto max-w-none">
                         <div className="mb-7 flex items-end justify-between gap-4">
                             <div>
-                                <p className="text-sm font-bold tracking-wider text-blue-700 uppercase dark:text-blue-300">
+                                <p className="text-sm font-bold tracking-wider text-primary uppercase">
                                     Start exploring
                                 </p>
                                 <h2 className="mt-1 text-3xl font-black tracking-tight">
@@ -200,7 +200,7 @@ export default function StorefrontHome({
                                 </h2>
                             </div>
                             <Link
-                                className="hidden items-center gap-1 font-bold text-blue-700 hover:text-blue-800 sm:inline-flex dark:text-blue-300"
+                                className="hidden items-center gap-1 font-bold text-primary hover:text-primary/80 sm:inline-flex"
                                 href={listingsIndex()}
                             >
                                 View all categories{' '}
@@ -214,7 +214,7 @@ export default function StorefrontHome({
 
                                 return (
                                     <Link
-                                        className="group rounded-2xl border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-950/5 dark:border-slate-800 dark:bg-slate-900"
+                                        className="group rounded-2xl border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 dark:border-slate-800 dark:bg-slate-900"
                                         href={listingsIndex({
                                             query: {
                                                 category: category.slug,
@@ -222,7 +222,7 @@ export default function StorefrontHome({
                                         })}
                                         key={category.id}
                                     >
-                                        <span className="grid size-10 place-items-center rounded-xl bg-blue-50 text-blue-700 transition group-hover:bg-blue-600 group-hover:text-white dark:bg-blue-950 dark:text-blue-300">
+                                        <span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground dark:bg-primary/20">
                                             <CategoryIcon className="size-5" />
                                         </span>
                                         <span className="mt-5 block font-bold text-slate-900 dark:text-white">
@@ -241,7 +241,7 @@ export default function StorefrontHome({
                     <div className="mx-auto max-w-none">
                         <div className="mb-7 flex items-end justify-between gap-4">
                             <div>
-                                <p className="text-sm font-bold tracking-wider text-blue-700 uppercase dark:text-blue-300">
+                                <p className="text-sm font-bold tracking-wider text-primary uppercase">
                                     Curated for you
                                 </p>
                                 <h2 className="mt-1 text-3xl font-black tracking-tight">
@@ -250,7 +250,7 @@ export default function StorefrontHome({
                             </div>
                             <Link
                                 href={listingsIndex()}
-                                className="hidden items-center gap-1 font-bold text-blue-700 hover:text-blue-800 sm:inline-flex dark:text-blue-300"
+                                className="hidden items-center gap-1 font-bold text-primary hover:text-primary/80 sm:inline-flex"
                             >
                                 See all products{' '}
                                 <ArrowRight className="size-4" />

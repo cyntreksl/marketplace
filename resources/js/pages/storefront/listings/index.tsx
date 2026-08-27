@@ -19,7 +19,7 @@ export default function ListingsIndex({
         <StorefrontLayout title="Browse electronics" categories={categories}>
             <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
                 <div className="mb-8">
-                    <p className="text-sm font-bold tracking-wider text-blue-700 uppercase dark:text-blue-300">
+                    <p className="text-sm font-bold tracking-wider text-primary uppercase">
                         Marketplace
                     </p>
                     <h1 className="mt-1 text-4xl font-black tracking-tight">
@@ -34,12 +34,12 @@ export default function ListingsIndex({
                         name="search"
                         defaultValue={filters.search}
                         placeholder="Search products"
-                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm transition outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 md:col-span-2 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-blue-950"
+                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm transition outline-none focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/20 md:col-span-2 dark:border-slate-700 dark:bg-slate-950"
                     />
                     <select
                         name="category"
                         defaultValue={filters.category}
-                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm transition outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-blue-950"
+                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm transition outline-none focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950"
                     >
                         <option value="">All categories</option>
                         {categories.map((c) => (
@@ -51,13 +51,13 @@ export default function ListingsIndex({
                     <select
                         name="listing_type"
                         defaultValue={filters.listing_type}
-                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm transition outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:focus:ring-blue-950"
+                        className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm transition outline-none focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-950"
                     >
                         <option value="">All listing types</option>
                         <option value="auction">Auctions</option>
                         <option value="buy_now">Buy now</option>
                     </select>
-                    <button className="rounded-xl bg-blue-600 px-4 py-2 font-bold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700">
+                    <button className="rounded-xl bg-primary px-4 py-2 font-bold text-primary-foreground shadow-sm shadow-primary/25 transition hover:bg-primary/90">
                         Apply filters
                     </button>
                 </Form>
@@ -67,7 +67,7 @@ export default function ListingsIndex({
                     ))}
                 </div>
                 {listings.data.length === 0 && (
-                    <p className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/50 p-12 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-900">
+                    <p className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-12 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-900">
                         No approved listings match those filters.
                     </p>
                 )}

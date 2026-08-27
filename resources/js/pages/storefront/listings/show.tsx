@@ -10,7 +10,7 @@ export default function ListingShow({ listing }: { listing: any }) {
     return (
         <StorefrontLayout title={listing.title}>
             <main className="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
-                <div className="aspect-square overflow-hidden rounded-3xl bg-gradient-to-br from-blue-100 via-slate-100 to-cyan-100 shadow-lg shadow-blue-950/5 dark:from-blue-950 dark:via-slate-900 dark:to-slate-800">
+                <div className="aspect-square overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-slate-100 to-primary/10 shadow-lg shadow-primary/5 dark:from-primary/20 dark:via-slate-900 dark:to-slate-800">
                     {listing.media[0] && (
                         <img
                             className="h-full w-full object-cover"
@@ -20,7 +20,7 @@ export default function ListingShow({ listing }: { listing: any }) {
                     )}
                 </div>
                 <div>
-                    <p className="text-sm font-bold tracking-wider text-blue-700 uppercase dark:text-blue-300">
+                    <p className="text-sm font-bold tracking-wider text-primary uppercase">
                         {listing.listingType === 'auction'
                             ? 'Live auction'
                             : 'Buy now'}{' '}
@@ -32,11 +32,11 @@ export default function ListingShow({ listing }: { listing: any }) {
                     <p className="mt-5 text-lg leading-8 text-slate-600 dark:text-slate-300">
                         {listing.description}
                     </p>
-                    <div className="mt-8 rounded-2xl border border-blue-100 bg-blue-50/70 p-6 dark:border-slate-800 dark:bg-slate-900">
+                    <div className="mt-8 rounded-2xl border border-primary/20 bg-primary/10 p-6 dark:border-slate-800 dark:bg-slate-900">
                         <p className="text-sm font-medium text-slate-500">
                             {listing.auction ? 'Current bid' : 'Price'}
                         </p>
-                        <p className="mt-1 text-4xl font-black text-blue-700 dark:text-blue-300">
+                        <p className="mt-1 text-4xl font-black text-primary">
                             Rs. {Number(price ?? 0).toLocaleString()}
                         </p>
                         {listing.auction && (
@@ -50,7 +50,7 @@ export default function ListingShow({ listing }: { listing: any }) {
                         {!auth.user ? (
                             <Link
                                 href={login()}
-                                className="mt-6 inline-flex rounded-xl bg-blue-600 px-5 py-3 font-bold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700"
+                                className="mt-6 inline-flex rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground shadow-sm shadow-primary/25 transition hover:bg-primary/90"
                             >
                                 {listing.auction
                                     ? 'Sign in to bid'
@@ -76,7 +76,7 @@ export default function ListingShow({ listing }: { listing: any }) {
                                         />
                                         <button
                                             disabled={processing}
-                                            className="rounded-xl bg-blue-600 px-5 py-3 font-bold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 disabled:opacity-50"
+                                            className="rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground shadow-sm shadow-primary/25 transition hover:bg-primary/90 disabled:opacity-50"
                                         >
                                             {processing
                                                 ? 'Adding…'
