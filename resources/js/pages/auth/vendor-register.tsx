@@ -120,7 +120,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
                 onError={showFirstStepWithErrors}
-                className="flex flex-col gap-5"
+                className="flex flex-col gap-3"
             >
                 {({ processing, errors }) => (
                     <>
@@ -130,13 +130,13 @@ export default function VendorRegister({ passwordRules }: Props) {
                             value="vendor"
                         />
 
-                        <div className="rounded-2xl border bg-slate-50/80 p-4 dark:bg-slate-900/50">
-                            <div className="mb-4 flex items-center justify-between gap-4">
+                        <div className="rounded-xl border bg-slate-50/80 p-3 dark:bg-slate-900/50">
+                            <div className="mb-2 flex items-center justify-between gap-4">
                                 <div>
                                     <p className="text-sm font-semibold text-foreground">
                                         Vendor application
                                     </p>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="hidden text-xs text-muted-foreground sm:block">
                                         A few details, then we’ll review your
                                         store.
                                     </p>
@@ -152,11 +152,11 @@ export default function VendorRegister({ passwordRules }: Props) {
                             >
                                 <span
                                     aria-hidden="true"
-                                    className="absolute top-5 right-[16.67%] left-[16.67%] h-px bg-border"
+                                    className="absolute top-4 right-[16.67%] left-[16.67%] h-px bg-border"
                                 />
                                 <span
                                     aria-hidden="true"
-                                    className="absolute top-5 left-[16.67%] h-px bg-primary transition-all duration-300"
+                                    className="absolute top-4 left-[16.67%] h-px bg-primary transition-all duration-300"
                                     style={{
                                         width: `${((currentStep - 1) / (steps.length - 1)) * 66.66}%`,
                                     }}
@@ -188,10 +188,10 @@ export default function VendorRegister({ passwordRules }: Props) {
                                                         ? 'step'
                                                         : undefined
                                                 }
-                                                className="group flex w-full flex-col items-center gap-2 text-center disabled:cursor-default"
+                                                className="group flex w-full flex-col items-center gap-1 text-center disabled:cursor-default"
                                             >
                                                 <span
-                                                    className={`grid size-10 place-items-center rounded-full border-2 bg-background transition-all duration-200 ${
+                                                    className={`grid size-8 place-items-center rounded-full border-2 bg-background transition-all duration-200 ${
                                                         isComplete
                                                             ? 'border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20'
                                                             : isCurrent
@@ -214,7 +214,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                                 >
                                                     {step.title}
                                                 </span>
-                                                <span className="hidden text-[11px] leading-4 text-muted-foreground sm:block">
+                                                <span className="hidden text-[11px] leading-4 text-muted-foreground md:block">
                                                     {step.description}
                                                 </span>
                                             </button>
@@ -224,18 +224,18 @@ export default function VendorRegister({ passwordRules }: Props) {
                             </ol>
                         </div>
 
-                        <div className="rounded-2xl border bg-card p-5 shadow-sm sm:p-6 dark:shadow-none">
+                        <div className="rounded-xl border bg-card p-4 shadow-sm sm:p-5 dark:shadow-none">
                             <section
                                 ref={(element) => {
                                     stepReferences.current[1] = element;
                                 }}
                                 hidden={currentStep !== 1}
                                 aria-labelledby="account-step-title"
-                                className="grid gap-5"
+                                className="grid gap-3.5"
                             >
-                                <div className="flex items-start gap-3 border-b pb-5">
-                                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                                        <UserRound className="size-5" />
+                                <div className="flex items-center gap-2.5 border-b pb-3">
+                                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                                        <UserRound className="size-4" />
                                     </span>
                                     <div>
                                         <p className="text-xs font-bold tracking-wide text-primary uppercase">
@@ -243,95 +243,99 @@ export default function VendorRegister({ passwordRules }: Props) {
                                         </p>
                                         <h2
                                             id="account-step-title"
-                                            className="mt-1 text-lg font-bold"
+                                            className="text-base font-bold"
                                         >
                                             Create your vendor login
                                         </h2>
                                     </div>
                                 </div>
 
-                                <div className="grid gap-2.5">
-                                    <Label
-                                        htmlFor="name"
-                                        className="font-semibold"
-                                    >
-                                        Full name
-                                    </Label>
-                                    <Input
-                                        id="name"
-                                        type="text"
-                                        required
-                                        autoFocus
-                                        tabIndex={1}
-                                        autoComplete="name"
-                                        name="name"
-                                        placeholder="Full name"
-                                        className="h-12 rounded-xl bg-background px-3.5"
-                                    />
-                                    <InputError message={errors.name} />
-                                </div>
+                                <div className="grid gap-3.5 sm:grid-cols-2">
+                                    <div className="grid gap-1.5">
+                                        <Label
+                                            htmlFor="name"
+                                            className="font-semibold"
+                                        >
+                                            Full name
+                                        </Label>
+                                        <Input
+                                            id="name"
+                                            type="text"
+                                            required
+                                            autoFocus
+                                            tabIndex={1}
+                                            autoComplete="name"
+                                            name="name"
+                                            placeholder="Full name"
+                                            className="h-12 rounded-xl bg-background px-3.5"
+                                        />
+                                        <InputError message={errors.name} />
+                                    </div>
 
-                                <div className="grid gap-2.5">
-                                    <Label
-                                        htmlFor="email"
-                                        className="font-semibold"
-                                    >
-                                        Email address
-                                    </Label>
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        required
-                                        tabIndex={2}
-                                        autoComplete="email"
-                                        name="email"
-                                        placeholder="email@example.com"
-                                        className="h-12 rounded-xl bg-background px-3.5"
-                                    />
-                                    <InputError message={errors.email} />
-                                </div>
+                                    <div className="grid gap-1.5">
+                                        <Label
+                                            htmlFor="email"
+                                            className="font-semibold"
+                                        >
+                                            Email address
+                                        </Label>
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            required
+                                            tabIndex={2}
+                                            autoComplete="email"
+                                            name="email"
+                                            placeholder="email@example.com"
+                                            className="h-12 rounded-xl bg-background px-3.5"
+                                        />
+                                        <InputError message={errors.email} />
+                                    </div>
 
-                                <div className="grid gap-2.5">
-                                    <Label
-                                        htmlFor="password"
-                                        className="font-semibold"
-                                    >
-                                        Create a password
-                                    </Label>
-                                    <PasswordInput
-                                        id="password"
-                                        ref={passwordInputReference}
-                                        required
-                                        tabIndex={3}
-                                        autoComplete="new-password"
-                                        name="password"
-                                        placeholder="Password"
-                                        passwordrules={passwordRules}
-                                        className="h-12 rounded-xl bg-background px-3.5"
-                                    />
-                                    <InputError message={errors.password} />
-                                </div>
+                                    <div className="grid gap-1.5">
+                                        <Label
+                                            htmlFor="password"
+                                            className="font-semibold"
+                                        >
+                                            Create a password
+                                        </Label>
+                                        <PasswordInput
+                                            id="password"
+                                            ref={passwordInputReference}
+                                            required
+                                            tabIndex={3}
+                                            autoComplete="new-password"
+                                            name="password"
+                                            placeholder="Password"
+                                            passwordrules={passwordRules}
+                                            className="h-12 rounded-xl bg-background px-3.5"
+                                        />
+                                        <InputError message={errors.password} />
+                                    </div>
 
-                                <div className="grid gap-2.5">
-                                    <Label
-                                        htmlFor="password_confirmation"
-                                        className="font-semibold"
-                                    >
-                                        Confirm password
-                                    </Label>
-                                    <PasswordInput
-                                        id="password_confirmation"
-                                        required
-                                        tabIndex={4}
-                                        autoComplete="new-password"
-                                        name="password_confirmation"
-                                        placeholder="Confirm password"
-                                        passwordrules={passwordRules}
-                                        className="h-12 rounded-xl bg-background px-3.5"
-                                    />
-                                    <InputError
-                                        message={errors.password_confirmation}
-                                    />
+                                    <div className="grid gap-1.5">
+                                        <Label
+                                            htmlFor="password_confirmation"
+                                            className="font-semibold"
+                                        >
+                                            Confirm password
+                                        </Label>
+                                        <PasswordInput
+                                            id="password_confirmation"
+                                            required
+                                            tabIndex={4}
+                                            autoComplete="new-password"
+                                            name="password_confirmation"
+                                            placeholder="Confirm password"
+                                            passwordrules={passwordRules}
+                                            className="h-12 rounded-xl bg-background px-3.5"
+                                        />
+                                        <InputError
+                                            message={
+                                                errors.password_confirmation
+                                            }
+                                        />
+                                    </div>
                                 </div>
                             </section>
 
@@ -341,11 +345,11 @@ export default function VendorRegister({ passwordRules }: Props) {
                                 }}
                                 hidden={currentStep !== 2}
                                 aria-labelledby="store-step-title"
-                                className="grid gap-5"
+                                className="grid gap-3.5"
                             >
-                                <div className="flex items-start gap-3 border-b pb-5">
-                                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                                        <Store className="size-5" />
+                                <div className="flex items-center gap-2.5 border-b pb-3">
+                                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                                        <Store className="size-4" />
                                     </span>
                                     <div>
                                         <p className="text-xs font-bold tracking-wide text-primary uppercase">
@@ -353,19 +357,19 @@ export default function VendorRegister({ passwordRules }: Props) {
                                         </p>
                                         <h2
                                             id="store-step-title"
-                                            className="mt-1 text-lg font-bold"
+                                            className="text-base font-bold"
                                         >
                                             Tell us about your business
                                         </h2>
-                                        <p className="mt-1 text-sm text-muted-foreground">
+                                        <p className="hidden text-sm text-muted-foreground md:block">
                                             We review each vendor before
                                             listings can go live.
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="grid gap-5 sm:grid-cols-2">
-                                    <div className="grid gap-2.5">
+                                <div className="grid gap-3.5 sm:grid-cols-2">
+                                    <div className="grid gap-1.5">
                                         <Label
                                             htmlFor="seller_type"
                                             className="font-semibold"
@@ -392,7 +396,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                         />
                                     </div>
 
-                                    <div className="grid gap-2.5">
+                                    <div className="grid gap-1.5">
                                         <Label
                                             htmlFor="store_name"
                                             className="font-semibold"
@@ -414,7 +418,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                     </div>
                                 </div>
 
-                                <div className="grid gap-2.5">
+                                <div className="grid gap-1.5">
                                     <Label
                                         htmlFor="phone"
                                         className="font-semibold"
@@ -434,7 +438,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                     <InputError message={errors.phone} />
                                 </div>
 
-                                <div className="grid gap-2.5">
+                                <div className="grid gap-1.5">
                                     <Label
                                         htmlFor="pickup_address"
                                         className="font-semibold"
@@ -447,14 +451,14 @@ export default function VendorRegister({ passwordRules }: Props) {
                                         tabIndex={8}
                                         name="pickup_address"
                                         placeholder="Where should collections be made?"
-                                        className="min-h-28 w-full rounded-xl border bg-background px-3.5 py-3 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                        className="min-h-20 w-full rounded-xl border bg-background px-3.5 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                     />
                                     <InputError
                                         message={errors.pickup_address}
                                     />
                                 </div>
 
-                                <div className="grid gap-2.5">
+                                <div className="grid gap-1.5">
                                     <Label
                                         htmlFor="return_address"
                                         className="font-semibold"
@@ -467,7 +471,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                         tabIndex={9}
                                         name="return_address"
                                         placeholder="Where should customer returns be sent?"
-                                        className="min-h-28 w-full rounded-xl border bg-background px-3.5 py-3 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                        className="min-h-20 w-full rounded-xl border bg-background px-3.5 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                     />
                                     <InputError
                                         message={errors.return_address}
@@ -481,11 +485,11 @@ export default function VendorRegister({ passwordRules }: Props) {
                                 }}
                                 hidden={currentStep !== 3}
                                 aria-labelledby="payout-step-title"
-                                className="grid gap-5"
+                                className="grid gap-3.5"
                             >
-                                <div className="flex items-start gap-3 border-b pb-5">
-                                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-                                        <Landmark className="size-5" />
+                                <div className="flex items-center gap-2.5 border-b pb-3">
+                                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                                        <Landmark className="size-4" />
                                     </span>
                                     <div>
                                         <p className="text-xs font-bold tracking-wide text-primary uppercase">
@@ -493,19 +497,19 @@ export default function VendorRegister({ passwordRules }: Props) {
                                         </p>
                                         <h2
                                             id="payout-step-title"
-                                            className="mt-1 text-lg font-bold"
+                                            className="text-base font-bold"
                                         >
                                             Add your payout details
                                         </h2>
-                                        <p className="mt-1 text-sm text-muted-foreground">
+                                        <p className="hidden text-sm text-muted-foreground md:block">
                                             Check your details, then submit your
                                             vendor application for review.
                                         </p>
                                     </div>
                                 </div>
 
-                                <div className="grid gap-5 sm:grid-cols-2">
-                                    <div className="grid gap-2.5">
+                                <div className="grid gap-3.5 sm:grid-cols-2">
+                                    <div className="grid gap-1.5">
                                         <Label
                                             htmlFor="bank_account_name"
                                             className="font-semibold"
@@ -526,7 +530,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                         />
                                     </div>
 
-                                    <div className="grid gap-2.5">
+                                    <div className="grid gap-1.5">
                                         <Label
                                             htmlFor="bank_account_details"
                                             className="font-semibold"
@@ -550,12 +554,12 @@ export default function VendorRegister({ passwordRules }: Props) {
                                     </div>
                                 </div>
 
-                                <div className="rounded-xl border bg-muted/30 p-4 text-sm text-muted-foreground">
+                                <div className="rounded-xl border bg-muted/30 p-3 text-sm text-muted-foreground">
                                     Your account and store information will be
                                     reviewed before you can publish listings.
                                 </div>
 
-                                <label className="flex items-start gap-3 text-sm leading-6">
+                                <label className="flex items-start gap-3 text-sm leading-5">
                                     <input
                                         required
                                         tabIndex={12}
@@ -571,7 +575,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                 <InputError message={errors.accept_terms} />
                             </section>
 
-                            <div className="flex gap-3 border-t pt-5">
+                            <div className="flex gap-3 border-t pt-3">
                                 {currentStep > 1 && (
                                     <Button
                                         type="button"
@@ -579,7 +583,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                         onClick={() =>
                                             setCurrentStep((step) => step - 1)
                                         }
-                                        className="h-12 flex-1 rounded-xl text-sm font-semibold"
+                                        className="h-10 flex-1 rounded-xl text-sm font-semibold"
                                     >
                                         <ArrowLeft className="size-4" />
                                         Back
@@ -590,7 +594,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                     <Button
                                         type="button"
                                         onClick={moveToNextStep}
-                                        className="h-12 flex-1 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
+                                        className="h-10 flex-1 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
                                     >
                                         Continue
                                         <ArrowRight className="size-4" />
@@ -598,7 +602,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                 ) : (
                                     <Button
                                         type="submit"
-                                        className="h-12 flex-1 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
+                                        className="h-10 flex-1 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
                                         tabIndex={13}
                                         data-test="register-vendor-button"
                                     >
@@ -609,7 +613,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                             </div>
                         </div>
 
-                        <div className="text-center text-sm text-muted-foreground">
+                        <div className="text-center text-xs text-muted-foreground">
                             Already have an account?{' '}
                             <TextLink
                                 href={login()}
@@ -629,4 +633,5 @@ export default function VendorRegister({ passwordRules }: Props) {
 VendorRegister.layout = {
     title: 'Become a vendor',
     description: 'Create your account and submit your store for review.',
+    compact: true,
 };
