@@ -60,8 +60,6 @@ test('new vendors can register with their store details', function () {
         'phone' => '0771234567',
         'pickup_address' => 'Colombo 03',
         'return_address' => 'Colombo 03',
-        'bank_account_name' => 'Vendor Owner',
-        'bank_account_details' => 'Account 123',
         'accept_terms' => 'on',
     ]);
 
@@ -72,6 +70,8 @@ test('new vendors can register with their store details', function () {
 
     expect(SellerProfile::query()->where('user_id', $vendor->id)->firstOrFail())
         ->store_name->toBe('Vendor Devices')
+        ->bank_account_name->toBeNull()
+        ->bank_account_details->toBeNull()
         ->status->toBe('pending_review');
 
     expect($vendor->roles()->pluck('name')->all())->toContain(Role::BusinessSeller);

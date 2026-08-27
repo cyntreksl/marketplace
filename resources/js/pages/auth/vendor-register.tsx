@@ -1,12 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
-import {
-    ArrowLeft,
-    ArrowRight,
-    Check,
-    Landmark,
-    Store,
-    UserRound,
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Store, UserRound } from 'lucide-react';
 import { useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
@@ -33,11 +26,6 @@ const steps = [
         description: 'Tell us about your business',
         icon: Store,
     },
-    {
-        title: 'Payout',
-        description: 'Add payment details',
-        icon: Landmark,
-    },
 ];
 
 const accountFields = ['name', 'email', 'password', 'password_confirmation'];
@@ -47,6 +35,7 @@ const storeFields = [
     'phone',
     'pickup_address',
     'return_address',
+    'accept_terms',
 ];
 
 export default function VendorRegister({ passwordRules }: Props) {
@@ -109,7 +98,7 @@ export default function VendorRegister({ passwordRules }: Props) {
             return;
         }
 
-        setCurrentStep(3);
+        setCurrentStep(2);
     }
 
     return (
@@ -477,83 +466,6 @@ export default function VendorRegister({ passwordRules }: Props) {
                                         message={errors.return_address}
                                     />
                                 </div>
-                            </section>
-
-                            <section
-                                ref={(element) => {
-                                    stepReferences.current[3] = element;
-                                }}
-                                hidden={currentStep !== 3}
-                                aria-labelledby="payout-step-title"
-                                className="grid gap-3.5"
-                            >
-                                <div className="flex items-center gap-2.5 border-b pb-3">
-                                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                                        <Landmark className="size-4" />
-                                    </span>
-                                    <div>
-                                        <p className="text-xs font-bold tracking-wide text-primary uppercase">
-                                            Payout details
-                                        </p>
-                                        <h2
-                                            id="payout-step-title"
-                                            className="text-base font-bold"
-                                        >
-                                            Add your payout details
-                                        </h2>
-                                        <p className="hidden text-sm text-muted-foreground md:block">
-                                            Check your details, then submit your
-                                            vendor application for review.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="grid gap-3.5 sm:grid-cols-2">
-                                    <div className="grid gap-1.5">
-                                        <Label
-                                            htmlFor="bank_account_name"
-                                            className="font-semibold"
-                                        >
-                                            Bank account name
-                                        </Label>
-                                        <Input
-                                            id="bank_account_name"
-                                            type="text"
-                                            required
-                                            tabIndex={10}
-                                            name="bank_account_name"
-                                            placeholder="Account holder name"
-                                            className="h-12 rounded-xl bg-background px-3.5"
-                                        />
-                                        <InputError
-                                            message={errors.bank_account_name}
-                                        />
-                                    </div>
-
-                                    <div className="grid gap-1.5">
-                                        <Label
-                                            htmlFor="bank_account_details"
-                                            className="font-semibold"
-                                        >
-                                            Bank account details
-                                        </Label>
-                                        <Input
-                                            id="bank_account_details"
-                                            type="text"
-                                            required
-                                            tabIndex={11}
-                                            name="bank_account_details"
-                                            placeholder="Bank, branch and account number"
-                                            className="h-12 rounded-xl bg-background px-3.5"
-                                        />
-                                        <InputError
-                                            message={
-                                                errors.bank_account_details
-                                            }
-                                        />
-                                    </div>
-                                </div>
-
                                 <div className="rounded-xl border bg-muted/30 p-3 text-sm text-muted-foreground">
                                     Your account and store information will be
                                     reviewed before you can publish listings.
@@ -562,7 +474,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                 <label className="flex items-start gap-3 text-sm leading-5">
                                     <input
                                         required
-                                        tabIndex={12}
+                                        tabIndex={10}
                                         name="accept_terms"
                                         type="checkbox"
                                         className="mt-1 size-4 rounded border-input text-primary focus:ring-ring"
@@ -603,7 +515,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                     <Button
                                         type="submit"
                                         className="h-10 flex-1 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
-                                        tabIndex={13}
+                                        tabIndex={11}
                                         data-test="register-vendor-button"
                                     >
                                         {processing && <Spinner />}
@@ -618,7 +530,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                             <TextLink
                                 href={login()}
                                 className="font-semibold text-primary decoration-primary/30"
-                                tabIndex={14}
+                                tabIndex={12}
                             >
                                 Log in
                             </TextLink>

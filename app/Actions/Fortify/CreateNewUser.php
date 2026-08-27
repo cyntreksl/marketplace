@@ -32,7 +32,7 @@ class CreateNewUser implements CreatesNewUsers
         ];
 
         if (($input['registration_type'] ?? null) === 'vendor') {
-            $rules = [...$rules, ...$this->sellerProfileRules()];
+            $rules = [...$rules, ...$this->sellerRegistrationRules()];
         }
 
         $validated = Validator::make($input, $rules)->validate();
