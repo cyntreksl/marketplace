@@ -137,17 +137,17 @@ export default function VendorRegister({ passwordRules }: Props) {
 
                             <ol
                                 aria-label="Vendor registration progress"
-                                className="relative grid grid-cols-3 gap-2"
+                                className="relative grid grid-cols-2 gap-2"
                             >
                                 <span
                                     aria-hidden="true"
-                                    className="absolute top-4 right-[16.67%] left-[16.67%] h-px bg-border"
+                                    className="absolute top-4 right-1/4 left-1/4 h-px bg-border"
                                 />
                                 <span
                                     aria-hidden="true"
-                                    className="absolute top-4 left-[16.67%] h-px bg-primary transition-all duration-300"
+                                    className="absolute top-4 left-1/4 h-px bg-primary transition-all duration-300"
                                     style={{
-                                        width: `${((currentStep - 1) / (steps.length - 1)) * 66.66}%`,
+                                        width: `${((currentStep - 1) / (steps.length - 1)) * 50}%`,
                                     }}
                                 />
                                 {steps.map((step, index) => {
