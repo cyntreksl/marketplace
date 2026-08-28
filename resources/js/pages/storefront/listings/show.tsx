@@ -1,5 +1,6 @@
 import { Form, Link, usePage } from '@inertiajs/react';
 import { store as addCartItem } from '@/actions/App/Http/Controllers/CartController';
+import { RichTextContent } from '@/components/rich-text-editor';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { login } from '@/routes';
 
@@ -29,9 +30,10 @@ export default function ListingShow({ listing }: { listing: any }) {
                     <h1 className="mt-3 text-4xl font-black tracking-tight">
                         {listing.title}
                     </h1>
-                    <p className="mt-5 text-lg leading-8 text-slate-600 dark:text-slate-300">
-                        {listing.description}
-                    </p>
+                    <RichTextContent
+                        value={listing.description}
+                        className="mt-5 text-lg leading-8 text-slate-600 dark:text-slate-300"
+                    />
                     <div className="mt-8 rounded-2xl border border-primary/20 bg-primary/10 p-6 dark:border-slate-800 dark:bg-slate-900">
                         <p className="text-sm font-medium text-slate-500">
                             {listing.auction ? 'Current bid' : 'Price'}

@@ -19,6 +19,12 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { CategoryPicker } from '@/components/category-picker';
 import type { CategoryOption } from '@/components/category-picker';
+import {
+    RichTextContent,
+    RichTextEditor,
+    richTextPlainText,
+    sanitizeRichText,
+} from '@/components/rich-text-editor';
 
 type Brand = { id: number; name: string };
 type ListingMedia = { id: number; path: string };
@@ -69,19 +75,21 @@ type ListingFormData = {
 
 const steps = [
     ['Product', 'What are you selling?'],
-    ['Selling', 'Price and delivery details'],
+    ['Details', 'Tell buyers about the item'],
+    ['Pricing', 'Choose how you want to sell'],
     ['Photos', 'Show the item clearly'],
     ['Review', 'Check before saving'],
 ] as const;
 
 const stepFields = [
     ['title', 'category_id', 'condition'],
+    ['description', 'location'],
     [
-        'description',
-        'location',
+        'listing_type',
         'price',
         'stock_quantity',
         'starting_price',
+        'reserve_price',
         'minimum_increment',
         'starts_at',
         'ends_at',
@@ -174,7 +182,7 @@ export function SellerListingForm({
         },
         {
             label: 'Buyer-friendly description',
-            complete: form.data.description.trim() !== '',
+            complete: richTextPlainText(form.data.description) !== '',
         },
         {
             label:
@@ -226,14 +234,16 @@ export function SellerListingForm({
         }
 
         if (step === 1) {
-            if (form.data.description.trim() === '') {
+            if (richTextPlainText(form.data.description) === '') {
                 errors.description = 'Add a product description.';
             }
 
             if (form.data.location.trim() === '') {
                 errors.location = 'Add the item location.';
             }
+        }
 
+        if (step === 2) {
             if (form.data.listing_type === 'buy_now') {
                 if (form.data.price === '' || Number(form.data.price) < 1) {
                     errors.price = 'Enter a price of at least LKR 1.';
@@ -270,7 +280,7 @@ export function SellerListingForm({
             }
         }
 
-        if (step === 2) {
+        if (step === 3) {
             if (totalPhotoCount === 0) {
                 errors.images = 'Add at least one product photo.';
             }
@@ -366,7 +376,9 @@ export function SellerListingForm({
     }
 
     function submit(submitForReview: boolean): void {
-        const firstInvalidStep = [0, 1, 2].find((step) => !validateStep(step));
+        const firstInvalidStep = [0, 1, 2, 3].find(
+            (step) => !validateStep(step),
+        );
 
         if (firstInvalidStep !== undefined) {
             setActiveStep(firstInvalidStep);
@@ -377,6 +389,7 @@ export function SellerListingForm({
         form.transform((data) => ({
             ...data,
             brand_name: data.brand_name.trim(),
+            description: sanitizeRichText(data.description),
             submit_for_review: submitForReview ? 1 : 0,
         }));
         const options = {
@@ -387,7 +400,13 @@ export function SellerListingForm({
 
                 if (step !== -1) {
                     setActiveStep(step);
-                    focusField(stepFields[step][0]);
+                    const firstInvalidField = stepFields[step].find(
+                        (field) => errors[field] !== undefined,
+                    );
+
+                    if (firstInvalidField) {
+                        focusField(firstInvalidField);
+                    }
                 }
             },
         };
@@ -412,7 +431,7 @@ export function SellerListingForm({
                 aria-label="Listing progress"
                 className="rounded-2xl border border-stone-200 bg-white p-3 shadow-sm dark:border-stone-800 dark:bg-stone-900"
             >
-                <ol className="grid grid-cols-4 gap-1.5 sm:gap-2">
+                <ol className="grid grid-cols-5 gap-1.5 sm:gap-2">
                     {steps.map(([title, description], index) => {
                         const complete =
                             index !== activeStep && index <= furthestStep;
@@ -655,7 +674,75 @@ export function SellerListingForm({
 
                 {activeStep === 1 && (
                     <div className="grid gap-6 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-7 dark:border-stone-800 dark:bg-stone-900">
-                        <StepIntro step={2} title="Set up the sale" />
+                        <StepIntro step={2} title="Describe the item" />
+                        <div className="grid gap-5 sm:grid-cols-2">
+                            <label className="grid gap-2 font-semibold">
+                                Location
+                                <input
+                                    id="listing-location"
+                                    value={form.data.location}
+                                    onChange={(event) => {
+                                        form.setData(
+                                            'location',
+                                            event.target.value,
+                                        );
+                                        clearError('location');
+                                    }}
+                                    placeholder="Colombo"
+                                    className={inputClass}
+                                />
+                                {errorFor('location') && (
+                                    <FieldError error={errorFor('location')} />
+                                )}
+                            </label>
+                            <label className="grid gap-2 font-semibold">
+                                Warranty{' '}
+                                <span className="font-normal text-stone-500">
+                                    (optional)
+                                </span>
+                                <input
+                                    value={form.data.warranty}
+                                    onChange={(event) =>
+                                        form.setData(
+                                            'warranty',
+                                            event.target.value,
+                                        )
+                                    }
+                                    placeholder="e.g. Six months manufacturer warranty"
+                                    className={inputClass}
+                                />
+                            </label>
+                            <div className="grid gap-2 font-semibold sm:col-span-2">
+                                <label htmlFor="listing-description">
+                                    Description
+                                </label>
+                                <RichTextEditor
+                                    id="listing-description"
+                                    value={form.data.description}
+                                    onChange={(value) => {
+                                        form.setData('description', value);
+                                        clearError('description');
+                                    }}
+                                    placeholder="Describe the item, its condition, and anything a buyer should know."
+                                    error={errorFor('description')}
+                                />
+                                <span className="text-xs font-normal text-stone-500">
+                                    Use headings, emphasis, quotes, and lists to
+                                    make important details easy to scan.
+                                </span>
+                                {errorFor('description') && (
+                                    <FieldError
+                                        error={errorFor('description')}
+                                    />
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeStep === 2 && (
+                    <div className="grid gap-6 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-7 dark:border-stone-800 dark:bg-stone-900">
+                        <StepIntro step={3} title="Set your pricing" />
                         <div className="grid gap-3 sm:grid-cols-2">
                             {[
                                 {
@@ -709,65 +796,6 @@ export function SellerListingForm({
                                 );
                             })}
                         </div>
-                        <div className="grid gap-5 sm:grid-cols-2">
-                            <label className="grid gap-2 font-semibold">
-                                Location
-                                <input
-                                    id="listing-location"
-                                    value={form.data.location}
-                                    onChange={(event) => {
-                                        form.setData(
-                                            'location',
-                                            event.target.value,
-                                        );
-                                        clearError('location');
-                                    }}
-                                    placeholder="Colombo"
-                                    className={inputClass}
-                                />
-                                {errorFor('location') && (
-                                    <FieldError error={errorFor('location')} />
-                                )}
-                            </label>
-                            <label className="grid gap-2 font-semibold">
-                                Warranty{' '}
-                                <span className="font-normal text-stone-500">
-                                    (optional)
-                                </span>
-                                <input
-                                    value={form.data.warranty}
-                                    onChange={(event) =>
-                                        form.setData(
-                                            'warranty',
-                                            event.target.value,
-                                        )
-                                    }
-                                    placeholder="e.g. Six months manufacturer warranty"
-                                    className={inputClass}
-                                />
-                            </label>
-                            <label className="grid gap-2 font-semibold sm:col-span-2">
-                                Description
-                                <textarea
-                                    id="listing-description"
-                                    value={form.data.description}
-                                    onChange={(event) => {
-                                        form.setData(
-                                            'description',
-                                            event.target.value,
-                                        );
-                                        clearError('description');
-                                    }}
-                                    placeholder="Describe the item, its condition, and anything a buyer should know."
-                                    className={`min-h-36 ${inputClass}`}
-                                />
-                                {errorFor('description') && (
-                                    <FieldError
-                                        error={errorFor('description')}
-                                    />
-                                )}
-                            </label>
-                        </div>
                         {form.data.listing_type === 'buy_now' ? (
                             <div className="grid gap-5 rounded-2xl bg-stone-50 p-5 sm:grid-cols-2 dark:bg-stone-950">
                                 <NumberField
@@ -808,6 +836,7 @@ export function SellerListingForm({
                                     error={errorFor('starting_price')}
                                 />
                                 <NumberField
+                                    id="listing-reserve_price"
                                     label="Reserve price (optional)"
                                     value={form.data.reserve_price}
                                     onChange={(value) =>
@@ -853,9 +882,9 @@ export function SellerListingForm({
                     </div>
                 )}
 
-                {activeStep === 2 && (
+                {activeStep === 3 && (
                     <div className="grid gap-6 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-7 dark:border-stone-800 dark:bg-stone-900">
-                        <StepIntro step={3} title="Add your best photos" />
+                        <StepIntro step={4} title="Add your best photos" />
                         <div className="-mt-3 flex flex-wrap gap-2">
                             <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-600 dark:bg-stone-800 dark:text-stone-300">
                                 {totalPhotoCount}/5 selected
@@ -981,9 +1010,9 @@ export function SellerListingForm({
                     </div>
                 )}
 
-                {activeStep === 3 && (
+                {activeStep === 4 && (
                     <div className="grid gap-6 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-7 dark:border-stone-800 dark:bg-stone-900">
-                        <StepIntro step={4} title="Review your listing" />
+                        <StepIntro step={5} title="Review your listing" />
                         <p className="-mt-4 text-sm text-stone-500">
                             This is how buyers will first experience your item.
                             Check the preview and finish any missing details.
@@ -1031,10 +1060,19 @@ export function SellerListingForm({
                                         {form.data.title ||
                                             'Your listing title'}
                                     </h3>
-                                    <p className="mt-3 line-clamp-3 text-sm leading-6 text-stone-600 dark:text-stone-300">
-                                        {form.data.description ||
-                                            'Your product description will appear here.'}
-                                    </p>
+                                    {richTextPlainText(
+                                        form.data.description,
+                                    ) ? (
+                                        <RichTextContent
+                                            value={form.data.description}
+                                            className="mt-3 line-clamp-3 text-sm leading-6 text-stone-600 dark:text-stone-300 [&_h2]:text-base [&_h3]:text-sm"
+                                        />
+                                    ) : (
+                                        <p className="mt-3 text-sm leading-6 text-stone-500">
+                                            Your product description will appear
+                                            here.
+                                        </p>
+                                    )}
                                     <div className="mt-5 flex flex-col gap-3 border-t border-stone-200 pt-5 sm:flex-row sm:items-end sm:justify-between dark:border-stone-800">
                                         <div>
                                             <span className="block text-xs font-bold tracking-wider text-stone-500 uppercase">
@@ -1169,8 +1207,36 @@ export function SellerListingForm({
                             />
                         </ReviewSection>
                         <ReviewSection
-                            title="Selling details"
+                            title="Details"
                             onEdit={() => setActiveStep(1)}
+                        >
+                            <SummaryItem
+                                label="Location"
+                                value={form.data.location || 'Not set'}
+                            />
+                            <SummaryItem
+                                label="Warranty"
+                                value={form.data.warranty || 'Not specified'}
+                            />
+                            <div className="sm:col-span-2">
+                                <span className="block text-xs font-bold tracking-wider text-stone-500 uppercase">
+                                    Description
+                                </span>
+                                {richTextPlainText(form.data.description) ? (
+                                    <RichTextContent
+                                        value={form.data.description}
+                                        className="mt-1 text-sm"
+                                    />
+                                ) : (
+                                    <span className="mt-1 block text-sm">
+                                        Not set
+                                    </span>
+                                )}
+                            </div>
+                        </ReviewSection>
+                        <ReviewSection
+                            title="Pricing"
+                            onEdit={() => setActiveStep(2)}
                         >
                             <SummaryItem
                                 label="Sale method"
@@ -1179,14 +1245,6 @@ export function SellerListingForm({
                                         ? 'Auction'
                                         : 'Buy now'
                                 }
-                            />
-                            <SummaryItem
-                                label="Location"
-                                value={form.data.location || 'Not set'}
-                            />
-                            <SummaryItem
-                                label="Warranty"
-                                value={form.data.warranty || 'Not specified'}
                             />
                             {form.data.listing_type === 'auction' ? (
                                 <>
@@ -1227,18 +1285,10 @@ export function SellerListingForm({
                                     />
                                 </>
                             )}
-                            <p className="sm:col-span-2">
-                                <span className="block text-xs font-bold tracking-wider text-stone-500 uppercase">
-                                    Description
-                                </span>
-                                <span className="mt-1 block text-sm leading-6 whitespace-pre-wrap">
-                                    {form.data.description || 'Not set'}
-                                </span>
-                            </p>
                         </ReviewSection>
                         <ReviewSection
                             title="Photos"
-                            onEdit={() => setActiveStep(2)}
+                            onEdit={() => setActiveStep(3)}
                         >
                             <SummaryItem
                                 label="Photos"
@@ -1338,7 +1388,7 @@ function StepIntro({
             </span>
             <div>
                 <p className="text-xs font-bold tracking-wider text-amber-700 uppercase dark:text-amber-400">
-                    Step {step} of 4
+                    Step {step} of {steps.length}
                 </p>
                 <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
                     {title}

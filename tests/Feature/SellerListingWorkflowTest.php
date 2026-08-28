@@ -12,12 +12,13 @@ test('an approved seller can create a draft listing and submit it for moderation
     Storage::fake('public');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create(['commission_percentage' => 8]);
+    $description = '<p>A well cared for <strong>full-frame</strong> camera body.</p><ul><li>Low shutter count</li><li>Original box included</li></ul>';
 
     $this->actingAs($seller->user)
         ->post(route('seller.listings.store'), [
             'category_id' => $category->id,
             'title' => 'Canon EOS R6',
-            'description' => 'A well cared for full-frame camera body.',
+            'description' => $description,
             'condition' => 'used',
             'listing_type' => 'buy_now',
             'location' => 'Colombo',
@@ -31,6 +32,7 @@ test('an approved seller can create a draft listing and submit it for moderation
 
     expect($listing->status)->toBe('draft')
         ->and($listing->commission_percentage)->toBe('8.00')
+        ->and($listing->description)->toBe($description)
         ->and($listing->media)->toHaveCount(1);
 
     Storage::disk('public')->assertExists($listing->media->sole()->path);
