@@ -19,6 +19,7 @@ import { cookies, privacy, terms } from '@/routes/legal';
 import { index as listingsIndex } from '@/routes/listings';
 import { prohibited, returns, sellers, shipping } from '@/routes/policies';
 import { register as sellerRegister } from '@/routes/seller';
+import { index as sellerListingsIndex } from '@/routes/seller/listings';
 import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
 
 type FooterLink = {
@@ -41,9 +42,14 @@ const paymentIcons: Record<string, LucideIcon> = {
 export function StorefrontFooter({ className = '' }: { className?: string }) {
     const { auth, marketplace } = usePage().props;
     const currentYear = new Date().getFullYear();
-    const sellerRegistration = auth.user
-        ? sellerOnboardingEdit()
-        : sellerRegister();
+    const sellerDestination = auth.is_seller
+        ? sellerListingsIndex()
+        : auth.user
+          ? sellerOnboardingEdit()
+          : sellerRegister();
+    const sellerLinkLabel = auth.is_seller
+        ? 'Seller portal'
+        : 'Become a seller';
     const navigation: Record<string, FooterLink[]> = {
         Shop: [
             { label: 'Browse all products', href: listingsIndex() },
@@ -61,7 +67,7 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
             { label: 'Returns & refunds', href: returns() },
         ],
         Sell: [
-            { label: 'Become a seller', href: sellerRegistration },
+            { label: sellerLinkLabel, href: sellerDestination },
             { label: 'Selling guide', href: selling() },
             { label: 'Seller policy', href: sellers() },
             { label: 'Prohibited items', href: prohibited() },

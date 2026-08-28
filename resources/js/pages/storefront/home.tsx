@@ -5,6 +5,7 @@ import { StorefrontLayout } from '@/components/storefront-layout';
 import type { StorefrontCategory } from '@/components/storefront-layout';
 import { index as listingsIndex } from '@/routes/listings';
 import { register as sellerRegister } from '@/routes/seller';
+import { index as sellerListingsIndex } from '@/routes/seller/listings';
 import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
 
 export default function StorefrontHome({
@@ -15,9 +16,11 @@ export default function StorefrontHome({
     categories: StorefrontCategory[];
 }) {
     const { auth } = usePage().props;
-    const sellerRegistration = auth.user
-        ? sellerOnboardingEdit()
-        : sellerRegister();
+    const sellerDestination = auth.is_seller
+        ? sellerListingsIndex()
+        : auth.user
+          ? sellerOnboardingEdit()
+          : sellerRegister();
 
     return (
         <StorefrontLayout title="Discover local deals" categories={categories}>
@@ -133,10 +136,12 @@ export default function StorefrontHome({
                             </p>
                         </div>
                         <Link
-                            href={sellerRegistration}
+                            href={sellerDestination}
                             className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-5 font-bold text-slate-950 transition hover:bg-cyan-200"
                         >
-                            Become a seller
+                            {auth.is_seller
+                                ? 'Seller portal'
+                                : 'Become a seller'}
                             <ArrowRight className="size-4" />
                         </Link>
                     </div>

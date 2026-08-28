@@ -20,6 +20,7 @@ import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
 import { show as cartShow } from '@/routes/cart';
 import { index as listingsIndex } from '@/routes/listings';
 import { register as sellerRegister } from '@/routes/seller';
+import { index as sellerListingsIndex } from '@/routes/seller/listings';
 import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
 
 export type { StorefrontCategory } from '@/components/storefront-category-menu';
@@ -125,12 +126,16 @@ export function StorefrontLayout({
                             <Link
                                 className="hidden items-center gap-1 rounded-full px-3 py-2 text-slate-600 transition hover:bg-primary/10 hover:text-primary sm:flex dark:text-slate-300 dark:hover:bg-slate-900"
                                 href={
-                                    auth.user
-                                        ? sellerOnboardingEdit()
-                                        : sellerRegister()
+                                    auth.is_seller
+                                        ? sellerListingsIndex()
+                                        : auth.user
+                                          ? sellerOnboardingEdit()
+                                          : sellerRegister()
                                 }
                             >
-                                Become a seller
+                                {auth.is_seller
+                                    ? 'Seller portal'
+                                    : 'Become a seller'}
                             </Link>
                             <Link
                                 className="hidden items-center gap-1 rounded-full px-3 py-2 text-slate-600 transition hover:bg-primary/10 hover:text-primary sm:flex dark:text-slate-300 dark:hover:bg-slate-900"

@@ -27,6 +27,32 @@ test('guests can browse only approved listings', function () {
             ->where('listings.data.0.slug', $approved->slug));
 });
 
+test('the storefront identifies seller accounts for portal links', function () {
+    $seller = User::factory()->create();
+    $seller->roles()->attach(Role::factory()->create([
+        'name' => Role::BusinessSeller,
+        'label' => 'Business Seller',
+    ]));
+
+    $this->actingAs($seller)
+        ->get(route('home'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('auth.is_seller', true));
+
+    $buyer = User::factory()->create();
+    $buyer->roles()->attach(Role::factory()->create([
+        'name' => Role::Buyer,
+        'label' => 'Buyer',
+    ]));
+
+    $this->actingAs($buyer)
+        ->get(route('home'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('auth.is_seller', false));
+});
+
 test('storefront listing media includes its configured public url', function () {
     config(['filesystems.disks.public.url' => 'https://media.prodeals.lk']);
     $listing = Listing::factory()->create();
