@@ -56,6 +56,7 @@ Route::middleware('auth')->prefix('seller')->name('seller.')->group(function ():
     Route::post('/listings', [SellerListingController::class, 'store'])->name('listings.store');
     Route::get('/listings/{listing}/edit', [SellerListingController::class, 'edit'])->name('listings.edit');
     Route::put('/listings/{listing}', [SellerListingController::class, 'update'])->name('listings.update');
+    Route::delete('/listings/{listing}', [SellerListingController::class, 'destroy'])->name('listings.destroy');
     Route::post('/listings/submit', [SellerListingController::class, 'submit'])->name('listings.submit');
 });
 

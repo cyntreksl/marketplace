@@ -44,7 +44,7 @@ class ListingPolicy
      */
     public function delete(User $user, Listing $listing): bool
     {
-        return false;
+        return $listing->seller_profile_id === $user->sellerProfile()->value('id');
     }
 
     /**

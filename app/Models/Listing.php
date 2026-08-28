@@ -60,6 +60,12 @@ class Listing extends Model
         return $this->hasOne(Auction::class);
     }
 
+    /** @return HasMany<OrderItem, $this> */
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class)->withTrashed();
+    }
+
     /** @param Builder<Listing> $query */
     public function scopePubliclyVisible(Builder $query): void
     {

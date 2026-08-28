@@ -16,7 +16,12 @@ interface ListingRepository
 
     public function findPublicBySlug(string $slug): Listing;
 
+    /** @return LengthAwarePaginator<int, Listing> */
+    public function paginateForSeller(SellerProfile $seller, int $perPage = 15): LengthAwarePaginator;
+
     public function save(Listing $listing): Listing;
 
-    public function findForSellerOrFail(SellerProfile $seller, int $listingId): Listing;
+    public function findForSellerOrFail(SellerProfile $seller, int $listingId, bool $lockForUpdate = false): Listing;
+
+    public function delete(Listing $listing): void;
 }

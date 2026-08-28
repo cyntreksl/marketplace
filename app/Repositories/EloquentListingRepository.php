@@ -58,6 +58,16 @@ class EloquentListingRepository implements ListingRepository
             ->firstOrFail();
     }
 
+    public function paginateForSeller(SellerProfile $seller, int $perPage = 15): LengthAwarePaginator
+    {
+        return $seller->listings()
+            ->with(['category:id,name', 'auction:id,listing_id,status,starts_at,ends_at'])
+            ->withExists(['orderItems as has_orders'])
+            ->latest()
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
     public function save(Listing $listing): Listing
     {
         $listing->save();
@@ -65,11 +75,17 @@ class EloquentListingRepository implements ListingRepository
         return $listing;
     }
 
-    public function findForSellerOrFail(SellerProfile $seller, int $listingId): Listing
+    public function findForSellerOrFail(SellerProfile $seller, int $listingId, bool $lockForUpdate = false): Listing
     {
         return $seller->listings()
             ->with(['category:id,name,slug,commission_percentage', 'brand:id,name,slug', 'auction'])
+            ->when($lockForUpdate, fn (Builder $query) => $query->lockForUpdate())
             ->findOrFail($listingId);
+    }
+
+    public function delete(Listing $listing): void
+    {
+        $listing->delete();
     }
 
     /** @param Builder<Listing> $query */

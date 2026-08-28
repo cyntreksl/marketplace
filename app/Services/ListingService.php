@@ -9,6 +9,7 @@ use App\Models\SellerProfile;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use LogicException;
@@ -21,6 +22,19 @@ class ListingService
         private readonly CatalogRepository $catalog,
         private readonly AuditLogService $auditLogs,
     ) {}
+
+    /**
+     * @return array{sellerStatus: string, listings: LengthAwarePaginator<int, Listing>}
+     */
+    public function sellerIndex(User $seller): array
+    {
+        $profile = $this->sellerProfileFor($seller);
+
+        return [
+            'sellerStatus' => $profile->status,
+            'listings' => $this->listings->paginateForSeller($profile),
+        ];
+    }
 
     /** @param array<string, mixed> $attributes */
     public function createDraft(User $seller, array $attributes): Listing
@@ -120,6 +134,30 @@ class ListingService
             $listing = $this->listings->findForSellerOrFail($profile, $listingId);
 
             return $this->submitListing($seller, $listing);
+        });
+    }
+
+    public function removeOrArchive(User $seller, int $listingId): string
+    {
+        $profile = $this->sellerProfileFor($seller);
+
+        return DB::transaction(function () use ($seller, $profile, $listingId): string {
+            $listing = $this->listings->findForSellerOrFail($profile, $listingId, lockForUpdate: true);
+            $hasOrders = $listing->orderItems()->exists();
+            $before = $listing->getAttributes();
+
+            if ($hasOrders) {
+                $listing->forceFill(['status' => 'archived']);
+                $this->listings->save($listing);
+                $this->auditLogs->record($seller, 'listing.archived', $listing, $before, $listing->getAttributes());
+
+                return 'archived';
+            }
+
+            $this->auditLogs->record($seller, 'listing.removed', $listing, $before);
+            $this->listings->delete($listing);
+
+            return 'removed';
         });
     }
 

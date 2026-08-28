@@ -1,10 +1,20 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import {
     create,
+    destroy,
     edit,
     submit,
 } from '@/actions/App/Http/Controllers/SellerListingController';
 import { PortalLayout } from '@/components/portal-layout';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
 
 type Listing = {
     id: number;
@@ -13,6 +23,7 @@ type Listing = {
     moderation_reason: string | null;
     listing_type: string;
     price: string | null;
+    has_orders: boolean;
     created_at: string;
     category: { name: string };
     auction: { status: string; ends_at: string } | null;
@@ -133,6 +144,58 @@ export default function SellerListings({
                                                     </>
                                                 )}
                                             </Form>
+                                        )}
+                                        {listing.status !== 'archived' && (
+                                            <Dialog>
+                                                <DialogTrigger asChild>
+                                                    <button className="rounded-xl border border-red-300 px-4 py-2 text-sm font-bold text-red-700 dark:border-red-800 dark:text-red-300">
+                                                        {listing.has_orders
+                                                            ? 'Archive'
+                                                            : 'Remove'}
+                                                    </button>
+                                                </DialogTrigger>
+                                                <DialogContent>
+                                                    <DialogTitle>
+                                                        {listing.has_orders
+                                                            ? 'Archive listing'
+                                                            : 'Remove listing'}
+                                                    </DialogTitle>
+                                                    <DialogDescription>
+                                                        {listing.has_orders
+                                                            ? 'This listing has orders, so it will be archived and hidden from the public marketplace. Its order history will remain available.'
+                                                            : 'This listing has no orders. Removing it will hide it from the public marketplace and remove it from your listings.'}
+                                                    </DialogDescription>
+                                                    <DialogFooter className="gap-2">
+                                                        <DialogClose asChild>
+                                                            <button className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-bold dark:border-stone-700">
+                                                                Cancel
+                                                            </button>
+                                                        </DialogClose>
+                                                        <Form
+                                                            {...destroy.form(
+                                                                listing.id,
+                                                            )}
+                                                        >
+                                                            {({
+                                                                processing,
+                                                            }) => (
+                                                                <button
+                                                                    disabled={
+                                                                        processing
+                                                                    }
+                                                                    className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                                                                >
+                                                                    {processing
+                                                                        ? 'Working...'
+                                                                        : listing.has_orders
+                                                                          ? 'Archive listing'
+                                                                          : 'Remove listing'}
+                                                                </button>
+                                                            )}
+                                                        </Form>
+                                                    </DialogFooter>
+                                                </DialogContent>
+                                            </Dialog>
                                         )}
                                     </div>
                                 </li>

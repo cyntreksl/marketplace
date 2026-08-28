@@ -3,6 +3,7 @@
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Listing;
+use App\Models\OrderItem;
 use App\Models\SellerProfile;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -252,4 +253,64 @@ test('an unverified seller can create a private listing draft', function () {
     $this->get(route('listings.index'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page->has('listings.data', 0));
+});
+
+test('a seller removes a listing without orders and it is hidden from the public marketplace', function () {
+    $seller = SellerProfile::factory()->create();
+    $listing = Listing::factory()->create(['seller_profile_id' => $seller->id]);
+
+    $this->actingAs($seller->user)
+        ->delete(route('seller.listings.destroy', $listing))
+        ->assertRedirect(route('seller.listings.index', absolute: false));
+
+    $this->assertSoftDeleted($listing);
+
+    $this->get(route('listings.show', $listing->slug))->assertNotFound();
+    expect(collect($this->get(route('listings.index'))->inertiaProps('listings.data'))->pluck('id'))
+        ->not->toContain($listing->id);
+});
+
+test('a seller archives a listing with orders and it is hidden from the public marketplace', function () {
+    $seller = SellerProfile::factory()->create();
+    $listing = Listing::factory()->create(['seller_profile_id' => $seller->id]);
+    OrderItem::factory()->create(['listing_id' => $listing->id]);
+
+    $this->actingAs($seller->user)
+        ->delete(route('seller.listings.destroy', $listing))
+        ->assertRedirect(route('seller.listings.index', absolute: false));
+
+    expect($listing->refresh())
+        ->status->toBe('archived')
+        ->deleted_at->toBeNull();
+
+    $this->get(route('listings.show', $listing->slug))->assertNotFound();
+    expect(collect($this->get(route('listings.index'))->inertiaProps('listings.data'))->pluck('id'))
+        ->not->toContain($listing->id);
+});
+
+test('a seller cannot remove or archive another sellers listing', function () {
+    $seller = SellerProfile::factory()->create();
+    $listing = Listing::factory()->create();
+
+    $this->actingAs($seller->user)
+        ->delete(route('seller.listings.destroy', $listing))
+        ->assertForbidden();
+
+    $this->assertModelExists($listing);
+    expect($listing->refresh()->status)->toBe('approved');
+});
+
+test('the seller listing page identifies listings that must be archived', function () {
+    $seller = SellerProfile::factory()->create();
+    $removableListing = Listing::factory()->create(['seller_profile_id' => $seller->id]);
+    $archivableListing = Listing::factory()->create(['seller_profile_id' => $seller->id]);
+    OrderItem::factory()->create(['listing_id' => $archivableListing->id]);
+
+    $listings = collect($this->actingAs($seller->user)
+        ->get(route('seller.listings.index'))
+        ->inertiaProps('listings.data'))
+        ->keyBy('id');
+
+    expect($listings[$removableListing->id]['has_orders'])->toBeFalse()
+        ->and($listings[$archivableListing->id]['has_orders'])->toBeTrue();
 });

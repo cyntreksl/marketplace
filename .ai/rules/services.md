@@ -1,6 +1,7 @@
 ---
 paths:
   - 'app/Services/**'
+  - app/Services/ListingService.php
 ---
 
 # Services
@@ -10,3 +11,6 @@ Seller-entered brand text stays on the private listing as brand_name. Only appro
 
 ## Synchronize permitted Google taxonomy categories
 Activating a Google taxonomy version must synchronize permitted nodes into marketplace categories in one transaction. Excluded IDs and descendants stay reference-only; preserve mapped category slugs, commercial settings, and listing links; deactivate removed mappings without deleting them; leave categories without Google IDs untouched.
+
+## Preserve ordered listings through archival
+Seller removal is lifecycle-sensitive: soft-delete a listing only when it has no historical order items. If any order item exists, set the listing status to archived instead so order history remains intact. Both outcomes must remain excluded from public storefront queries.

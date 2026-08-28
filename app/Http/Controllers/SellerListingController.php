@@ -16,16 +16,14 @@ use Inertia\Response;
 
 class SellerListingController extends Controller
 {
-    public function __construct(private readonly CatalogRepository $catalog) {}
+    public function __construct(
+        private readonly CatalogRepository $catalog,
+        private readonly ListingService $listings,
+    ) {}
 
     public function index(Request $request): Response
     {
-        $seller = $request->user()->sellerProfile()->firstOrFail();
-
-        return Inertia::render('seller/listings/index', [
-            'sellerStatus' => $seller->status,
-            'listings' => $seller->listings()->with(['category:id,name', 'auction:id,listing_id,status,starts_at,ends_at'])->latest()->paginate(15)->withQueryString(),
-        ]);
+        return Inertia::render('seller/listings/index', $this->listings->sellerIndex($request->user()));
     }
 
     public function create(Request $request): Response
@@ -51,28 +49,38 @@ class SellerListingController extends Controller
         ]);
     }
 
-    public function store(StoreListingRequest $request, ListingService $listings): RedirectResponse
+    public function store(StoreListingRequest $request): RedirectResponse
     {
-        $listing = $listings->createDraft($request->user(), $request->validated());
+        $listing = $this->listings->createDraft($request->user(), $request->validated());
 
         return to_route('seller.listings.index')->with('status', $listing->status === 'pending_review'
             ? "{$listing->title} was submitted for review."
             : "{$listing->title} was saved as a draft.");
     }
 
-    public function update(UpdateListingRequest $request, Listing $listing, ListingService $listings): RedirectResponse
+    public function update(UpdateListingRequest $request, Listing $listing): RedirectResponse
     {
-        $listing = $listings->updateDraft($request->user(), $listing, $request->validated());
+        $listing = $this->listings->updateDraft($request->user(), $listing, $request->validated());
 
         return to_route('seller.listings.index')->with('status', $listing->status === 'pending_review'
             ? "{$listing->title} was submitted for review."
             : "{$listing->title} was updated as a draft.");
     }
 
-    public function submit(SubmitListingRequest $request, ListingService $listings): RedirectResponse
+    public function submit(SubmitListingRequest $request): RedirectResponse
     {
-        $listing = $listings->submit($request->user(), (int) $request->validated('listing_id'));
+        $listing = $this->listings->submit($request->user(), (int) $request->validated('listing_id'));
 
         return to_route('seller.listings.index')->with('status', "{$listing->title} was submitted for review.");
+    }
+
+    public function destroy(Request $request, Listing $listing): RedirectResponse
+    {
+        abort_unless($request->user()->can('delete', $listing), 403);
+        $outcome = $this->listings->removeOrArchive($request->user(), $listing->id);
+
+        return to_route('seller.listings.index')->with('status', $outcome === 'archived'
+            ? "{$listing->title} was archived because it has orders."
+            : "{$listing->title} was removed.");
     }
 }
