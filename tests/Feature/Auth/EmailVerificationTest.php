@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Event;
@@ -34,7 +35,58 @@ test('email can be verified', function () {
     Event::assertDispatched(Verified::class);
 
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
-    $response->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+    $response->assertRedirect(route('home', absolute: false).'?verified=1');
+});
+
+test('vendor is redirected to the seller portal after email verification', function () {
+    $vendor = User::factory()->unverified()->create();
+    $vendor->roles()->attach(Role::factory()->create(['name' => Role::BusinessSeller]));
+
+    $verificationUrl = URL::temporarySignedRoute(
+        'verification.verify',
+        now()->addMinutes(60),
+        ['id' => $vendor->id, 'hash' => sha1($vendor->email)],
+    );
+
+    $this->actingAs($vendor)
+        ->withSession(['url.intended' => route('cart.show')])
+        ->get($verificationUrl)
+        ->assertRedirect(route('seller.listings.index', ['verified' => 1], absolute: false));
+
+    expect($vendor->fresh()->hasVerifiedEmail())->toBeTrue();
+});
+
+test('buyer returns to their intended page after email verification', function () {
+    $buyer = User::factory()->unverified()->create();
+    $buyer->roles()->attach(Role::factory()->create(['name' => Role::Buyer]));
+
+    $verificationUrl = URL::temporarySignedRoute(
+        'verification.verify',
+        now()->addMinutes(60),
+        ['id' => $buyer->id, 'hash' => sha1($buyer->email)],
+    );
+
+    $this->actingAs($buyer)
+        ->withSession(['url.intended' => route('cart.show')])
+        ->get($verificationUrl)
+        ->assertRedirect(route('cart.show'));
+
+    expect($buyer->fresh()->hasVerifiedEmail())->toBeTrue();
+});
+
+test('buyer without an intended page returns to the storefront after email verification', function () {
+    $buyer = User::factory()->unverified()->create();
+    $buyer->roles()->attach(Role::factory()->create(['name' => Role::Buyer]));
+
+    $verificationUrl = URL::temporarySignedRoute(
+        'verification.verify',
+        now()->addMinutes(60),
+        ['id' => $buyer->id, 'hash' => sha1($buyer->email)],
+    );
+
+    $this->actingAs($buyer)
+        ->get($verificationUrl)
+        ->assertRedirect(route('home', absolute: false).'?verified=1');
 });
 
 test('email is not verified with invalid hash', function () {
@@ -71,7 +123,7 @@ test('email is not verified with invalid user id', function () {
     expect($user->fresh()->hasVerifiedEmail())->toBeFalse();
 });
 
-test('verified user is redirected to dashboard from verification prompt', function () {
+test('verified user is redirected to storefront from verification prompt', function () {
     $user = User::factory()->create();
 
     Event::fake();
@@ -79,7 +131,7 @@ test('verified user is redirected to dashboard from verification prompt', functi
     $response = $this->actingAs($user)->get(route('verification.notice'));
 
     Event::assertNotDispatched(Verified::class);
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertRedirect(route('home', absolute: false));
 });
 
 test('already verified user visiting verification link is redirected without firing event again', function () {
@@ -94,7 +146,7 @@ test('already verified user visiting verification link is redirected without fir
     );
 
     $this->actingAs($user)->get($verificationUrl)
-        ->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+        ->assertRedirect(route('home', absolute: false).'?verified=1');
 
     Event::assertNotDispatched(Verified::class);
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue();
