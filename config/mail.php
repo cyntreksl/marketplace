@@ -111,8 +111,21 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
-        'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
+        'address' => env('MAIL_FROM_ADDRESS', 'no-reply@prodeals.lk'),
+        'name' => env('MAIL_FROM_NAME', 'ProDeals.lk'),
+    ],
+
+    'reply_to' => [
+        'address' => env('MAIL_REPLY_TO_ADDRESS', 'support@prodeals.lk'),
+        'name' => env('MAIL_REPLY_TO_NAME', 'ProDeals.lk Support'),
+    ],
+
+    'markdown' => [
+        'theme' => 'prodeals',
+
+        'paths' => [
+            resource_path('views/vendor/mail'),
+        ],
     ],
 
 ];

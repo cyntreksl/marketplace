@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -35,13 +36,13 @@ class RefundReadyNotification extends Notification implements ShouldQueue
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail(User $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Approved return needs coordination')
-            ->greeting('Hello,')
+            ->subject('Return ready for coordination: '.$this->itemTitle)
+            ->greeting("Hello {$notifiable->name},")
             ->line("Return #{$this->returnRequestId} for {$this->itemTitle} was approved by the seller.")
-            ->line("The calculated refund is LKR {$this->amount}. Coordinate the offline return before marking it ready for refund.")
+            ->line("The calculated refund is LKR {$this->amount}. Please coordinate the offline return before marking it ready for refund.")
             ->action('Open returns queue', route('admin.returns.index'));
     }
 

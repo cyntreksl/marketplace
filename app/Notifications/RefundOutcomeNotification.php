@@ -2,10 +2,12 @@
 
 namespace App\Notifications;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Str;
 
 class RefundOutcomeNotification extends Notification implements ShouldQueue
 {
@@ -38,21 +40,27 @@ class RefundOutcomeNotification extends Notification implements ShouldQueue
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail(User $notifiable): MailMessage
     {
         $message = (new MailMessage)
-            ->subject('Refund '.$this->status.' for '.$this->itemTitle)
-            ->greeting('Hello,')
-            ->line("The LKR {$this->amount} refund for {$this->itemTitle} is {$this->status}.");
+            ->subject('Refund '.Str::headline($this->status).': '.$this->itemTitle)
+            ->greeting("Hello {$notifiable->name},")
+            ->line("The LKR {$this->amount} refund for {$this->itemTitle} has {$this->status}.");
 
         if ($this->failureDetails !== null) {
             $message->line('Details: '.$this->failureDetails);
         }
 
-        return $message->action(
+        $message->action(
             $this->operations ? 'Open returns queue' : 'View return status',
             $this->operations ? route('admin.returns.index') : route('buyer.returns.index'),
         );
+
+        if ($this->status === 'failed' && ! $this->operations) {
+            $message->line('Reply to this email if you need help with your refund.');
+        }
+
+        return $message;
     }
 
     /**

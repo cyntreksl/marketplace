@@ -11,6 +11,7 @@ use App\Contracts\Repositories\ListingRepository;
 use App\Contracts\Repositories\RefundRepository;
 use App\Contracts\Repositories\ReturnRequestRepository;
 use App\Couriers\ManualCourierAdapter;
+use App\Models\User;
 use App\Payments\StripePaymentGateway;
 use App\Repositories\EloquentAuctionRepository;
 use App\Repositories\EloquentCatalogRepository;
@@ -19,8 +20,11 @@ use App\Repositories\EloquentListingRepository;
 use App\Repositories\EloquentRefundRepository;
 use App\Repositories\EloquentReturnRequestRepository;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
@@ -50,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureMailNotifications();
         $this->configureRateLimiting();
     }
 
@@ -81,5 +86,36 @@ class AppServiceProvider extends ServiceProvider
     {
         RateLimiter::for('auction-bids', fn ($request) => Limit::perMinute(12)->by($request->user()?->id.'|'.$request->ip()));
         RateLimiter::for('category-lookups', fn ($request) => Limit::perMinute(120)->by($request->user()?->id.'|'.$request->ip()));
+    }
+
+    protected function configureMailNotifications(): void
+    {
+        ResetPassword::toMailUsing(function (User $user, string $token): MailMessage {
+            $expirationMinutes = (int) config('auth.passwords.'.config('auth.defaults.passwords').'.expire');
+            $resetUrl = url(route('password.reset', [
+                'token' => $token,
+                'email' => $user->getEmailForPasswordReset(),
+            ], false));
+
+            return (new MailMessage)
+                ->subject('Reset your ProDeals.lk password')
+                ->greeting("Hello {$user->name},")
+                ->line('We received a request to reset the password for your ProDeals.lk account.')
+                ->action('Reset password', $resetUrl)
+                ->line("This secure link expires in {$expirationMinutes} minutes.")
+                ->line('If you did not request this reset, you can safely ignore this email. Your password will not change.');
+        });
+
+        VerifyEmail::toMailUsing(function (User $user, string $verificationUrl): MailMessage {
+            $expirationMinutes = (int) config('auth.verification.expire', 60);
+
+            return (new MailMessage)
+                ->subject('Confirm your ProDeals.lk email address')
+                ->greeting("Hello {$user->name},")
+                ->line('Confirm your email address to finish setting up your ProDeals.lk account.')
+                ->action('Confirm email address', $verificationUrl)
+                ->line("This secure link expires in {$expirationMinutes} minutes.")
+                ->line('If you did not create this account, you can safely ignore this email.');
+        });
     }
 }

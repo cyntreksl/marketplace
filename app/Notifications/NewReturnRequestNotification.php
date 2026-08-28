@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -36,13 +37,13 @@ class NewReturnRequestNotification extends Notification implements ShouldQueue
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail(User $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('New return request for '.$this->itemTitle)
-            ->greeting('Hello,')
+            ->subject('New return request: '.$this->itemTitle)
+            ->greeting("Hello {$notifiable->name},")
             ->line("{$this->buyerName} requested to return {$this->quantity} × {$this->itemTitle}.")
-            ->line('Review the buyer description and any evidence before making your final portal decision.')
+            ->line('Please review the buyer description and any evidence before making your final decision.')
             ->action('Review return request', route('seller.returns.index'));
     }
 

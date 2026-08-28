@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -36,15 +37,17 @@ class ReturnDecisionNotification extends Notification implements ShouldQueue
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(object $notifiable): MailMessage
+    public function toMail(User $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Your return request was '.$this->decision)
-            ->greeting('Hello,')
+            ->subject('Return request '.$this->decision.': '.$this->itemTitle)
+            ->greeting("Hello {$notifiable->name},")
             ->line("The seller {$this->decision} your return request for {$this->itemTitle}.")
             ->line('Seller response: '.$this->reason)
             ->action('View return status', route('buyer.returns.index'))
-            ->line($this->decision === 'rejected' ? 'If you need help, email support@prodeals.lk.' : 'Support will coordinate the return before the refund is processed.');
+            ->line($this->decision === 'rejected'
+                ? 'Reply to this email if you have questions about the decision.'
+                : 'Our support team will coordinate the return before the refund is processed.');
     }
 
     /**
