@@ -9,6 +9,7 @@ import SettingsLayout from '@/layouts/settings/layout';
 const appName = import.meta.env.VITE_APP_NAME || 'ProDeals.lk';
 
 createInertiaApp({
+    serverHead: true,
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
         switch (true) {

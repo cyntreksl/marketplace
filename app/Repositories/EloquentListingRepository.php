@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Contracts\Repositories\CatalogRepository;
 use App\Contracts\Repositories\ListingRepository;
 use App\Models\Listing;
+use App\Models\ListingMedia;
 use App\Models\SellerProfile;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -129,6 +130,33 @@ class EloquentListingRepository implements ListingRepository
         return $listing;
     }
 
+    public function createMedia(Listing $listing, array $attributes): ListingMedia
+    {
+        return $listing->media()->create($attributes);
+    }
+
+    public function findMedia(int $mediaId): ?ListingMedia
+    {
+        return ListingMedia::query()->find($mediaId);
+    }
+
+    public function saveMedia(ListingMedia $media): ListingMedia
+    {
+        $media->save();
+
+        return $media;
+    }
+
+    public function mediaCount(Listing $listing): int
+    {
+        return $listing->media()->count();
+    }
+
+    public function nextMediaSortOrder(Listing $listing): int
+    {
+        return (int) $listing->media()->max('sort_order') + 1;
+    }
+
     public function findForSellerOrFail(SellerProfile $seller, int $listingId, bool $lockForUpdate = false): Listing
     {
         return $seller->listings()
@@ -153,7 +181,7 @@ class EloquentListingRepository implements ListingRepository
             ->with([
                 'brand:id,name,slug',
                 'category:id,name,slug',
-                'media:id,listing_id,disk,path,type,sort_order',
+                'media:id,listing_id,disk,path,type,sort_order,variant_version,variants,processing_status',
                 'sellerProfile:id,store_name,slug',
                 'auction:id,listing_id,status,current_price,ends_at',
             ]);

@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import Cropper from 'react-easy-crop';
+import type { Area, Point } from 'react-easy-crop';
 import { CategoryPicker } from '@/components/category-picker';
 import type { CategoryOption } from '@/components/category-picker';
 import {
@@ -25,9 +27,19 @@ import {
     richTextPlainText,
     sanitizeRichText,
 } from '@/components/rich-text-editor';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 
 type Brand = { id: number; name: string };
 type ListingMedia = { id: number; path: string; url: string };
+type ListingImageCrop = { x: number; y: number; width: number; height: number };
+type ListingImageSize = { width: number; height: number };
 
 export type SellerListingFormListing = {
     title: string;
@@ -72,6 +84,7 @@ type ListingFormData = {
     starts_at: string;
     ends_at: string;
     images: File[];
+    image_crops: ListingImageCrop[];
     submit_for_review: number;
 };
 
@@ -97,7 +110,7 @@ const stepFields = [
         'starts_at',
         'ends_at',
     ],
-    ['images'],
+    ['images', 'image_crops'],
 ] as const;
 
 export function SellerListingForm({
@@ -149,21 +162,29 @@ export function SellerListingForm({
         starts_at: listing?.auction?.starts_at?.slice(0, 16) ?? '',
         ends_at: listing?.auction?.ends_at?.slice(0, 16) ?? '',
         images: [],
+        image_crops: [],
         submit_for_review: 0,
     });
-    const imagePreviews = useMemo(
-        () =>
-            form.data.images.map((file) => ({
-                file,
-                url: URL.createObjectURL(file),
-            })),
+    const [imageSizes, setImageSizes] = useState<ListingImageSize[]>([]);
+    const [cropImageIndex, setCropImageIndex] = useState<number | null>(null);
+    const [cropPosition, setCropPosition] = useState<Point>({ x: 0, y: 0 });
+    const [cropZoom, setCropZoom] = useState(1);
+    const [draftCrop, setDraftCrop] = useState<ListingImageCrop | null>(null);
+    const [cropEditorVersion, setCropEditorVersion] = useState(0);
+    const imagePreviewUrls = useMemo(
+        () => form.data.images.map((file) => URL.createObjectURL(file)),
         [form.data.images],
     );
+    const imagePreviews = form.data.images.map((file, index) => ({
+        file,
+        url: imagePreviewUrls[index],
+        size: imageSizes[index],
+        crop: form.data.image_crops[index],
+    }));
 
     useEffect(
-        () => () =>
-            imagePreviews.forEach(({ url }) => URL.revokeObjectURL(url)),
-        [imagePreviews],
+        () => () => imagePreviewUrls.forEach(URL.revokeObjectURL),
+        [imagePreviewUrls],
     );
 
     const existingMedia = listing?.media ?? [];
@@ -174,10 +195,18 @@ export function SellerListingForm({
     const brandOptions = brands.filter((brand) =>
         brand.name.toLocaleLowerCase().includes(brandQuery.toLocaleLowerCase()),
     );
-    const primaryPhotoUrl =
-        existingMedia[0] !== undefined
-            ? existingMedia[0].url
-            : imagePreviews[0]?.url;
+    const primaryPhotoUrl = existingMedia[0]?.url;
+    const cropImage =
+        cropImageIndex === null ? undefined : imagePreviews[cropImageIndex];
+    const maximumCropZoom = cropImage?.size
+        ? Math.max(
+              1,
+              Math.min(
+                  centeredFourByThreeCrop(cropImage.size).width / 1200,
+                  centeredFourByThreeCrop(cropImage.size).height / 900,
+              ),
+          )
+        : 1;
     const listingHealthChecks = [
         {
             label: 'Product title and category',
@@ -219,8 +248,10 @@ export function SellerListingForm({
     }
 
     function focusField(field: string): void {
+        const focusTarget = field.startsWith('image_crops') ? 'images' : field;
+
         window.setTimeout(() =>
-            document.getElementById(`listing-${field}`)?.focus(),
+            document.getElementById(`listing-${focusTarget}`)?.focus(),
         );
     }
 
@@ -345,36 +376,78 @@ export function SellerListingForm({
         clearError('brand_name');
     }
 
-    function addImages(files: FileList | null): void {
+    async function addImages(files: FileList | null): Promise<void> {
         if (!files) {
             return;
         }
 
         const incomingImages = Array.from(files);
-        const acceptedImages = incomingImages.filter(
+        const validFileTypes = incomingImages.filter(
             (image) =>
                 ['image/jpeg', 'image/png', 'image/webp'].includes(
                     image.type,
                 ) && image.size <= 5 * 1024 * 1024,
         );
         const remainingPhotoSlots = Math.max(0, 5 - totalPhotoCount);
-        const maxNewImages = Math.max(0, 5 - existingMedia.length);
-        form.setData(
-            'images',
-            [...form.data.images, ...acceptedImages].slice(0, maxNewImages),
-        );
+        const preparedImages = (
+            await Promise.all(
+                validFileTypes
+                    .slice(0, remainingPhotoSlots)
+                    .map(async (file) => {
+                        const size = await readImageSize(file).catch(
+                            () => null,
+                        );
 
-        if (acceptedImages.length !== incomingImages.length) {
+                        if (
+                            size === null ||
+                            size.width < 1200 ||
+                            size.height < 900 ||
+                            size.width > 6000 ||
+                            size.height > 6000
+                        ) {
+                            return null;
+                        }
+
+                        return {
+                            file,
+                            size,
+                            crop: centeredFourByThreeCrop(size),
+                        };
+                    }),
+            )
+        ).filter((image) => image !== null);
+
+        form.setData({
+            ...form.data,
+            images: [
+                ...form.data.images,
+                ...preparedImages.map(({ file }) => file),
+            ],
+            image_crops: [
+                ...form.data.image_crops,
+                ...preparedImages.map(({ crop }) => crop),
+            ],
+        });
+        setImageSizes((sizes) => [
+            ...sizes,
+            ...preparedImages.map(({ size }) => size),
+        ]);
+
+        if (
+            validFileTypes.length !== incomingImages.length ||
+            preparedImages.length !==
+                Math.min(validFileTypes.length, remainingPhotoSlots)
+        ) {
             setClientErrors((errors) => ({
                 ...errors,
-                images: 'Some photos were skipped. Use JPG, PNG, or WebP files no larger than 5 MB.',
+                images: 'Some photos were skipped. Use JPG, PNG, or WebP files from 1200 × 900 to 6000 × 6000 pixels and no larger than 5 MB.',
             }));
             form.clearErrors('images');
 
             return;
         }
 
-        if (acceptedImages.length > remainingPhotoSlots) {
+        if (validFileTypes.length > remainingPhotoSlots) {
             setClientErrors((errors) => ({
                 ...errors,
                 images: 'Only the first five photos were added.',
@@ -384,6 +457,67 @@ export function SellerListingForm({
             return;
         }
 
+        clearError('images');
+    }
+
+    function openCropEditor(index: number): void {
+        setCropImageIndex(index);
+        setDraftCrop(form.data.image_crops[index]);
+        setCropPosition({ x: 0, y: 0 });
+        setCropZoom(1);
+        setCropEditorVersion((version) => version + 1);
+    }
+
+    function resetCropEditor(): void {
+        if (!cropImage?.size) {
+            return;
+        }
+
+        setDraftCrop(centeredFourByThreeCrop(cropImage.size));
+        setCropPosition({ x: 0, y: 0 });
+        setCropZoom(1);
+        setCropEditorVersion((version) => version + 1);
+    }
+
+    function applyCrop(): void {
+        if (cropImageIndex === null || draftCrop === null) {
+            return;
+        }
+
+        const normalizedCrop = normalizeCrop(draftCrop);
+
+        if (normalizedCrop.width < 1200 || normalizedCrop.height < 900) {
+            setClientErrors((errors) => ({
+                ...errors,
+                images: 'Keep at least 1200 × 900 source pixels inside the crop.',
+            }));
+
+            return;
+        }
+
+        form.setData(
+            'image_crops',
+            form.data.image_crops.map((crop, index) =>
+                index === cropImageIndex ? normalizedCrop : crop,
+            ),
+        );
+        setCropImageIndex(null);
+        clearError('images');
+    }
+
+    function removeImage(index: number): void {
+        form.setData({
+            ...form.data,
+            images: form.data.images.filter(
+                (_, imageIndex) => imageIndex !== index,
+            ),
+            image_crops: form.data.image_crops.filter(
+                (_, imageIndex) => imageIndex !== index,
+            ),
+        });
+        setImageSizes((sizes) =>
+            sizes.filter((_, imageIndex) => imageIndex !== index),
+        );
         clearError('images');
     }
 
@@ -407,7 +541,13 @@ export function SellerListingForm({
         const options = {
             onError: (errors: Record<string, string>) => {
                 const step = stepFields.findIndex((fields) =>
-                    fields.some((field) => errors[field] !== undefined),
+                    fields.some((field) =>
+                        Object.keys(errors).some(
+                            (errorField) =>
+                                errorField === field ||
+                                errorField.startsWith(`${field}.`),
+                        ),
+                    ),
                 );
 
                 if (step !== -1) {
@@ -431,7 +571,15 @@ export function SellerListingForm({
     }
 
     function errorFor(field: keyof ListingFormData): string | undefined {
-        return clientErrors[field] ?? form.errors[field];
+        const directError = clientErrors[field] ?? form.errors[field];
+
+        if (directError || field !== 'images') {
+            return directError;
+        }
+
+        return Object.entries(form.errors).find(([errorField]) =>
+            errorField.startsWith('image_crops'),
+        )?.[1];
     }
 
     const inputClass =
@@ -922,6 +1070,9 @@ export function SellerListingForm({
                             <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-600 dark:bg-stone-800 dark:text-stone-300">
                                 5 MB max each
                             </span>
+                            <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-600 dark:bg-stone-800 dark:text-stone-300">
+                                1200 × 900 minimum
+                            </span>
                         </div>
                         <label
                             htmlFor="listing-images"
@@ -934,7 +1085,7 @@ export function SellerListingForm({
                             onDrop={(event) => {
                                 event.preventDefault();
                                 setIsDraggingImages(false);
-                                addImages(event.dataTransfer.files);
+                                void addImages(event.dataTransfer.files);
                             }}
                             className={`group flex min-h-64 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 py-10 text-center transition ${
                                 isDraggingImages
@@ -965,7 +1116,7 @@ export function SellerListingForm({
                                 multiple
                                 accept="image/jpeg,image/png,image/webp"
                                 onChange={(event) => {
-                                    addImages(event.target.files);
+                                    void addImages(event.target.files);
                                     event.target.value = '';
                                 }}
                             />
@@ -976,7 +1127,7 @@ export function SellerListingForm({
                                 {existingMedia.map((media) => (
                                     <div
                                         key={media.id}
-                                        className="group relative aspect-square overflow-hidden rounded-2xl bg-stone-100 shadow-sm ring-1 ring-stone-200 dark:bg-stone-800 dark:ring-stone-700"
+                                        className="group relative aspect-[4/3] overflow-hidden rounded-2xl bg-stone-100 shadow-sm ring-1 ring-stone-200 dark:bg-stone-800 dark:ring-stone-700"
                                     >
                                         <img
                                             className="h-full w-full object-cover transition group-hover:scale-105"
@@ -993,42 +1144,48 @@ export function SellerListingForm({
                                         </span>
                                     </div>
                                 ))}
-                                {imagePreviews.map(({ file, url }, index) => (
-                                    <div
-                                        key={url}
-                                        className="group relative aspect-square overflow-hidden rounded-2xl bg-stone-100 shadow-sm ring-1 ring-stone-200 dark:bg-stone-800 dark:ring-stone-700"
-                                    >
-                                        <img
-                                            className="h-full w-full object-cover transition group-hover:scale-105"
-                                            src={url}
-                                            alt={file.name}
-                                        />
-                                        {existingMedia.length === 0 &&
-                                            index === 0 && (
-                                                <span className="absolute top-2 left-2 rounded-full bg-amber-400 px-2 py-1 text-[10px] font-black text-stone-950">
-                                                    Cover
-                                                </span>
-                                            )}
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                form.setData(
-                                                    'images',
-                                                    form.data.images.filter(
-                                                        (_, imageIndex) =>
-                                                            imageIndex !==
-                                                            index,
-                                                    ),
-                                                );
-                                                clearError('images');
-                                            }}
-                                            className="absolute top-2 right-2 rounded-full bg-stone-950/80 p-2 text-white backdrop-blur-sm transition hover:bg-red-600 sm:opacity-0 sm:group-hover:opacity-100"
-                                            aria-label={`Remove ${file.name}`}
+                                {imagePreviews.map(
+                                    ({ file, url, size, crop }, index) => (
+                                        <div
+                                            key={url}
+                                            className="group relative aspect-[4/3] overflow-hidden rounded-2xl bg-stone-100 shadow-sm ring-1 ring-stone-200 dark:bg-stone-800 dark:ring-stone-700"
                                         >
-                                            <X className="size-4" />
-                                        </button>
-                                    </div>
-                                ))}
+                                            {size && crop && (
+                                                <CroppedImagePreview
+                                                    src={url}
+                                                    alt={file.name}
+                                                    size={size}
+                                                    crop={crop}
+                                                />
+                                            )}
+                                            {existingMedia.length === 0 &&
+                                                index === 0 && (
+                                                    <span className="absolute top-2 left-2 rounded-full bg-amber-400 px-2 py-1 text-[10px] font-black text-stone-950">
+                                                        Cover
+                                                    </span>
+                                                )}
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    openCropEditor(index)
+                                                }
+                                                className="absolute bottom-2 left-2 rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-black text-stone-950 shadow-sm backdrop-blur-sm transition hover:bg-amber-400"
+                                            >
+                                                Adjust crop
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    removeImage(index)
+                                                }
+                                                className="absolute top-2 right-2 rounded-full bg-stone-950/80 p-2 text-white backdrop-blur-sm transition hover:bg-red-600 sm:opacity-0 sm:group-hover:opacity-100"
+                                                aria-label={`Remove ${file.name}`}
+                                            >
+                                                <X className="size-4" />
+                                            </button>
+                                        </div>
+                                    ),
+                                )}
                             </div>
                         )}
                         {errorFor('images') && (
@@ -1046,12 +1203,20 @@ export function SellerListingForm({
                         </p>
                         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.7fr)]">
                             <section className="overflow-hidden rounded-2xl border border-stone-200 bg-stone-50 shadow-sm dark:border-stone-800 dark:bg-stone-950">
-                                <div className="relative aspect-[16/9] overflow-hidden bg-stone-200 dark:bg-stone-800">
+                                <div className="relative aspect-[4/3] overflow-hidden bg-stone-200 dark:bg-stone-800">
                                     {primaryPhotoUrl ? (
                                         <img
                                             src={primaryPhotoUrl}
                                             alt="Listing cover preview"
                                             className="h-full w-full object-cover"
+                                        />
+                                    ) : imagePreviews[0]?.size &&
+                                      imagePreviews[0]?.crop ? (
+                                        <CroppedImagePreview
+                                            src={imagePreviews[0].url}
+                                            alt="Listing cover preview"
+                                            size={imagePreviews[0].size}
+                                            crop={imagePreviews[0].crop}
                                         />
                                     ) : (
                                         <div className="flex h-full flex-col items-center justify-center gap-3 text-stone-400">
@@ -1407,6 +1572,92 @@ export function SellerListingForm({
                     </div>
                 </div>
             </form>
+            <Dialog
+                open={cropImageIndex !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setCropImageIndex(null);
+                    }
+                }}
+            >
+                <DialogContent className="sm:max-w-3xl">
+                    <DialogHeader>
+                        <DialogTitle>Adjust photo crop</DialogTitle>
+                        <DialogDescription>
+                            Pan and zoom until the product is framed inside the
+                            4:3 area. This matches the final listing image.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {cropImage?.crop && (
+                        <>
+                            <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-stone-950">
+                                <Cropper
+                                    key={cropEditorVersion}
+                                    image={cropImage.url}
+                                    crop={cropPosition}
+                                    zoom={cropZoom}
+                                    minZoom={1}
+                                    maxZoom={maximumCropZoom}
+                                    aspect={4 / 3}
+                                    initialCroppedAreaPixels={
+                                        draftCrop ?? cropImage.crop
+                                    }
+                                    onCropChange={setCropPosition}
+                                    onZoomChange={setCropZoom}
+                                    onCropComplete={(
+                                        _croppedArea: Area,
+                                        croppedAreaPixels: Area,
+                                    ) =>
+                                        setDraftCrop(
+                                            normalizeCrop(croppedAreaPixels),
+                                        )
+                                    }
+                                    showGrid
+                                />
+                            </div>
+                            <label className="grid gap-2 text-sm font-bold">
+                                Zoom
+                                <input
+                                    type="range"
+                                    min={1}
+                                    max={maximumCropZoom}
+                                    step={0.01}
+                                    value={cropZoom}
+                                    onInput={(event) =>
+                                        setCropZoom(
+                                            Number(event.currentTarget.value),
+                                        )
+                                    }
+                                    className="w-full accent-amber-500"
+                                />
+                            </label>
+                        </>
+                    )}
+                    <DialogFooter>
+                        <button
+                            type="button"
+                            onClick={() => setCropImageIndex(null)}
+                            className="rounded-xl border border-stone-300 px-5 py-2.5 font-bold transition hover:bg-stone-50 dark:border-stone-700 dark:hover:bg-stone-800"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={resetCropEditor}
+                            className="rounded-xl border border-stone-300 px-5 py-2.5 font-bold transition hover:bg-stone-50 dark:border-stone-700 dark:hover:bg-stone-800"
+                        >
+                            Reset
+                        </button>
+                        <button
+                            type="button"
+                            onClick={applyCrop}
+                            className="rounded-xl bg-primary px-5 py-2.5 font-black text-primary-foreground transition hover:bg-primary/90"
+                        >
+                            Apply crop
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </section>
     );
 }
@@ -1561,4 +1812,78 @@ function formatPrice(value: string): string {
 
 function formatDate(value: string): string {
     return value === '' ? 'Not set' : new Date(value).toLocaleString();
+}
+
+function CroppedImagePreview({
+    alt,
+    crop,
+    size,
+    src,
+}: {
+    alt: string;
+    crop: ListingImageCrop;
+    size: ListingImageSize;
+    src: string;
+}): ReactNode {
+    return (
+        <img
+            src={src}
+            alt={alt}
+            className="absolute max-w-none"
+            style={{
+                height: `${(size.height / crop.height) * 100}%`,
+                left: `${(-crop.x / crop.width) * 100}%`,
+                top: `${(-crop.y / crop.height) * 100}%`,
+                width: `${(size.width / crop.width) * 100}%`,
+            }}
+        />
+    );
+}
+
+function centeredFourByThreeCrop(size: ListingImageSize): ListingImageCrop {
+    if (size.width / size.height > 4 / 3) {
+        const width = Math.round((size.height * 4) / 3);
+
+        return {
+            x: Math.round((size.width - width) / 2),
+            y: 0,
+            width,
+            height: size.height,
+        };
+    }
+
+    const height = Math.round((size.width * 3) / 4);
+
+    return {
+        x: 0,
+        y: Math.round((size.height - height) / 2),
+        width: size.width,
+        height,
+    };
+}
+
+function normalizeCrop(crop: Area): ListingImageCrop {
+    return {
+        x: Math.round(crop.x),
+        y: Math.round(crop.y),
+        width: Math.round(crop.width),
+        height: Math.round(crop.height),
+    };
+}
+
+function readImageSize(file: File): Promise<ListingImageSize> {
+    return new Promise((resolve, reject) => {
+        const objectUrl = URL.createObjectURL(file);
+        const image = new Image();
+
+        image.onload = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve({ width: image.naturalWidth, height: image.naturalHeight });
+        };
+        image.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            reject(new Error(`Could not read ${file.name}.`));
+        };
+        image.src = objectUrl;
+    });
 }

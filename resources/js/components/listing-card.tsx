@@ -18,7 +18,9 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
                 {listing.media[0] ? (
                     <img
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                        src={listing.media[0].url}
+                        src={listing.media[0].cardUrl}
+                        srcSet={`${listing.media[0].cardUrl} 480w, ${listing.media[0].card2xUrl} 960w`}
+                        sizes="(min-width: 1280px) 20vw, (min-width: 640px) 33vw, 50vw"
                         alt={listing.title}
                         loading="lazy"
                     />

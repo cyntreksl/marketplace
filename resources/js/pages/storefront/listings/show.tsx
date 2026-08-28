@@ -51,11 +51,13 @@ function ProductGallery({ listing }: { listing: StorefrontListing }) {
 
     return (
         <div className="space-y-3">
-            <div className="relative aspect-square overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-primary/15 via-white to-slate-100 shadow-xl shadow-slate-950/5 dark:border-slate-800 dark:from-primary/10 dark:via-slate-900 dark:to-slate-950">
+            <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-primary/15 via-white to-slate-100 shadow-xl shadow-slate-950/5 dark:border-slate-800 dark:from-primary/10 dark:via-slate-900 dark:to-slate-950">
                 {selectedMedia ? (
                     <img
-                        className="h-full w-full object-contain p-3 sm:p-5"
+                        className="h-full w-full object-cover"
                         src={selectedMedia.url}
+                        srcSet={`${selectedMedia.card2xUrl} 960w, ${selectedMedia.url} 1200w`}
+                        sizes="(min-width: 1024px) 55vw, 100vw"
                         alt={listing.title}
                     />
                 ) : (
@@ -87,14 +89,14 @@ function ProductGallery({ listing }: { listing: StorefrontListing }) {
                             onClick={() => setSelectedMediaIndex(index)}
                             aria-label={`View product image ${index + 1}`}
                             aria-pressed={selectedMediaIndex === index}
-                            className={`aspect-square overflow-hidden rounded-xl border bg-white p-1 transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none dark:bg-slate-900 ${
+                            className={`aspect-[4/3] overflow-hidden rounded-xl border bg-white p-1 transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none dark:bg-slate-900 ${
                                 selectedMediaIndex === index
                                     ? 'border-primary ring-2 ring-primary/20'
                                     : 'border-slate-200 hover:border-primary/50 dark:border-slate-700'
                             }`}
                         >
                             <img
-                                src={media.url}
+                                src={media.thumbnailUrl}
                                 alt=""
                                 className="h-full w-full rounded-lg object-cover"
                             />

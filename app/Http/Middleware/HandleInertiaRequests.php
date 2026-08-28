@@ -3,11 +3,14 @@
 namespace App\Http\Middleware;
 
 use App\Models\Role;
+use App\Services\SeoHeadService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
+    public function __construct(private readonly SeoHeadService $seo) {}
+
     /**
      * The root template that's loaded on the first page visit.
      *
@@ -38,6 +41,7 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            'head' => $this->seo->default($request),
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user(),

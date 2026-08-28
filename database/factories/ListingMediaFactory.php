@@ -22,6 +22,10 @@ class ListingMediaFactory extends Factory
             'listing_id' => Listing::factory(),
             'disk' => 'public',
             'path' => 'listings/'.fake()->uuid().'.webp',
+            'source_path' => null,
+            'variant_version' => null,
+            'variants' => null,
+            'processing_status' => null,
             'type' => 'image',
             'sort_order' => 0,
         ];

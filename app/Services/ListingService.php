@@ -12,8 +12,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use LogicException;
-use RuntimeException;
 
 class ListingService
 {
@@ -21,6 +19,7 @@ class ListingService
         private readonly ListingRepository $listings,
         private readonly CatalogRepository $catalog,
         private readonly AuditLogService $auditLogs,
+        private readonly ListingImageService $images,
     ) {}
 
     /**
@@ -67,7 +66,7 @@ class ListingService
                 'commission_percentage' => $category->commission_percentage,
             ]);
             $this->listings->save($listing);
-            $this->storeImages($listing, $attributes['images']);
+            $this->storeImages($listing, $attributes['images'], $attributes['image_crops']);
 
             $this->syncAuction($listing, $attributes);
 
@@ -119,7 +118,7 @@ class ListingService
             $this->syncAuction($listing, $attributes);
 
             if ($attributes['images'] ?? []) {
-                $this->storeImages($listing, $attributes['images']);
+                $this->storeImages($listing, $attributes['images'], $attributes['image_crops']);
             }
 
             $this->auditLogs->record($seller, 'listing.draft_updated', $listing, $before, $listing->getAttributes());
@@ -193,36 +192,18 @@ class ListingService
         return $seller->sellerProfile()->firstOrFail();
     }
 
-    /** @param array<int, UploadedFile> $images */
-    private function storeImages(Listing $listing, array $images): void
+    /**
+     * @param  array<int, UploadedFile>  $images
+     * @param  array<int, array{x: int, y: int, width: int, height: int}>  $crops
+     */
+    private function storeImages(Listing $listing, array $images, array $crops): void
     {
-        $sortOrder = (int) $listing->media()->max('sort_order') + 1;
-        $mediaDisk = $this->mediaDisk();
+        $sortOrder = $this->listings->nextMediaSortOrder($listing);
+        $isCover = $this->listings->mediaCount($listing) === 0;
 
-        foreach ($images as $image) {
-            $path = $image->store("listings/{$listing->id}", $mediaDisk);
-            if ($path === false) {
-                throw new RuntimeException('The listing image could not be stored.');
-            }
-
-            $listing->media()->create([
-                'disk' => $mediaDisk,
-                'path' => $path,
-                'type' => 'image',
-                'sort_order' => $sortOrder++,
-            ]);
+        foreach ($images as $index => $image) {
+            $this->images->store($listing, $image, $crops[$index], $sortOrder++, $isCover && $index === 0);
         }
-    }
-
-    private function mediaDisk(): string
-    {
-        $mediaDisk = config('filesystems.media');
-
-        if (! is_string($mediaDisk) || $mediaDisk === '') {
-            throw new LogicException('The media filesystem disk is not configured.');
-        }
-
-        return $mediaDisk;
     }
 
     /** @param array<string, mixed> $attributes */

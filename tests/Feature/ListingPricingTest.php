@@ -26,13 +26,14 @@ test('seller entered offer prices must be lower than the regular buy now price',
         'stock_quantity' => 3,
         'price' => '25000.00',
         'sale_price' => '25000.00',
-        'images' => [UploadedFile::fake()->image('desk.jpg')],
+        'images' => [UploadedFile::fake()->image('desk.jpg', 1600, 1200)],
+        'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1200]],
     ];
 
     $this->actingAs($seller)->post(route('seller.listings.store'), $attributes)->assertSessionHasErrors('sale_price');
 
     $attributes['sale_price'] = '22500.00';
-    $attributes['images'] = [UploadedFile::fake()->image('desk-valid.jpg')];
+    $attributes['images'] = [UploadedFile::fake()->image('desk-valid.jpg', 1600, 1200)];
     $this->actingAs($seller)->post(route('seller.listings.store'), $attributes)->assertRedirect(route('seller.listings.index'));
 
     expect(Listing::query()->sole()->sale_price)->toBe('22500.00');

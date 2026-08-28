@@ -3,18 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="description" content="Discover more with ProDeals.lk, Sri Lanka's marketplace for everyday finds and better deals.">
         <meta name="theme-color" content="#102A5C">
-        <link rel="canonical" href="{{ config('app.url') }}">
-        <meta property="og:site_name" content="ProDeals.lk">
-        <meta property="og:type" content="website">
-        <meta property="og:title" content="ProDeals.lk — Better deals. Closer to home.">
-        <meta property="og:description" content="Discover more with ProDeals.lk, Sri Lanka's marketplace for everyday finds and better deals.">
-        <meta property="og:image" content="{{ rtrim(config('app.url'), '/') }}/prodeals-social-card.png">
-        <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:title" content="ProDeals.lk — Better deals. Closer to home.">
-        <meta name="twitter:description" content="Discover more with ProDeals.lk, Sri Lanka's marketplace for everyday finds and better deals.">
-        <meta name="twitter:image" content="{{ rtrim(config('app.url'), '/') }}/prodeals-social-card.png">
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>
@@ -52,7 +41,9 @@
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
         <x-inertia::head>
-            <title>{{ config('app.name', 'ProDeals.lk') }}</title>
+            @foreach ($page['props']['head'] ?? [] as $headElement)
+                {!! $headElement !!}
+            @endforeach
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">

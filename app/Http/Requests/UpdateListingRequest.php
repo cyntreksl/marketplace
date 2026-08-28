@@ -2,13 +2,17 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesListingImages;
 use App\Models\Listing;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateListingRequest extends FormRequest
 {
+    use ValidatesListingImages;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -51,18 +55,29 @@ class UpdateListingRequest extends FormRequest
             'minimum_increment' => ['required_if:listing_type,auction', 'nullable', 'decimal:0,2', 'min:1'],
             'starts_at' => ['required_if:listing_type,auction', 'nullable', 'date', 'after_or_equal:now'],
             'ends_at' => ['required_if:listing_type,auction', 'nullable', 'date', 'after:starts_at'],
-            'images' => ['nullable', 'array', 'max:5'],
-            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            ...$this->listingImageRules(required: false),
             'submit_for_review' => ['nullable', 'boolean'],
         ];
     }
 
     protected function prepareForValidation(): void
     {
+        $this->prepareListingImageCrops();
         $brandName = $this->input('brand_name');
 
         $this->merge([
             'brand_name' => is_string($brandName) && filled($brandName) ? Str::squish($brandName) : null,
         ]);
+    }
+
+    /** @return array<int, callable(Validator): void> */
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            $listing = $this->route('listing');
+            $existingImageCount = $listing instanceof Listing ? $listing->media()->count() : 0;
+
+            $this->validateListingImageCrops($validator, $existingImageCount);
+        }];
     }
 }

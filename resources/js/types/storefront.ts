@@ -52,6 +52,9 @@ export type StorefrontListingMedia = {
     path: string;
     type: string;
     url: string;
+    thumbnailUrl: string;
+    cardUrl: string;
+    card2xUrl: string;
 };
 
 export type StorefrontListingAuction = {

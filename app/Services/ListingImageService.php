@@ -1,0 +1,242 @@
+<?php
+
+namespace App\Services;
+
+use App\Contracts\Repositories\ListingRepository;
+use App\Jobs\GenerateListingImageVariants;
+use App\Models\Listing;
+use App\Models\ListingMedia;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Intervention\Image\Alignment;
+use Intervention\Image\Encoders\JpegEncoder;
+use Intervention\Image\Encoders\WebpEncoder;
+use Intervention\Image\Interfaces\ImageInterface;
+use Intervention\Image\Interfaces\ImageManagerInterface;
+use RuntimeException;
+use Throwable;
+
+class ListingImageService
+{
+    private const CACHE_CONTROL = 'public, max-age=31536000, immutable';
+
+    public function __construct(
+        private readonly ImageManagerInterface $images,
+        private readonly ListingRepository $listings,
+    ) {}
+
+    /**
+     * @param  array{x: int, y: int, width: int, height: int}  $crop
+     */
+    public function store(Listing $listing, UploadedFile $upload, array $crop, int $sortOrder, bool $isCover): ListingMedia
+    {
+        $disk = $this->mediaDisk();
+        $version = (string) Str::uuid();
+        $directory = "listings/{$listing->id}/{$version}";
+        $sourcePath = $directory.'/source.webp';
+        $canonicalPath = $directory.'/main.webp';
+        $storedPaths = [];
+
+        try {
+            $sourceImage = $this->images->decodeSplFileInfo($upload);
+            $this->validateCrop($sourceImage, $crop);
+
+            if (! $this->putImage($disk, $sourcePath, $sourceImage, new WebpEncoder(quality: 90, strip: true))) {
+                throw new RuntimeException('The listing image source could not be stored.');
+            }
+
+            $storedPaths[] = $sourcePath;
+            $canonical = (clone $sourceImage)
+                ->crop($crop['width'], $crop['height'], $crop['x'], $crop['y'])
+                ->resize(1200, 900);
+
+            if (! $this->putImage($disk, $canonicalPath, $canonical, new WebpEncoder(quality: 85, strip: true))) {
+                throw new RuntimeException('The listing image could not be stored.');
+            }
+
+            $storedPaths[] = $canonicalPath;
+            $media = $this->listings->createMedia($listing, [
+                'disk' => $disk,
+                'path' => $canonicalPath,
+                'source_path' => $sourcePath,
+                'crop_x' => $crop['x'],
+                'crop_y' => $crop['y'],
+                'crop_width' => $crop['width'],
+                'crop_height' => $crop['height'],
+                'variant_version' => $version,
+                'variants' => null,
+                'processing_status' => 'pending',
+                'processing_error' => null,
+                'type' => 'image',
+                'sort_order' => $sortOrder,
+            ]);
+
+            DB::connection()->afterRollBack(fn () => Storage::disk($disk)->delete($storedPaths));
+            GenerateListingImageVariants::dispatch($media->id, $version, $isCover)->afterCommit();
+
+            return $media;
+        } catch (Throwable $exception) {
+            Storage::disk($disk)->delete($storedPaths);
+
+            throw $exception;
+        }
+    }
+
+    public function generateVariants(int $mediaId, string $version, bool $includeOpenGraph): void
+    {
+        $media = $this->listings->findMedia($mediaId);
+
+        if ($media === null || $media->variant_version !== $version) {
+            return;
+        }
+
+        $disk = $media->disk;
+        $directory = dirname($media->path);
+        $variants = [
+            'thumbnail' => $directory.'/thumbnail-240x180.webp',
+            'card' => $directory.'/card-480x360.webp',
+            'card_2x' => $directory.'/card-960x720.webp',
+        ];
+
+        if ($includeOpenGraph) {
+            $variants['open_graph'] = $directory.'/open-graph-1200x630.jpg';
+        }
+
+        if ($this->variantsAreReady($media, $variants)) {
+            return;
+        }
+
+        try {
+            $canonical = Storage::disk($disk)->get($media->path);
+            $this->putWebpVariant($disk, $variants['thumbnail'], $canonical, 240, 180);
+            $this->putWebpVariant($disk, $variants['card'], $canonical, 480, 360);
+            $this->putWebpVariant($disk, $variants['card_2x'], $canonical, 960, 720);
+
+            if ($includeOpenGraph) {
+                $this->putOpenGraphVariant($disk, $variants['open_graph'], $canonical);
+            }
+
+            $currentMedia = $this->listings->findMedia($mediaId);
+
+            if ($currentMedia === null || $currentMedia->variant_version !== $version) {
+                Storage::disk($disk)->delete(array_values($variants));
+
+                return;
+            }
+
+            $oldVariantPaths = is_array($currentMedia->variants) ? array_values($currentMedia->variants) : [];
+            $currentMedia->forceFill([
+                'variants' => $variants,
+                'processing_status' => 'ready',
+                'processing_error' => null,
+            ]);
+            $this->listings->saveMedia($currentMedia);
+
+            Storage::disk($disk)->delete(array_diff($oldVariantPaths, array_values($variants)));
+        } catch (Throwable $exception) {
+            Storage::disk($disk)->delete(array_values($variants));
+
+            throw $exception;
+        }
+    }
+
+    public function markFailed(int $mediaId, string $version, ?Throwable $exception): void
+    {
+        $media = $this->listings->findMedia($mediaId);
+
+        if ($media === null || $media->variant_version !== $version) {
+            return;
+        }
+
+        $media->forceFill([
+            'processing_status' => 'failed',
+            'processing_error' => Str::limit($exception?->getMessage() ?? 'Image processing failed.', 1000),
+        ]);
+        $this->listings->saveMedia($media);
+    }
+
+    /**
+     * @param  array{x: int, y: int, width: int, height: int}  $crop
+     */
+    private function validateCrop(ImageInterface $image, array $crop): void
+    {
+        $isFourByThree = abs(($crop['width'] * 3) - ($crop['height'] * 4)) <= 4;
+        $isInsideImage = $crop['x'] >= 0
+            && $crop['y'] >= 0
+            && $crop['width'] >= 1200
+            && $crop['height'] >= 900
+            && $image->width() >= $crop['x'] + $crop['width']
+            && $image->height() >= $crop['y'] + $crop['height'];
+
+        if (! $isFourByThree || ! $isInsideImage) {
+            throw ValidationException::withMessages([
+                'image_crops' => 'Each photo must have a valid 4:3 crop with at least 1200 × 900 source pixels.',
+            ]);
+        }
+    }
+
+    private function putWebpVariant(string $disk, string $path, string $canonical, int $width, int $height): void
+    {
+        $image = $this->images->decodeBinary($canonical)->resize($width, $height);
+
+        if (! $this->putImage($disk, $path, $image, new WebpEncoder(quality: 82, strip: true))) {
+            throw new RuntimeException("The listing image variant {$path} could not be stored.");
+        }
+    }
+
+    /** @param array<string, string> $expectedVariants */
+    private function variantsAreReady(ListingMedia $media, array $expectedVariants): bool
+    {
+        if ($media->processing_status !== 'ready' || $media->variants !== $expectedVariants) {
+            return false;
+        }
+
+        return collect($expectedVariants)
+            ->every(fn (string $path): bool => Storage::disk($media->disk)->exists($path));
+    }
+
+    private function putOpenGraphVariant(string $disk, string $path, string $canonical): void
+    {
+        $background = $this->images->decodeBinary($canonical)
+            ->cover(1200, 630)
+            ->blur(35)
+            ->brightness(-30);
+        $foreground = $this->images->decodeBinary($canonical)
+            ->contain(760, 570, 'ffffff');
+
+        $background->insert($foreground, alignment: Alignment::CENTER);
+
+        $logoPath = public_path('prodeals-email-logo.png');
+        if (is_file($logoPath)) {
+            $logo = $this->images->decodePath($logoPath)->scaleDown(width: 195);
+            $background->insert($logo, x: 28, y: 28);
+        }
+
+        if (! $this->putImage($disk, $path, $background, new JpegEncoder(quality: 88, progressive: true, strip: true))) {
+            throw new RuntimeException('The listing open graph image could not be stored.');
+        }
+    }
+
+    private function putImage(string $disk, string $path, ImageInterface $image, WebpEncoder|JpegEncoder $encoder): bool
+    {
+        return Storage::disk($disk)->put($path, (string) $image->encode($encoder), [
+            'visibility' => 'public',
+            'CacheControl' => self::CACHE_CONTROL,
+            'ContentType' => $encoder instanceof WebpEncoder ? 'image/webp' : 'image/jpeg',
+        ]) !== false;
+    }
+
+    private function mediaDisk(): string
+    {
+        $disk = config('filesystems.media');
+
+        if (! is_string($disk) || $disk === '') {
+            throw new RuntimeException('The media filesystem disk is not configured.');
+        }
+
+        return $disk;
+    }
+}

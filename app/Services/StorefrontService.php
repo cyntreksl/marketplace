@@ -18,6 +18,7 @@ class StorefrontService
         private readonly CatalogRepository $catalog,
         private readonly PromotionRepository $promotions,
         private readonly ReviewRepository $reviews,
+        private readonly SeoHeadService $seo,
     ) {}
 
     /** @return array<string, mixed> */
@@ -121,6 +122,7 @@ class StorefrontService
         $listing = $this->listings->findPublicBySlug($slug);
 
         return [
+            'head' => $this->seo->listing($listing),
             'listing' => $this->listingData($listing, detailed: true),
             'reviews' => $this->reviews->forListing((int) $listing->id, 20)->map(fn ($review): array => [
                 'id' => $review->id,
@@ -188,6 +190,9 @@ class StorefrontService
                 'path' => $media->path,
                 'type' => $media->type,
                 'url' => $media->url,
+                'thumbnailUrl' => $media->urlForVariant('thumbnail'),
+                'cardUrl' => $media->urlForVariant('card'),
+                'card2xUrl' => $media->urlForVariant('card_2x'),
             ]),
             'seller' => $listing->sellerProfile?->only(['store_name', 'slug']),
             'auction' => $listing->auction === null ? null : [

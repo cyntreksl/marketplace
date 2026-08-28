@@ -3,6 +3,7 @@
 namespace App\Contracts\Repositories;
 
 use App\Models\Listing;
+use App\Models\ListingMedia;
 use App\Models\SellerProfile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -43,6 +44,17 @@ interface ListingRepository
     public function paginateForSeller(SellerProfile $seller, int $perPage = 15): LengthAwarePaginator;
 
     public function save(Listing $listing): Listing;
+
+    /** @param array<string, mixed> $attributes */
+    public function createMedia(Listing $listing, array $attributes): ListingMedia;
+
+    public function findMedia(int $mediaId): ?ListingMedia;
+
+    public function saveMedia(ListingMedia $media): ListingMedia;
+
+    public function mediaCount(Listing $listing): int;
+
+    public function nextMediaSortOrder(Listing $listing): int;
 
     public function findForSellerOrFail(SellerProfile $seller, int $listingId, bool $lockForUpdate = false): Listing;
 

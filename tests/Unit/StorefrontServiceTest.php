@@ -6,6 +6,7 @@ use App\Contracts\Repositories\PromotionRepository;
 use App\Contracts\Repositories\ReviewRepository;
 use App\Models\Category;
 use App\Models\Listing;
+use App\Services\SeoHeadService;
 use App\Services\StorefrontService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Mockery\MockInterface;
@@ -31,7 +32,7 @@ test('browse data combines listing results navigation context and filter options
         $mock->shouldReceive('availableBrands')->once()->andReturn(collect());
     });
 
-    $data = (new StorefrontService($listingRepository, $catalogRepository, Mockery::mock(PromotionRepository::class), Mockery::mock(ReviewRepository::class)))->browseData([
+    $data = (new StorefrontService($listingRepository, $catalogRepository, Mockery::mock(PromotionRepository::class), Mockery::mock(ReviewRepository::class), Mockery::mock(SeoHeadService::class)))->browseData([
         'category' => 'fashion',
         'sort' => 'newest',
     ]);
@@ -75,10 +76,14 @@ test('listing details include an empty media collection and category trail', fun
     $reviewRepository = Mockery::mock(ReviewRepository::class, function (MockInterface $mock): void {
         $mock->shouldReceive('forListing')->once()->with(0, 20)->andReturn(collect());
     });
+    $seo = Mockery::mock(SeoHeadService::class, function (MockInterface $mock) use ($listing): void {
+        $mock->shouldReceive('listing')->once()->with($listing)->andReturn(['<title>Modern laptop</title>']);
+    });
 
-    $data = (new StorefrontService($listingRepository, $catalogRepository, Mockery::mock(PromotionRepository::class), $reviewRepository))->listingDetailsData('modern-laptop');
+    $data = (new StorefrontService($listingRepository, $catalogRepository, Mockery::mock(PromotionRepository::class), $reviewRepository, $seo))->listingDetailsData('modern-laptop');
 
     expect($data['listing']['media'])->toBeEmpty()
+        ->and($data['head'])->toHaveCount(1)
         ->and($data['categoryTrail'])->toHaveCount(2)
         ->and($data['categoryTrail'][1]['slug'])->toBe('laptops');
 });
