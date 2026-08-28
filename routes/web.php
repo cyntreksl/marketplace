@@ -20,6 +20,19 @@ use App\Http\Controllers\VendorRegistrationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StorefrontController::class, 'home'])->name('home');
+Route::inertia('/about', 'storefront/content/show', ['document' => 'about'])->name('about');
+Route::inertia('/contact', 'storefront/content/show', ['document' => 'contact'])->name('contact');
+Route::inertia('/help', 'storefront/content/show', ['document' => 'help'])->name('help');
+Route::inertia('/faq', 'storefront/content/show', ['document' => 'faq'])->name('faq');
+Route::inertia('/buying', 'storefront/content/show', ['document' => 'buying'])->name('buying');
+Route::inertia('/selling', 'storefront/content/show', ['document' => 'selling'])->name('selling');
+Route::inertia('/policies/shipping', 'storefront/content/show', ['document' => 'shipping'])->name('policies.shipping');
+Route::inertia('/policies/returns-refunds', 'storefront/content/show', ['document' => 'returns'])->name('policies.returns');
+Route::inertia('/legal/terms', 'storefront/content/show', ['document' => 'terms'])->name('legal.terms');
+Route::inertia('/legal/privacy', 'storefront/content/show', ['document' => 'privacy'])->name('legal.privacy');
+Route::inertia('/legal/cookies', 'storefront/content/show', ['document' => 'cookies'])->name('legal.cookies');
+Route::inertia('/policies/sellers', 'storefront/content/show', ['document' => 'sellers'])->name('policies.sellers');
+Route::inertia('/policies/prohibited-items', 'storefront/content/show', ['document' => 'prohibited'])->name('policies.prohibited');
 Route::get('/listings', [StorefrontController::class, 'index'])->name('listings.index');
 Route::get('/listings/{listing}', [StorefrontController::class, 'show'])->name('listings.show');
 Route::get('/categories/search', CategoryLookupController::class)

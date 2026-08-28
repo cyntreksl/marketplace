@@ -14,6 +14,7 @@ import {
     MobileStorefrontCategoryMenu,
 } from '@/components/storefront-category-menu';
 import type { StorefrontCategory } from '@/components/storefront-category-menu';
+import { StorefrontFooter } from '@/components/storefront-footer';
 import { dashboard, home, login, register } from '@/routes';
 import { show as cartShow } from '@/routes/cart';
 import { index as listingsIndex } from '@/routes/listings';
@@ -214,12 +215,7 @@ export function StorefrontLayout({
                     </div>
                 </header>
                 <div>{children}</div>
-                <footer className="border-t border-primary/20 bg-white py-10 dark:border-slate-800 dark:bg-slate-950">
-                    <div className="mx-auto flex max-w-7xl flex-col justify-between gap-3 px-4 text-sm text-slate-500 sm:flex-row sm:px-6 lg:px-8">
-                        <p>Better deals. Closer to home.</p>
-                        <p>Discover · Compare · Make it yours</p>
-                    </div>
-                </footer>
+                <StorefrontFooter />
             </div>
         </>
     );

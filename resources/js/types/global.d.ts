@@ -1,4 +1,5 @@
 import type { Auth } from '@/types/auth';
+import type { MarketplaceDetails } from '@/types/marketplace';
 
 declare module 'react' {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -12,6 +13,7 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
+            marketplace: MarketplaceDetails;
             sidebarOpen: boolean;
             [key: string]: unknown;
         };
