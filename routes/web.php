@@ -8,12 +8,15 @@ use App\Http\Controllers\AdminSellerController;
 use App\Http\Controllers\AdminTaxonomyController;
 use App\Http\Controllers\AuctionBidController;
 use App\Http\Controllers\BuyerDashboardController;
+use App\Http\Controllers\BuyerReturnRequestController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryLookupController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\ReturnEvidenceController;
 use App\Http\Controllers\SellerListingController;
 use App\Http\Controllers\SellerOnboardingController;
 use App\Http\Controllers\SellerOrderController;
+use App\Http\Controllers\SellerReturnRequestController;
 use App\Http\Controllers\SellerWalletController;
 use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\VendorRegistrationController;
@@ -58,6 +61,9 @@ Route::middleware('auth')->prefix('seller')->name('seller.')->group(function ():
 Route::middleware(['auth', 'verified'])->prefix('seller')->name('seller.')->group(function (): void {
     Route::get('/orders', [SellerOrderController::class, 'index'])->name('orders.index');
     Route::post('/orders/{sellerOrder}/ready', [SellerOrderController::class, 'ready'])->name('orders.ready');
+    Route::post('/orders/{sellerOrder}/delivered', [SellerOrderController::class, 'delivered'])->name('orders.delivered');
+    Route::get('/returns', [SellerReturnRequestController::class, 'index'])->name('returns.index');
+    Route::patch('/returns/{returnRequest}', [SellerReturnRequestController::class, 'update'])->name('returns.update');
     Route::get('/wallet', [SellerWalletController::class, 'index'])->name('wallet.index');
     Route::post('/wallet/payouts', [SellerWalletController::class, 'store'])->name('wallet.payouts.store');
 });
@@ -67,6 +73,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/cart/items', [CartController::class, 'store'])->name('cart.items.store');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
     Route::get('/buyer/orders', [BuyerDashboardController::class, 'index'])->name('buyer.orders.index');
+    Route::get('/buyer/returns', [BuyerReturnRequestController::class, 'index'])->name('buyer.returns.index');
+    Route::post('/buyer/returns', [BuyerReturnRequestController::class, 'store'])->name('buyer.returns.store');
+    Route::get('/returns/{returnRequest}/evidence/{evidence}', ReturnEvidenceController::class)
+        ->whereNumber('evidence')
+        ->name('returns.evidence.show');
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
 });
 

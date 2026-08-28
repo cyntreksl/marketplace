@@ -8,12 +8,14 @@ use App\Contracts\Repositories\AuctionRepository;
 use App\Contracts\Repositories\CatalogRepository;
 use App\Contracts\Repositories\GoogleProductTaxonomyRepository;
 use App\Contracts\Repositories\ListingRepository;
+use App\Contracts\Repositories\ReturnRequestRepository;
 use App\Couriers\ManualCourierAdapter;
 use App\Payments\StripePaymentGateway;
 use App\Repositories\EloquentAuctionRepository;
 use App\Repositories\EloquentCatalogRepository;
 use App\Repositories\EloquentGoogleProductTaxonomyRepository;
 use App\Repositories\EloquentListingRepository;
+use App\Repositories\EloquentReturnRequestRepository;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
@@ -34,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(CatalogRepository::class, EloquentCatalogRepository::class);
         $this->app->bind(GoogleProductTaxonomyRepository::class, EloquentGoogleProductTaxonomyRepository::class);
         $this->app->bind(ListingRepository::class, EloquentListingRepository::class);
+        $this->app->bind(ReturnRequestRepository::class, EloquentReturnRequestRepository::class);
         $this->app->bind(PaymentGateway::class, StripePaymentGateway::class);
         $this->app->bind(CourierAdapter::class, ManualCourierAdapter::class);
     }

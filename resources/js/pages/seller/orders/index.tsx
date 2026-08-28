@@ -1,5 +1,8 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { ready } from '@/actions/App/Http/Controllers/SellerOrderController';
+import {
+    delivered,
+    ready,
+} from '@/actions/App/Http/Controllers/SellerOrderController';
 import { PortalLayout } from '@/components/portal-layout';
 import { index as walletIndex } from '@/routes/seller/wallet';
 
@@ -98,6 +101,18 @@ export default function SellerOrders({
                                                     Ready to ship
                                                 </button>
                                             </>
+                                        )}
+                                    </Form>
+                                )}
+                                {order.status === 'ready_to_ship' && (
+                                    <Form {...delivered.form(order.id)}>
+                                        {({ processing }) => (
+                                            <button
+                                                disabled={processing}
+                                                className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+                                            >
+                                                Confirm delivery
+                                            </button>
                                         )}
                                     </Form>
                                 )}

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateSellerOrderStatusRequest;
 use App\Models\SellerOrder;
+use App\Services\ReturnWorkflowService;
 use App\Services\ShipmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,5 +26,12 @@ class SellerOrderController extends Controller
         $shipments->markReadyToShip($request->user(), $sellerOrder, $request->validated('courier_name'), $request->validated('tracking_number'));
 
         return to_route('seller.orders.index')->with('status', 'Order marked ready to ship.');
+    }
+
+    public function delivered(Request $request, SellerOrder $sellerOrder, ReturnWorkflowService $returns): RedirectResponse
+    {
+        $returns->confirmDelivery($request->user(), $sellerOrder->id);
+
+        return to_route('seller.orders.index')->with('status', 'Delivery confirmed. The seven-day return window is now open.');
     }
 }

@@ -6,6 +6,7 @@ import {
     Menu,
     Package,
     Plus,
+    RotateCcw,
     ShieldCheck,
     Tags,
     ShoppingBag,
@@ -39,6 +40,7 @@ import { index as adminListingsIndex } from '@/routes/admin/listings';
 import { index as adminSellersIndex } from '@/routes/admin/sellers';
 import { index as adminTaxonomyIndex } from '@/routes/admin/taxonomy';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
+import { index as buyerReturnsIndex } from '@/routes/buyer/returns';
 import { show as cartShow } from '@/routes/cart';
 import {
     create as sellerListingsCreate,
@@ -46,6 +48,7 @@ import {
 } from '@/routes/seller/listings';
 import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
 import { index as sellerOrdersIndex } from '@/routes/seller/orders';
+import { index as sellerReturnsIndex } from '@/routes/seller/returns';
 import { index as sellerWalletIndex } from '@/routes/seller/wallet';
 
 type Portal = 'admin' | 'seller' | 'buyer';
@@ -118,6 +121,11 @@ const portalDetails: Record<Portal, PortalDetails> = {
                 icon: ShoppingBag,
             },
             {
+                title: 'Returns',
+                href: sellerReturnsIndex(),
+                icon: RotateCcw,
+            },
+            {
                 title: 'Wallet',
                 href: sellerWalletIndex(),
                 icon: WalletCards,
@@ -143,6 +151,11 @@ const portalDetails: Record<Portal, PortalDetails> = {
                 title: 'Orders',
                 href: buyerOrdersIndex(),
                 icon: ClipboardCheck,
+            },
+            {
+                title: 'Returns',
+                href: buyerReturnsIndex(),
+                icon: RotateCcw,
             },
         ],
     },
