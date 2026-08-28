@@ -1,6 +1,6 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import { Check, ShoppingBag, Sparkles } from 'lucide-react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import { BrandLogo } from '@/components/brand-logo';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
 
@@ -10,8 +10,6 @@ export default function AuthSimpleLayout({
     description,
     compact = false,
 }: AuthLayoutProps) {
-    const { name } = usePage().props;
-
     return (
         <div
             className={
@@ -31,10 +29,7 @@ export default function AuthSimpleLayout({
                     href={home()}
                     className="inline-flex w-fit items-center gap-3 rounded-xl text-sm font-semibold text-slate-900 transition-opacity hover:opacity-75 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none dark:text-white"
                 >
-                    <span className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-                        <AppLogoIcon className="size-6 fill-current" />
-                    </span>
-                    <span>{name}</span>
+                    <BrandLogo />
                 </Link>
 
                 <div
@@ -98,23 +93,20 @@ export default function AuthSimpleLayout({
                         href={home()}
                         className="relative z-10 inline-flex w-fit items-center gap-3 text-sm font-semibold text-white"
                     >
-                        <span className="grid size-10 place-items-center rounded-xl bg-white text-slate-950 shadow-lg shadow-black/20">
-                            <AppLogoIcon className="size-6 fill-current" />
-                        </span>
-                        <span>{name}</span>
+                        <BrandLogo inverse />
                     </Link>
 
                     <div className="relative z-10 my-auto max-w-lg">
                         <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-slate-200 backdrop-blur-sm">
                             <Sparkles className="size-3.5 text-sky-300" />
-                            Marketplace made simple
+                            Better deals, made simple
                         </span>
                         <h2 className="max-w-md text-4xl leading-tight font-semibold tracking-tight xl:text-5xl">
-                            Find something worth coming back for.
+                            Better deals. Closer to home.
                         </h2>
                         <p className="mt-5 max-w-md text-base leading-7 text-slate-300">
-                            Browse the latest tech, unique finds, and everyday
-                            essentials—all in one place.
+                            Find everyday essentials, tech, style, and unique
+                            local finds—all in one place.
                         </p>
 
                         <div className="mt-10 grid max-w-md grid-cols-2 gap-4">
@@ -144,7 +136,7 @@ export default function AuthSimpleLayout({
                     </div>
 
                     <p className="relative z-10 text-sm text-slate-400">
-                        Sri Lanka’s trusted marketplace for electronics.
+                        A Sri Lankan marketplace for every kind of find.
                     </p>
                 </aside>
             )}

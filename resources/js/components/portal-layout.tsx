@@ -13,7 +13,7 @@ import {
     WalletCards,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import AppLogoIcon from '@/components/app-logo-icon';
+import { BrandLogo } from '@/components/brand-logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -196,7 +196,7 @@ export function PortalLayout({
     portal: Portal;
     title: string;
 }) {
-    const { auth, name } = usePage().props;
+    const { auth } = usePage().props;
     const getInitials = useInitials();
     const details = portalDetails[portal];
     const PortalIcon = details.icon;
@@ -208,17 +208,7 @@ export function PortalLayout({
                     href={home()}
                     className="flex items-center gap-3 rounded-xl px-2 py-2"
                 >
-                    <span className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
-                        <AppLogoIcon className="size-6 fill-current" />
-                    </span>
-                    <span className="min-w-0">
-                        <span className="block truncate text-sm font-bold">
-                            {name}
-                        </span>
-                        <span className="block truncate text-xs text-muted-foreground">
-                            Marketplace
-                        </span>
-                    </span>
+                    <BrandLogo showTagline />
                 </Link>
 
                 <div className="mt-8 rounded-2xl bg-slate-100 p-3 dark:bg-slate-900">
@@ -274,9 +264,7 @@ export function PortalLayout({
                             <SheetContent side="left" className="w-72 p-4">
                                 <SheetHeader className="p-0 text-left">
                                     <SheetTitle className="flex items-center gap-3">
-                                        <span className="grid size-10 place-items-center rounded-xl bg-primary text-primary-foreground">
-                                            <AppLogoIcon className="size-6 fill-current" />
-                                        </span>
+                                        <BrandLogo compact />
                                         <span>{details.label}</span>
                                     </SheetTitle>
                                 </SheetHeader>

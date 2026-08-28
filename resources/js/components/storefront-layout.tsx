@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
+import { BrandLogo } from '@/components/brand-logo';
 import { dashboard, home, login, register } from '@/routes';
 import { show as cartShow } from '@/routes/cart';
 import { index as listingsIndex } from '@/routes/listings';
@@ -207,12 +208,9 @@ export function StorefrontLayout({
                     >
                         <Link
                             href={home()}
-                            className="flex shrink-0 items-center gap-2 text-2xl font-black tracking-tight text-slate-950 dark:text-white"
+                            className="flex shrink-0 rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                         >
-                            <span className="grid size-8 place-items-center rounded-lg bg-primary text-sm text-primary-foreground shadow-lg shadow-primary/25">
-                                C
-                            </span>
-                            Circuit<span className="text-primary">Market</span>
+                            <BrandLogo className="text-2xl" />
                         </Link>
                         <Form
                             {...listingsIndex.form()}
@@ -223,7 +221,7 @@ export function StorefrontLayout({
                                 <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-slate-400" />
                                 <input
                                     name="search"
-                                    placeholder="Search for products, brands and more"
+                                    placeholder="Search deals, brands and more"
                                     className="h-11 w-full rounded-full border border-slate-200 bg-slate-50 py-2 pr-12 pl-11 text-sm transition outline-none placeholder:text-slate-400 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-900 dark:focus:bg-slate-950"
                                 />
                                 <button
@@ -240,10 +238,10 @@ export function StorefrontLayout({
                                 <Headphones className="size-7 text-primary" />
                                 <span>
                                     <span className="block font-bold">
-                                        24 Support
+                                        Browse with ease
                                     </span>
                                     <span className="text-primary">
-                                        077 216 6166
+                                        Find something for every day
                                     </span>
                                 </span>
                             </div>
@@ -251,10 +249,10 @@ export function StorefrontLayout({
                                 <Globe2 className="size-7 text-primary" />
                                 <span>
                                     <span className="block font-bold">
-                                        Islandwide Delivery
+                                        Made for Sri Lanka
                                     </span>
                                     <span className="text-primary">
-                                        Within 24 hours
+                                        Discover local marketplace finds
                                     </span>
                                 </span>
                             </div>
@@ -369,11 +367,8 @@ export function StorefrontLayout({
                     }`}
                 >
                     <div className="mx-auto flex max-w-7xl flex-col justify-between gap-3 px-4 text-sm text-slate-500 sm:flex-row sm:px-6 lg:px-8">
-                        <p>Sri Lanka’s trusted marketplace for electronics.</p>
-                        <p>
-                            Secure checkout · Trusted sellers · Islandwide
-                            delivery
-                        </p>
+                        <p>Better deals. Closer to home.</p>
+                        <p>Discover · Compare · Make it yours</p>
                     </div>
                 </footer>
             </div>

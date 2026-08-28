@@ -16,14 +16,14 @@ export default function ListingsIndex({
     filters: Record<string, string>;
 }) {
     return (
-        <StorefrontLayout title="Browse electronics" categories={categories}>
+        <StorefrontLayout title="Browse deals" categories={categories}>
             <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
                 <div className="mb-8">
                     <p className="text-sm font-bold tracking-wider text-primary uppercase">
-                        Marketplace
+                        ProDeals.lk marketplace
                     </p>
                     <h1 className="mt-1 text-4xl font-black tracking-tight">
-                        Find your next device
+                        Find your next great deal
                     </h1>
                 </div>
                 <Form

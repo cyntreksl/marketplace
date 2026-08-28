@@ -30,10 +30,7 @@ export default function StorefrontHome({
         : vendorRegister();
 
     return (
-        <StorefrontLayout
-            title="Discover your next device"
-            categories={categories}
-        >
+        <StorefrontLayout title="Discover local deals" categories={categories}>
             <main className="overflow-hidden bg-slate-100/70 dark:bg-slate-950">
                 <section className="px-4 py-7 sm:px-7">
                     <div className="mx-auto grid max-w-none gap-5 xl:grid-cols-2">
@@ -43,22 +40,22 @@ export default function StorefrontHome({
                             <div className="relative flex h-full max-w-2xl flex-col justify-center">
                                 <p className="flex items-center gap-2 text-sm font-bold tracking-[.18em] text-primary-foreground/80 uppercase">
                                     <Sparkles className="size-4" />
-                                    Everyday marketplace deals
+                                    Sri Lanka’s marketplace for more
                                 </p>
                                 <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-                                    Find something brilliant, every day.
+                                    Better deals are closer than you think.
                                 </h1>
                                 <p className="mt-5 max-w-xl text-base leading-7 text-primary-foreground/80 sm:text-lg">
-                                    Shop verified electronics, join live
-                                    auctions, and get your next great find
-                                    delivered to your door.
+                                    Discover everyday essentials, tech, style,
+                                    and unique finds from sellers across Sri
+                                    Lanka.
                                 </p>
                                 <div className="mt-8 flex flex-wrap gap-3">
                                     <Link
                                         href={listingsIndex()}
                                         className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 font-bold text-primary shadow-lg shadow-primary/20 transition hover:bg-primary-foreground/10"
                                     >
-                                        Explore deals
+                                        Explore all deals
                                         <ArrowRight className="size-4" />
                                     </Link>
                                     <Link
@@ -77,22 +74,23 @@ export default function StorefrontHome({
                                 <div className="absolute -right-10 -bottom-16 size-72 rounded-full border-[30px] border-primary/25" />
                                 <div className="relative max-w-sm">
                                     <p className="text-sm font-bold tracking-wider text-primary uppercase">
-                                        Everyday essentials
+                                        More to discover
                                     </p>
                                     <p className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">
-                                        Modern home,
+                                        Better everyday,
                                         <br />
-                                        better living.
+                                        brilliantly found.
                                     </p>
                                     <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                                        Discover quality tech and home finds
-                                        from trusted local sellers.
+                                        Browse a growing range of local finds,
+                                        from practical essentials to your next
+                                        favourite thing.
                                     </p>
                                     <Link
                                         href={listingsIndex()}
                                         className="mt-7 inline-flex rounded-lg border-2 border-primary px-5 py-2.5 text-sm font-bold text-primary transition hover:bg-primary hover:text-primary-foreground"
                                     >
-                                        Shop now
+                                        See what’s new
                                     </Link>
                                 </div>
                             </div>
@@ -102,13 +100,13 @@ export default function StorefrontHome({
                                     className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-primary/50 p-6 text-primary-foreground shadow-lg shadow-primary/10"
                                 >
                                     <p className="text-sm font-bold tracking-wider text-primary-foreground/80 uppercase">
-                                        Member rewards
+                                        More to explore
                                     </p>
                                     <p className="mt-3 text-3xl font-black">
-                                        10% back
+                                        Fresh finds
                                     </p>
                                     <p className="mt-1 text-sm text-primary-foreground/80">
-                                        On selected marketplace finds.
+                                        Discover something worth sharing.
                                     </p>
                                 </Link>
                                 <Link
@@ -116,13 +114,14 @@ export default function StorefrontHome({
                                     className="relative overflow-hidden rounded-2xl bg-slate-950 p-6 text-white shadow-lg shadow-slate-950/15"
                                 >
                                     <p className="text-sm font-bold tracking-wider text-cyan-300 uppercase">
-                                        Flexible checkout
+                                        Browse your way
                                     </p>
                                     <p className="mt-3 text-3xl font-black">
-                                        Buy now.
+                                        Make it yours.
                                     </p>
                                     <p className="mt-1 text-sm text-slate-300">
-                                        Secure checkout and delivery tracking.
+                                        Compare listings and choose with
+                                        confidence.
                                     </p>
                                 </Link>
                             </div>
@@ -133,14 +132,14 @@ export default function StorefrontHome({
                     <div className="mx-auto flex max-w-none flex-col justify-between gap-5 rounded-2xl bg-slate-950 px-6 py-7 text-white shadow-xl shadow-slate-950/15 sm:flex-row sm:items-center sm:px-8">
                         <div>
                             <p className="text-sm font-bold tracking-wider text-cyan-300 uppercase">
-                                Grow with CircuitMarket
+                                Grow with ProDeals.lk
                             </p>
                             <h2 className="mt-2 text-2xl font-black tracking-tight">
                                 Have products to sell?
                             </h2>
                             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">
-                                Open your store and submit your details for our
-                                vendor review.
+                                Share what you sell with shoppers looking for
+                                their next great find.
                             </p>
                         </div>
                         <Link
@@ -155,12 +154,12 @@ export default function StorefrontHome({
                 <section className="px-4 pb-7 sm:px-7">
                     <div className="mx-auto grid max-w-none gap-4 rounded-2xl bg-white px-6 py-7 shadow-sm sm:grid-cols-3 dark:bg-slate-900">
                         {[
-                            ['Happy customers', '0'],
-                            ['Orders delivered', '0'],
-                            ['24/7 support', '0'],
+                            ['A marketplace made for discovery', 'Explore'],
+                            ['All kinds of everyday finds', 'Browse'],
+                            ['A simple way to start selling', 'Sell'],
                         ].map(([title, value]) => (
                             <div className="text-center" key={title}>
-                                <p className="text-4xl font-black text-primary">
+                                <p className="text-sm font-black tracking-[0.16em] text-primary uppercase">
                                     {value}
                                 </p>
                                 <p className="mt-2 text-sm font-bold text-slate-800 capitalize dark:text-white">
@@ -176,15 +175,15 @@ export default function StorefrontHome({
                             <Zap className="size-4" /> Live offers
                         </span>
                         <span className="whitespace-nowrap">
-                            New deals added daily
+                            Fresh marketplace finds
                         </span>
                         <span className="hidden h-1.5 w-1.5 shrink-0 rounded-full bg-white/70 sm:block" />
                         <span className="hidden whitespace-nowrap sm:block">
-                            Islandwide delivery available
+                            Shop across every category
                         </span>
                         <span className="hidden h-1.5 w-1.5 shrink-0 rounded-full bg-white/70 lg:block" />
                         <span className="hidden whitespace-nowrap lg:block">
-                            Secure checkout on every order
+                            Better deals. Closer to home.
                         </span>
                     </div>
                 </section>
@@ -193,10 +192,10 @@ export default function StorefrontHome({
                         <div className="mb-7 flex items-end justify-between gap-4">
                             <div>
                                 <p className="text-sm font-bold tracking-wider text-primary uppercase">
-                                    Start exploring
+                                    Find your next deal
                                 </p>
                                 <h2 className="mt-1 text-3xl font-black tracking-tight">
-                                    Shop by category
+                                    Shop your way
                                 </h2>
                             </div>
                             <Link
@@ -229,7 +228,7 @@ export default function StorefrontHome({
                                             {category.name}
                                         </span>
                                         <span className="mt-1 block text-xs text-slate-500">
-                                            Explore deals
+                                            Browse this category
                                         </span>
                                     </Link>
                                 );
@@ -242,10 +241,10 @@ export default function StorefrontHome({
                         <div className="mb-7 flex items-end justify-between gap-4">
                             <div>
                                 <p className="text-sm font-bold tracking-wider text-primary uppercase">
-                                    Curated for you
+                                    Worth a look
                                 </p>
                                 <h2 className="mt-1 text-3xl font-black tracking-tight">
-                                    Fresh marketplace finds
+                                    Deals to discover
                                 </h2>
                             </div>
                             <Link
