@@ -37,7 +37,6 @@ import { dashboard as adminDashboard } from '@/routes/admin';
 import { index as adminBrandsIndex } from '@/routes/admin/brands';
 import { index as adminCategoriesIndex } from '@/routes/admin/categories';
 import { index as adminListingsIndex } from '@/routes/admin/listings';
-import { index as adminReturnsIndex } from '@/routes/admin/returns';
 import { index as adminSellersIndex } from '@/routes/admin/sellers';
 import { index as adminTaxonomyIndex } from '@/routes/admin/taxonomy';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
@@ -51,6 +50,7 @@ import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
 import { index as sellerOrdersIndex } from '@/routes/seller/orders';
 import { index as sellerReturnsIndex } from '@/routes/seller/returns';
 import { index as sellerWalletIndex } from '@/routes/seller/wallet';
+import { index as adminReturnsIndex } from '@/routes/admin/returns';
 
 type Portal = 'admin' | 'seller' | 'buyer';
 
