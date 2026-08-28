@@ -9,6 +9,7 @@ use App\Models\GoogleProductTaxonomyNode;
 use App\Models\MarketplaceSetting;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -134,6 +135,12 @@ class EloquentCatalogRepository implements CatalogRepository
     public function activeTopLevelCategories(): Collection
     {
         return Category::query()
+            ->select(['id', 'name', 'slug', 'sort_order'])
+            ->with(['children' => fn (HasMany $query): HasMany => $query
+                ->select(['id', 'parent_id', 'name', 'slug', 'sort_order'])
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('name')])
             ->whereNull('parent_id')
             ->where('is_active', true)
             ->orderBy('sort_order')

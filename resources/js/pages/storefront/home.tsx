@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { ArrowRight, Sparkles, Zap } from 'lucide-react';
 import { ListingCard } from '@/components/listing-card';
 import { StorefrontLayout } from '@/components/storefront-layout';
+import type { StorefrontCategory } from '@/components/storefront-layout';
 import { index as listingsIndex } from '@/routes/listings';
 import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
 import { register as vendorRegister } from '@/routes/vendor';
@@ -11,7 +12,7 @@ export default function StorefrontHome({
     categories,
 }: {
     featuredListings: { data: any[] };
-    categories: { id: number; name: string; slug: string }[];
+    categories: StorefrontCategory[];
 }) {
     const { auth } = usePage().props;
     const vendorRegistration = auth.user

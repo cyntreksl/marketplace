@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Contracts\Repositories\CatalogRepository;
 use App\Contracts\Repositories\ListingRepository;
+use App\Models\Category;
 use App\Models\Listing;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,7 +22,7 @@ class StorefrontController extends Controller
     {
         return Inertia::render('storefront/home', [
             'featuredListings' => $this->listings->paginatePublic([], 6)->through(fn (Listing $listing) => $this->listingData($listing)),
-            'categories' => $this->catalog->activeTopLevelCategories()->map->only(['id', 'name', 'slug']),
+            'categories' => $this->storefrontCategories(),
         ]);
     }
 
@@ -31,7 +33,7 @@ class StorefrontController extends Controller
         return Inertia::render('storefront/listings/index', [
             'filters' => $filters,
             'listings' => $this->listings->paginatePublic($filters)->through(fn (Listing $listing) => $this->listingData($listing)),
-            'categories' => $this->catalog->activeTopLevelCategories()->map->only(['id', 'name', 'slug']),
+            'categories' => $this->storefrontCategories(),
             'selectedCategory' => isset($filters['category']) ? $this->catalog->activeCategoryOptionBySlug($filters['category']) : null,
         ]);
     }
@@ -40,8 +42,29 @@ class StorefrontController extends Controller
     {
         return Inertia::render('storefront/listings/show', [
             'listing' => $this->listingData($this->listings->findPublicBySlug($listing), detailed: true),
-            'categories' => $this->catalog->activeTopLevelCategories()->map->only(['id', 'name', 'slug']),
+            'categories' => $this->storefrontCategories(),
         ]);
+    }
+
+    /**
+     * @return Collection<int, array{id: int, name: string, slug: string, children: array<int, array{id: int, name: string, slug: string}>}>
+     */
+    private function storefrontCategories(): Collection
+    {
+        return $this->catalog->activeTopLevelCategories()
+            ->map(fn (Category $category): array => [
+                'id' => $category->id,
+                'name' => $category->name,
+                'slug' => $category->slug,
+                'children' => $category->children
+                    ->map(fn (Category $child): array => [
+                        'id' => $child->id,
+                        'name' => $child->name,
+                        'slug' => $child->slug,
+                    ])
+                    ->values()
+                    ->all(),
+            ]);
     }
 
     /**

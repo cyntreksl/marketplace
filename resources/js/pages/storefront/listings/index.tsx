@@ -4,6 +4,7 @@ import { CategoryPicker } from '@/components/category-picker';
 import type { CategoryOption } from '@/components/category-picker';
 import { ListingCard } from '@/components/listing-card';
 import { StorefrontLayout } from '@/components/storefront-layout';
+import type { StorefrontCategory } from '@/components/storefront-layout';
 import { index as listingsIndex } from '@/routes/listings';
 
 export default function ListingsIndex({
@@ -16,7 +17,7 @@ export default function ListingsIndex({
         data: any[];
         links: { url: string | null; label: string; active: boolean }[];
     };
-    categories: { id: number; name: string; slug: string }[];
+    categories: StorefrontCategory[];
     filters: Record<string, string>;
     selectedCategory: CategoryOption | null;
 }) {
