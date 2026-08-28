@@ -132,6 +132,90 @@
     --sidebar-ring: #2bb6a8;
 }
 
+.portal-theme-buyer {
+    --primary: #0f766e;
+    --primary-foreground: #ffffff;
+    --accent: #dcecf0;
+    --accent-foreground: #173a75;
+    --ring: #0f766e;
+    --chart-1: #0f766e;
+    --sidebar-primary: #0f766e;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #dcecf0;
+    --sidebar-accent-foreground: #173a75;
+    --sidebar-ring: #0f766e;
+}
+
+.portal-theme-seller {
+    --primary: #b45309;
+    --primary-foreground: #ffffff;
+    --accent: #fef3c7;
+    --accent-foreground: #78350f;
+    --ring: #b45309;
+    --chart-1: #b45309;
+    --sidebar-primary: #b45309;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #fef3c7;
+    --sidebar-accent-foreground: #78350f;
+    --sidebar-ring: #b45309;
+}
+
+.portal-theme-admin {
+    --primary: #173a75;
+    --primary-foreground: #ffffff;
+    --accent: #e8eef9;
+    --accent-foreground: #102a5c;
+    --ring: #173a75;
+    --chart-1: #173a75;
+    --sidebar-primary: #173a75;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #e8eef9;
+    --sidebar-accent-foreground: #102a5c;
+    --sidebar-ring: #173a75;
+}
+
+.dark .portal-theme-buyer {
+    --primary: #2bb6a8;
+    --primary-foreground: #071b2d;
+    --accent: #214568;
+    --accent-foreground: #edf5ff;
+    --ring: #2bb6a8;
+    --chart-1: #2bb6a8;
+    --sidebar-primary: #2bb6a8;
+    --sidebar-primary-foreground: #071b2d;
+    --sidebar-accent: #214568;
+    --sidebar-accent-foreground: #edf5ff;
+    --sidebar-ring: #2bb6a8;
+}
+
+.dark .portal-theme-seller {
+    --primary: #f6c65b;
+    --primary-foreground: #3b2600;
+    --accent: #4a3212;
+    --accent-foreground: #fef3c7;
+    --ring: #f6c65b;
+    --chart-1: #f6c65b;
+    --sidebar-primary: #f6c65b;
+    --sidebar-primary-foreground: #3b2600;
+    --sidebar-accent: #4a3212;
+    --sidebar-accent-foreground: #fef3c7;
+    --sidebar-ring: #f6c65b;
+}
+
+.dark .portal-theme-admin {
+    --primary: #71aaf1;
+    --primary-foreground: #071b2d;
+    --accent: #18345c;
+    --accent-foreground: #edf5ff;
+    --ring: #71aaf1;
+    --chart-1: #71aaf1;
+    --sidebar-primary: #71aaf1;
+    --sidebar-primary-foreground: #071b2d;
+    --sidebar-accent: #18345c;
+    --sidebar-accent-foreground: #edf5ff;
+    --sidebar-ring: #71aaf1;
+}
+
 @layer base {
     * {
         @apply border-border;

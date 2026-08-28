@@ -15,6 +15,21 @@ test('the storefront home shares the ProDeals.lk identity', function () {
             ->has('categories'));
 });
 
+test('authenticated portals use distinct ProDeals theme colors', function () {
+    $stylesheet = file_get_contents(resource_path('css/app.css'));
+    $portalLayout = file_get_contents(resource_path('js/components/portal-layout.tsx'));
+
+    expect($stylesheet)
+        ->toContain('.portal-theme-buyer {', '--primary: #0f766e;')
+        ->toContain('.portal-theme-seller {', '--primary: #b45309;')
+        ->toContain('.portal-theme-admin {', '--primary: #173a75;')
+        ->toContain('.dark .portal-theme-buyer {')
+        ->toContain('.dark .portal-theme-seller {', '--primary: #f6c65b;')
+        ->toContain('.dark .portal-theme-admin {')
+        ->and($portalLayout)
+        ->toContain('className={`portal-theme-${portal}');
+});
+
 test('the storefront shares an ordered two-level active category menu', function () {
     $laterCategory = Category::factory()->create([
         'name' => 'Home & Garden',

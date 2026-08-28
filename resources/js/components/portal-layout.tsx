@@ -221,7 +221,9 @@ export function PortalLayout({
     const PortalIcon = details.icon;
 
     return (
-        <div className="min-h-dvh bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
+        <div
+            className={`portal-theme-${portal} min-h-dvh bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50`}
+        >
             <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-slate-200 bg-white p-4 lg:flex dark:border-slate-800 dark:bg-slate-950">
                 <Link
                     href={home()}
