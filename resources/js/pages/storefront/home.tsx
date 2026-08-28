@@ -1,15 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import {
-    ArrowRight,
-    Box,
-    Cpu,
-    Gamepad2,
-    Headphones,
-    House,
-    Smartphone,
-    Sparkles,
-    Zap,
-} from 'lucide-react';
+import { ArrowRight, Sparkles, Zap } from 'lucide-react';
 import { ListingCard } from '@/components/listing-card';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { index as listingsIndex } from '@/routes/listings';
@@ -23,7 +13,6 @@ export default function StorefrontHome({
     featuredListings: { data: any[] };
     categories: { id: number; name: string; slug: string }[];
 }) {
-    const categoryIcons = [Smartphone, Cpu, Headphones, Gamepad2, House, Box];
     const { auth } = usePage().props;
     const vendorRegistration = auth.user
         ? sellerOnboardingEdit()
@@ -185,55 +174,6 @@ export default function StorefrontHome({
                         <span className="hidden whitespace-nowrap lg:block">
                             Better deals. Closer to home.
                         </span>
-                    </div>
-                </section>
-                <section className="bg-white px-4 py-12 sm:px-7 dark:bg-slate-950">
-                    <div className="mx-auto max-w-none">
-                        <div className="mb-7 flex items-end justify-between gap-4">
-                            <div>
-                                <p className="text-sm font-bold tracking-wider text-primary uppercase">
-                                    Find your next deal
-                                </p>
-                                <h2 className="mt-1 text-3xl font-black tracking-tight">
-                                    Shop your way
-                                </h2>
-                            </div>
-                            <Link
-                                className="hidden items-center gap-1 font-bold text-primary hover:text-primary/80 sm:inline-flex"
-                                href={listingsIndex()}
-                            >
-                                View all categories{' '}
-                                <ArrowRight className="size-4" />
-                            </Link>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                            {categories.map((category, index) => {
-                                const CategoryIcon =
-                                    categoryIcons[index % categoryIcons.length];
-
-                                return (
-                                    <Link
-                                        className="group rounded-2xl border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 dark:border-slate-800 dark:bg-slate-900"
-                                        href={listingsIndex({
-                                            query: {
-                                                category: category.slug,
-                                            },
-                                        })}
-                                        key={category.id}
-                                    >
-                                        <span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary transition group-hover:bg-primary group-hover:text-primary-foreground dark:bg-primary/20">
-                                            <CategoryIcon className="size-5" />
-                                        </span>
-                                        <span className="mt-5 block font-bold text-slate-900 dark:text-white">
-                                            {category.name}
-                                        </span>
-                                        <span className="mt-1 block text-xs text-slate-500">
-                                            Browse this category
-                                        </span>
-                                    </Link>
-                                );
-                            })}
-                        </div>
                     </div>
                 </section>
                 <section className="bg-slate-100/70 px-4 py-12 sm:px-7 dark:bg-slate-900/40">

@@ -2,14 +2,21 @@ import { Form, Link, usePage } from '@inertiajs/react';
 import { store as addCartItem } from '@/actions/App/Http/Controllers/CartController';
 import { RichTextContent } from '@/components/rich-text-editor';
 import { StorefrontLayout } from '@/components/storefront-layout';
+import type { StorefrontCategory } from '@/components/storefront-layout';
 import { login } from '@/routes';
 
-export default function ListingShow({ listing }: { listing: any }) {
+export default function ListingShow({
+    listing,
+    categories,
+}: {
+    listing: any;
+    categories: StorefrontCategory[];
+}) {
     const price = listing.auction?.currentPrice ?? listing.price;
     const { auth } = usePage().props;
 
     return (
-        <StorefrontLayout title={listing.title}>
+        <StorefrontLayout title={listing.title} categories={categories}>
             <main className="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-2 lg:px-8">
                 <div className="aspect-square overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-slate-100 to-primary/10 shadow-lg shadow-primary/5 dark:from-primary/20 dark:via-slate-900 dark:to-slate-800">
                     {listing.media[0] && (

@@ -40,6 +40,7 @@ class StorefrontController extends Controller
     {
         return Inertia::render('storefront/listings/show', [
             'listing' => $this->listingData($this->listings->findPublicBySlug($listing), detailed: true),
+            'categories' => $this->catalog->activeTopLevelCategories()->map->only(['id', 'name', 'slug']),
         ]);
     }
 

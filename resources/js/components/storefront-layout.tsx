@@ -1,21 +1,36 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
 import {
-    Box,
+    Armchair,
+    Baby,
+    BookOpen,
+    BriefcaseBusiness,
+    Camera,
+    Car,
     ChevronRight,
-    Cpu,
+    Church,
+    Dumbbell,
+    FileText,
     Gamepad2,
     Globe2,
     Headphones,
+    HeartPulse,
     House,
+    Luggage,
     Menu,
+    Monitor,
     PackageSearch,
+    Palette,
+    PawPrint,
+    Puzzle,
     Search,
+    Shirt,
     ShoppingBag,
-    Smartphone,
+    Sparkles,
+    Utensils,
     UserRound,
+    Wrench,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useState } from 'react';
 import { BrandLogo } from '@/components/brand-logo';
 import { dashboard, home, login, register } from '@/routes';
 import { show as cartShow } from '@/routes/cart';
@@ -23,10 +38,33 @@ import { index as listingsIndex } from '@/routes/listings';
 import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
 import { register as vendorRegister } from '@/routes/vendor';
 
-type StorefrontCategory = {
+export type StorefrontCategory = {
     id: number;
     name: string;
     slug: string;
+};
+
+const categoryIcons: Record<string, LucideIcon> = {
+    'animals-pet-supplies': PawPrint,
+    'apparel-accessories': Shirt,
+    'arts-entertainment': Palette,
+    'baby-toddler': Baby,
+    'business-industrial': BriefcaseBusiness,
+    'cameras-optics': Camera,
+    electronics: Monitor,
+    'food-beverages-tobacco': Utensils,
+    furniture: Armchair,
+    hardware: Wrench,
+    'health-beauty': HeartPulse,
+    'home-garden': House,
+    'luggage-bags': Luggage,
+    media: BookOpen,
+    'office-supplies': FileText,
+    'religious-ceremonial': Church,
+    software: Gamepad2,
+    'sporting-goods': Dumbbell,
+    'toys-games': Puzzle,
+    'vehicles-parts': Car,
 };
 
 export function StorefrontLayout({
@@ -38,59 +76,19 @@ export function StorefrontLayout({
     title: string;
     categories?: StorefrontCategory[];
 }) {
-    const { auth } = usePage().props;
-    const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
-    const categoryIcons: LucideIcon[] = [Smartphone, Cpu, House, Gamepad2, Box];
-    const navigationCategories = categories.length
-        ? categories.slice(0, 10).map((category, index) => ({
-              ...category,
-              href: listingsIndex({ query: { category: category.slug } }),
-              icon: categoryIcons[index % categoryIcons.length],
-          }))
-        : [
-              {
-                  name: 'Home & living',
-                  href: listingsIndex(),
-                  icon: House,
-              },
-              {
-                  name: 'Fashion & accessories',
-                  href: listingsIndex(),
-                  icon: UserRound,
-              },
-              {
-                  name: 'Computers',
-                  href: listingsIndex(),
-                  icon: Cpu,
-              },
-              {
-                  name: 'Gaming',
-                  href: listingsIndex(),
-                  icon: Gamepad2,
-              },
-              {
-                  name: 'Mobile hub',
-                  href: listingsIndex(),
-                  icon: Smartphone,
-              },
-              {
-                  name: 'Electronics & gadgets',
-                  href: listingsIndex(),
-                  icon: Box,
-              },
-              {
-                  name: 'Browse products',
-                  href: listingsIndex(),
-                  icon: PackageSearch,
-              },
-              {
-                  name: 'Live auctions',
-                  href: listingsIndex({
-                      query: { listing_type: 'auction' },
-                  }),
-                  icon: ChevronRight,
-              },
-          ];
+    const page = usePage();
+    const { auth } = page.props;
+    const selectedCategorySlug = new URLSearchParams(
+        page.url.split('?')[1] ?? '',
+    ).get('category');
+    const isAllProductsSelected =
+        page.url.split('?')[0] === listingsIndex.url() &&
+        selectedCategorySlug === null;
+    const navigationCategories = categories.map((category) => ({
+        ...category,
+        href: listingsIndex({ query: { category: category.slug } }),
+        icon: categoryIcons[category.slug] ?? PackageSearch,
+    }));
 
     return (
         <>
@@ -98,110 +96,97 @@ export function StorefrontLayout({
             <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
                 <aside
                     aria-label="Marketplace navigation"
-                    className={`fixed inset-y-0 left-0 z-30 hidden overflow-hidden border-r border-slate-200 bg-white shadow-xl shadow-slate-950/5 transition-[width] duration-300 lg:block dark:border-slate-800 dark:bg-slate-950 ${
-                        isCategoryMenuOpen ? 'w-[22.75rem]' : 'w-20'
-                    }`}
-                    onMouseEnter={() => setIsCategoryMenuOpen(true)}
-                    onMouseLeave={() => setIsCategoryMenuOpen(false)}
-                    onFocusCapture={() => setIsCategoryMenuOpen(true)}
-                    onBlur={(event) => {
-                        if (
-                            !event.currentTarget.contains(event.relatedTarget)
-                        ) {
-                            setIsCategoryMenuOpen(false);
-                        }
-                    }}
+                    className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-slate-200 bg-white shadow-xl shadow-slate-950/5 lg:flex dark:border-slate-800 dark:bg-slate-950"
                 >
-                    {isCategoryMenuOpen ? (
-                        <nav
-                            className="h-full overflow-y-auto px-3 py-3"
-                            aria-label="Marketplace categories"
+                    <div className="border-b border-slate-200 p-4 dark:border-slate-800">
+                        <p className="text-xs font-black tracking-[0.16em] text-primary uppercase">
+                            Shop by category
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                            {navigationCategories.length} ways to find your next
+                            deal
+                        </p>
+                        <Link
+                            href={listingsIndex()}
+                            aria-current={
+                                isAllProductsSelected ? 'page' : undefined
+                            }
+                            className={`mt-4 flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-bold transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none dark:focus-visible:ring-offset-slate-950 ${
+                                isAllProductsSelected
+                                    ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
+                                    : 'bg-primary/10 text-primary hover:bg-primary/15 dark:bg-primary/15'
+                            }`}
                         >
-                            <button
-                                type="button"
-                                onClick={() => setIsCategoryMenuOpen(false)}
-                                aria-expanded="true"
-                                className="flex h-12 w-full items-center gap-3 rounded-full bg-primary px-4 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/25 transition hover:bg-primary/90 focus:bg-primary/90"
-                            >
-                                <Menu className="size-6 shrink-0" />
-                                All categories
-                            </button>
-                            <div className="mt-4 space-y-1">
-                                {navigationCategories.map((category) => {
-                                    const CategoryIcon = category.icon;
+                            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/15">
+                                <Menu className="size-4" />
+                            </span>
+                            <span>All products</span>
+                            <ChevronRight className="ml-auto size-4" />
+                        </Link>
+                    </div>
+                    <nav
+                        className="flex-1 overflow-y-auto px-3 py-3"
+                        aria-label="Marketplace categories"
+                    >
+                        <div className="flex flex-col gap-1">
+                            {navigationCategories.map((category) => {
+                                const CategoryIcon = category.icon;
+                                const isSelected =
+                                    selectedCategorySlug === category.slug;
 
-                                    return (
-                                        <Link
-                                            href={category.href}
-                                            key={category.name}
-                                            className="flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold text-slate-700 transition hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary dark:text-slate-200 dark:hover:bg-slate-900 dark:focus:bg-slate-900"
+                                return (
+                                    <Link
+                                        href={category.href}
+                                        key={category.id}
+                                        aria-current={
+                                            isSelected ? 'page' : undefined
+                                        }
+                                        className={`group flex min-h-12 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none dark:focus-visible:ring-offset-slate-950 ${
+                                            isSelected
+                                                ? 'bg-primary/10 text-primary dark:bg-primary/15'
+                                                : 'text-slate-700 hover:bg-slate-100 hover:text-primary dark:text-slate-200 dark:hover:bg-slate-900'
+                                        }`}
+                                    >
+                                        <span
+                                            className={`grid size-8 shrink-0 place-items-center rounded-lg transition ${
+                                                isSelected
+                                                    ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20'
+                                                    : 'bg-slate-100 text-slate-600 group-hover:bg-primary/10 group-hover:text-primary dark:bg-slate-900 dark:text-slate-300'
+                                            }`}
                                         >
-                                            <CategoryIcon className="size-5 shrink-0 text-slate-900 dark:text-slate-100" />
-                                            <span>{category.name}</span>
-                                            <ChevronRight className="ml-auto size-4 text-slate-400" />
-                                        </Link>
-                                    );
-                                })}
-                            </div>
-                        </nav>
-                    ) : (
-                        <div className="flex h-full flex-col items-center py-3">
-                            <button
-                                type="button"
-                                onClick={() => setIsCategoryMenuOpen(true)}
-                                aria-label="Browse categories"
-                                aria-expanded="false"
-                                className="grid size-12 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 transition hover:bg-primary/90 focus:bg-primary/90"
-                            >
-                                <Menu className="size-6" />
-                            </button>
-                            <nav
-                                className="mt-5 flex flex-col gap-2"
-                                aria-label="Quick links"
-                            >
-                                {[
-                                    [home(), House, 'Home'],
-                                    [listingsIndex(), UserRound, 'Account'],
-                                    [listingsIndex(), Box, 'Products'],
-                                    [
-                                        listingsIndex({
-                                            query: { listing_type: 'auction' },
-                                        }),
-                                        Gamepad2,
-                                        'Auctions',
-                                    ],
-                                    [
-                                        listingsIndex(),
-                                        Smartphone,
-                                        'Mobile devices',
-                                    ],
-                                    [listingsIndex(), Cpu, 'Computers'],
-                                    [cartShow(), ShoppingBag, 'Cart'],
-                                ].map(([href, Icon, label]) => {
-                                    const RailIcon = Icon as LucideIcon;
-
-                                    return (
-                                        <Link
-                                            href={
-                                                href as ReturnType<typeof home>
-                                            }
-                                            key={label as string}
-                                            aria-label={label as string}
-                                            className="grid size-11 place-items-center rounded-xl text-slate-600 transition hover:bg-primary/10 hover:text-primary focus:bg-primary/10 focus:text-primary dark:text-slate-300 dark:hover:bg-slate-900 dark:focus:bg-slate-900"
-                                        >
-                                            <RailIcon className="size-5" />
-                                        </Link>
-                                    );
-                                })}
-                            </nav>
+                                            <CategoryIcon className="size-4" />
+                                        </span>
+                                        <span className="min-w-0 flex-1 leading-5">
+                                            {category.name}
+                                        </span>
+                                        <ChevronRight
+                                            className={`size-4 shrink-0 ${
+                                                isSelected
+                                                    ? 'text-primary'
+                                                    : 'text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-primary dark:text-slate-600'
+                                            }`}
+                                        />
+                                    </Link>
+                                );
+                            })}
                         </div>
-                    )}
+                    </nav>
+                    <div className="border-t border-slate-200 p-3 dark:border-slate-800">
+                        <Link
+                            href={listingsIndex({
+                                query: { listing_type: 'auction' },
+                            })}
+                            className="flex min-h-12 items-center gap-3 rounded-xl bg-slate-950 px-3 text-sm font-bold text-white transition hover:bg-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none dark:bg-slate-900 dark:hover:bg-primary dark:focus-visible:ring-offset-slate-950"
+                        >
+                            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white/10 text-cyan-300">
+                                <Sparkles className="size-4" />
+                            </span>
+                            <span>Browse live auctions</span>
+                            <ChevronRight className="ml-auto size-4 text-slate-400" />
+                        </Link>
+                    </div>
                 </aside>
-                <header
-                    className={`sticky top-0 z-20 bg-white shadow-sm transition-[padding] duration-300 dark:bg-slate-950 ${
-                        isCategoryMenuOpen ? 'lg:pl-[22.75rem]' : 'lg:pl-20'
-                    }`}
-                >
+                <header className="sticky top-0 z-20 bg-white shadow-sm lg:pl-72 dark:bg-slate-950">
                     <nav
                         className="mx-auto flex max-w-none items-center gap-5 px-4 py-4 sm:px-7"
                         aria-label="Main navigation"
@@ -233,7 +218,7 @@ export function StorefrontLayout({
                                 </button>
                             </label>
                         </Form>
-                        <div className="ml-auto hidden items-center gap-6 xl:flex">
+                        <div className="ml-auto hidden items-center gap-6 2xl:flex">
                             <div className="flex items-center gap-2 text-sm">
                                 <Headphones className="size-7 text-primary" />
                                 <span>
@@ -318,7 +303,7 @@ export function StorefrontLayout({
                             )}
                         </div>
                     </nav>
-                    <div className="border-y border-primary/20 bg-primary/10 dark:border-slate-800 dark:bg-slate-900">
+                    <div className="border-y border-primary/20 bg-primary/10 lg:hidden dark:border-slate-800 dark:bg-slate-900">
                         <div className="mx-auto flex max-w-none items-center gap-1 overflow-x-auto px-4 py-2 sm:px-7">
                             <Link
                                 href={listingsIndex()}
@@ -329,19 +314,18 @@ export function StorefrontLayout({
                                 </span>
                                 All categories
                             </Link>
-                            {[
-                                'Mobile hub',
-                                'Computers',
-                                'Home & living',
-                                'Gaming',
-                                'Accessories',
-                            ].map((category) => (
+                            {navigationCategories.map((category) => (
                                 <Link
-                                    href={listingsIndex()}
-                                    key={category}
+                                    href={category.href}
+                                    key={category.id}
+                                    aria-current={
+                                        selectedCategorySlug === category.slug
+                                            ? 'page'
+                                            : undefined
+                                    }
                                     className="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-white hover:text-primary dark:text-slate-300 dark:hover:bg-slate-800"
                                 >
-                                    {category}
+                                    {category.name}
                                 </Link>
                             ))}
                             <Link
@@ -354,18 +338,8 @@ export function StorefrontLayout({
                         </div>
                     </div>
                 </header>
-                <div
-                    className={`transition-[padding] duration-300 ${
-                        isCategoryMenuOpen ? 'lg:pl-[22.75rem]' : 'lg:pl-20'
-                    }`}
-                >
-                    {children}
-                </div>
-                <footer
-                    className={`border-t border-primary/20 bg-white py-10 transition-[padding] duration-300 dark:border-slate-800 dark:bg-slate-950 ${
-                        isCategoryMenuOpen ? 'lg:pl-[22.75rem]' : 'lg:pl-20'
-                    }`}
-                >
+                <div className="lg:pl-72">{children}</div>
+                <footer className="border-t border-primary/20 bg-white py-10 lg:pl-72 dark:border-slate-800 dark:bg-slate-950">
                     <div className="mx-auto flex max-w-7xl flex-col justify-between gap-3 px-4 text-sm text-slate-500 sm:flex-row sm:px-6 lg:px-8">
                         <p>Better deals. Closer to home.</p>
                         <p>Discover · Compare · Make it yours</p>
