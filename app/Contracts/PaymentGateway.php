@@ -23,6 +23,8 @@ interface PaymentGateway
 
     /**
      * Request a refund for a captured payment.
+     *
+     * @return array{reference: string, status: string}
      */
-    public function refund(Payment $payment, string $amount): void;
+    public function refund(Payment $payment, string $amount, string $idempotencyKey): array;
 }

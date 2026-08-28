@@ -7,6 +7,7 @@ use App\Models\ReturnRequest;
 use App\Models\SellerOrder;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 interface ReturnRequestRepository
 {
@@ -33,4 +34,9 @@ interface ReturnRequestRepository
     public function save(ReturnRequest $returnRequest): ReturnRequest;
 
     public function findWithContext(int $returnRequestId): ?ReturnRequest;
+
+    public function sellerFor(ReturnRequest $returnRequest): ?User;
+
+    /** @return Collection<int, User> */
+    public function operationsUsers(): Collection;
 }

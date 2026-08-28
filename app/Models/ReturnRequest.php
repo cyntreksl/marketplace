@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property ReturnReason $reason
  * @property ReturnStatus $status
+ * @property string|null $refund_amount
  * @property array<int, array{path: string, name: string, mime: string|null, size: int|null}>|null $evidence
  * @property Carbon|null $eligibility_expires_at
  * @property Carbon|null $resolved_at

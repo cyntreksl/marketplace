@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminBrandController;
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminListingController;
+use App\Http\Controllers\AdminReturnController;
 use App\Http\Controllers\AdminSellerController;
 use App\Http\Controllers\AdminTaxonomyController;
 use App\Http\Controllers\AuctionBidController;
@@ -83,6 +84,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/returns', [AdminReturnController::class, 'index'])->name('returns.index');
+    Route::post('/returns/{returnRequest}/refund-ready', [AdminReturnController::class, 'ready'])->name('returns.ready');
+    Route::post('/returns/{returnRequest}/refund', [AdminReturnController::class, 'refund'])->name('returns.refund');
+    Route::post('/returns/{returnRequest}/manual-refund', [AdminReturnController::class, 'manual'])->name('returns.manual');
     Route::get('/sellers', [AdminSellerController::class, 'index'])->name('sellers.index');
     Route::patch('/sellers/{seller}', [AdminSellerController::class, 'update'])->name('sellers.update');
     Route::get('/listings', [AdminListingController::class, 'index'])->name('listings.index');

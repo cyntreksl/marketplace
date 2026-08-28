@@ -8,6 +8,9 @@ use App\Models\OrderItem;
 use App\Models\ReturnRequest;
 use App\Models\SellerOrder;
 use App\Models\User;
+use App\Notifications\NewReturnRequestNotification;
+use App\Notifications\RefundReadyNotification;
+use App\Notifications\ReturnDecisionNotification;
 use App\ReturnReason;
 use App\ReturnStatus;
 use Brick\Math\BigDecimal;
@@ -58,7 +61,7 @@ class ReturnWorkflowService
         $storedPaths = [];
 
         try {
-            return DB::transaction(function () use ($buyer, $data, &$storedPaths): ReturnRequest {
+            $returnRequest = DB::transaction(function () use ($buyer, $data, &$storedPaths): ReturnRequest {
                 $item = $this->returns->lockOrderItemForBuyer($data['order_item_id'], $buyer);
 
                 if ($item === null) {
@@ -121,6 +124,16 @@ class ReturnWorkflowService
 
             throw $exception;
         }
+
+        $returnRequest = $this->returns->findWithContext($returnRequest->id) ?? $returnRequest;
+        $this->returns->sellerFor($returnRequest)?->notify(new NewReturnRequestNotification(
+            $returnRequest->id,
+            $returnRequest->orderItem->title,
+            $returnRequest->quantity,
+            $buyer->name,
+        ));
+
+        return $returnRequest;
     }
 
     public function decide(User $seller, int $returnRequestId, ReturnStatus $decision, string $reason): ReturnRequest
@@ -129,7 +142,7 @@ class ReturnWorkflowService
             throw ValidationException::withMessages(['decision' => 'Choose approve or reject.']);
         }
 
-        return DB::transaction(function () use ($seller, $returnRequestId, $decision, $reason): ReturnRequest {
+        $returnRequest = DB::transaction(function () use ($seller, $returnRequestId, $decision, $reason): ReturnRequest {
             $returnRequest = $this->returns->lockRequestForSeller($returnRequestId, $seller);
 
             if ($returnRequest === null) {
@@ -153,6 +166,24 @@ class ReturnWorkflowService
 
             return $returnRequest;
         });
+
+        $returnRequest = $this->returns->findWithContext($returnRequest->id) ?? $returnRequest;
+        $returnRequest->buyer->notify(new ReturnDecisionNotification(
+            $returnRequest->id,
+            $returnRequest->orderItem->title,
+            $decision->value,
+            $reason,
+        ));
+
+        if ($decision === ReturnStatus::Approved) {
+            $this->returns->operationsUsers()->each->notify(new RefundReadyNotification(
+                $returnRequest->id,
+                $returnRequest->orderItem->title,
+                $returnRequest->refund_amount,
+            ));
+        }
+
+        return $returnRequest;
     }
 
     public function confirmDelivery(User $seller, int $sellerOrderId): SellerOrder

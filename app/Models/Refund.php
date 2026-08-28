@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property RefundStatus $status
+ * @property string $amount
  * @property Carbon|null $completed_at
  */
 #[Fillable(['return_request_id', 'payment_id', 'method', 'amount', 'status', 'idempotency_key', 'provider_reference', 'manual_reference', 'failure_details', 'processed_by', 'completed_at'])]

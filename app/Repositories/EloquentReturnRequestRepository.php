@@ -5,9 +5,12 @@ namespace App\Repositories;
 use App\Contracts\Repositories\ReturnRequestRepository;
 use App\Models\OrderItem;
 use App\Models\ReturnRequest;
+use App\Models\Role;
 use App\Models\SellerOrder;
+use App\Models\SellerProfile;
 use App\Models\User;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class EloquentReturnRequestRepository implements ReturnRequestRepository
 {
@@ -67,7 +70,7 @@ class EloquentReturnRequestRepository implements ReturnRequestRepository
         return ReturnRequest::query()
             ->whereKey($returnRequestId)
             ->whereHas('orderItem.sellerOrder.sellerProfile', fn ($query) => $query->where('user_id', $seller->id))
-            ->with(['orderItem:id,seller_order_id,title', 'orderItem.sellerOrder:id,number,seller_profile_id'])
+            ->with(['buyer:id,name,email', 'orderItem:id,seller_order_id,title', 'orderItem.sellerOrder:id,number,seller_profile_id', 'orderItem.sellerOrder.sellerProfile:id,store_name'])
             ->lockForUpdate()
             ->first();
     }
@@ -94,5 +97,21 @@ class EloquentReturnRequestRepository implements ReturnRequestRepository
         return ReturnRequest::query()
             ->with(['orderItem.sellerOrder.sellerProfile', 'buyer', 'refund'])
             ->find($returnRequestId);
+    }
+
+    public function sellerFor(ReturnRequest $returnRequest): ?User
+    {
+        return SellerProfile::query()
+            ->whereHas('sellerOrders.items.returnRequests', fn ($query) => $query->whereKey($returnRequest->id))
+            ->with('user')
+            ->first()
+            ?->user;
+    }
+
+    public function operationsUsers(): Collection
+    {
+        return User::query()
+            ->whereHas('roles', fn ($query) => $query->whereIn('name', [Role::Admin, Role::FinanceAdmin, Role::SuperAdmin]))
+            ->get();
     }
 }

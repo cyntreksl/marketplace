@@ -37,6 +37,7 @@ import { dashboard as adminDashboard } from '@/routes/admin';
 import { index as adminBrandsIndex } from '@/routes/admin/brands';
 import { index as adminCategoriesIndex } from '@/routes/admin/categories';
 import { index as adminListingsIndex } from '@/routes/admin/listings';
+import { index as adminReturnsIndex } from '@/routes/admin/returns';
 import { index as adminSellersIndex } from '@/routes/admin/sellers';
 import { index as adminTaxonomyIndex } from '@/routes/admin/taxonomy';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
@@ -86,6 +87,11 @@ const portalDetails: Record<Portal, PortalDetails> = {
                 title: 'Listing reviews',
                 href: adminListingsIndex(),
                 icon: ClipboardCheck,
+            },
+            {
+                title: 'Returns & refunds',
+                href: adminReturnsIndex(),
+                icon: RotateCcw,
             },
             {
                 title: 'Categories',

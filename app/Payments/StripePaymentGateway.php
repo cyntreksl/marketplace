@@ -13,7 +13,7 @@ class StripePaymentGateway implements PaymentGateway
     public function createPayment(Payment $payment): array
     {
         $response = Http::asForm()
-            ->withBasicAuth(config('services.stripe.secret'), '')
+            ->withBasicAuth((string) config('services.stripe.secret'), '')
             ->connectTimeout(3)
             ->timeout(10)
             ->retry(2, 200)
@@ -40,16 +40,26 @@ class StripePaymentGateway implements PaymentGateway
         ];
     }
 
-    public function refund(Payment $payment, string $amount): void
+    public function refund(Payment $payment, string $amount, string $idempotencyKey): array
     {
-        Http::asForm()
-            ->withBasicAuth(config('services.stripe.secret'), '')
+        $response = Http::asForm()
+            ->withBasicAuth((string) config('services.stripe.secret'), '')
+            ->withHeader('Idempotency-Key', $idempotencyKey)
             ->connectTimeout(3)
             ->timeout(10)
             ->retry(2, 200)
             ->post('https://api.stripe.com/v1/refunds', [
                 'payment_intent' => $payment->provider_reference,
                 'amount' => BigDecimal::of($amount)->multipliedBy(100)->toScale(0, RoundingMode::Down)->toInt(),
-            ])->throw();
+            ])->throw()->json();
+
+        return [
+            'reference' => (string) $response['id'],
+            'status' => match ($response['status'] ?? null) {
+                'succeeded' => 'succeeded',
+                'failed', 'canceled' => 'failed',
+                default => 'pending',
+            },
+        ];
     }
 }
