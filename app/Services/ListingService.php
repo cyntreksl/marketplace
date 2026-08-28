@@ -11,6 +11,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use LogicException;
+use RuntimeException;
 
 class ListingService
 {
@@ -153,15 +155,32 @@ class ListingService
     private function storeImages(Listing $listing, array $images): void
     {
         $sortOrder = (int) $listing->media()->max('sort_order') + 1;
+        $mediaDisk = $this->mediaDisk();
 
         foreach ($images as $image) {
+            $path = $image->store("listings/{$listing->id}", $mediaDisk);
+            if ($path === false) {
+                throw new RuntimeException('The listing image could not be stored.');
+            }
+
             $listing->media()->create([
-                'disk' => 'public',
-                'path' => $image->store("listings/{$listing->id}", 'public'),
+                'disk' => $mediaDisk,
+                'path' => $path,
                 'type' => 'image',
                 'sort_order' => $sortOrder++,
             ]);
         }
+    }
+
+    private function mediaDisk(): string
+    {
+        $mediaDisk = config('filesystems.media');
+
+        if (! is_string($mediaDisk) || $mediaDisk === '') {
+            throw new LogicException('The media filesystem disk is not configured.');
+        }
+
+        return $mediaDisk;
     }
 
     /** @param array<string, mixed> $attributes */

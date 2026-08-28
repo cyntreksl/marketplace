@@ -4,6 +4,7 @@ use App\Exceptions\InvalidAuctionBidException;
 use App\Models\Auction;
 use App\Models\Bid;
 use App\Models\Listing;
+use App\Models\ListingMedia;
 use App\Models\Role;
 use App\Models\SellerProfile;
 use App\Models\User;
@@ -24,6 +25,22 @@ test('guests can browse only approved listings', function () {
             ->component('storefront/listings/index')
             ->has('listings.data', 1)
             ->where('listings.data.0.slug', $approved->slug));
+});
+
+test('storefront listing media includes its configured public url', function () {
+    config(['filesystems.disks.public.url' => 'https://media.prodeals.lk']);
+    $listing = Listing::factory()->create();
+    ListingMedia::factory()->create([
+        'listing_id' => $listing->id,
+        'disk' => 'public',
+        'path' => 'listings/example.webp',
+    ]);
+
+    $this->get(route('listings.show', $listing->slug))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('storefront/listings/show')
+            ->where('listing.media.0.url', 'https://media.prodeals.lk/listings/example.webp'));
 });
 
 test('a buyer can place a valid bid and cannot bid on their own auction', function () {

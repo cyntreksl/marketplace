@@ -44,6 +44,43 @@ test('an approved seller can create a draft listing and submit it for moderation
     expect($listing->refresh()->status)->toBe('pending_review');
 });
 
+test('listing uploads use the configured media disk', function () {
+    config([
+        'filesystems.media' => 'r2',
+        'filesystems.disks.r2.key' => 'test-key',
+        'filesystems.disks.r2.secret' => 'test-secret',
+        'filesystems.disks.r2.bucket' => 'prodeals-media-production',
+        'filesystems.disks.r2.endpoint' => 'https://account-id.r2.cloudflarestorage.com',
+        'filesystems.disks.r2.url' => 'https://media.prodeals.lk',
+    ]);
+    Storage::fake('r2');
+    $seller = SellerProfile::factory()->create();
+    $category = Category::factory()->create();
+
+    $this->actingAs($seller->user)
+        ->post(route('seller.listings.store'), [
+            'category_id' => $category->id,
+            'title' => 'R2 hosted camera',
+            'description' => 'A camera whose listing image is stored on the configured media disk.',
+            'condition' => 'used',
+            'listing_type' => 'buy_now',
+            'location' => 'Singapore',
+            'stock_quantity' => 1,
+            'price' => '25000.00',
+            'images' => [UploadedFile::fake()->image('camera.jpg')],
+        ])
+        ->assertRedirect(route('seller.listings.index', absolute: false));
+
+    $media = Listing::query()->sole()->media()->sole();
+
+    expect($media->disk)->toBe('r2');
+    Storage::disk('r2')->assertExists($media->path);
+    Storage::forgetDisk('r2');
+
+    expect($media->url)->toBe('https://media.prodeals.lk/'.$media->path)
+        ->and($media->toArray()['url'])->toBe($media->url);
+});
+
 test('an approved seller can save a typed brand draft or submit it directly for review', function () {
     Storage::fake('public');
     $seller = SellerProfile::factory()->create();

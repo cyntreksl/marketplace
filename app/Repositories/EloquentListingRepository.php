@@ -19,7 +19,7 @@ class EloquentListingRepository implements ListingRepository
             ->with([
                 'brand:id,name,slug',
                 'category:id,name,slug',
-                'media:id,listing_id,path,type,sort_order',
+                'media:id,listing_id,disk,path,type,sort_order',
                 'sellerProfile:id,store_name,slug',
                 'auction:id,listing_id,status,current_price,ends_at',
             ])
@@ -43,7 +43,7 @@ class EloquentListingRepository implements ListingRepository
             ->with([
                 'brand:id,name,slug',
                 'category:id,name,slug',
-                'media:id,listing_id,path,type,sort_order',
+                'media:id,listing_id,disk,path,type,sort_order',
                 'sellerProfile.user:id,name',
                 'auction.bids.buyer:id,name',
             ])

@@ -9,7 +9,7 @@ type Listing = {
     listingType: string;
     price: string | null;
     location: string;
-    media: { path: string }[];
+    media: { url: string }[];
     auction: { currentPrice: string | null; endsAt: string | null } | null;
 };
 
@@ -25,7 +25,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
                 {listing.media[0] && (
                     <img
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                        src={`/storage/${listing.media[0].path}`}
+                        src={listing.media[0].url}
                         alt=""
                     />
                 )}

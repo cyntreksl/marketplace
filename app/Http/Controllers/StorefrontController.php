@@ -85,7 +85,11 @@ class StorefrontController extends Controller
             'stockQuantity' => $listing->stock_quantity - $listing->reserved_quantity,
             'category' => $listing->category?->only(['name', 'slug']),
             'brand' => $listing->brand?->only(['name', 'slug']),
-            'media' => $listing->media->map(fn ($media) => ['path' => $media->path, 'type' => $media->type]),
+            'media' => $listing->media->map(fn ($media) => [
+                'path' => $media->path,
+                'type' => $media->type,
+                'url' => $media->url,
+            ]),
             'seller' => $listing->sellerProfile?->only(['store_name', 'slug']),
             'auction' => $listing->auction === null ? null : [
                 'id' => $listing->auction->id,

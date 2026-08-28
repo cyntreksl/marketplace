@@ -22,7 +22,7 @@ export default function ListingShow({
                     {listing.media[0] && (
                         <img
                             className="h-full w-full object-cover"
-                            src={`/storage/${listing.media[0].path}`}
+                            src={listing.media[0].url}
                             alt={listing.title}
                         />
                     )}

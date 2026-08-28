@@ -27,7 +27,7 @@ import {
 } from '@/components/rich-text-editor';
 
 type Brand = { id: number; name: string };
-type ListingMedia = { id: number; path: string };
+type ListingMedia = { id: number; path: string; url: string };
 
 export type SellerListingFormListing = {
     title: string;
@@ -172,7 +172,7 @@ export function SellerListingForm({
     );
     const primaryPhotoUrl =
         existingMedia[0] !== undefined
-            ? `/storage/${existingMedia[0].path}`
+            ? existingMedia[0].url
             : imagePreviews[0]?.url;
     const listingHealthChecks = [
         {
@@ -953,7 +953,7 @@ export function SellerListingForm({
                                     >
                                         <img
                                             className="h-full w-full object-cover transition group-hover:scale-105"
-                                            src={`/storage/${media.path}`}
+                                            src={media.url}
                                             alt="Existing listing photo"
                                         />
                                         {media === existingMedia[0] && (
