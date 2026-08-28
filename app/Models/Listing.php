@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['seller_profile_id', 'category_id', 'brand_id', 'title', 'slug', 'description', 'condition', 'listing_type', 'status', 'location', 'specifications', 'warranty', 'stock_quantity', 'reserved_quantity', 'price', 'sale_price', 'commission_percentage', 'moderation_reason', 'submitted_at', 'approved_at'])]
+#[Fillable(['seller_profile_id', 'category_id', 'brand_id', 'brand_name', 'title', 'slug', 'description', 'condition', 'listing_type', 'status', 'location', 'specifications', 'warranty', 'stock_quantity', 'reserved_quantity', 'price', 'sale_price', 'commission_percentage', 'moderation_reason', 'submitted_at', 'approved_at'])]
 class Listing extends Model
 {
     /** @use HasFactory<ListingFactory> */
@@ -64,6 +64,7 @@ class Listing extends Model
     public function scopePubliclyVisible(Builder $query): void
     {
         $query->where('status', 'approved')
+            ->whereHas('sellerProfile', fn (Builder $query) => $query->whereIn('status', ['approved', 'active']))
             ->where(function (Builder $query): void {
                 $query->where('listing_type', 'auction')
                     ->orWhereColumn('stock_quantity', '>', 'reserved_quantity');

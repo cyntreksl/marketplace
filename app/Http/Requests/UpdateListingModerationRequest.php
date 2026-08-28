@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Listing;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateListingModerationRequest extends FormRequest
 {
@@ -26,5 +28,17 @@ class UpdateListingModerationRequest extends FormRequest
             'status' => ['required', Rule::in(['approved', 'changes_requested', 'rejected', 'suspended', 'archived'])],
             'reason' => ['required', 'string', 'max:2000'],
         ];
+    }
+
+    /** @return array<int, callable(Validator): void> */
+    public function after(): array
+    {
+        return [function (Validator $validator): void {
+            $listing = $this->route('listing');
+
+            if ($this->input('status') === 'approved' && (! $listing instanceof Listing || $listing->status !== 'pending_review')) {
+                $validator->errors()->add('status', 'Only a submitted listing can be approved.');
+            }
+        }];
     }
 }

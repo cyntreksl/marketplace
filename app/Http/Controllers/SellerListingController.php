@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreListingRequest;
 use App\Http\Requests\SubmitListingRequest;
+use App\Http\Requests\UpdateListingRequest;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Listing;
 use App\Services\ListingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,9 +26,25 @@ class SellerListingController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
+        $seller = $request->user()->sellerProfile()->firstOrFail();
+
         return Inertia::render('seller/listings/create', [
+            'sellerStatus' => $seller->status,
+            'categories' => Category::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'commission_percentage']),
+            'brands' => Brand::query()->orderBy('name')->get(['id', 'name']),
+        ]);
+    }
+
+    public function edit(Request $request, Listing $listing): Response
+    {
+        abort_unless($request->user()->can('update', $listing), 403);
+        $seller = $request->user()->sellerProfile()->firstOrFail();
+
+        return Inertia::render('seller/listings/edit', [
+            'listing' => $listing->load(['auction', 'media']),
+            'sellerStatus' => $seller->status,
             'categories' => Category::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'commission_percentage']),
             'brands' => Brand::query()->orderBy('name')->get(['id', 'name']),
         ]);
@@ -36,7 +54,18 @@ class SellerListingController extends Controller
     {
         $listing = $listings->createDraft($request->user(), $request->validated());
 
-        return to_route('seller.listings.index')->with('status', "{$listing->title} was saved as a draft.");
+        return to_route('seller.listings.index')->with('status', $listing->status === 'pending_review'
+            ? "{$listing->title} was submitted for review."
+            : "{$listing->title} was saved as a draft.");
+    }
+
+    public function update(UpdateListingRequest $request, Listing $listing, ListingService $listings): RedirectResponse
+    {
+        $listing = $listings->updateDraft($request->user(), $listing, $request->validated());
+
+        return to_route('seller.listings.index')->with('status', $listing->status === 'pending_review'
+            ? "{$listing->title} was submitted for review."
+            : "{$listing->title} was updated as a draft.");
     }
 
     public function submit(SubmitListingRequest $request, ListingService $listings): RedirectResponse

@@ -1,6 +1,7 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import {
     create,
+    edit,
     submit,
 } from '@/actions/App/Http/Controllers/SellerListingController';
 import { PortalLayout } from '@/components/portal-layout';
@@ -9,6 +10,7 @@ type Listing = {
     id: number;
     title: string;
     status: string;
+    moderation_reason: string | null;
     listing_type: string;
     price: string | null;
     created_at: string;
@@ -80,11 +82,29 @@ export default function SellerListings({
                                                 ? 'Auction'
                                                 : `LKR ${listing.price}`}
                                         </p>
+                                        {listing.moderation_reason && (
+                                            <p className="mt-2 text-sm text-amber-800 dark:text-amber-200">
+                                                Review note:{' '}
+                                                {listing.moderation_reason}
+                                            </p>
+                                        )}
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold capitalize dark:bg-stone-800">
                                             {listing.status.replace('_', ' ')}
                                         </span>
+                                        {[
+                                            'draft',
+                                            'changes_requested',
+                                            'rejected',
+                                        ].includes(listing.status) && (
+                                            <Link
+                                                href={edit(listing.id)}
+                                                className="rounded-full border border-stone-300 px-4 py-2 text-sm font-bold dark:border-stone-700"
+                                            >
+                                                Edit
+                                            </Link>
+                                        )}
                                         {[
                                             'draft',
                                             'changes_requested',

@@ -12,6 +12,11 @@ use App\Services\PlaceBidService;
 test('guests can browse only approved listings', function () {
     $approved = Listing::factory()->create(['title' => 'Approved camera']);
     Listing::factory()->create(['title' => 'Hidden draft', 'status' => 'draft']);
+    $suspendedSeller = SellerProfile::factory()->create(['status' => 'suspended']);
+    Listing::factory()->create([
+        'seller_profile_id' => $suspendedSeller->id,
+        'title' => 'Hidden suspended-seller camera',
+    ]);
 
     $this->get(route('listings.index'))
         ->assertOk()
@@ -43,8 +48,6 @@ test('a verified account can submit seller onboarding details for review', funct
             'seller_type' => 'individual',
             'store_name' => 'Colombo Devices',
             'phone' => '0771234567',
-            'pickup_address' => 'Colombo 03',
-            'return_address' => 'Colombo 03',
             'bank_account_name' => 'Test User',
             'bank_account_details' => 'Account 123',
             'accept_terms' => 'on',

@@ -43,6 +43,21 @@ class EloquentCatalogRepository implements CatalogRepository
         return Brand::withTrashed()->findOrFail($id);
     }
 
+    public function findBrandByNameForUpdate(string $name): ?Brand
+    {
+        return Brand::withTrashed()
+            ->where('name', $name)
+            ->lockForUpdate()
+            ->first();
+    }
+
+    public function saveBrand(Brand $brand): Brand
+    {
+        $brand->save();
+
+        return $brand;
+    }
+
     public function settingWithTrashed(int $id): MarketplaceSetting
     {
         return MarketplaceSetting::withTrashed()->findOrFail($id);

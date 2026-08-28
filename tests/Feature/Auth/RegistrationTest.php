@@ -44,12 +44,7 @@ test('vendor registration screen can be rendered', function () {
 });
 
 test('new vendors can register with their store details', function () {
-    Role::factory()->create([
-        'name' => Role::BusinessSeller,
-        'label' => 'Business Seller',
-    ]);
-
-    $response = $this->post(route('register.store'), [
+    $response = $this->withHeader('X-Inertia', 'true')->post(route('register.store'), [
         'registration_type' => 'vendor',
         'name' => 'Vendor Owner',
         'email' => 'vendor@example.com',
@@ -58,18 +53,26 @@ test('new vendors can register with their store details', function () {
         'seller_type' => 'business',
         'store_name' => 'Vendor Devices',
         'phone' => '0771234567',
-        'pickup_address' => 'Colombo 03',
-        'return_address' => 'Colombo 03',
         'accept_terms' => 'on',
     ]);
 
     $vendor = User::query()->where('email', 'vendor@example.com')->firstOrFail();
 
     $this->assertAuthenticatedAs($vendor);
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('seller.listings.create', absolute: false));
+
+    $this->withoutHeader('X-Inertia')->get(route('seller.listings.create'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('seller/listings/create'),
+        );
 
     expect(SellerProfile::query()->where('user_id', $vendor->id)->firstOrFail())
         ->store_name->toBe('Vendor Devices')
+        ->pickup_address->toBeNull()
+        ->return_address->toBeNull()
         ->bank_account_name->toBeNull()
         ->bank_account_details->toBeNull()
         ->status->toBe('pending_review');

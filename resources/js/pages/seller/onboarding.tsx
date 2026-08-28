@@ -62,24 +62,6 @@ export default function SellerOnboarding({
                                     className="rounded-lg border bg-transparent p-3"
                                 />
                             </label>
-                            <label className="grid gap-2 font-semibold">
-                                Pickup address
-                                <textarea
-                                    required
-                                    name="pickup_address"
-                                    defaultValue={seller?.pickup_address}
-                                    className="min-h-24 rounded-lg border bg-transparent p-3"
-                                />
-                            </label>
-                            <label className="grid gap-2 font-semibold">
-                                Return address
-                                <textarea
-                                    required
-                                    name="return_address"
-                                    defaultValue={seller?.return_address}
-                                    className="min-h-24 rounded-lg border bg-transparent p-3"
-                                />
-                            </label>
                             <div className="grid gap-5 sm:grid-cols-2">
                                 <label className="grid gap-2 font-semibold">
                                     Bank account name

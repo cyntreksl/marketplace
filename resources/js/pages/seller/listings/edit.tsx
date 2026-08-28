@@ -1,37 +1,40 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
-import { store } from '@/actions/App/Http/Controllers/SellerListingController';
+import { update } from '@/actions/App/Http/Controllers/SellerListingController';
 import { PortalLayout } from '@/components/portal-layout';
 import { SellerListingForm } from '@/components/seller-listing-form';
+import type { SellerListingFormListing } from '@/components/seller-listing-form';
 import { index } from '@/routes/seller/listings';
 
 type Category = { id: number; name: string; commission_percentage: string };
 type Brand = { id: number; name: string };
 
-export default function CreateSellerListing({
+export default function EditSellerListing({
+    listing,
     categories,
     brands,
     sellerStatus,
 }: {
+    listing: SellerListingFormListing & { id: number };
     categories: Category[];
     brands: Brand[];
     sellerStatus: string;
 }) {
     return (
-        <PortalLayout portal="seller" title="Create listing">
-            <Head title="Create listing" />
+        <PortalLayout portal="seller" title="Edit listing">
+            <Head title="Edit listing" />
             <main className="mx-auto max-w-7xl">
                 <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <p className="text-xs font-black tracking-[0.2em] text-amber-700 uppercase dark:text-amber-400">
-                            New product
+                            Listing studio
                         </p>
                         <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">
-                            Create a listing
+                            Edit listing
                         </h1>
                         <p className="mt-3 max-w-2xl text-base leading-7 text-stone-600 dark:text-stone-300">
-                            Build a polished product page step by step, then
-                            save it or send it to the marketplace review team.
+                            Refine the product story, selling details, and
+                            photos before sending the draft for another review.
                         </p>
                     </div>
                     <Link
@@ -43,9 +46,10 @@ export default function CreateSellerListing({
                     </Link>
                 </header>
                 <SellerListingForm
-                    form={store.form()}
+                    form={update.form(listing.id)}
                     categories={categories}
                     brands={brands}
+                    listing={listing}
                     canSubmit={['approved', 'active'].includes(sellerStatus)}
                 />
             </main>

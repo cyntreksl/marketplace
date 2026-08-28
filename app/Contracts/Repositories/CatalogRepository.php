@@ -19,5 +19,9 @@ interface CatalogRepository
 
     public function brandWithTrashed(int $id): Brand;
 
+    public function findBrandByNameForUpdate(string $name): ?Brand;
+
+    public function saveBrand(Brand $brand): Brand;
+
     public function settingWithTrashed(int $id): MarketplaceSetting;
 }

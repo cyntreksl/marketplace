@@ -17,8 +17,6 @@ trait SellerProfileValidationRules
             'seller_type' => ['required', Rule::in(['individual', 'business'])],
             'store_name' => ['required', 'string', 'max:120'],
             'phone' => ['required', 'string', 'max:30'],
-            'pickup_address' => ['required', 'string', 'max:1000'],
-            'return_address' => ['required', 'string', 'max:1000'],
             'accept_terms' => ['accepted'],
         ];
     }

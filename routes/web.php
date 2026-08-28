@@ -27,13 +27,18 @@ Route::post('/auctions/{auction}/bids', [AuctionBidController::class, 'store'])
     ->middleware(['auth', 'verified', 'throttle:auction-bids'])
     ->name('auctions.bids.store');
 
-Route::middleware(['auth', 'verified'])->prefix('seller')->name('seller.')->group(function (): void {
+Route::middleware('auth')->prefix('seller')->name('seller.')->group(function (): void {
     Route::get('/onboarding', [SellerOnboardingController::class, 'edit'])->name('onboarding.edit');
     Route::put('/onboarding', [SellerOnboardingController::class, 'update'])->name('onboarding.update');
     Route::get('/listings', [SellerListingController::class, 'index'])->name('listings.index');
     Route::get('/listings/create', [SellerListingController::class, 'create'])->name('listings.create');
     Route::post('/listings', [SellerListingController::class, 'store'])->name('listings.store');
+    Route::get('/listings/{listing}/edit', [SellerListingController::class, 'edit'])->name('listings.edit');
+    Route::put('/listings/{listing}', [SellerListingController::class, 'update'])->name('listings.update');
     Route::post('/listings/submit', [SellerListingController::class, 'submit'])->name('listings.submit');
+});
+
+Route::middleware(['auth', 'verified'])->prefix('seller')->name('seller.')->group(function (): void {
     Route::get('/orders', [SellerOrderController::class, 'index'])->name('orders.index');
     Route::post('/orders/{sellerOrder}/ready', [SellerOrderController::class, 'ready'])->name('orders.ready');
     Route::get('/wallet', [SellerWalletController::class, 'index'])->name('wallet.index');

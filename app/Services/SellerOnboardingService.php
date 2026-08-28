@@ -19,7 +19,11 @@ class SellerOnboardingService
             'terms_accepted_at' => now(),
         ]);
 
-        $role = Role::query()->where('name', $data['seller_type'] === 'business' ? Role::BusinessSeller : Role::IndividualSeller)->firstOrFail();
+        $isBusinessSeller = $data['seller_type'] === 'business';
+        $role = Role::query()->firstOrCreate(
+            ['name' => $isBusinessSeller ? Role::BusinessSeller : Role::IndividualSeller],
+            ['label' => $isBusinessSeller ? 'Business Seller' : 'Individual Seller'],
+        );
         $user->roles()->syncWithoutDetaching([$role->id]);
 
         return $profile;

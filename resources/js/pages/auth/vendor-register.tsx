@@ -29,14 +29,7 @@ const steps = [
 ];
 
 const accountFields = ['name', 'email', 'password', 'password_confirmation'];
-const storeFields = [
-    'seller_type',
-    'store_name',
-    'phone',
-    'pickup_address',
-    'return_address',
-    'accept_terms',
-];
+const storeFields = ['seller_type', 'store_name', 'phone', 'accept_terms'];
 
 export default function VendorRegister({ passwordRules }: Props) {
     const [currentStep, setCurrentStep] = useState(1);
@@ -213,7 +206,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                             </ol>
                         </div>
 
-                        <div className="rounded-xl border bg-card p-4 shadow-sm sm:p-5 dark:shadow-none">
+                        <div className="grid gap-3.5 rounded-xl border bg-card p-4 shadow-sm sm:p-5 dark:shadow-none">
                             <section
                                 ref={(element) => {
                                     stepReferences.current[1] = element;
@@ -427,45 +420,6 @@ export default function VendorRegister({ passwordRules }: Props) {
                                     <InputError message={errors.phone} />
                                 </div>
 
-                                <div className="grid gap-1.5">
-                                    <Label
-                                        htmlFor="pickup_address"
-                                        className="font-semibold"
-                                    >
-                                        Pickup address
-                                    </Label>
-                                    <textarea
-                                        id="pickup_address"
-                                        required
-                                        tabIndex={8}
-                                        name="pickup_address"
-                                        placeholder="Where should collections be made?"
-                                        className="min-h-20 w-full rounded-xl border bg-background px-3.5 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                                    />
-                                    <InputError
-                                        message={errors.pickup_address}
-                                    />
-                                </div>
-
-                                <div className="grid gap-1.5">
-                                    <Label
-                                        htmlFor="return_address"
-                                        className="font-semibold"
-                                    >
-                                        Return address
-                                    </Label>
-                                    <textarea
-                                        id="return_address"
-                                        required
-                                        tabIndex={9}
-                                        name="return_address"
-                                        placeholder="Where should customer returns be sent?"
-                                        className="min-h-20 w-full rounded-xl border bg-background px-3.5 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                                    />
-                                    <InputError
-                                        message={errors.return_address}
-                                    />
-                                </div>
                                 <div className="rounded-xl border bg-muted/30 p-3 text-sm text-muted-foreground">
                                     Your account and store information will be
                                     reviewed before you can publish listings.
@@ -474,7 +428,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                 <label className="flex items-start gap-3 text-sm leading-5">
                                     <input
                                         required
-                                        tabIndex={10}
+                                        tabIndex={8}
                                         name="accept_terms"
                                         type="checkbox"
                                         className="mt-1 size-4 rounded border-input text-primary focus:ring-ring"
@@ -515,7 +469,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                     <Button
                                         type="submit"
                                         className="h-10 flex-1 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
-                                        tabIndex={11}
+                                        tabIndex={9}
                                         data-test="register-vendor-button"
                                     >
                                         {processing && <Spinner />}

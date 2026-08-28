@@ -2,18 +2,24 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Listing;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
-class StoreListingRequest extends FormRequest
+class UpdateListingRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        $sellerProfile = $this->user()?->sellerProfile;
+        $listing = $this->route('listing');
+
+        return $sellerProfile !== null
+            && $listing instanceof Listing
+            && $listing->seller_profile_id === $sellerProfile->id;
     }
 
     /**
@@ -40,7 +46,7 @@ class StoreListingRequest extends FormRequest
             'minimum_increment' => ['required_if:listing_type,auction', 'nullable', 'decimal:0,2', 'min:1'],
             'starts_at' => ['required_if:listing_type,auction', 'nullable', 'date', 'after_or_equal:now'],
             'ends_at' => ['required_if:listing_type,auction', 'nullable', 'date', 'after:starts_at'],
-            'images' => ['required', 'array', 'min:1', 'max:5'],
+            'images' => ['nullable', 'array', 'max:5'],
             'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'submit_for_review' => ['nullable', 'boolean'],
         ];
