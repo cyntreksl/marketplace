@@ -44,6 +44,7 @@ prepare_release() {
     mkdir -p "$release_dir" "${shared_dir}/storage/app/private" "${shared_dir}/storage/framework/cache" \
         "${shared_dir}/storage/framework/sessions" "${shared_dir}/storage/framework/views" "${shared_dir}/storage/logs"
     tar -xzf "$artifact_path" -C "$release_dir"
+    chmod 2750 "$release_dir"
     ln -s "${shared_dir}/.env" "${release_dir}/.env"
     ln -s "${shared_dir}/storage" "${release_dir}/storage"
     mkdir -p "${release_dir}/bootstrap/cache"

@@ -66,7 +66,9 @@ chown deploy:deploy /home/deploy/.ssh/authorized_keys
 chmod 600 /home/deploy/.ssh/authorized_keys
 usermod -aG www-data deploy
 
-install -d -m 2775 -o deploy -g www-data /var/www/prodeals /var/www/prodeals/releases /var/www/prodeals/shared
+install -d -m 2775 -o deploy -g www-data /var/www/prodeals /var/www/prodeals/releases /var/www/prodeals/shared \
+    /var/www/prodeals/shared/storage /var/www/prodeals/shared/storage/app \
+    /var/www/prodeals/shared/storage/framework
 install -d -m 2775 -o deploy -g www-data /var/www/prodeals/shared/storage/app/private \
     /var/www/prodeals/shared/storage/framework/cache /var/www/prodeals/shared/storage/framework/sessions \
     /var/www/prodeals/shared/storage/framework/views /var/www/prodeals/shared/storage/logs
