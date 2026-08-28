@@ -48,7 +48,11 @@ prepare_release() {
     ln -s "${shared_dir}/.env" "${release_dir}/.env"
     ln -s "${shared_dir}/storage" "${release_dir}/storage"
     mkdir -p "${release_dir}/bootstrap/cache"
-    chmod -R ug+rwX "${release_dir}/bootstrap/cache" "${shared_dir}/storage"
+    chmod -R ug+rwX "${release_dir}/bootstrap/cache"
+    chmod 2775 "${shared_dir}/storage" "${shared_dir}/storage/app" \
+        "${shared_dir}/storage/app/private" "${shared_dir}/storage/framework" \
+        "${shared_dir}/storage/framework/cache" "${shared_dir}/storage/framework/sessions" \
+        "${shared_dir}/storage/framework/views" "${shared_dir}/storage/logs"
 
     (
         cd "$release_dir"

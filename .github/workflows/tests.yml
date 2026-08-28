@@ -134,11 +134,14 @@ jobs:
           remote_artifact="/tmp/prodeals-${RELEASE_ID}.tar.gz"
 
           rollback() {
+            exit_code="$?"
+            trap - ERR
             set +e
             ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" "${remote_script} rollback ${RELEASE_ID}"
             ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" "${remote_script} rollback ${RELEASE_ID}"
             ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" 'sudo systemctl restart php8.4-fpm && sudo systemctl reload nginx'
             ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl restart prodeals-worker'
+            exit "$exit_code"
           }
 
           trap rollback ERR
@@ -156,7 +159,8 @@ jobs:
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" 'sudo systemctl restart php8.4-fpm && sudo systemctl reload nginx'
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl reread && sudo supervisorctl update && sudo supervisorctl restart prodeals-worker'
 
-          curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-connrefused https://prodeals.lk/up
+          curl --fail --silent --show-error --retry 20 --retry-delay 3 --retry-max-time 90 \
+            --retry-connrefused --retry-all-errors https://prodeals.lk/up
 
           for host in "$WEB_HOST" "$WORKER_HOST"; do
             ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "${remote_script} cleanup ${RELEASE_ID}"
