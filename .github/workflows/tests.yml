@@ -36,3 +36,131 @@ jobs:
 
       - name: Run CI Checks
         run: composer ci:check
+
+  package:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: ci
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+
+      - name: Build production release
+        run: |
+          cp .env.example .env
+          composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+          php artisan key:generate --no-interaction
+          npm ci
+          npm run build
+          rm .env
+          tar \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.env' \
+            --exclude='node_modules' \
+            --exclude='tests' \
+            --exclude='storage' \
+            --exclude='bootstrap/cache/*.php' \
+            -czf "$RUNNER_TEMP/prodeals-release.tar.gz" .
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: production-release
+          path: ${{ runner.temp }}/prodeals-release.tar.gz
+          if-no-files-found: error
+          retention-days: 5
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PRODUCTION_DEPLOY_ENABLED == 'true'
+    needs: package
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://prodeals.lk
+    concurrency:
+      group: prodeals-production
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout deployment scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download release artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: production-release
+          path: artifact
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          install -m 600 /dev/null "$HOME/.ssh/id_ed25519"
+          install -m 600 /dev/null "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+
+      - name: Deploy production release
+        env:
+          WEB_HOST: ${{ secrets.WEB_HOST }}
+          WORKER_HOST: ${{ secrets.WORKER_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          RELEASE_ID: ${{ github.sha }}
+        run: |
+          set -Eeuo pipefail
+
+          ssh_options=(-o BatchMode=yes -o StrictHostKeyChecking=yes)
+          remote_script="/tmp/prodeals-remote-release.sh"
+          remote_artifact="/tmp/prodeals-${RELEASE_ID}.tar.gz"
+
+          rollback() {
+            set +e
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" "${remote_script} rollback ${RELEASE_ID}"
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" "${remote_script} rollback ${RELEASE_ID}"
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" 'sudo systemctl restart php8.4-fpm && sudo systemctl reload nginx'
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl restart prodeals-worker'
+          }
+
+          trap rollback ERR
+
+          for host in "$WEB_HOST" "$WORKER_HOST"; do
+            scp "${ssh_options[@]}" artifact/prodeals-release.tar.gz "${DEPLOY_USER}@${host}:${remote_artifact}"
+            scp "${ssh_options[@]}" .github/deploy/remote-release.sh "${DEPLOY_USER}@${host}:${remote_script}"
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "chmod 700 ${remote_script} && ${remote_script} prepare ${RELEASE_ID} ${remote_artifact}"
+          done
+
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl stop prodeals-worker || true'
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" "${remote_script} migrate ${RELEASE_ID}"
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" "${remote_script} activate ${RELEASE_ID}"
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" "${remote_script} activate ${RELEASE_ID}"
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" 'sudo systemctl restart php8.4-fpm && sudo systemctl reload nginx'
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl reread && sudo supervisorctl update && sudo supervisorctl restart prodeals-worker'
+
+          curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-connrefused https://prodeals.lk/up
+
+          for host in "$WEB_HOST" "$WORKER_HOST"; do
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "${remote_script} cleanup ${RELEASE_ID}"
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "rm -f ${remote_artifact} ${remote_script}"
+          done
+
+          trap - ERR
