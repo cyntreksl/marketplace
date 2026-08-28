@@ -246,8 +246,8 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
             </div>
 
             <div className="border-t border-white/10 px-4 py-6 sm:px-7">
-                <div className="mx-auto flex max-w-none flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-sm text-slate-400">
+                <div className="mx-auto flex max-w-none flex-col gap-6 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
+                    <p className="text-center text-sm text-slate-400 sm:text-left">
                         © {currentYear}{' '}
                         <Link
                             href={home()}
@@ -260,10 +260,10 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                         </span>
                     </p>
                     <div
-                        className="flex flex-wrap items-center gap-2 sm:justify-end"
+                        className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end"
                         aria-label="Accepted payment methods"
                     >
-                        <span className="mr-1 text-[0.68rem] font-bold tracking-[0.16em] text-slate-500 uppercase">
+                        <span className="col-span-2 mb-1 text-center text-[0.68rem] font-bold tracking-[0.16em] text-slate-500 uppercase sm:mr-1 sm:mb-0 sm:text-left">
                             Ways to pay
                         </span>
                         {marketplace.payment_methods.map((method) => {
@@ -276,7 +276,7 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                             return (
                                 <span
                                     key={method}
-                                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-slate-300"
+                                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-center text-xs font-semibold text-slate-300 last:col-span-2 sm:min-h-0 sm:justify-start sm:text-left sm:last:col-span-1"
                                 >
                                     <PaymentIcon
                                         className="size-4 text-cyan-300"

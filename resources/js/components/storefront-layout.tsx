@@ -62,7 +62,7 @@ export function StorefrontLayout({
             <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
                 <header className="sticky top-0 z-40 bg-white shadow-sm dark:bg-slate-950">
                     <nav
-                        className="mx-auto flex max-w-none items-center gap-3 px-4 py-4 sm:gap-5 sm:px-7"
+                        className="mx-auto grid max-w-none grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center gap-2 px-4 py-3 sm:flex sm:gap-5 sm:px-7 sm:py-4"
                         aria-label="Main navigation"
                     >
                         <MobileStorefrontCategoryMenu
@@ -72,9 +72,9 @@ export function StorefrontLayout({
                         />
                         <Link
                             href={home()}
-                            className="flex shrink-0 rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                            className="mx-auto flex min-w-0 rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none sm:mx-0 sm:shrink-0"
                         >
-                            <BrandLogo className="text-2xl" />
+                            <BrandLogo className="text-xl min-[400px]:text-2xl" />
                         </Link>
                         <Form
                             {...listingsIndex.form()}
@@ -121,7 +121,7 @@ export function StorefrontLayout({
                                 </span>
                             </div>
                         </div>
-                        <div className="flex items-center gap-1 text-sm font-semibold">
+                        <div className="flex items-center justify-end gap-1 text-sm font-semibold sm:ml-auto">
                             <Link
                                 className="hidden items-center gap-1 rounded-full px-3 py-2 text-slate-600 transition hover:bg-primary/10 hover:text-primary sm:flex dark:text-slate-300 dark:hover:bg-slate-900"
                                 href={
