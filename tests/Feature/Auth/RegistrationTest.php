@@ -32,33 +32,33 @@ test('new users can register', function () {
     $response->assertRedirect(route('home', absolute: false));
 });
 
-test('vendor registration screen can be rendered', function () {
-    $response = $this->get(route('vendor.register'));
+test('seller registration screen can be rendered', function () {
+    $response = $this->get(route('seller.register'));
 
     $response
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
-            ->component('auth/vendor-register')
+            ->component('auth/seller-register')
             ->has('passwordRules'),
         );
 });
 
-test('new vendors can register with their store details', function () {
+test('new sellers can register with their store details', function () {
     $response = $this->withHeader('X-Inertia', 'true')->post(route('register.store'), [
-        'registration_type' => 'vendor',
-        'name' => 'Vendor Owner',
-        'email' => 'vendor@example.com',
+        'registration_type' => 'seller',
+        'name' => 'Seller Owner',
+        'email' => 'seller@example.com',
         'password' => 'password',
         'password_confirmation' => 'password',
         'seller_type' => 'business',
-        'store_name' => 'Vendor Devices',
+        'store_name' => 'Seller Devices',
         'phone' => '0771234567',
         'accept_terms' => 'on',
     ]);
 
-    $vendor = User::query()->where('email', 'vendor@example.com')->firstOrFail();
+    $seller = User::query()->where('email', 'seller@example.com')->firstOrFail();
 
-    $this->assertAuthenticatedAs($vendor);
+    $this->assertAuthenticatedAs($seller);
     $response
         ->assertSessionHasNoErrors()
         ->assertRedirect(route('seller.listings.create', absolute: false));
@@ -69,13 +69,13 @@ test('new vendors can register with their store details', function () {
             ->component('seller/listings/create'),
         );
 
-    expect(SellerProfile::query()->where('user_id', $vendor->id)->firstOrFail())
-        ->store_name->toBe('Vendor Devices')
+    expect(SellerProfile::query()->where('user_id', $seller->id)->firstOrFail())
+        ->store_name->toBe('Seller Devices')
         ->pickup_address->toBeNull()
         ->return_address->toBeNull()
         ->bank_account_name->toBeNull()
         ->bank_account_details->toBeNull()
         ->status->toBe('pending_review');
 
-    expect($vendor->roles()->pluck('name')->all())->toContain(Role::BusinessSeller);
+    expect($seller->roles()->pluck('name')->all())->toContain(Role::BusinessSeller);
 });

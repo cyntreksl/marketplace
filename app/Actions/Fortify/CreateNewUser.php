@@ -28,10 +28,10 @@ class CreateNewUser implements CreatesNewUsers
         $rules = [
             ...$this->profileRules(),
             'password' => $this->passwordRules(),
-            'registration_type' => ['nullable', Rule::in(['vendor'])],
+            'registration_type' => ['nullable', Rule::in(['seller'])],
         ];
 
-        if (($input['registration_type'] ?? null) === 'vendor') {
+        if (($input['registration_type'] ?? null) === 'seller') {
             $rules = [...$rules, ...$this->sellerRegistrationRules()];
         }
 
@@ -44,7 +44,7 @@ class CreateNewUser implements CreatesNewUsers
                 'password' => $validated['password'],
             ]);
 
-            if (($validated['registration_type'] ?? null) === 'vendor') {
+            if (($validated['registration_type'] ?? null) === 'seller') {
                 $this->sellerOnboarding->store($user, $validated);
             }
 

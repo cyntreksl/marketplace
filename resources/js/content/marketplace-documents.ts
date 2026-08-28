@@ -179,7 +179,7 @@ export const marketplaceDocuments: Record<string, MarketplaceDocument> = {
                 id: 'seller-application',
                 title: 'How do I become a seller?',
                 paragraphs: [
-                    'Choose Become a vendor, create or sign in to an account, submit the requested seller information, and wait for marketplace review. Approval is not automatic.',
+                    'Choose Become a seller, create or sign in to an account, submit the requested seller information, and wait for marketplace review. Approval is not automatic.',
                 ],
             },
             {

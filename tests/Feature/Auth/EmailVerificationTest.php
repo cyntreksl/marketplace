@@ -38,22 +38,22 @@ test('email can be verified', function () {
     $response->assertRedirect(route('home', absolute: false).'?verified=1');
 });
 
-test('vendor is redirected to the seller portal after email verification', function () {
-    $vendor = User::factory()->unverified()->create();
-    $vendor->roles()->attach(Role::factory()->create(['name' => Role::BusinessSeller]));
+test('seller is redirected to the seller portal after email verification', function () {
+    $seller = User::factory()->unverified()->create();
+    $seller->roles()->attach(Role::factory()->create(['name' => Role::BusinessSeller]));
 
     $verificationUrl = URL::temporarySignedRoute(
         'verification.verify',
         now()->addMinutes(60),
-        ['id' => $vendor->id, 'hash' => sha1($vendor->email)],
+        ['id' => $seller->id, 'hash' => sha1($seller->email)],
     );
 
-    $this->actingAs($vendor)
+    $this->actingAs($seller)
         ->withSession(['url.intended' => route('cart.show')])
         ->get($verificationUrl)
         ->assertRedirect(route('seller.listings.index', ['verified' => 1], absolute: false));
 
-    expect($vendor->fresh()->hasVerifiedEmail())->toBeTrue();
+    expect($seller->fresh()->hasVerifiedEmail())->toBeTrue();
 });
 
 test('buyer returns to their intended page after email verification', function () {

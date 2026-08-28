@@ -4,8 +4,8 @@ import { ListingCard } from '@/components/listing-card';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import type { StorefrontCategory } from '@/components/storefront-layout';
 import { index as listingsIndex } from '@/routes/listings';
+import { register as sellerRegister } from '@/routes/seller';
 import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
-import { register as vendorRegister } from '@/routes/vendor';
 
 export default function StorefrontHome({
     featuredListings,
@@ -15,9 +15,9 @@ export default function StorefrontHome({
     categories: StorefrontCategory[];
 }) {
     const { auth } = usePage().props;
-    const vendorRegistration = auth.user
+    const sellerRegistration = auth.user
         ? sellerOnboardingEdit()
-        : vendorRegister();
+        : sellerRegister();
 
     return (
         <StorefrontLayout title="Discover local deals" categories={categories}>
@@ -133,10 +133,10 @@ export default function StorefrontHome({
                             </p>
                         </div>
                         <Link
-                            href={vendorRegistration}
+                            href={sellerRegistration}
                             className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-5 font-bold text-slate-950 transition hover:bg-cyan-200"
                         >
-                            Become a vendor
+                            Become a seller
                             <ArrowRight className="size-4" />
                         </Link>
                     </div>

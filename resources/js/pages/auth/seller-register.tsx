@@ -31,7 +31,7 @@ const steps = [
 const accountFields = ['name', 'email', 'password', 'password_confirmation'];
 const storeFields = ['seller_type', 'store_name', 'phone', 'accept_terms'];
 
-export default function VendorRegister({ passwordRules }: Props) {
+export default function SellerRegister({ passwordRules }: Props) {
     const [currentStep, setCurrentStep] = useState(1);
     const stepReferences = useRef<Record<number, HTMLElement | null>>({});
     const passwordInputReference = useRef<HTMLInputElement>(null);
@@ -96,7 +96,7 @@ export default function VendorRegister({ passwordRules }: Props) {
 
     return (
         <>
-            <Head title="Become a vendor" />
+            <Head title="Become a seller" />
             <Form
                 {...store.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
@@ -109,14 +109,14 @@ export default function VendorRegister({ passwordRules }: Props) {
                         <input
                             type="hidden"
                             name="registration_type"
-                            value="vendor"
+                            value="seller"
                         />
 
                         <div className="rounded-xl border bg-slate-50/80 p-3 dark:bg-slate-900/50">
                             <div className="mb-2 flex items-center justify-between gap-4">
                                 <div>
                                     <p className="text-sm font-semibold text-foreground">
-                                        Vendor application
+                                        Seller application
                                     </p>
                                     <p className="hidden text-xs text-muted-foreground sm:block">
                                         A few details, then we’ll review your
@@ -129,7 +129,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                             </div>
 
                             <ol
-                                aria-label="Vendor registration progress"
+                                aria-label="Seller registration progress"
                                 className="relative grid grid-cols-2 gap-2"
                             >
                                 <span
@@ -227,7 +227,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                             id="account-step-title"
                                             className="text-base font-bold"
                                         >
-                                            Create your vendor login
+                                            Create your seller login
                                         </h2>
                                     </div>
                                 </div>
@@ -344,7 +344,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                             Tell us about your business
                                         </h2>
                                         <p className="hidden text-sm text-muted-foreground md:block">
-                                            We review each vendor before
+                                            We review each seller before
                                             listings can go live.
                                         </p>
                                     </div>
@@ -356,7 +356,7 @@ export default function VendorRegister({ passwordRules }: Props) {
                                             htmlFor="seller_type"
                                             className="font-semibold"
                                         >
-                                            Vendor type
+                                            Seller type
                                         </Label>
                                         <select
                                             id="seller_type"
@@ -470,10 +470,10 @@ export default function VendorRegister({ passwordRules }: Props) {
                                         type="submit"
                                         className="h-10 flex-1 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
                                         tabIndex={9}
-                                        data-test="register-vendor-button"
+                                        data-test="register-seller-button"
                                     >
                                         {processing && <Spinner />}
-                                        Submit vendor application
+                                        Submit seller application
                                     </Button>
                                 )}
                             </div>
@@ -496,8 +496,8 @@ export default function VendorRegister({ passwordRules }: Props) {
     );
 }
 
-VendorRegister.layout = {
-    title: 'Become a vendor',
+SellerRegister.layout = {
+    title: 'Become a seller',
     description: 'Create your account and submit your store for review.',
     compact: true,
 };

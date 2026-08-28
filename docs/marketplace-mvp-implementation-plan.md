@@ -2,7 +2,7 @@
 
 ## Summary
 
-This backlog delivers a trusted Sri Lankan multi-vendor electronics marketplace using Laravel 13, Inertia React, PostgreSQL in production, Stripe, bank transfer, policy-controlled COD, and a manual courier adapter. Every epic, story, and task below is implemented through small, independently testable increments.
+This backlog delivers a trusted Sri Lankan multi-seller electronics marketplace using Laravel 13, Inertia React, PostgreSQL in production, Stripe, bank transfer, policy-controlled COD, and a manual courier adapter. Every epic, story, and task below is implemented through small, independently testable increments.
 
 ## Shared Foundation
 

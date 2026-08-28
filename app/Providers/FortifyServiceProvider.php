@@ -5,7 +5,7 @@ namespace App\Providers;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Responses\EmailVerificationResponse;
-use App\Http\Responses\VendorRegistrationResponse;
+use App\Http\Responses\SellerRegistrationResponse;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -25,7 +25,7 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(RegisterResponse::class, VendorRegistrationResponse::class);
+        $this->app->singleton(RegisterResponse::class, SellerRegistrationResponse::class);
         $this->app->singleton(VerifyEmailResponse::class, EmailVerificationResponse::class);
     }
 

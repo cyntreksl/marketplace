@@ -226,7 +226,7 @@ test('a seller can replace a typed brand with a catalog brand while editing a dr
         ->brand_name->toBeNull();
 });
 
-test('an unverified vendor can create a private listing draft', function () {
+test('an unverified seller can create a private listing draft', function () {
     Storage::fake('public');
     $seller = SellerProfile::factory()
         ->for(User::factory()->unverified(), 'user')

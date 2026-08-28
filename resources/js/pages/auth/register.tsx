@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
+import { register as sellerRegister } from '@/routes/seller';
 
 type Props = {
     passwordRules: string;
@@ -125,6 +126,17 @@ export default function Register({ passwordRules }: Props) {
                                 tabIndex={6}
                             >
                                 Log in
+                            </TextLink>
+                        </div>
+
+                        <div className="text-center text-sm text-muted-foreground">
+                            Want to sell on ProDeals.lk?{' '}
+                            <TextLink
+                                href={sellerRegister()}
+                                className="font-semibold text-primary decoration-primary/30"
+                                tabIndex={7}
+                            >
+                                Become a seller
                             </TextLink>
                         </div>
                     </>

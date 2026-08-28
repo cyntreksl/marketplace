@@ -18,8 +18,8 @@ import { about, buying, contact, faq, help, home, selling } from '@/routes';
 import { cookies, privacy, terms } from '@/routes/legal';
 import { index as listingsIndex } from '@/routes/listings';
 import { prohibited, returns, sellers, shipping } from '@/routes/policies';
+import { register as sellerRegister } from '@/routes/seller';
 import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
-import { register as vendorRegister } from '@/routes/vendor';
 
 type FooterLink = {
     label: string;
@@ -41,9 +41,9 @@ const paymentIcons: Record<string, LucideIcon> = {
 export function StorefrontFooter({ className = '' }: { className?: string }) {
     const { auth, marketplace } = usePage().props;
     const currentYear = new Date().getFullYear();
-    const vendorRegistration = auth.user
+    const sellerRegistration = auth.user
         ? sellerOnboardingEdit()
-        : vendorRegister();
+        : sellerRegister();
     const navigation: Record<string, FooterLink[]> = {
         Shop: [
             { label: 'Browse all products', href: listingsIndex() },
@@ -61,7 +61,7 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
             { label: 'Returns & refunds', href: returns() },
         ],
         Sell: [
-            { label: 'Become a vendor', href: vendorRegistration },
+            { label: 'Become a seller', href: sellerRegistration },
             { label: 'Selling guide', href: selling() },
             { label: 'Seller policy', href: sellers() },
             { label: 'Prohibited items', href: prohibited() },

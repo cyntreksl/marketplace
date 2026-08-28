@@ -19,8 +19,8 @@ import { home, login, register } from '@/routes';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
 import { show as cartShow } from '@/routes/cart';
 import { index as listingsIndex } from '@/routes/listings';
+import { register as sellerRegister } from '@/routes/seller';
 import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
-import { register as vendorRegister } from '@/routes/vendor';
 
 export type { StorefrontCategory } from '@/components/storefront-category-menu';
 
@@ -127,10 +127,10 @@ export function StorefrontLayout({
                                 href={
                                     auth.user
                                         ? sellerOnboardingEdit()
-                                        : vendorRegister()
+                                        : sellerRegister()
                                 }
                             >
-                                Become a vendor
+                                Become a seller
                             </Link>
                             <Link
                                 className="hidden items-center gap-1 rounded-full px-3 py-2 text-slate-600 transition hover:bg-primary/10 hover:text-primary sm:flex dark:text-slate-300 dark:hover:bg-slate-900"

@@ -8,7 +8,7 @@ use Laravel\Fortify\Contracts\RegisterResponse;
 use Laravel\Fortify\Fortify;
 use Symfony\Component\HttpFoundation\Response;
 
-class VendorRegistrationResponse implements RegisterResponse
+class SellerRegistrationResponse implements RegisterResponse
 {
     /**
      * @param  Request  $request
@@ -19,7 +19,7 @@ class VendorRegistrationResponse implements RegisterResponse
             return new JsonResponse('', 201);
         }
 
-        if ($request->input('registration_type') === 'vendor') {
+        if ($request->input('registration_type') === 'seller') {
             return to_route('seller.listings.create');
         }
 

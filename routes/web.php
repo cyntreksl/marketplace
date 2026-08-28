@@ -17,10 +17,10 @@ use App\Http\Controllers\ReturnEvidenceController;
 use App\Http\Controllers\SellerListingController;
 use App\Http\Controllers\SellerOnboardingController;
 use App\Http\Controllers\SellerOrderController;
+use App\Http\Controllers\SellerRegistrationController;
 use App\Http\Controllers\SellerReturnRequestController;
 use App\Http\Controllers\SellerWalletController;
 use App\Http\Controllers\StorefrontController;
-use App\Http\Controllers\VendorRegistrationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StorefrontController::class, 'home'])->name('home');
@@ -42,7 +42,7 @@ Route::get('/listings/{listing}', [StorefrontController::class, 'show'])->name('
 Route::get('/categories/search', CategoryLookupController::class)
     ->middleware('throttle:category-lookups')
     ->name('categories.search');
-Route::get('/vendor/register', [VendorRegistrationController::class, 'create'])->middleware('guest')->name('vendor.register');
+Route::get('/seller/register', [SellerRegistrationController::class, 'create'])->middleware('guest')->name('seller.register');
 
 Route::post('/auctions/{auction}/bids', [AuctionBidController::class, 'store'])
     ->middleware(['auth', 'verified', 'throttle:auction-bids'])
