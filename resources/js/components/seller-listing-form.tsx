@@ -1,31 +1,25 @@
 import { useForm } from '@inertiajs/react';
 import {
-    Camera,
     Check,
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
     Eye,
-    Gamepad2,
     Gavel,
-    Headphones,
     ImagePlus,
-    Laptop,
     MapPin,
-    Package,
     Search,
     ShoppingBag,
-    Smartphone,
     Sparkles,
     Tag,
     UploadCloud,
     X,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+import { CategoryPicker } from '@/components/category-picker';
+import type { CategoryOption } from '@/components/category-picker';
 
-type Category = { id: number; name: string; commission_percentage: string };
 type Brand = { id: number; name: string };
 type ListingMedia = { id: number; path: string };
 
@@ -95,24 +89,15 @@ const stepFields = [
     ['images'],
 ] as const;
 
-const categoryVisuals: Array<{ icon: LucideIcon; tone: string }> = [
-    { icon: Smartphone, tone: 'from-violet-500 to-indigo-600' },
-    { icon: Laptop, tone: 'from-sky-500 to-blue-600' },
-    { icon: Camera, tone: 'from-rose-500 to-orange-500' },
-    { icon: Gamepad2, tone: 'from-emerald-500 to-teal-600' },
-    { icon: Headphones, tone: 'from-amber-500 to-orange-600' },
-    { icon: Package, tone: 'from-slate-500 to-slate-700' },
-];
-
 export function SellerListingForm({
     form: formDefinition,
-    categories,
+    initialCategory,
     brands,
     listing,
     canSubmit,
 }: {
     form: FormDefinition;
-    categories: Category[];
+    initialCategory: CategoryOption | null;
     brands: Brand[];
     listing?: SellerListingFormListing;
     canSubmit: boolean;
@@ -120,6 +105,8 @@ export function SellerListingForm({
     const isNewListing = listing === undefined;
     const [activeStep, setActiveStep] = useState(0);
     const [furthestStep, setFurthestStep] = useState(0);
+    const [selectedCategory, setSelectedCategory] =
+        useState<CategoryOption | null>(initialCategory);
     const [clientErrors, setClientErrors] = useState<Record<string, string>>(
         {},
     );
@@ -169,9 +156,6 @@ export function SellerListingForm({
 
     const existingMedia = listing?.media ?? [];
     const totalPhotoCount = existingMedia.length + form.data.images.length;
-    const selectedCategory = categories.find(
-        (category) => category.id === form.data.category_id,
-    );
     const selectedBrand = brands.find(
         (brand) => brand.id === form.data.brand_id,
     );
@@ -517,77 +501,29 @@ export function SellerListingForm({
                                 <FieldError error={errorFor('title')} />
                             )}
                         </label>
-                        <fieldset
+                        <div
                             id="listing-category_id"
                             tabIndex={-1}
                             className="grid gap-3 outline-none"
                         >
-                            <div>
-                                <legend className="font-semibold">
-                                    Choose a category
-                                </legend>
-                                <p className="mt-1 text-sm text-stone-500">
-                                    This helps the right buyers discover your
-                                    listing.
-                                </p>
-                            </div>
-                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                {categories.map((category, index) => {
-                                    const categoryVisual =
-                                        categoryVisuals[
-                                            index % categoryVisuals.length
-                                        ];
-                                    const CategoryIcon = categoryVisual.icon;
-                                    const selected =
-                                        form.data.category_id === category.id;
-
-                                    return (
-                                        <button
-                                            key={category.id}
-                                            type="button"
-                                            onClick={() => {
-                                                form.setData(
-                                                    'category_id',
-                                                    category.id,
-                                                );
-                                                clearError('category_id');
-                                            }}
-                                            aria-pressed={selected}
-                                            className={`group relative overflow-hidden rounded-2xl border p-4 text-left transition ${
-                                                selected
-                                                    ? 'border-amber-400 bg-amber-50 ring-2 ring-amber-200 dark:bg-amber-950/30 dark:ring-amber-900/60'
-                                                    : 'border-stone-200 hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-md dark:border-stone-800'
-                                            }`}
-                                        >
-                                            <span
-                                                className={`flex size-11 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm ${categoryVisual.tone}`}
-                                            >
-                                                <CategoryIcon className="size-5" />
-                                            </span>
-                                            <span className="mt-4 flex items-start justify-between gap-2">
-                                                <span>
-                                                    <span className="block font-black">
-                                                        {category.name}
-                                                    </span>
-                                                    <span className="mt-1 block text-xs text-stone-500">
-                                                        {
-                                                            category.commission_percentage
-                                                        }
-                                                        % selling fee
-                                                    </span>
-                                                </span>
-                                                {selected && (
-                                                    <Check className="size-5 shrink-0 rounded-full bg-amber-400 p-1 text-stone-950" />
-                                                )}
-                                            </span>
-                                        </button>
+                            <p className="text-sm text-stone-500">
+                                Search or browse departments, then choose the
+                                most specific category for your item.
+                            </p>
+                            <CategoryPicker
+                                label="Choose a category"
+                                selected={selectedCategory}
+                                onSelect={(category) => {
+                                    setSelectedCategory(category);
+                                    form.setData(
+                                        'category_id',
+                                        category?.id ?? '',
                                     );
-                                })}
-                            </div>
-                            {errorFor('category_id') && (
-                                <FieldError error={errorFor('category_id')} />
-                            )}
-                        </fieldset>
+                                    clearError('category_id');
+                                }}
+                                error={errorFor('category_id')}
+                            />
+                        </div>
                         <fieldset id="listing-condition" className="grid gap-3">
                             <legend className="font-semibold">
                                 Item condition

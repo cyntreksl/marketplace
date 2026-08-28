@@ -9,6 +9,7 @@ use App\Http\Controllers\AdminTaxonomyController;
 use App\Http\Controllers\AuctionBidController;
 use App\Http\Controllers\BuyerDashboardController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CategoryLookupController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\SellerListingController;
 use App\Http\Controllers\SellerOnboardingController;
@@ -21,6 +22,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [StorefrontController::class, 'home'])->name('home');
 Route::get('/listings', [StorefrontController::class, 'index'])->name('listings.index');
 Route::get('/listings/{listing}', [StorefrontController::class, 'show'])->name('listings.show');
+Route::get('/categories/search', CategoryLookupController::class)
+    ->middleware('throttle:category-lookups')
+    ->name('categories.search');
 Route::get('/vendor/register', [VendorRegistrationController::class, 'create'])->middleware('guest')->name('vendor.register');
 
 Route::post('/auctions/{auction}/bids', [AuctionBidController::class, 'store'])

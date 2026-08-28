@@ -5,15 +5,12 @@ import { PortalLayout } from '@/components/portal-layout';
 import { SellerListingForm } from '@/components/seller-listing-form';
 import { index } from '@/routes/seller/listings';
 
-type Category = { id: number; name: string; commission_percentage: string };
 type Brand = { id: number; name: string };
 
 export default function CreateSellerListing({
-    categories,
     brands,
     sellerStatus,
 }: {
-    categories: Category[];
     brands: Brand[];
     sellerStatus: string;
 }) {
@@ -44,7 +41,7 @@ export default function CreateSellerListing({
                 </header>
                 <SellerListingForm
                     form={store.form()}
-                    categories={categories}
+                    initialCategory={null}
                     brands={brands}
                     canSubmit={['approved', 'active'].includes(sellerStatus)}
                 />

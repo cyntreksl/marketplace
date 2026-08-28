@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Contracts\Repositories\CatalogRepository;
 use App\Contracts\Repositories\ListingRepository;
 use App\Models\Listing;
 use App\Models\SellerProfile;
@@ -9,6 +10,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class EloquentListingRepository implements ListingRepository
 {
+    public function __construct(private readonly CatalogRepository $catalog) {}
+
     public function paginatePublic(array $filters, int $perPage = 18): LengthAwarePaginator
     {
         return Listing::query()
@@ -21,7 +24,7 @@ class EloquentListingRepository implements ListingRepository
                 'auction:id,listing_id,status,current_price,ends_at',
             ])
             ->when($filters['search'] ?? null, fn ($query, string $search) => $query->where('title', 'like', "%{$search}%"))
-            ->when($filters['category'] ?? null, fn ($query, string $category) => $query->whereHas('category', fn ($query) => $query->where('slug', $category)))
+            ->when($filters['category'] ?? null, fn ($query, string $category) => $query->whereIn('category_id', $this->catalog->activeDescendantIdsForSlug($category)))
             ->when($filters['brand'] ?? null, fn ($query, string $brand) => $query->whereHas('brand', fn ($query) => $query->where('slug', $brand)))
             ->when($filters['condition'] ?? null, fn ($query, string $condition) => $query->where('condition', $condition))
             ->when($filters['listing_type'] ?? null, fn ($query, string $listingType) => $query->where('listing_type', $listingType))

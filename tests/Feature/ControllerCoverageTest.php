@@ -47,7 +47,7 @@ test('a seller can access each workspace screen', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('seller/listings/create')
-            ->has('categories', 1)
+            ->missing('categories')
             ->has('brands', 1));
 
     $this->actingAs($seller->user)

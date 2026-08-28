@@ -1,4 +1,7 @@
 import { Form, Head } from '@inertiajs/react';
+import { useState } from 'react';
+import { CategoryPicker } from '@/components/category-picker';
+import type { CategoryOption } from '@/components/category-picker';
 import { PortalLayout } from '@/components/portal-layout';
 import { store } from '@/routes/admin/categories';
 
@@ -14,11 +17,11 @@ type Category = {
 
 export default function Categories({
     categories,
-    parents,
 }: {
     categories: { data: Category[] };
-    parents: { id: number; name: string }[];
 }) {
+    const [parent, setParent] = useState<CategoryOption | null>(null);
+
     return (
         <PortalLayout portal="admin" title="Catalog categories">
             <Head title="Categories" />
@@ -42,20 +45,18 @@ export default function Categories({
                                     placeholder="URL slug (optional)"
                                     className="rounded-xl border p-3"
                                 />
-                                <select
+                                <input
+                                    type="hidden"
                                     name="parent_id"
-                                    className="rounded-xl border p-3"
-                                >
-                                    <option value="">No parent</option>
-                                    {parents.map((parent) => (
-                                        <option
-                                            key={parent.id}
-                                            value={parent.id}
-                                        >
-                                            {parent.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                    value={parent?.id ?? ''}
+                                />
+                                <CategoryPicker
+                                    label="Parent category (optional)"
+                                    selected={parent}
+                                    onSelect={setParent}
+                                    selectionMode="any"
+                                    error={errors.parent_id}
+                                />
                                 <input
                                     name="google_product_category_id"
                                     type="number"

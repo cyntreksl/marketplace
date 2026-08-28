@@ -30,7 +30,7 @@ class UpdateListingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'category_id' => ['required', 'integer', Rule::exists('categories', 'id')->where('is_active', true)],
+            'category_id' => ['required', 'integer', Rule::exists('categories', 'id')->where(fn ($query) => $query->where('is_active', true)->where('is_selectable', true))],
             'brand_id' => ['nullable', 'integer', 'exists:brands,id', 'prohibits:brand_name'],
             'brand_name' => ['nullable', 'string', 'max:160', 'prohibits:brand_id'],
             'title' => ['required', 'string', 'max:160'],

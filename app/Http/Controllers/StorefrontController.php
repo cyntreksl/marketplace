@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\Repositories\CatalogRepository;
 use App\Contracts\Repositories\ListingRepository;
-use App\Models\Category;
 use App\Models\Listing;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,13 +11,16 @@ use Inertia\Response;
 
 class StorefrontController extends Controller
 {
-    public function __construct(private ListingRepository $listings) {}
+    public function __construct(
+        private readonly ListingRepository $listings,
+        private readonly CatalogRepository $catalog,
+    ) {}
 
     public function home(): Response
     {
         return Inertia::render('storefront/home', [
             'featuredListings' => $this->listings->paginatePublic([], 6)->through(fn (Listing $listing) => $this->listingData($listing)),
-            'categories' => Category::query()->whereNull('parent_id')->where('is_active', true)->orderBy('name')->get(['id', 'name', 'slug']),
+            'categories' => $this->catalog->activeTopLevelCategories()->map->only(['id', 'name', 'slug']),
         ]);
     }
 
@@ -28,7 +31,8 @@ class StorefrontController extends Controller
         return Inertia::render('storefront/listings/index', [
             'filters' => $filters,
             'listings' => $this->listings->paginatePublic($filters)->through(fn (Listing $listing) => $this->listingData($listing)),
-            'categories' => Category::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'slug']),
+            'categories' => $this->catalog->activeTopLevelCategories()->map->only(['id', 'name', 'slug']),
+            'selectedCategory' => isset($filters['category']) ? $this->catalog->activeCategoryOptionBySlug($filters['category']) : null,
         ]);
     }
 

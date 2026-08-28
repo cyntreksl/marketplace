@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
+use App\Contracts\Repositories\CatalogRepository;
 use App\Contracts\Repositories\ListingRepository;
-use App\Models\Category;
 use App\Models\Listing;
 use App\Models\SellerProfile;
 use App\Models\User;
@@ -16,6 +16,7 @@ class ListingService
 {
     public function __construct(
         private readonly ListingRepository $listings,
+        private readonly CatalogRepository $catalog,
         private readonly AuditLogService $auditLogs,
     ) {}
 
@@ -30,7 +31,7 @@ class ListingService
         }
 
         return DB::transaction(function () use ($seller, $profile, $attributes, $submitForReview): Listing {
-            $category = Category::query()->whereKey((int) $attributes['category_id'])->firstOrFail();
+            $category = $this->catalog->selectableCategory((int) $attributes['category_id']);
             $listing = new Listing([
                 'seller_profile_id' => $profile->id,
                 'category_id' => $category->id,
@@ -76,7 +77,7 @@ class ListingService
                 throw new AuthorizationException('Only drafts and returned listings can be edited.');
             }
 
-            $category = Category::query()->whereKey((int) $attributes['category_id'])->firstOrFail();
+            $category = $this->catalog->selectableCategory((int) $attributes['category_id']);
             $before = $listing->getAttributes();
             $listing->forceFill([
                 'category_id' => $category->id,
@@ -132,6 +133,8 @@ class ListingService
         if (! in_array($listing->status, ['draft', 'changes_requested', 'rejected'], true)) {
             throw new AuthorizationException('Only draft or returned listings can be submitted.');
         }
+
+        $this->catalog->selectableCategory((int) $listing->category_id);
 
         $before = $listing->getAttributes();
         $listing->forceFill(['status' => 'pending_review', 'submitted_at' => now(), 'moderation_reason' => null]);

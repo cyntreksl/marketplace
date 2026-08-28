@@ -1,22 +1,22 @@
 import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import { update } from '@/actions/App/Http/Controllers/SellerListingController';
+import type { CategoryOption } from '@/components/category-picker';
 import { PortalLayout } from '@/components/portal-layout';
 import { SellerListingForm } from '@/components/seller-listing-form';
 import type { SellerListingFormListing } from '@/components/seller-listing-form';
 import { index } from '@/routes/seller/listings';
 
-type Category = { id: number; name: string; commission_percentage: string };
 type Brand = { id: number; name: string };
 
 export default function EditSellerListing({
     listing,
-    categories,
+    selectedCategory,
     brands,
     sellerStatus,
 }: {
     listing: SellerListingFormListing & { id: number };
-    categories: Category[];
+    selectedCategory: CategoryOption;
     brands: Brand[];
     sellerStatus: string;
 }) {
@@ -47,7 +47,7 @@ export default function EditSellerListing({
                 </header>
                 <SellerListingForm
                     form={update.form(listing.id)}
-                    categories={categories}
+                    initialCategory={selectedCategory}
                     brands={brands}
                     listing={listing}
                     canSubmit={['approved', 'active'].includes(sellerStatus)}

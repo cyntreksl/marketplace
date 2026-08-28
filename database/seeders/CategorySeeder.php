@@ -2,7 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\Category;
+use App\Contracts\Repositories\GoogleProductTaxonomyRepository;
+use App\Services\TaxonomyCategorySyncService;
 use Illuminate\Database\Seeder;
 
 class CategorySeeder extends Seeder
@@ -10,16 +11,13 @@ class CategorySeeder extends Seeder
     /**
      * Run the database seeds.
      */
-    public function run(): void
-    {
-        foreach (['Mobile Phones', 'Laptops', 'Cameras', 'Gaming', 'Audio'] as $name) {
-            Category::query()->updateOrCreate(['slug' => str($name)->slug()->toString()], [
-                'name' => $name,
-                'commission_percentage' => 8,
-                'return_window_days' => 7,
-                'cod_enabled' => true,
-                'is_active' => true,
-            ]);
+    public function run(
+        GoogleProductTaxonomyRepository $taxonomies,
+        TaxonomyCategorySyncService $categorySync,
+    ): void {
+        $taxonomy = $taxonomies->activeVersion();
+        if ($taxonomy !== null) {
+            $categorySync->synchronize($taxonomy);
         }
     }
 }

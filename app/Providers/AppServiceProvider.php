@@ -74,5 +74,6 @@ class AppServiceProvider extends ServiceProvider
     protected function configureRateLimiting(): void
     {
         RateLimiter::for('auction-bids', fn ($request) => Limit::perMinute(12)->by($request->user()?->id.'|'.$request->ip()));
+        RateLimiter::for('category-lookups', fn ($request) => Limit::perMinute(120)->by($request->user()?->id.'|'.$request->ip()));
     }
 }

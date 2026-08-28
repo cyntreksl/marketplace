@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Contracts\Repositories\CatalogRepository;
 use App\Http\Requests\StoreListingRequest;
 use App\Http\Requests\SubmitListingRequest;
 use App\Http\Requests\UpdateListingRequest;
 use App\Models\Brand;
-use App\Models\Category;
 use App\Models\Listing;
 use App\Services\ListingService;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +16,8 @@ use Inertia\Response;
 
 class SellerListingController extends Controller
 {
+    public function __construct(private readonly CatalogRepository $catalog) {}
+
     public function index(Request $request): Response
     {
         $seller = $request->user()->sellerProfile()->firstOrFail();
@@ -32,7 +34,6 @@ class SellerListingController extends Controller
 
         return Inertia::render('seller/listings/create', [
             'sellerStatus' => $seller->status,
-            'categories' => Category::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'commission_percentage']),
             'brands' => Brand::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -43,9 +44,9 @@ class SellerListingController extends Controller
         $seller = $request->user()->sellerProfile()->firstOrFail();
 
         return Inertia::render('seller/listings/edit', [
-            'listing' => $listing->load(['auction', 'media']),
+            'listing' => $listing->load(['auction', 'media', 'category']),
             'sellerStatus' => $seller->status,
-            'categories' => Category::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'commission_percentage']),
+            'selectedCategory' => $this->catalog->categoryOption($listing->category),
             'brands' => Brand::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }

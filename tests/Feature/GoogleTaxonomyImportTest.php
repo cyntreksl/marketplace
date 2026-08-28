@@ -48,13 +48,19 @@ test('taxonomy import rejects duplicate category IDs and broken parent paths', f
     $this->actingAs($admin)->post(route('admin.taxonomy.store'), ['taxonomy_file' => $brokenParent, 'version' => 'bad-parent', 'locale' => 'en'])->assertSessionHasErrors('taxonomy_file');
 });
 
-test('taxonomy activation refuses a version that drops an existing local mapping', function () {
+test('taxonomy activation deactivates a local mapping dropped by the new version', function () {
     $admin = superAdmin();
-    Category::factory()->create(['google_product_category_id' => 99]);
+    $mapped = Category::factory()->create(['google_product_category_id' => 99]);
+    $manual = Category::factory()->create(['google_product_category_id' => null]);
     $file = UploadedFile::fake()->createWithContent('taxonomy.txt', '1 - Electronics');
 
     $this->actingAs($admin)->post(route('admin.taxonomy.store'), ['taxonomy_file' => $file, 'version' => 'incomplete', 'locale' => 'en'])->assertRedirect();
     $taxonomy = GoogleProductTaxonomyVersion::query()->sole();
 
-    $this->actingAs($admin)->post(route('admin.taxonomy.activate', $taxonomy), ['reason' => 'Attempt activation'])->assertSessionHasErrors('taxonomy');
+    $this->actingAs($admin)->post(route('admin.taxonomy.activate', $taxonomy), ['reason' => 'Activate the replacement taxonomy'])->assertRedirect();
+
+    expect($mapped->refresh())
+        ->is_active->toBeFalse()
+        ->is_selectable->toBeFalse()
+        ->and($manual->refresh()->is_active)->toBeTrue();
 });

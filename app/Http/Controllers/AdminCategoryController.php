@@ -21,7 +21,7 @@ class AdminCategoryController extends Controller
     {
         Gate::authorize('viewAny', Category::class);
 
-        return Inertia::render('admin/catalog/categories', ['categories' => $catalog->categories($request->only(['search', 'archived'])), 'parents' => Category::query()->orderBy('name')->get(['id', 'name'])]);
+        return Inertia::render('admin/catalog/categories', ['categories' => $catalog->categories($request->only(['search', 'archived']))]);
     }
 
     public function store(StoreCategoryRequest $request, AdminCatalogService $catalog): RedirectResponse

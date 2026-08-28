@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Category;
+use App\Contracts\Repositories\GoogleProductTaxonomyRepository;
 use App\Models\GoogleProductTaxonomyVersion;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -11,15 +11,25 @@ use Illuminate\Validation\ValidationException;
 
 class GoogleProductTaxonomyImportService
 {
-    public function __construct(private readonly AuditLogService $auditLogs) {}
+    public function __construct(
+        private readonly AuditLogService $auditLogs,
+        private readonly GoogleProductTaxonomyRepository $taxonomies,
+        private readonly TaxonomyCategorySyncService $categorySync,
+    ) {}
 
     /** @return array<int, array{google_product_category_id: int, full_path: string, name: string, parent_path: string|null, depth: int}> */
     public function preview(UploadedFile $file): array
     {
+        return $this->previewPath($file->getRealPath());
+    }
+
+    /** @return array<int, array{google_product_category_id: int, full_path: string, name: string, parent_path: string|null, depth: int}> */
+    public function previewPath(string $path): array
+    {
         $rows = [];
         $ids = [];
         $paths = [];
-        foreach (file($file->getRealPath(), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $number => $line) {
+        foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $number => $line) {
             if (str_starts_with(trim($line), '#')) {
                 continue;
             }
@@ -50,18 +60,46 @@ class GoogleProductTaxonomyImportService
 
     public function import(User $actor, UploadedFile $file, string $version, string $locale): GoogleProductTaxonomyVersion
     {
-        $rows = $this->preview($file);
-        $checksum = hash_file('sha256', $file->getRealPath());
-        if (GoogleProductTaxonomyVersion::withTrashed()->where('checksum', $checksum)->exists()) {
+        return $this->importPath($actor, $file->getRealPath(), $file->getClientOriginalName(), $version, $locale);
+    }
+
+    public function importPath(
+        ?User $actor,
+        string $path,
+        string $sourceFilename,
+        string $version,
+        string $locale,
+        bool $reuseExisting = false,
+    ): GoogleProductTaxonomyVersion {
+        $rows = $this->previewPath($path);
+        $checksum = hash_file('sha256', $path);
+        $existing = $this->taxonomies->findByChecksum($checksum);
+        if ($existing !== null) {
+            if ($reuseExisting) {
+                return $existing;
+            }
+
             throw ValidationException::withMessages(['taxonomy_file' => 'This taxonomy file was already imported.']);
         }
 
-        return DB::transaction(function () use ($actor, $file, $version, $locale, $rows, $checksum): GoogleProductTaxonomyVersion {
-            $taxonomy = GoogleProductTaxonomyVersion::query()->create(['version' => $version, 'locale' => $locale, 'source_filename' => $file->getClientOriginalName(), 'checksum' => $checksum, 'node_count' => count($rows), 'imported_by' => $actor->id]);
+        return DB::transaction(function () use ($actor, $sourceFilename, $version, $locale, $rows, $checksum): GoogleProductTaxonomyVersion {
+            $taxonomy = $this->taxonomies->createVersion([
+                'version' => $version,
+                'locale' => $locale,
+                'source_filename' => $sourceFilename,
+                'checksum' => $checksum,
+                'node_count' => count($rows),
+                'imported_by' => $actor?->id,
+            ]);
             $nodeIds = [];
             foreach ($rows as $row) {
-                $node = $taxonomy->nodes()->create([...$row, 'parent_id' => $row['parent_path'] ? $nodeIds[$row['parent_path']] : null]);
-                $nodeIds[$row['full_path']] = $node->id;
+                $nodeIds[$row['full_path']] = $this->taxonomies->createNode($taxonomy, [
+                    'google_product_category_id' => $row['google_product_category_id'],
+                    'full_path' => $row['full_path'],
+                    'name' => $row['name'],
+                    'depth' => $row['depth'],
+                    'parent_id' => $row['parent_path'] ? $nodeIds[$row['parent_path']] : null,
+                ]);
             }
             $this->auditLogs->record($actor, 'taxonomy.imported', $taxonomy, null, $taxonomy->getAttributes(), 'Imported official Google Product Taxonomy.');
 
@@ -69,17 +107,26 @@ class GoogleProductTaxonomyImportService
         });
     }
 
-    public function activate(User $actor, GoogleProductTaxonomyVersion $taxonomy, string $reason): void
+    public function activate(?User $actor, GoogleProductTaxonomyVersion $taxonomy, string $reason): void
     {
-        $mapped = Category::query()->whereNotNull('google_product_category_id')->pluck('google_product_category_id');
-        if ($mapped->diff($taxonomy->nodes()->whereIn('google_product_category_id', $mapped)->pluck('google_product_category_id'))->isNotEmpty()) {
-            throw ValidationException::withMessages(['taxonomy' => 'The version does not contain every category mapped locally.']);
-        }
         DB::transaction(function () use ($actor, $taxonomy, $reason): void {
-            GoogleProductTaxonomyVersion::query()->where('is_active', true)->update(['is_active' => false]);
+            $this->taxonomies->deactivateActiveVersions();
+            $taxonomy = $this->taxonomies->versionWithTrashed((int) $taxonomy->getKey());
             $before = $taxonomy->getAttributes();
-            $taxonomy->forceFill(['is_active' => true, 'activated_at' => now()])->save();
+            $taxonomy->forceFill(['is_active' => true, 'activated_at' => now()]);
+            $this->taxonomies->saveVersion($taxonomy);
+            $this->categorySync->synchronize($taxonomy);
             $this->auditLogs->record($actor, 'taxonomy.activated', $taxonomy, $before, $taxonomy->getAttributes(), $reason);
         });
+    }
+
+    public function versionFromPath(string $path): string
+    {
+        $firstLine = file($path, FILE_IGNORE_NEW_LINES)[0] ?? '';
+        if (! preg_match('/^# Google_Product_Taxonomy_Version:\s*(.+)$/', trim($firstLine), $matches)) {
+            throw ValidationException::withMessages(['taxonomy_file' => 'The taxonomy version header is missing.']);
+        }
+
+        return trim($matches[1]);
     }
 }
