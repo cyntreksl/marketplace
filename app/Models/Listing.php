@@ -63,11 +63,11 @@ class Listing extends Model
     /** @param Builder<Listing> $query */
     public function scopePubliclyVisible(Builder $query): void
     {
-        $query->where('status', 'approved')
+        $query->where('listings.status', 'approved')
             ->whereHas('sellerProfile', fn (Builder $query) => $query->whereIn('status', ['approved', 'active']))
             ->where(function (Builder $query): void {
-                $query->where('listing_type', 'auction')
-                    ->orWhereColumn('stock_quantity', '>', 'reserved_quantity');
+                $query->where('listings.listing_type', 'auction')
+                    ->orWhereColumn('listings.stock_quantity', '>', 'listings.reserved_quantity');
             });
     }
 }

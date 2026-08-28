@@ -6,6 +6,7 @@ use App\Contracts\Repositories\CatalogRepository;
 use App\Contracts\Repositories\ListingRepository;
 use App\Models\Listing;
 use App\Models\SellerProfile;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class EloquentListingRepository implements ListingRepository
@@ -14,7 +15,11 @@ class EloquentListingRepository implements ListingRepository
 
     public function paginatePublic(array $filters, int $perPage = 18): LengthAwarePaginator
     {
-        return Listing::query()
+        $effectivePrice = 'CAST(COALESCE(auctions.current_price, listings.sale_price, listings.price) AS DECIMAL(12, 2))';
+
+        $query = Listing::query()
+            ->select('listings.*')
+            ->leftJoin('auctions', 'auctions.listing_id', '=', 'listings.id')
             ->publiclyVisible()
             ->with([
                 'brand:id,name,slug',
@@ -23,16 +28,18 @@ class EloquentListingRepository implements ListingRepository
                 'sellerProfile:id,store_name,slug',
                 'auction:id,listing_id,status,current_price,ends_at',
             ])
-            ->when($filters['search'] ?? null, fn ($query, string $search) => $query->where('title', 'like', "%{$search}%"))
-            ->when($filters['category'] ?? null, fn ($query, string $category) => $query->whereIn('category_id', $this->catalog->activeDescendantIdsForSlug($category)))
+            ->when($filters['search'] ?? null, fn ($query, string $search) => $query->where('listings.title', 'like', "%{$search}%"))
+            ->when($filters['category'] ?? null, fn ($query, string $category) => $query->whereIn('listings.category_id', $this->catalog->activeDescendantIdsForSlug($category)))
             ->when($filters['brand'] ?? null, fn ($query, string $brand) => $query->whereHas('brand', fn ($query) => $query->where('slug', $brand)))
-            ->when($filters['condition'] ?? null, fn ($query, string $condition) => $query->where('condition', $condition))
-            ->when($filters['listing_type'] ?? null, fn ($query, string $listingType) => $query->where('listing_type', $listingType))
-            ->when($filters['location'] ?? null, fn ($query, string $location) => $query->where('location', $location))
-            ->when($filters['min_price'] ?? null, fn ($query, string $minimum) => $query->where('price', '>=', $minimum))
-            ->when($filters['max_price'] ?? null, fn ($query, string $maximum) => $query->where('price', '<=', $maximum))
-            ->latest()
-            ->paginate($perPage)
+            ->when($filters['condition'] ?? null, fn ($query, string $condition) => $query->where('listings.condition', $condition))
+            ->when($filters['listing_type'] ?? null, fn ($query, string $listingType) => $query->where('listings.listing_type', $listingType))
+            ->when($filters['location'] ?? null, fn ($query, string $location) => $query->where('listings.location', 'like', "%{$location}%"))
+            ->when($filters['min_price'] ?? null, fn ($query, int|float|string $minimum) => $query->whereRaw("{$effectivePrice} >= ?", [$minimum]))
+            ->when($filters['max_price'] ?? null, fn ($query, int|float|string $maximum) => $query->whereRaw("{$effectivePrice} <= ?", [$maximum]));
+
+        $this->applySort($query, (string) ($filters['sort'] ?? 'newest'));
+
+        return $query->paginate($perPage)
             ->withQueryString();
     }
 
@@ -63,5 +70,15 @@ class EloquentListingRepository implements ListingRepository
         return $seller->listings()
             ->with(['category:id,name,slug,commission_percentage', 'brand:id,name,slug', 'auction'])
             ->findOrFail($listingId);
+    }
+
+    /** @param Builder<Listing> $query */
+    private function applySort(Builder $query, string $sort): void
+    {
+        match ($sort) {
+            'price_asc' => $query->orderByRaw('CAST(COALESCE(auctions.current_price, listings.sale_price, listings.price) AS DECIMAL(12, 2)) asc'),
+            'price_desc' => $query->orderByRaw('CAST(COALESCE(auctions.current_price, listings.sale_price, listings.price) AS DECIMAL(12, 2)) desc'),
+            default => $query->latest('listings.created_at'),
+        };
     }
 }

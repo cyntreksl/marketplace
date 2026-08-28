@@ -1,19 +1,9 @@
 import { Link } from '@inertiajs/react';
 import { ArrowUpRight, MapPin } from 'lucide-react';
 import { show as listingShow } from '@/routes/listings';
+import type { StorefrontListing } from '@/types';
 
-type Listing = {
-    title: string;
-    slug: string;
-    condition: string;
-    listingType: string;
-    price: string | null;
-    location: string;
-    media: { url: string }[];
-    auction: { currentPrice: string | null; endsAt: string | null } | null;
-};
-
-export function ListingCard({ listing }: { listing: Listing }) {
+export function ListingCard({ listing }: { listing: StorefrontListing }) {
     const price = listing.auction?.currentPrice ?? listing.price;
 
     return (

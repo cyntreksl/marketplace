@@ -55,6 +55,9 @@ interface CatalogRepository
     /** @return Collection<int, Category> */
     public function activeTopLevelCategories(): Collection;
 
+    /** @return Collection<int, Brand> */
+    public function availableBrands(): Collection;
+
     /** @return Collection<int, Category> */
     public function lookupCategories(?string $search, ?int $parentId): Collection;
 
@@ -66,4 +69,16 @@ interface CatalogRepository
 
     /** @return array<int, int> */
     public function activeDescendantIdsForSlug(string $slug): array;
+
+    /**
+     * @return array{
+     *     current: array{id: int, name: string, slug: string},
+     *     ancestors: array<int, array{id: int, name: string, slug: string}>,
+     *     children: array<int, array{id: int, name: string, slug: string, has_children: bool}>
+     * }|null
+     */
+    public function activeCategoryContextBySlug(string $slug): ?array;
+
+    /** @return array<int, array{id: int, name: string, slug: string}> */
+    public function activeCategoryTrailBySlug(string $slug): array;
 }

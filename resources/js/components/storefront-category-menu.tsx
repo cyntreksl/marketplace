@@ -30,19 +30,9 @@ import type { LucideIcon } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FocusEvent, KeyboardEvent } from 'react';
 import { index as listingsIndex } from '@/routes/listings';
+import type { StorefrontCategory } from '@/types';
 
-export type StorefrontCategory = {
-    id: number;
-    name: string;
-    slug: string;
-    children: StorefrontCategoryChild[];
-};
-
-export type StorefrontCategoryChild = {
-    id: number;
-    name: string;
-    slug: string;
-};
+export type { StorefrontCategory } from '@/types';
 
 const categoryIcons: Record<string, LucideIcon> = {
     'animals-pet-supplies': PawPrint,

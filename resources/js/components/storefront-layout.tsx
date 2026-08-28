@@ -27,19 +27,33 @@ export function StorefrontLayout({
     children,
     title,
     categories = [],
+    activeCategorySlugs = [],
 }: {
     children: React.ReactNode;
     title: string;
     categories?: StorefrontCategory[];
+    activeCategorySlugs?: string[];
 }) {
     const page = usePage();
     const { auth } = page.props;
-    const selectedCategorySlug = new URLSearchParams(
+    const requestedCategorySlug = new URLSearchParams(
         page.url.split('?')[1] ?? '',
     ).get('category');
+    const requestedCategoryIsVisible = categories.some((category) =>
+        categoryContainsSlug(category, requestedCategorySlug),
+    );
+    const selectedCategorySlug = requestedCategoryIsVisible
+        ? requestedCategorySlug
+        : ([...activeCategorySlugs]
+              .reverse()
+              .find((slug) =>
+                  categories.some((category) =>
+                      categoryContainsSlug(category, slug),
+                  ),
+              ) ?? null);
     const isAllProductsSelected =
         page.url.split('?')[0] === listingsIndex.url() &&
-        selectedCategorySlug === null;
+        requestedCategorySlug === null;
 
     return (
         <>

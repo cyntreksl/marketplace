@@ -159,6 +159,14 @@ class EloquentCatalogRepository implements CatalogRepository
             ->get();
     }
 
+    public function availableBrands(): Collection
+    {
+        return Brand::query()
+            ->select(['id', 'name', 'slug'])
+            ->orderBy('name')
+            ->get();
+    }
+
     public function lookupCategories(?string $search, ?int $parentId): Collection
     {
         $query = Category::query()
@@ -242,6 +250,51 @@ class EloquentCatalogRepository implements CatalogRepository
             ->all();
     }
 
+    public function activeCategoryContextBySlug(string $slug): ?array
+    {
+        $category = Category::query()
+            ->select(['id', 'parent_id', 'name', 'slug'])
+            ->where('slug', $slug)
+            ->where('is_active', true)
+            ->first();
+
+        if ($category === null) {
+            return null;
+        }
+
+        $children = Category::query()
+            ->select(['id', 'parent_id', 'name', 'slug', 'sort_order'])
+            ->where('parent_id', $category->id)
+            ->where('is_active', true)
+            ->withCount(['children as active_children_count' => fn (Builder $query): Builder => $query->where('is_active', true)])
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (Category $child): array => [
+                ...$this->categoryNavigationData($child),
+                'has_children' => (int) $child->getAttribute('active_children_count') > 0,
+            ])
+            ->values()
+            ->all();
+
+        return [
+            'current' => $this->categoryNavigationData($category),
+            'ancestors' => $this->activeAncestors($category),
+            'children' => $children,
+        ];
+    }
+
+    public function activeCategoryTrailBySlug(string $slug): array
+    {
+        $context = $this->activeCategoryContextBySlug($slug);
+
+        if ($context === null) {
+            return [];
+        }
+
+        return [...$context['ancestors'], $context['current']];
+    }
+
     /**
      * @param  Collection<int, Category>  $categories
      * @return Collection<int, Category>
@@ -269,6 +322,40 @@ class EloquentCatalogRepository implements CatalogRepository
 
             $category->setAttribute('taxonomy_path', implode(' > ', $parts));
         });
+    }
+
+    /** @return array<int, array{id: int, name: string, slug: string}> */
+    private function activeAncestors(Category $category): array
+    {
+        $ancestors = [];
+        $parentId = $category->parent_id;
+
+        while ($parentId !== null) {
+            $parent = Category::query()
+                ->select(['id', 'parent_id', 'name', 'slug'])
+                ->whereKey($parentId)
+                ->where('is_active', true)
+                ->first();
+
+            if ($parent === null) {
+                break;
+            }
+
+            array_unshift($ancestors, $this->categoryNavigationData($parent));
+            $parentId = $parent->parent_id;
+        }
+
+        return $ancestors;
+    }
+
+    /** @return array{id: int, name: string, slug: string} */
+    private function categoryNavigationData(Category $category): array
+    {
+        return [
+            'id' => (int) $category->getKey(),
+            'name' => $category->name,
+            'slug' => $category->slug,
+        ];
     }
 
     private function uniqueCategorySlug(string $fullPath, int $googleProductCategoryId): string
