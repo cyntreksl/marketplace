@@ -15,7 +15,8 @@ import {
 } from '@/components/storefront-category-menu';
 import type { StorefrontCategory } from '@/components/storefront-category-menu';
 import { StorefrontFooter } from '@/components/storefront-footer';
-import { dashboard, home, login, register } from '@/routes';
+import { home, login, register } from '@/routes';
+import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
 import { show as cartShow } from '@/routes/cart';
 import { index as listingsIndex } from '@/routes/listings';
 import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
@@ -150,10 +151,10 @@ export function StorefrontLayout({
                                     </Link>
                                     <Link
                                         className="hidden items-center gap-2 rounded-full bg-primary px-4 py-2 text-primary-foreground shadow-sm shadow-primary/25 transition hover:bg-primary/90 sm:flex"
-                                        href={dashboard()}
+                                        href={buyerOrdersIndex()}
                                     >
                                         <UserRound className="size-4" />
-                                        Dashboard
+                                        My orders
                                     </Link>
                                 </>
                             ) : (

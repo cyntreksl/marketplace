@@ -79,7 +79,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/returns/{returnRequest}/evidence/{evidence}', ReturnEvidenceController::class)
         ->whereNumber('evidence')
         ->name('returns.evidence.show');
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
 });
 
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function (): void {
