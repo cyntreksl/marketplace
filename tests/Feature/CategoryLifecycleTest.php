@@ -16,7 +16,7 @@ function categoryAdmin(): User
     return $admin;
 }
 
-test('an admin can create replace and remove optional category artwork', function () {
+test('an admin can create replace and remove independently cropped category artwork', function () {
     Storage::fake('public');
     config()->set('filesystems.media', 'public');
     $admin = categoryAdmin();
@@ -28,18 +28,30 @@ test('an admin can create replace and remove optional category artwork', functio
         'return_window_days' => 7,
         'cod_enabled' => true,
         'is_active' => true,
-        'image' => UploadedFile::fake()->image('electronics.jpg', 800, 800),
+        'image' => UploadedFile::fake()->image('electronics.jpg', 1000, 1000),
+        'image_crop' => ['x' => 100, 'y' => 100, 'width' => 800, 'height' => 800],
+        'banner_image' => UploadedFile::fake()->image('electronics-banner.jpg', 1200, 1600),
+        'banner_image_crop' => ['x' => 0, 'y' => 0, 'width' => 1200, 'height' => 1600],
         'reason' => 'Add approved category artwork',
     ])->assertRedirectContains('/admin/catalog/categories?category=');
 
     $category = Category::query()->sole();
     $originalPath = $category->image_path;
+    $originalBannerPath = $category->banner_image_path;
 
-    expect($originalPath)->not->toBeNull();
-    Storage::disk('public')->assertExists($originalPath);
+    expect($originalPath)->not->toBeNull()
+        ->and($category->image_disk)->toBe('public')
+        ->and($originalBannerPath)->not->toBeNull()
+        ->and($category->banner_image_disk)->toBe('public')
+        ->and(getimagesizefromstring(Storage::disk('public')->get($originalPath)))->toMatchArray([800, 800])
+        ->and(image_type_to_mime_type(getimagesizefromstring(Storage::disk('public')->get($originalPath))[2]))->toBe('image/webp')
+        ->and(getimagesizefromstring(Storage::disk('public')->get($originalBannerPath)))->toMatchArray([900, 1200])
+        ->and(image_type_to_mime_type(getimagesizefromstring(Storage::disk('public')->get($originalBannerPath))[2]))->toBe('image/webp');
+    Storage::disk('public')->assertExists([$originalPath, $originalBannerPath]);
 
     $this->actingAs($admin)->post(route('admin.categories.image.store', $category), [
         'image' => UploadedFile::fake()->image('replacement.webp', 1000, 1000),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 1000, 'height' => 1000],
         'reason' => 'Use the final approved category crop',
     ])->assertRedirect(route('admin.categories.index', ['category' => $category->id]));
 
@@ -47,6 +59,18 @@ test('an admin can create replace and remove optional category artwork', functio
     expect($replacementPath)->not->toBe($originalPath);
     Storage::disk('public')->assertMissing($originalPath);
     Storage::disk('public')->assertExists($replacementPath);
+    Storage::disk('public')->assertExists($originalBannerPath);
+
+    $this->actingAs($admin)->post(route('admin.categories.banner_image.store', $category), [
+        'image' => UploadedFile::fake()->image('replacement-banner.webp', 1350, 1800),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 1350, 'height' => 1800],
+        'reason' => 'Use the final approved homepage banner crop',
+    ])->assertRedirect(route('admin.categories.index', ['category' => $category->id]));
+
+    $replacementBannerPath = $category->refresh()->banner_image_path;
+    expect($replacementBannerPath)->not->toBe($originalBannerPath)
+        ->and(getimagesizefromstring(Storage::disk('public')->get($replacementBannerPath)))->toMatchArray([900, 1200]);
+    Storage::disk('public')->assertMissing($originalBannerPath);
 
     $this->actingAs($admin)->delete(route('admin.categories.image.destroy', $category), [
         'reason' => 'Remove artwork pending brand approval',
@@ -54,8 +78,18 @@ test('an admin can create replace and remove optional category artwork', functio
 
     expect($category->refresh()->image_path)->toBeNull()
         ->and(AuditLog::query()->where('auditable_id', $category->id)->pluck('action')->all())
-        ->toContain('category.created', 'category.image_updated', 'category.image_removed');
+        ->toContain('category.created', 'category.image_updated', 'category.image_removed', 'category.banner_image_updated');
     Storage::disk('public')->assertMissing($replacementPath);
+
+    $this->actingAs($admin)->delete(route('admin.categories.banner_image.destroy', $category), [
+        'reason' => 'Remove the old homepage banner artwork',
+    ])->assertRedirect(route('admin.categories.index', ['category' => $category->id]));
+
+    expect($category->refresh()->banner_image_path)->toBeNull()
+        ->and($category->banner_image_disk)->toBeNull()
+        ->and(AuditLog::query()->where('auditable_id', $category->id)->pluck('action')->all())
+        ->toContain('category.banner_image_removed');
+    Storage::disk('public')->assertMissing($replacementBannerPath);
 });
 
 test('category artwork only accepts supported images and authorized admins', function () {
@@ -65,23 +99,92 @@ test('category artwork only accepts supported images and authorized admins', fun
 
     $this->actingAs($admin)->post(route('admin.categories.image.store', $category), [
         'image' => UploadedFile::fake()->create('category.svg', 20, 'image/svg+xml'),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 800, 'height' => 800],
         'reason' => 'Attempt unsupported artwork type',
     ])->assertSessionHasErrors('image');
 
     $this->actingAs($admin)->post(route('admin.categories.image.store', $category), [
         'image' => UploadedFile::fake()->create('category.jpg', 5121, 'image/jpeg'),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 800, 'height' => 800],
         'reason' => 'Attempt artwork above the upload limit',
+    ])->assertSessionHasErrors('image');
+
+    $this->actingAs($admin)->post(route('admin.categories.banner_image.store', $category), [
+        'image' => UploadedFile::fake()->image('category-banner.jpg', 1200, 1600),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 1200, 'height' => 1200],
+        'reason' => 'Attempt a square crop for a portrait banner',
+    ])->assertSessionHasErrors('crop');
+
+    $this->actingAs($admin)->post(route('admin.categories.image.store', $category), [
+        'image' => UploadedFile::fake()->image('category.jpg', 1000, 1000),
+        'reason' => 'Attempt artwork without crop coordinates',
+    ])->assertSessionHasErrors('crop');
+
+    $this->actingAs($admin)->post(route('admin.categories.image.store', $category), [
+        'image' => UploadedFile::fake()->image('category.jpg', 1000, 1000),
+        'crop' => ['width' => 800, 'height' => 800],
+        'reason' => 'Attempt artwork with incomplete crop coordinates',
+    ])->assertSessionHasErrors(['crop.x', 'crop.y']);
+
+    $this->actingAs($admin)->post(route('admin.categories.image.store', $category), [
+        'image' => UploadedFile::fake()->image('category.jpg', 799, 800),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 799, 'height' => 799],
+        'reason' => 'Attempt artwork below the source size minimum',
+    ])->assertSessionHasErrors('image');
+
+    $this->actingAs($admin)->post(route('admin.categories.banner_image.store', $category), [
+        'image' => UploadedFile::fake()->image('category-banner.jpg', 6001, 1200),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 900, 'height' => 1200],
+        'reason' => 'Attempt artwork above the source dimension limit',
     ])->assertSessionHasErrors('image');
 
     $buyer = User::factory()->create();
     $this->actingAs($buyer)->post(route('admin.categories.image.store', $category), [
         'image' => UploadedFile::fake()->image('category.jpg'),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 800, 'height' => 800],
         'reason' => 'Attempt unauthorized artwork update',
+    ])->assertForbidden();
+    $this->actingAs($buyer)->post(route('admin.categories.banner_image.store', $category), [
+        'image' => UploadedFile::fake()->image('category-banner.jpg', 1200, 1600),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 1200, 'height' => 1600],
+        'reason' => 'Attempt unauthorized banner update',
     ])->assertForbidden();
     $this->actingAs($buyer)->patch(route('admin.categories.activation.update', $category), [
         'is_active' => false,
         'reason' => 'Attempt unauthorized activation change',
     ])->assertForbidden();
+});
+
+test('category artwork uses the configured media disk and rejects crops outside the source image', function () {
+    config([
+        'filesystems.media' => 'r2',
+        'filesystems.disks.r2.key' => 'test-key',
+        'filesystems.disks.r2.secret' => 'test-secret',
+        'filesystems.disks.r2.bucket' => 'prodeals-media-production',
+        'filesystems.disks.r2.endpoint' => 'https://account-id.r2.cloudflarestorage.com',
+        'filesystems.disks.r2.url' => 'https://media.prodeals.lk',
+    ]);
+    Storage::fake('r2');
+    $category = Category::factory()->create();
+    $admin = categoryAdmin();
+
+    $this->actingAs($admin)->post(route('admin.categories.image.store', $category), [
+        'image' => UploadedFile::fake()->image('category.jpg', 1000, 1000),
+        'crop' => ['x' => 300, 'y' => 300, 'width' => 800, 'height' => 800],
+        'reason' => 'Attempt a crop outside the uploaded image',
+    ])->assertSessionHasErrors('crop');
+
+    $this->actingAs($admin)->post(route('admin.categories.image.store', $category), [
+        'image' => UploadedFile::fake()->image('category.jpg', 1000, 1000),
+        'crop' => ['x' => 100, 'y' => 100, 'width' => 800, 'height' => 800],
+        'reason' => 'Store the approved square crop on R2',
+    ])->assertRedirect();
+
+    $category->refresh();
+    expect($category->image_disk)->toBe('r2');
+    Storage::disk('r2')->assertExists($category->image_path);
+    Storage::forgetDisk('r2');
+    expect($category->imageUrl())->toBe('https://media.prodeals.lk/'.$category->image_path);
 });
 
 test('archiving and restoring a category preserves its artwork', function () {

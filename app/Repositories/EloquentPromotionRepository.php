@@ -6,6 +6,7 @@ use App\Contracts\Repositories\PromotionRepository;
 use App\Models\Promotion;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
 
 class EloquentPromotionRepository implements PromotionRepository
 {
@@ -32,5 +33,12 @@ class EloquentPromotionRepository implements PromotionRepository
         $promotion->save();
 
         return $promotion;
+    }
+
+    public function forMediaMigration(): LazyCollection
+    {
+        return Promotion::query()
+            ->whereNotNull('image_path')
+            ->lazyById();
     }
 }

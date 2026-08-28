@@ -101,6 +101,7 @@ export type StorefrontHomepageCategory = {
     name: string;
     slug: string;
     image_url: string | null;
+    banner_image_url?: string | null;
 };
 
 export type StorefrontCategorySection = {

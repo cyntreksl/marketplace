@@ -7,6 +7,7 @@ use App\Contracts\Repositories\ReviewRepository;
 use App\Models\Category;
 use App\Models\Listing;
 use App\Services\SeoHeadService;
+use App\Services\StaticMediaService;
 use App\Services\StorefrontService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Mockery\MockInterface;
@@ -32,7 +33,7 @@ test('browse data combines listing results navigation context and filter options
         $mock->shouldReceive('availableBrands')->once()->andReturn(collect());
     });
 
-    $data = (new StorefrontService($listingRepository, $catalogRepository, Mockery::mock(PromotionRepository::class), Mockery::mock(ReviewRepository::class), Mockery::mock(SeoHeadService::class)))->browseData([
+    $data = (new StorefrontService($listingRepository, $catalogRepository, Mockery::mock(PromotionRepository::class), Mockery::mock(ReviewRepository::class), Mockery::mock(SeoHeadService::class), Mockery::mock(StaticMediaService::class)))->browseData([
         'category' => 'fashion',
         'sort' => 'newest',
     ]);
@@ -80,7 +81,7 @@ test('listing details include an empty media collection and category trail', fun
         $mock->shouldReceive('listing')->once()->with($listing)->andReturn(['<title>Modern laptop</title>']);
     });
 
-    $data = (new StorefrontService($listingRepository, $catalogRepository, Mockery::mock(PromotionRepository::class), $reviewRepository, $seo))->listingDetailsData('modern-laptop');
+    $data = (new StorefrontService($listingRepository, $catalogRepository, Mockery::mock(PromotionRepository::class), $reviewRepository, $seo, Mockery::mock(StaticMediaService::class)))->listingDetailsData('modern-laptop');
 
     expect($data['listing']['media'])->toBeEmpty()
         ->and($data['head'])->toHaveCount(1)

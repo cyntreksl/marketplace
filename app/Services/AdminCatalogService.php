@@ -12,9 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use RuntimeException;
 use Throwable;
 
 class AdminCatalogService
@@ -22,6 +20,7 @@ class AdminCatalogService
     public function __construct(
         private readonly CatalogRepository $catalog,
         private readonly AuditLogService $auditLogs,
+        private readonly CategoryArtworkService $artwork,
     ) {}
 
     /** @return array<string, array{group: string, label: string, min: int}> */
@@ -42,16 +41,35 @@ class AdminCatalogService
     public function createCategory(User $actor, array $attributes, string $reason): Category
     {
         $image = Arr::pull($attributes, 'image');
+        $imageCrop = $this->categoryArtworkCrop(Arr::pull($attributes, 'image_crop'));
+        $bannerImage = Arr::pull($attributes, 'banner_image');
+        $bannerImageCrop = $this->categoryArtworkCrop(Arr::pull($attributes, 'banner_image_crop'));
         $attributes['slug'] = $attributes['slug'] ?: Str::slug($attributes['name']);
-        $storedImagePath = null;
+        $storedArtwork = [];
 
         try {
-            return DB::transaction(function () use ($actor, $attributes, $image, $reason, &$storedImagePath): Category {
+            return DB::transaction(function () use ($actor, $attributes, $image, $imageCrop, $bannerImage, $bannerImageCrop, $reason, &$storedArtwork): Category {
                 $category = $this->catalog->saveCategory(new Category($attributes));
 
-                if ($image instanceof UploadedFile) {
-                    $storedImagePath = $this->storeCategoryImage($category, $image);
-                    $category->forceFill(['image_path' => $storedImagePath]);
+                if ($image instanceof UploadedFile && $imageCrop !== null) {
+                    $storedImage = $this->artwork->store($category, $image, $imageCrop, 'image');
+                    $storedArtwork[] = $storedImage;
+                    $category->forceFill([
+                        'image_path' => $storedImage['path'],
+                        'image_disk' => $storedImage['disk'],
+                    ]);
+                }
+
+                if ($bannerImage instanceof UploadedFile && $bannerImageCrop !== null) {
+                    $storedBanner = $this->artwork->store($category, $bannerImage, $bannerImageCrop, 'banner');
+                    $storedArtwork[] = $storedBanner;
+                    $category->forceFill([
+                        'banner_image_path' => $storedBanner['path'],
+                        'banner_image_disk' => $storedBanner['disk'],
+                    ]);
+                }
+
+                if ($storedArtwork !== []) {
                     $this->catalog->saveCategory($category);
                 }
 
@@ -60,8 +78,8 @@ class AdminCatalogService
                 return $category;
             });
         } catch (Throwable $exception) {
-            if ($storedImagePath !== null) {
-                Storage::disk($this->mediaDisk())->delete($storedImagePath);
+            foreach ($storedArtwork as $stored) {
+                $this->artwork->delete($stored['disk'], $stored['path']);
             }
 
             throw $exception;
@@ -83,51 +101,45 @@ class AdminCatalogService
         });
     }
 
-    public function replaceCategoryImage(User $actor, Category $category, UploadedFile $image, string $reason): Category
+    /** @param array{x: int, y: int, width: int, height: int} $crop */
+    public function replaceCategoryImage(User $actor, Category $category, UploadedFile $image, array $crop, string $reason): Category
     {
-        $oldImagePath = $category->image_path;
-        $newImagePath = $this->storeCategoryImage($category, $image);
-
-        try {
-            $category = DB::transaction(function () use ($actor, $category, $newImagePath, $reason): Category {
-                $before = $category->getAttributes();
-                $category->forceFill(['image_path' => $newImagePath]);
-                $this->catalog->saveCategory($category);
-                $this->auditLogs->record($actor, 'category.image_updated', $category, $before, $category->getAttributes(), $reason);
-
-                return $category;
-            });
-        } catch (Throwable $exception) {
-            Storage::disk($this->mediaDisk())->delete($newImagePath);
-
-            throw $exception;
-        }
-
-        if ($oldImagePath !== null && $oldImagePath !== $newImagePath) {
-            Storage::disk($this->mediaDisk())->delete($oldImagePath);
-        }
-
-        return $category;
+        return $this->replaceCategoryArtwork($actor, $category, $image, $crop, $reason, 'image');
     }
 
     public function removeCategoryImage(User $actor, Category $category, string $reason): Category
     {
-        $oldImagePath = $category->image_path;
+        return $this->removeCategoryArtwork($actor, $category, $reason, 'image');
+    }
 
-        $category = DB::transaction(function () use ($actor, $category, $reason): Category {
-            $before = $category->getAttributes();
-            $category->forceFill(['image_path' => null]);
-            $this->catalog->saveCategory($category);
-            $this->auditLogs->record($actor, 'category.image_removed', $category, $before, $category->getAttributes(), $reason);
+    /** @param array{x: int, y: int, width: int, height: int} $crop */
+    public function replaceCategoryBannerImage(User $actor, Category $category, UploadedFile $image, array $crop, string $reason): Category
+    {
+        return $this->replaceCategoryArtwork($actor, $category, $image, $crop, $reason, 'banner');
+    }
 
-            return $category;
-        });
+    public function removeCategoryBannerImage(User $actor, Category $category, string $reason): Category
+    {
+        return $this->removeCategoryArtwork($actor, $category, $reason, 'banner');
+    }
 
-        if ($oldImagePath !== null) {
-            Storage::disk($this->mediaDisk())->delete($oldImagePath);
+    /** @return array{x: int, y: int, width: int, height: int}|null */
+    private function categoryArtworkCrop(mixed $crop): ?array
+    {
+        if (! is_array($crop)
+            || ! is_int($crop['x'] ?? null)
+            || ! is_int($crop['y'] ?? null)
+            || ! is_int($crop['width'] ?? null)
+            || ! is_int($crop['height'] ?? null)) {
+            return null;
         }
 
-        return $category;
+        return [
+            'x' => $crop['x'],
+            'y' => $crop['y'],
+            'width' => $crop['width'],
+            'height' => $crop['height'],
+        ];
     }
 
     public function updateCategoryActivation(User $actor, Category $category, bool $isActive, string $reason): void
@@ -221,19 +233,73 @@ class AdminCatalogService
         });
     }
 
-    private function storeCategoryImage(Category $category, UploadedFile $image): string
-    {
-        $path = $image->store('categories/'.$category->getKey(), $this->mediaDisk());
+    /**
+     * @param  array{x: int, y: int, width: int, height: int}  $crop
+     */
+    private function replaceCategoryArtwork(
+        User $actor,
+        Category $category,
+        UploadedFile $image,
+        array $crop,
+        string $reason,
+        string $type,
+    ): Category {
+        $pathAttribute = $type === 'banner' ? 'banner_image_path' : 'image_path';
+        $diskAttribute = $type === 'banner' ? 'banner_image_disk' : 'image_disk';
+        $auditAction = $type === 'banner' ? 'category.banner_image_updated' : 'category.image_updated';
+        $oldPath = $category->getAttribute($pathAttribute);
+        $oldDisk = $category->getAttribute($diskAttribute);
+        $stored = $this->artwork->store($category, $image, $crop, $type);
 
-        if ($path === false) {
-            throw new RuntimeException('The category image could not be stored.');
+        try {
+            $category = DB::transaction(function () use ($actor, $category, $pathAttribute, $diskAttribute, $auditAction, $stored, $reason): Category {
+                $before = $category->getAttributes();
+                $category->forceFill([
+                    $pathAttribute => $stored['path'],
+                    $diskAttribute => $stored['disk'],
+                ]);
+                $this->catalog->saveCategory($category);
+                $this->auditLogs->record($actor, $auditAction, $category, $before, $category->getAttributes(), $reason);
+
+                return $category;
+            });
+        } catch (Throwable $exception) {
+            $this->artwork->delete($stored['disk'], $stored['path']);
+
+            throw $exception;
         }
 
-        return $path;
+        if (is_string($oldPath) && $oldPath !== $stored['path']) {
+            $this->artwork->delete(is_string($oldDisk) ? $oldDisk : null, $oldPath);
+        }
+
+        return $category;
     }
 
-    private function mediaDisk(): string
+    private function removeCategoryArtwork(User $actor, Category $category, string $reason, string $type): Category
     {
-        return (string) config('filesystems.media', 'public');
+        $pathAttribute = $type === 'banner' ? 'banner_image_path' : 'image_path';
+        $diskAttribute = $type === 'banner' ? 'banner_image_disk' : 'image_disk';
+        $auditAction = $type === 'banner' ? 'category.banner_image_removed' : 'category.image_removed';
+        $oldPath = $category->getAttribute($pathAttribute);
+        $oldDisk = $category->getAttribute($diskAttribute);
+
+        $category = DB::transaction(function () use ($actor, $category, $pathAttribute, $diskAttribute, $auditAction, $reason): Category {
+            $before = $category->getAttributes();
+            $category->forceFill([
+                $pathAttribute => null,
+                $diskAttribute => null,
+            ]);
+            $this->catalog->saveCategory($category);
+            $this->auditLogs->record($actor, $auditAction, $category, $before, $category->getAttributes(), $reason);
+
+            return $category;
+        });
+
+        if (is_string($oldPath)) {
+            $this->artwork->delete(is_string($oldDisk) ? $oldDisk : null, $oldPath);
+        }
+
+        return $category;
     }
 }

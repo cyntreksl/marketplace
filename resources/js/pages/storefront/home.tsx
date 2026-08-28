@@ -162,32 +162,47 @@ function CategorySections({
                     <div
                         className={
                             isImageLed
-                                ? 'mb-6 flex flex-col justify-end overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-teal-950 to-primary p-7 text-white lg:mb-0'
+                                ? 'relative mb-6 flex flex-col justify-end overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-teal-950 to-primary p-7 text-white lg:mb-0'
                                 : ''
                         }
                     >
-                        <p
-                            className={`text-xs font-black tracking-[0.18em] uppercase ${isImageLed ? 'text-amber-300' : 'text-primary'}`}
-                        >
-                            Curated category {index + 1}
-                        </p>
-                        <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
-                            {section.category.name}
-                        </h2>
-                        <p
-                            className={`mt-3 text-sm leading-6 ${isImageLed ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}
-                        >
-                            Hand-picked public listings across this category and
-                            its subcategories.
-                        </p>
-                        <Link
-                            href={listingsIndex({
-                                query: { category: section.category.slug },
-                            })}
-                            className={`mt-5 inline-flex items-center gap-2 text-sm font-black ${isImageLed ? 'text-white' : 'text-primary'}`}
-                        >
-                            Explore category <ArrowRight className="size-4" />
-                        </Link>
+                        {isImageLed && section.category.banner_image_url && (
+                            <>
+                                <img
+                                    src={section.category.banner_image_url}
+                                    alt=""
+                                    className="absolute inset-0 size-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/65 to-slate-950/10" />
+                            </>
+                        )}
+                        <div className="relative z-10">
+                            <p
+                                className={`text-xs font-black tracking-[0.18em] uppercase ${isImageLed ? 'text-amber-300' : 'text-primary'}`}
+                            >
+                                Curated category {index + 1}
+                            </p>
+                            <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
+                                {section.category.name}
+                            </h2>
+                            <p
+                                className={`mt-3 text-sm leading-6 ${isImageLed ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}
+                            >
+                                Hand-picked public listings across this category
+                                and its subcategories.
+                            </p>
+                            <Link
+                                href={listingsIndex({
+                                    query: {
+                                        category: section.category.slug,
+                                    },
+                                })}
+                                className={`mt-5 inline-flex items-center gap-2 text-sm font-black ${isImageLed ? 'text-white' : 'text-primary'}`}
+                            >
+                                Explore category{' '}
+                                <ArrowRight className="size-4" />
+                            </Link>
+                        </div>
                     </div>
                     <div className={isImageLed ? '' : 'mt-6'}>
                         <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-2 sm:px-0 lg:grid-cols-3">

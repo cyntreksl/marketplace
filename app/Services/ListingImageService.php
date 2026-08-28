@@ -223,7 +223,6 @@ class ListingImageService
     private function putImage(string $disk, string $path, ImageInterface $image, WebpEncoder|JpegEncoder $encoder): bool
     {
         return Storage::disk($disk)->put($path, (string) $image->encode($encoder), [
-            'visibility' => 'public',
             'CacheControl' => self::CACHE_CONTROL,
             'ContentType' => $encoder instanceof WebpEncoder ? 'image/webp' : 'image/jpeg',
         ]) !== false;

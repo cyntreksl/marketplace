@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Contracts\Repositories\CatalogRepository;
 use App\Http\Requests\ArchiveResourceRequest;
 use App\Http\Requests\RemoveCategoryImageRequest;
+use App\Http\Requests\StoreCategoryBannerImageRequest;
 use App\Http\Requests\StoreCategoryImageRequest;
 use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryActivationRequest;
@@ -66,7 +67,9 @@ class AdminCategoryController extends Controller
     {
         /** @var UploadedFile $image */
         $image = $request->file('image');
-        $catalog->replaceCategoryImage($request->user(), $category, $image, $request->validated('reason'));
+        /** @var array{x: int, y: int, width: int, height: int} $crop */
+        $crop = $request->validated('crop');
+        $catalog->replaceCategoryImage($request->user(), $category, $image, $crop, $request->validated('reason'));
 
         return to_route('admin.categories.index', ['category' => $category->id])->with('status', 'Category image updated.');
     }
@@ -76,6 +79,24 @@ class AdminCategoryController extends Controller
         $catalog->removeCategoryImage($request->user(), $category, $request->validated('reason'));
 
         return to_route('admin.categories.index', ['category' => $category->id])->with('status', 'Category image removed.');
+    }
+
+    public function storeBannerImage(StoreCategoryBannerImageRequest $request, Category $category, AdminCatalogService $catalog): RedirectResponse
+    {
+        /** @var UploadedFile $image */
+        $image = $request->file('image');
+        /** @var array{x: int, y: int, width: int, height: int} $crop */
+        $crop = $request->validated('crop');
+        $catalog->replaceCategoryBannerImage($request->user(), $category, $image, $crop, $request->validated('reason'));
+
+        return to_route('admin.categories.index', ['category' => $category->id])->with('status', 'Category banner updated.');
+    }
+
+    public function destroyBannerImage(RemoveCategoryImageRequest $request, Category $category, AdminCatalogService $catalog): RedirectResponse
+    {
+        $catalog->removeCategoryBannerImage($request->user(), $category, $request->validated('reason'));
+
+        return to_route('admin.categories.index', ['category' => $category->id])->with('status', 'Category banner removed.');
     }
 
     public function updateActivation(UpdateCategoryActivationRequest $request, Category $category, AdminCatalogService $catalog): RedirectResponse

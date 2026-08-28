@@ -9,13 +9,15 @@ use Illuminate\Support\Str;
 
 class SeoHeadService
 {
+    public function __construct(private readonly StaticMediaService $staticMedia) {}
+
     /** @return array<int, string> */
     public function default(Request $request): array
     {
         $name = (string) config('app.name', 'ProDeals.lk');
         $title = $name.' — Better deals. Closer to home.';
         $description = "Discover more with {$name}, Sri Lanka's marketplace for everyday finds and better deals.";
-        $image = url('/prodeals-social-card.png');
+        $image = $this->staticMedia->url('prodeals-social-card.png');
 
         return $this->tags(
             title: $title,
@@ -63,7 +65,7 @@ class SeoHeadService
     private function listingImage(?ListingMedia $cover): array
     {
         if ($cover === null) {
-            return [url('/prodeals-social-card.png'), 1200, 630];
+            return [$this->staticMedia->url('prodeals-social-card.png'), 1200, 630];
         }
 
         $hasOpenGraphVariant = is_array($cover->variants)

@@ -7,6 +7,7 @@ use App\Models\ListingMedia;
 use App\Models\SellerProfile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
 
 interface ListingRepository
 {
@@ -51,6 +52,9 @@ interface ListingRepository
     public function findMedia(int $mediaId): ?ListingMedia;
 
     public function saveMedia(ListingMedia $media): ListingMedia;
+
+    /** @return LazyCollection<int, ListingMedia> */
+    public function mediaForMigration(): LazyCollection;
 
     public function mediaCount(Listing $listing): int;
 

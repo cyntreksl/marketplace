@@ -5,6 +5,7 @@ namespace App\Contracts\Repositories;
 use App\Models\Promotion;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
 
 interface PromotionRepository
 {
@@ -15,4 +16,7 @@ interface PromotionRepository
     public function paginateForAdmin(): LengthAwarePaginator;
 
     public function save(Promotion $promotion): Promotion;
+
+    /** @return LazyCollection<int, Promotion> */
+    public function forMediaMigration(): LazyCollection;
 }

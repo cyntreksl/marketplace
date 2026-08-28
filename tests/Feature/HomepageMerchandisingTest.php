@@ -4,6 +4,7 @@ use App\Models\Category;
 use App\Models\Listing;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 function homepageAdmin(): User
@@ -66,7 +67,14 @@ test('best offers require a discounted approved buy now listing', function () {
 });
 
 test('homepage output filters curated listings and defers lower sections', function () {
-    $category = Category::factory()->create(['is_popular' => true, 'homepage_order' => 1]);
+    Storage::fake('public');
+    Storage::disk('public')->put('categories/featured/banner.webp', 'banner');
+    $category = Category::factory()->create([
+        'is_popular' => true,
+        'homepage_order' => 1,
+        'banner_image_path' => 'categories/featured/banner.webp',
+        'banner_image_disk' => 'public',
+    ]);
     $visible = Listing::factory()->create(['category_id' => $category->id, 'price' => '1000.00', 'sale_price' => '800.00', 'is_best_offer' => true, 'is_new_arrival' => true]);
     Listing::factory()->create(['category_id' => $category->id, 'status' => 'draft', 'price' => '1000.00', 'sale_price' => '700.00', 'is_best_offer' => true, 'is_new_arrival' => true]);
 
@@ -78,8 +86,15 @@ test('homepage output filters curated listings and defers lower sections', funct
         ->missing('categorySections')
         ->loadDeferredProps('homepage-below-fold', fn (Assert $reload) => $reload
             ->has('categorySections', 1)
+            ->where('categorySections.0.category.banner_image_url', Storage::disk('public')->url($category->banner_image_path))
             ->where('categorySections.0.listings.0.id', $visible->id)
             ->has('socialProof')));
+
+    $homeComponent = file_get_contents(resource_path('js/pages/storefront/home.tsx'));
+
+    expect($homeComponent)
+        ->toContain('section.category.banner_image_url')
+        ->toContain('bg-gradient-to-br from-slate-950 via-teal-950 to-primary');
 });
 
 test('recently viewed listings preserve requested order and exclude unavailable products', function () {

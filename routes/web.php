@@ -24,10 +24,12 @@ use App\Http\Controllers\SellerOrderController;
 use App\Http\Controllers\SellerRegistrationController;
 use App\Http\Controllers\SellerReturnRequestController;
 use App\Http\Controllers\SellerWalletController;
+use App\Http\Controllers\SiteManifestController;
 use App\Http\Controllers\StorefrontController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StorefrontController::class, 'home'])->name('home');
+Route::get('/manifest.webmanifest', SiteManifestController::class)->name('site.manifest');
 Route::inertia('/about', 'storefront/content/show', ['document' => 'about'])->name('about');
 Route::inertia('/contact', 'storefront/content/show', ['document' => 'contact'])->name('contact');
 Route::inertia('/help', 'storefront/content/show', ['document' => 'help'])->name('help');
@@ -111,6 +113,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::patch('/catalog/categories/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
     Route::post('/catalog/categories/{category}/image', [AdminCategoryController::class, 'storeImage'])->name('categories.image.store');
     Route::delete('/catalog/categories/{category}/image', [AdminCategoryController::class, 'destroyImage'])->name('categories.image.destroy');
+    Route::post('/catalog/categories/{category}/banner-image', [AdminCategoryController::class, 'storeBannerImage'])->name('categories.banner_image.store');
+    Route::delete('/catalog/categories/{category}/banner-image', [AdminCategoryController::class, 'destroyBannerImage'])->name('categories.banner_image.destroy');
     Route::patch('/catalog/categories/{category}/activation', [AdminCategoryController::class, 'updateActivation'])->name('categories.activation.update');
     Route::delete('/catalog/categories/{category}', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');
     Route::post('/catalog/categories/{category}/restore', [AdminCategoryController::class, 'restore'])->name('categories.restore');

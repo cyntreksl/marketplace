@@ -19,6 +19,7 @@ class StorefrontService
         private readonly PromotionRepository $promotions,
         private readonly ReviewRepository $reviews,
         private readonly SeoHeadService $seo,
+        private readonly StaticMediaService $staticMedia,
     ) {}
 
     /** @return array<string, mixed> */
@@ -28,11 +29,11 @@ class StorefrontService
             'categories' => $this->storefrontCategories(),
             'promotions' => [
                 'hero' => $this->promotionData('hero', 1, [
-                    ['title' => 'Discover better deals, closer to home', 'imageUrl' => '/images/storefront/hero-marketplace.jpg', 'linkUrl' => '/listings'],
+                    ['title' => 'Discover better deals, closer to home', 'imageUrl' => $this->staticMedia->url('images/storefront/hero-marketplace.jpg'), 'linkUrl' => '/listings'],
                 ]),
                 'secondary' => $this->promotionData('secondary', 2, [
-                    ['title' => 'Refresh your everyday spaces', 'imageUrl' => '/images/storefront/home-lifestyle.jpg', 'linkUrl' => '/listings'],
-                    ['title' => 'Technology that fits your day', 'imageUrl' => '/images/storefront/technology.jpg', 'linkUrl' => '/listings?category=electronics'],
+                    ['title' => 'Refresh your everyday spaces', 'imageUrl' => $this->staticMedia->url('images/storefront/home-lifestyle.jpg'), 'linkUrl' => '/listings'],
+                    ['title' => 'Technology that fits your day', 'imageUrl' => $this->staticMedia->url('images/storefront/technology.jpg'), 'linkUrl' => '/listings?category=electronics'],
                 ]),
             ],
             'popularCategories' => $this->catalog->popularHomepageCategories()
@@ -54,6 +55,7 @@ class StorefrontService
                 'category' => [
                     ...$category->only(['id', 'name', 'slug']),
                     'image_url' => $category->imageUrl(),
+                    'banner_image_url' => $category->bannerImageUrl(),
                 ],
                 'variant' => ['image', 'tinted', 'clean'][$index % 3],
                 'listings' => $this->listings->homepageForCategory($category->slug)
@@ -223,7 +225,11 @@ class StorefrontService
         return $promotions->map(fn ($promotion): array => [
             'id' => $promotion->id,
             'title' => $promotion->title,
-            'imageUrl' => $promotion->imageUrl(),
+            'imageUrl' => $promotion->imageUrl() ?? $this->staticMedia->url(
+                $promotion->placement === 'hero'
+                    ? 'images/storefront/hero-marketplace.jpg'
+                    : 'images/storefront/home-lifestyle.jpg',
+            ),
             'linkUrl' => $promotion->link_url,
         ])->values()->all();
     }

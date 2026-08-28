@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\MarketplaceSetting;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
 
 interface CatalogRepository
 {
@@ -59,6 +60,9 @@ interface CatalogRepository
     public function categorySubtreeIds(Category $category): array;
 
     public function saveCategory(Category $category): Category;
+
+    /** @return LazyCollection<int, Category> */
+    public function categoryArtworkForMigration(): LazyCollection;
 
     public function categoryActivationRoot(Category $category): Category;
 

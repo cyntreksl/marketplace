@@ -9,7 +9,6 @@ import {
     Plus,
     RotateCcw,
     Search,
-    Upload,
     X,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -20,14 +19,17 @@ import {
 } from '@/actions/App/Http/Controllers/AdminCategoryBrowseController';
 import {
     destroy,
+    destroyBannerImage,
     destroyImage,
     index,
     restore,
     store,
+    storeBannerImage,
     storeImage,
     update,
     updateActivation,
 } from '@/actions/App/Http/Controllers/AdminCategoryController';
+import { CategoryArtworkUploader } from '@/components/category-artwork-uploader';
 import { PortalLayout } from '@/components/portal-layout';
 
 type Category = {
@@ -38,6 +40,7 @@ type Category = {
     path: string;
     google_product_category_id: number | null;
     image_url: string | null;
+    banner_image_url: string | null;
     commission_percentage: string;
     return_window_days: number;
     cod_enabled: boolean;
@@ -444,25 +447,50 @@ function CategoryMetadataForm({
 
 function CategoryArtwork({ category }: { category: Category }) {
     return (
+        <div className="grid gap-4 xl:grid-cols-2">
+            <CategoryArtworkForm category={category} type="image" />
+            <CategoryArtworkForm category={category} type="banner" />
+        </div>
+    );
+}
+
+function CategoryArtworkForm({
+    category,
+    type,
+}: {
+    category: Category;
+    type: 'image' | 'banner';
+}) {
+    const isBanner = type === 'banner';
+    const existingUrl = isBanner
+        ? category.banner_image_url
+        : category.image_url;
+    const uploadForm = isBanner
+        ? storeBannerImage.form(category.id, {
+              query: { category: category.id },
+          })
+        : storeImage.form(category.id, {
+              query: { category: category.id },
+          });
+    const removeForm = isBanner
+        ? destroyBannerImage.form(category.id, {
+              query: { category: category.id },
+          })
+        : destroyImage.form(category.id, {
+              query: { category: category.id },
+          });
+    const label = isBanner ? 'Category banner image' : 'Category image';
+
+    return (
         <section className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-            <div className="flex items-center gap-2">
-                <Upload className="size-4 text-primary" />
-                <h4 className="text-sm font-black">
-                    {category.image_url
-                        ? 'Replace category image'
-                        : 'Upload category image'}
-                </h4>
-            </div>
             <Form
-                {...storeImage.form(category.id, {
-                    query: { category: category.id },
-                })}
+                {...uploadForm}
                 resetOnSuccess
                 onSubmit={(event) => {
                     if (
-                        category.image_url &&
+                        existingUrl &&
                         !window.confirm(
-                            'Are you sure you want to replace the current category image?',
+                            `Are you sure you want to replace the current ${label.toLowerCase()}?`,
                         )
                     ) {
                         event.preventDefault();
@@ -470,20 +498,32 @@ function CategoryArtwork({ category }: { category: Category }) {
                 }}
                 className="mt-3 grid gap-3"
             >
-                {({ errors, processing, progress }) => (
+                {({ errors, processing, progress, recentlySuccessful }) => (
                     <>
-                        <input
-                            required
-                            type="file"
+                        <CategoryArtworkUploader
+                            key={`${category.id}-${type}-${recentlySuccessful ? 'saved' : 'idle'}`}
+                            id={`category-${category.id}-${type}`}
                             name="image"
-                            accept="image/jpeg,image/png,image/webp"
-                            className={inputClassName}
+                            cropName="crop"
+                            label={label}
+                            description={
+                                isBanner
+                                    ? 'Portrait artwork for the featured homepage panel. Saved as a 900 × 1200 WebP.'
+                                    : 'Square artwork for category cards and navigation. Saved as an 800 × 800 WebP.'
+                            }
+                            aspect={isBanner ? 3 / 4 : 1}
+                            minimumWidth={isBanner ? 900 : 800}
+                            minimumHeight={isBanner ? 1200 : 800}
+                            existingUrl={existingUrl}
+                            imageError={errors.image}
+                            cropError={errors.crop}
+                            required
                         />
                         <input
                             required
                             minLength={5}
                             name="reason"
-                            placeholder="Reason for artwork change"
+                            placeholder={`Reason for ${isBanner ? 'banner' : 'artwork'} change`}
                             className={inputClassName}
                         />
                         {progress && (
@@ -493,30 +533,30 @@ function CategoryArtwork({ category }: { category: Category }) {
                                 className="h-2 w-full"
                             />
                         )}
-                        {(errors.image || errors.reason) && (
+                        {errors.reason && (
                             <p className="text-sm text-red-600">
-                                {errors.image ?? errors.reason}
+                                {errors.reason}
                             </p>
                         )}
                         <button
                             disabled={processing}
                             className="rounded-xl bg-primary px-4 py-2.5 text-sm font-black text-primary-foreground disabled:opacity-50"
                         >
-                            {processing ? 'Uploading…' : 'Save image'}
+                            {processing
+                                ? 'Uploading…'
+                                : `Save ${isBanner ? 'banner' : 'image'}`}
                         </button>
                     </>
                 )}
             </Form>
-            {category.image_url && (
+            {existingUrl && (
                 <Form
-                    {...destroyImage.form(category.id, {
-                        query: { category: category.id },
-                    })}
+                    {...removeForm}
                     resetOnSuccess
                     onSubmit={(event) => {
                         if (
                             !window.confirm(
-                                'Are you sure you want to remove the current category image?',
+                                `Are you sure you want to remove the current ${label.toLowerCase()}?`,
                             )
                         ) {
                             event.preventDefault();
@@ -530,7 +570,7 @@ function CategoryArtwork({ category }: { category: Category }) {
                                 required
                                 minLength={5}
                                 name="reason"
-                                placeholder="Reason for removing artwork"
+                                placeholder={`Reason for removing ${isBanner ? 'banner' : 'artwork'}`}
                                 className={inputClassName}
                             />
                             {errors.reason && (
@@ -543,7 +583,7 @@ function CategoryArtwork({ category }: { category: Category }) {
                                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-sm font-black text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/30"
                             >
                                 <ImageOff className="size-4" />
-                                Remove image
+                                Remove {isBanner ? 'banner' : 'image'}
                             </button>
                         </>
                     )}
@@ -901,15 +941,32 @@ function CreateCategory({
                                 />
                             </label>
                         </div>
-                        <label className="grid gap-1.5 text-sm font-bold">
-                            Category image (optional)
-                            <input
-                                type="file"
+                        <div className="grid gap-5 rounded-2xl bg-slate-50 p-4 xl:grid-cols-2 dark:bg-slate-950">
+                            <CategoryArtworkUploader
+                                id="new-category-image"
                                 name="image"
-                                accept="image/jpeg,image/png,image/webp"
-                                className={inputClassName}
+                                cropName="image_crop"
+                                label="Category image (optional)"
+                                description="Square artwork for category cards and navigation. Saved as an 800 × 800 WebP."
+                                aspect={1}
+                                minimumWidth={800}
+                                minimumHeight={800}
+                                imageError={errors.image}
+                                cropError={errors.image_crop}
                             />
-                        </label>
+                            <CategoryArtworkUploader
+                                id="new-category-banner-image"
+                                name="banner_image"
+                                cropName="banner_image_crop"
+                                label="Category banner image (optional)"
+                                description="Portrait artwork for featured homepage panels. Saved as a 900 × 1200 WebP."
+                                aspect={3 / 4}
+                                minimumWidth={900}
+                                minimumHeight={1200}
+                                imageError={errors.banner_image}
+                                cropError={errors.banner_image_crop}
+                            />
+                        </div>
                         <div className="flex flex-wrap gap-5">
                             <label className="flex items-center gap-2 text-sm font-bold">
                                 <input

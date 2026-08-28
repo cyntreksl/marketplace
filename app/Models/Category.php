@@ -81,10 +81,20 @@ class Category extends Model
 
     public function imageUrl(): ?string
     {
-        if ($this->image_path === null) {
+        return $this->artworkUrl($this->image_path, $this->image_disk);
+    }
+
+    public function bannerImageUrl(): ?string
+    {
+        return $this->artworkUrl($this->banner_image_path, $this->banner_image_disk);
+    }
+
+    private function artworkUrl(?string $path, ?string $disk): ?string
+    {
+        if ($path === null) {
             return null;
         }
 
-        return Storage::disk((string) config('filesystems.media', 'public'))->url($this->image_path);
+        return Storage::disk($disk ?: (string) config('filesystems.media', 'public'))->url($path);
     }
 }

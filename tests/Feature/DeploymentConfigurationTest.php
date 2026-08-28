@@ -26,6 +26,7 @@ test('production service configuration keeps queue timeout below retry interval'
         ->toContain('DB_QUEUE_RETRY_AFTER=90')
         ->toContain('MYSQL_ATTR_SSL_CA=/etc/ssl/certs/aws-rds-global-bundle.pem')
         ->toContain('MEDIA_DISK=r2')
+        ->toContain('R2_PUBLIC_URL=https://media.prodeals.lk')
         ->and($supervisor)
         ->toContain('--timeout=75')
         ->toContain('user=deploy');

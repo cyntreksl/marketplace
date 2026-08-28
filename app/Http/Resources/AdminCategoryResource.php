@@ -26,6 +26,7 @@ class AdminCategoryResource extends JsonResource
                 ? null
                 : (int) $this->resource->google_product_category_id,
             'image_url' => $this->resource->imageUrl(),
+            'banner_image_url' => $this->resource->bannerImageUrl(),
             'commission_percentage' => (string) $this->resource->commission_percentage,
             'return_window_days' => (int) $this->resource->return_window_days,
             'cod_enabled' => (bool) $this->resource->cod_enabled,

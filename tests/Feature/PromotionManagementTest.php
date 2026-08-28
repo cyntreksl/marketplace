@@ -25,6 +25,7 @@ test('an admin can upload schedule and replace homepage promotion artwork', func
     ])->assertRedirect(route('admin.homepage.index'));
 
     $promotion = Promotion::query()->sole();
+    expect($promotion->image_disk)->toBe('public');
     Storage::disk('public')->assertExists($promotion->image_path);
     $oldPath = $promotion->image_path;
 

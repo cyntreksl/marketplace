@@ -2,6 +2,8 @@
 
 use App\Models\Category;
 use App\Models\Listing;
+use App\Models\Promotion;
+use Illuminate\Support\Facades\Storage;
 
 test('the storefront home shares the ProDeals.lk identity', function () {
     config()->set('app.name', 'ProDeals.lk');
@@ -15,6 +17,45 @@ test('the storefront home shares the ProDeals.lk identity', function () {
             ->has('bestOffers')
             ->has('newArrivals')
             ->has('categories'));
+});
+
+test('runtime site images use the configured Cloudflare media domain', function () {
+    config([
+        'filesystems.media' => 'r2',
+        'filesystems.disks.r2.key' => 'test-key',
+        'filesystems.disks.r2.secret' => 'test-secret',
+        'filesystems.disks.r2.bucket' => 'prodeals-media-production',
+        'filesystems.disks.r2.endpoint' => 'https://account-id.r2.cloudflarestorage.com',
+        'filesystems.disks.r2.url' => 'https://media.prodeals.lk',
+    ]);
+    Promotion::factory()->create([
+        'placement' => 'hero',
+        'image_path' => 'promotions/cloudflare-hero.jpg',
+        'image_disk' => 'r2',
+    ]);
+
+    $home = $this->get(route('home'))->assertOk();
+
+    expect($home->inertiaProps('promotions.hero.0.imageUrl'))
+        ->toBe('https://media.prodeals.lk/promotions/cloudflare-hero.jpg')
+        ->and($home->inertiaProps('promotions.secondary.0.imageUrl'))
+        ->toBe('https://media.prodeals.lk/site/images/storefront/home-lifestyle.jpg')
+        ->and(implode('', $home->inertiaProps('head')))
+        ->toContain('https://media.prodeals.lk/site/prodeals-social-card.png')
+        ->and($home->getContent())
+        ->toContain('https://media.prodeals.lk/site/favicon.ico')
+        ->toContain('https://media.prodeals.lk/site/favicon.svg')
+        ->toContain('https://media.prodeals.lk/site/apple-touch-icon.png');
+
+    $this->get(route('site.manifest'))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'application/manifest+json')
+        ->assertJsonPath('icons.0.src', 'https://media.prodeals.lk/site/apple-touch-icon.png');
+
+    expect(view('vendor.mail.html.header', ['url' => 'https://prodeals.lk'])->render())
+        ->toContain('https://media.prodeals.lk/site/prodeals-email-logo.png');
+
+    Storage::forgetDisk('r2');
 });
 
 test('authenticated portals use distinct ProDeals theme colors', function () {

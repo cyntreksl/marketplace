@@ -8,7 +8,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
-class StoreCategoryImageRequest extends FormRequest
+class StoreCategoryBannerImageRequest extends FormRequest
 {
     use ValidatesCategoryArtwork;
 
@@ -30,7 +30,7 @@ class StoreCategoryImageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            ...$this->categoryArtworkRules('image', 'crop', 800, 800, true),
+            ...$this->categoryArtworkRules('image', 'crop', 900, 1200, true),
             'reason' => ['required', 'string', 'min:5', 'max:1000'],
         ];
     }
@@ -39,7 +39,7 @@ class StoreCategoryImageRequest extends FormRequest
     public function after(): array
     {
         return [
-            $this->validateCategoryArtworkRatio('image', 'crop', 1, 1, 'Category images must use a 1:1 crop.'),
+            $this->validateCategoryArtworkRatio('image', 'crop', 3, 4, 'Category banners must use a 3:4 crop.'),
         ];
     }
 

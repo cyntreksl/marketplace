@@ -1,3 +1,4 @@
+@inject('staticMedia', 'App\Services\StaticMediaService')
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
     <head>
@@ -31,10 +32,10 @@
             }
         </style>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-        <link rel="manifest" href="/site.webmanifest">
+        <link rel="icon" href="{{ $staticMedia->url('favicon.ico') }}" sizes="any">
+        <link rel="icon" href="{{ $staticMedia->url('favicon.svg') }}" type="image/svg+xml">
+        <link rel="apple-touch-icon" href="{{ $staticMedia->url('apple-touch-icon.png') }}">
+        <link rel="manifest" href="{{ route('site.manifest') }}">
 
         @fonts
 

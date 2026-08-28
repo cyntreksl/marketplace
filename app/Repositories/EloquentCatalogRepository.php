@@ -11,6 +11,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -211,6 +212,15 @@ class EloquentCatalogRepository implements CatalogRepository
         return $category;
     }
 
+    public function categoryArtworkForMigration(): LazyCollection
+    {
+        return Category::withTrashed()
+            ->where(fn (Builder $query): Builder => $query
+                ->whereNotNull('image_path')
+                ->orWhereNotNull('banner_image_path'))
+            ->lazyById();
+    }
+
     public function categoryActivationRoot(Category $category): Category
     {
         $activationRoot = $category;
@@ -331,9 +341,9 @@ class EloquentCatalogRepository implements CatalogRepository
     public function activeTopLevelCategories(): Collection
     {
         return Category::query()
-            ->select(['id', 'name', 'slug', 'image_path', 'sort_order'])
+            ->select(['id', 'name', 'slug', 'image_path', 'image_disk', 'sort_order'])
             ->with(['children' => fn ($query) => $query
-                ->select(['id', 'parent_id', 'name', 'slug', 'image_path', 'sort_order'])
+                ->select(['id', 'parent_id', 'name', 'slug', 'image_path', 'image_disk', 'sort_order'])
                 ->storefrontAvailable()
                 ->orderBy('sort_order')
                 ->orderBy('name')])
@@ -347,7 +357,7 @@ class EloquentCatalogRepository implements CatalogRepository
     public function popularHomepageCategories(int $limit = 10): Collection
     {
         $categories = Category::query()
-            ->select(['id', 'name', 'slug', 'image_path', 'parent_id', 'sort_order'])
+            ->select(['id', 'name', 'slug', 'image_path', 'image_disk', 'parent_id', 'sort_order'])
             ->storefrontAvailable()
             ->where('is_popular', true)
             ->orderBy('sort_order')
@@ -360,7 +370,7 @@ class EloquentCatalogRepository implements CatalogRepository
         }
 
         return Category::query()
-            ->select(['id', 'name', 'slug', 'image_path', 'parent_id', 'sort_order'])
+            ->select(['id', 'name', 'slug', 'image_path', 'image_disk', 'parent_id', 'sort_order'])
             ->whereNull('parent_id')
             ->storefrontAvailable()
             ->orderBy('sort_order')
@@ -372,7 +382,7 @@ class EloquentCatalogRepository implements CatalogRepository
     public function featuredHomepageCategories(): Collection
     {
         return Category::query()
-            ->select(['id', 'name', 'slug', 'image_path', 'homepage_order'])
+            ->select(['id', 'name', 'slug', 'image_path', 'image_disk', 'banner_image_path', 'banner_image_disk', 'homepage_order'])
             ->storefrontAvailable()
             ->whereNotNull('homepage_order')
             ->orderBy('homepage_order')
@@ -383,7 +393,7 @@ class EloquentCatalogRepository implements CatalogRepository
     public function selectedHomepageCategories(): Collection
     {
         return Category::query()
-            ->select(['id', 'name', 'slug', 'image_path', 'is_popular', 'homepage_order'])
+            ->select(['id', 'name', 'slug', 'image_path', 'image_disk', 'banner_image_path', 'banner_image_disk', 'is_popular', 'homepage_order'])
             ->storefrontAvailable()
             ->where(fn (Builder $query): Builder => $query
                 ->where('is_popular', true)
@@ -512,7 +522,7 @@ class EloquentCatalogRepository implements CatalogRepository
     public function activeCategoryContextBySlug(string $slug): ?array
     {
         $category = Category::query()
-            ->select(['id', 'parent_id', 'name', 'slug', 'image_path'])
+            ->select(['id', 'parent_id', 'name', 'slug', 'image_path', 'image_disk'])
             ->where('slug', $slug)
             ->storefrontAvailable()
             ->first();
@@ -522,7 +532,7 @@ class EloquentCatalogRepository implements CatalogRepository
         }
 
         $children = Category::query()
-            ->select(['id', 'parent_id', 'name', 'slug', 'image_path', 'sort_order'])
+            ->select(['id', 'parent_id', 'name', 'slug', 'image_path', 'image_disk', 'sort_order'])
             ->where('parent_id', $category->id)
             ->storefrontAvailable()
             ->withCount(['children as active_children_count' => fn (Builder $query): Builder => $query
@@ -660,7 +670,7 @@ class EloquentCatalogRepository implements CatalogRepository
 
         while ($parentId !== null) {
             $parent = Category::query()
-                ->select(['id', 'parent_id', 'name', 'slug', 'image_path'])
+                ->select(['id', 'parent_id', 'name', 'slug', 'image_path', 'image_disk'])
                 ->whereKey($parentId)
                 ->storefrontAvailable()
                 ->first();

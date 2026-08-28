@@ -10,6 +10,7 @@ use App\Models\SellerProfile;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
 
 class EloquentListingRepository implements ListingRepository
 {
@@ -145,6 +146,11 @@ class EloquentListingRepository implements ListingRepository
         $media->save();
 
         return $media;
+    }
+
+    public function mediaForMigration(): LazyCollection
+    {
+        return ListingMedia::withTrashed()->lazyById();
     }
 
     public function mediaCount(Listing $listing): int
