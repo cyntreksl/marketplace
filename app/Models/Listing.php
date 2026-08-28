@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['seller_profile_id', 'category_id', 'brand_id', 'brand_name', 'title', 'slug', 'description', 'condition', 'listing_type', 'status', 'location', 'specifications', 'warranty', 'stock_quantity', 'reserved_quantity', 'price', 'sale_price', 'commission_percentage', 'moderation_reason', 'submitted_at', 'approved_at'])]
+#[Fillable(['seller_profile_id', 'category_id', 'brand_id', 'brand_name', 'title', 'slug', 'description', 'condition', 'listing_type', 'status', 'location', 'specifications', 'warranty', 'stock_quantity', 'reserved_quantity', 'price', 'sale_price', 'commission_percentage', 'moderation_reason', 'submitted_at', 'approved_at', 'is_best_offer', 'is_new_arrival'])]
 class Listing extends Model
 {
     /** @use HasFactory<ListingFactory> */
@@ -27,6 +28,8 @@ class Listing extends Model
             'commission_percentage' => 'decimal:2',
             'submitted_at' => 'datetime',
             'approved_at' => 'datetime',
+            'is_best_offer' => 'boolean',
+            'is_new_arrival' => 'boolean',
         ];
     }
 
@@ -64,6 +67,23 @@ class Listing extends Model
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class)->withTrashed();
+    }
+
+    /** @return HasManyThrough<Review, OrderItem, $this> */
+    public function reviews(): HasManyThrough
+    {
+        return $this->hasManyThrough(Review::class, OrderItem::class);
+    }
+
+    public function buyNowPrice(): ?string
+    {
+        if ($this->listing_type !== 'buy_now') {
+            return null;
+        }
+
+        $price = $this->sale_price ?? $this->price;
+
+        return $price === null ? null : (string) $price;
     }
 
     /** @param Builder<Listing> $query */

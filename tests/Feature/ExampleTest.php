@@ -5,6 +5,7 @@ test('guests can visit the storefront home page', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('storefront/home')
-            ->has('featuredListings.data', 0)
+            ->has('bestOffers', 0)
+            ->has('newArrivals', 0)
             ->has('categories', 0));
 });

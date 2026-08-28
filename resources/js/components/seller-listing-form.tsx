@@ -41,6 +41,7 @@ export type SellerListingFormListing = {
     warranty: string | null;
     stock_quantity: number;
     price: string | null;
+    sale_price: string | null;
     media?: ListingMedia[];
     auction: {
         starting_price: string;
@@ -64,6 +65,7 @@ type ListingFormData = {
     warranty: string;
     stock_quantity: number | '';
     price: string;
+    sale_price: string;
     starting_price: string;
     reserve_price: string;
     minimum_increment: string;
@@ -87,6 +89,7 @@ const stepFields = [
     [
         'listing_type',
         'price',
+        'sale_price',
         'stock_quantity',
         'starting_price',
         'reserve_price',
@@ -139,6 +142,7 @@ export function SellerListingForm({
         warranty: listing?.warranty ?? '',
         stock_quantity: listing?.stock_quantity ?? '',
         price: listing?.price ?? '',
+        sale_price: listing?.sale_price ?? '',
         starting_price: listing?.auction?.starting_price ?? '',
         reserve_price: listing?.auction?.reserve_price ?? '',
         minimum_increment: listing?.auction?.minimum_increment ?? '',
@@ -247,6 +251,14 @@ export function SellerListingForm({
             if (form.data.listing_type === 'buy_now') {
                 if (form.data.price === '' || Number(form.data.price) < 1) {
                     errors.price = 'Enter a price of at least LKR 1.';
+                }
+
+                if (
+                    form.data.sale_price !== '' &&
+                    Number(form.data.sale_price) >= Number(form.data.price)
+                ) {
+                    errors.sale_price =
+                        'The offer price must be lower than the regular price.';
                 }
 
                 if (
@@ -767,10 +779,15 @@ export function SellerListingForm({
                                         key={saleMethod.value}
                                         type="button"
                                         onClick={() =>
-                                            form.setData(
-                                                'listing_type',
-                                                saleMethod.value,
-                                            )
+                                            form.setData({
+                                                ...form.data,
+                                                listing_type: saleMethod.value,
+                                                sale_price:
+                                                    saleMethod.value ===
+                                                    'auction'
+                                                        ? ''
+                                                        : form.data.sale_price,
+                                            })
                                         }
                                         aria-pressed={selected}
                                         className={`flex items-start gap-4 rounded-2xl border p-5 text-left transition ${
@@ -800,13 +817,23 @@ export function SellerListingForm({
                             <div className="grid gap-5 rounded-2xl bg-stone-50 p-5 sm:grid-cols-2 dark:bg-stone-950">
                                 <NumberField
                                     id="listing-price"
-                                    label="Price (LKR)"
+                                    label="Regular price (LKR)"
                                     value={form.data.price}
                                     onChange={(value) => {
                                         form.setData('price', value);
                                         clearError('price');
                                     }}
                                     error={errorFor('price')}
+                                />
+                                <NumberField
+                                    id="listing-sale_price"
+                                    label="Offer price (optional)"
+                                    value={form.data.sale_price}
+                                    onChange={(value) => {
+                                        form.setData('sale_price', value);
+                                        clearError('sale_price');
+                                    }}
+                                    error={errorFor('sale_price')}
                                 />
                                 <NumberField
                                     id="listing-stock_quantity"
@@ -1274,6 +1301,16 @@ export function SellerListingForm({
                                     <SummaryItem
                                         label="Price"
                                         value={formatPrice(form.data.price)}
+                                    />
+                                    <SummaryItem
+                                        label="Offer price"
+                                        value={
+                                            form.data.sale_price
+                                                ? formatPrice(
+                                                      form.data.sale_price,
+                                                  )
+                                                : 'No discount'
+                                        }
                                     />
                                     <SummaryItem
                                         label="Stock"

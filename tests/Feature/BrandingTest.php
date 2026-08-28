@@ -11,7 +11,9 @@ test('the storefront home shares the ProDeals.lk identity', function () {
         ->assertInertia(fn ($page) => $page
             ->component('storefront/home')
             ->where('name', 'ProDeals.lk')
-            ->has('featuredListings.data')
+            ->has('popularCategories')
+            ->has('bestOffers')
+            ->has('newArrivals')
             ->has('categories'));
 });
 

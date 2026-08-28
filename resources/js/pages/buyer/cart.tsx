@@ -9,13 +9,17 @@ type CartItem = {
     listing: {
         title: string;
         price: string;
+        sale_price: string | null;
         seller_profile: { store_name: string };
     };
 };
 
 export default function BuyerCart({ cart }: { cart: { items: CartItem[] } }) {
     const subtotal = cart.items.reduce(
-        (total, item) => total + Number(item.listing.price) * item.quantity,
+        (total, item) =>
+            total +
+            Number(item.listing.sale_price ?? item.listing.price) *
+                item.quantity,
         0,
     );
 
@@ -68,8 +72,10 @@ export default function BuyerCart({ cart }: { cart: { items: CartItem[] } }) {
                                         <p className="font-bold">
                                             LKR{' '}
                                             {(
-                                                Number(item.listing.price) *
-                                                item.quantity
+                                                Number(
+                                                    item.listing.sale_price ??
+                                                        item.listing.price,
+                                                ) * item.quantity
                                             ).toLocaleString()}
                                         </p>
                                     </li>

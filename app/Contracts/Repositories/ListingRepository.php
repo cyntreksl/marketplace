@@ -5,6 +5,7 @@ namespace App\Contracts\Repositories;
 use App\Models\Listing;
 use App\Models\SellerProfile;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 interface ListingRepository
 {
@@ -15,6 +16,28 @@ interface ListingRepository
     public function paginatePublic(array $filters, int $perPage = 18): LengthAwarePaginator;
 
     public function findPublicBySlug(string $slug): Listing;
+
+    /** @return Collection<int, Listing> */
+    public function homepageBestOffers(int $limit = 8): Collection;
+
+    /** @return Collection<int, Listing> */
+    public function homepageNewArrivals(int $limit = 8): Collection;
+
+    /** @return Collection<int, Listing> */
+    public function homepageForCategory(string $categorySlug, int $limit = 6): Collection;
+
+    /** @param array<int, int> $listingIds
+     * @return Collection<int, Listing>
+     */
+    public function findPublicByIds(array $listingIds): Collection;
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return LengthAwarePaginator<int, Listing>
+     */
+    public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator;
+
+    public function updateMerchandising(Listing $listing, bool $isBestOffer, bool $isNewArrival): Listing;
 
     /** @return LengthAwarePaginator<int, Listing> */
     public function paginateForSeller(SellerProfile $seller, int $perPage = 15): LengthAwarePaginator;

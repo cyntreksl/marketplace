@@ -68,6 +68,11 @@ export type StorefrontListing = {
     condition: 'new' | 'used' | 'refurbished';
     listingType: 'buy_now' | 'auction';
     price: string | null;
+    salePrice: string | null;
+    effectivePrice: string | null;
+    discountPercentage: number | null;
+    ratingAverage: number | null;
+    reviewCount: number;
     location: string;
     warranty: string | null;
     stockQuantity: number;
@@ -76,6 +81,40 @@ export type StorefrontListing = {
     media: StorefrontListingMedia[];
     seller: { store_name: string; slug: string } | null;
     auction: StorefrontListingAuction | null;
+};
+
+export type StorefrontPromotion = {
+    id: number | null;
+    title: string;
+    imageUrl: string;
+    linkUrl: string | null;
+};
+
+export type StorefrontHomepageCategory = {
+    id: number;
+    name: string;
+    slug: string;
+};
+
+export type StorefrontCategorySection = {
+    category: StorefrontHomepageCategory;
+    variant: 'image' | 'tinted' | 'clean';
+    listings: StorefrontListing[];
+};
+
+export type StorefrontReview = {
+    id: number;
+    rating: number;
+    comment: string | null;
+    buyerName: string;
+    createdAt: string;
+    listingTitle?: string;
+    listingSlug?: string | null;
+};
+
+export type StorefrontSocialProof = {
+    summary: { average: number | null; count: number };
+    reviews: StorefrontReview[];
 };
 
 export type StorefrontPaginationLink = {

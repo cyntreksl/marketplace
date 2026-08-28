@@ -55,6 +55,21 @@ interface CatalogRepository
     /** @return Collection<int, Category> */
     public function activeTopLevelCategories(): Collection;
 
+    /** @return Collection<int, Category> */
+    public function popularHomepageCategories(int $limit = 10): Collection;
+
+    /** @return Collection<int, Category> */
+    public function featuredHomepageCategories(): Collection;
+
+    /** @return Collection<int, Category> */
+    public function selectedHomepageCategories(): Collection;
+
+    /**
+     * @param  array<int, int>  $popularCategoryIds
+     * @param  array<int, int>  $featuredCategoryIds
+     */
+    public function replaceHomepageCategories(array $popularCategoryIds, array $featuredCategoryIds): void;
+
     /** @return Collection<int, Brand> */
     public function availableBrands(): Collection;
 

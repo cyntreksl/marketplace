@@ -8,6 +8,7 @@ use App\Models\Listing;
 use App\Models\SellerProfile;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class EloquentListingRepository implements ListingRepository
 {
@@ -17,17 +18,8 @@ class EloquentListingRepository implements ListingRepository
     {
         $effectivePrice = 'CAST(COALESCE(auctions.current_price, listings.sale_price, listings.price) AS DECIMAL(12, 2))';
 
-        $query = Listing::query()
-            ->select('listings.*')
+        $query = $this->publicQuery()
             ->leftJoin('auctions', 'auctions.listing_id', '=', 'listings.id')
-            ->publiclyVisible()
-            ->with([
-                'brand:id,name,slug',
-                'category:id,name,slug',
-                'media:id,listing_id,disk,path,type,sort_order',
-                'sellerProfile:id,store_name,slug',
-                'auction:id,listing_id,status,current_price,ends_at',
-            ])
             ->when($filters['search'] ?? null, fn ($query, string $search) => $query->where('listings.title', 'like', "%{$search}%"))
             ->when($filters['category'] ?? null, fn ($query, string $category) => $query->whereIn('listings.category_id', $this->catalog->activeDescendantIdsForSlug($category)))
             ->when($filters['brand'] ?? null, fn ($query, string $brand) => $query->whereHas('brand', fn ($query) => $query->where('slug', $brand)))
@@ -45,17 +37,79 @@ class EloquentListingRepository implements ListingRepository
 
     public function findPublicBySlug(string $slug): Listing
     {
-        return Listing::query()
-            ->publiclyVisible()
+        return $this->publicQuery()
             ->with([
-                'brand:id,name,slug',
-                'category:id,name,slug',
-                'media:id,listing_id,disk,path,type,sort_order',
                 'sellerProfile.user:id,name',
                 'auction.bids.buyer:id,name',
             ])
             ->where('slug', $slug)
             ->firstOrFail();
+    }
+
+    public function homepageBestOffers(int $limit = 8): Collection
+    {
+        return $this->publicQuery()
+            ->where('listings.is_best_offer', true)
+            ->where('listings.listing_type', 'buy_now')
+            ->whereNotNull('listings.sale_price')
+            ->whereColumn('listings.sale_price', '<', 'listings.price')
+            ->latest('listings.created_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    public function homepageNewArrivals(int $limit = 8): Collection
+    {
+        return $this->publicQuery()
+            ->where('listings.is_new_arrival', true)
+            ->latest('listings.created_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    public function homepageForCategory(string $categorySlug, int $limit = 6): Collection
+    {
+        return $this->publicQuery()
+            ->whereIn('listings.category_id', $this->catalog->activeDescendantIdsForSlug($categorySlug))
+            ->latest('listings.created_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    public function findPublicByIds(array $listingIds): Collection
+    {
+        if ($listingIds === []) {
+            return collect();
+        }
+
+        $positions = array_flip($listingIds);
+
+        return $this->publicQuery()
+            ->whereIn('listings.id', $listingIds)
+            ->get()
+            ->sortBy(fn (Listing $listing): int => $positions[(int) $listing->getKey()])
+            ->values();
+    }
+
+    public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator
+    {
+        return Listing::query()
+            ->with(['category:id,name', 'sellerProfile:id,store_name'])
+            ->when($filters['search'] ?? null, fn (Builder $query, string $search): Builder => $query->where('title', 'like', "%{$search}%"))
+            ->when($filters['status'] ?? null, fn (Builder $query, string $status): Builder => $query->where('status', $status))
+            ->latest()
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    public function updateMerchandising(Listing $listing, bool $isBestOffer, bool $isNewArrival): Listing
+    {
+        $listing->forceFill([
+            'is_best_offer' => $isBestOffer,
+            'is_new_arrival' => $isNewArrival,
+        ])->save();
+
+        return $listing;
     }
 
     public function paginateForSeller(SellerProfile $seller, int $perPage = 15): LengthAwarePaginator
@@ -86,6 +140,23 @@ class EloquentListingRepository implements ListingRepository
     public function delete(Listing $listing): void
     {
         $listing->delete();
+    }
+
+    /** @return Builder<Listing> */
+    private function publicQuery(): Builder
+    {
+        return Listing::query()
+            ->select('listings.*')
+            ->publiclyVisible()
+            ->withAvg('reviews as rating_average', 'rating')
+            ->withCount('reviews')
+            ->with([
+                'brand:id,name,slug',
+                'category:id,name,slug',
+                'media:id,listing_id,disk,path,type,sort_order',
+                'sellerProfile:id,store_name,slug',
+                'auction:id,listing_id,status,current_price,ends_at',
+            ]);
     }
 
     /** @param Builder<Listing> $query */

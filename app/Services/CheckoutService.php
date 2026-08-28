@@ -75,7 +75,7 @@ class CheckoutService
             $subtotal = BigDecimal::zero();
             foreach ($cartItems as $cartItem) {
                 $listing = $lockedListings[$cartItem->listing_id];
-                $subtotal = $subtotal->plus(BigDecimal::of((string) $listing->price)->multipliedBy($cartItem->quantity));
+                $subtotal = $subtotal->plus(BigDecimal::of((string) $listing->buyNowPrice())->multipliedBy($cartItem->quantity));
             }
 
             if ($paymentMethod === 'cod' && $subtotal->isGreaterThan($this->settings->integer('checkout.cod_maximum_amount', 50000))) {
@@ -95,7 +95,7 @@ class CheckoutService
                 $sellerSubtotal = BigDecimal::zero();
                 foreach ($items as $item) {
                     $listing = $lockedListings[$item->listing_id];
-                    $sellerSubtotal = $sellerSubtotal->plus(BigDecimal::of((string) $listing->price)->multipliedBy($item->quantity));
+                    $sellerSubtotal = $sellerSubtotal->plus(BigDecimal::of((string) $listing->buyNowPrice())->multipliedBy($item->quantity));
                 }
 
                 $sellerOrder = SellerOrder::query()->create([
@@ -109,13 +109,14 @@ class CheckoutService
 
                 foreach ($items as $item) {
                     $listing = $lockedListings[$item->listing_id];
-                    $lineTotal = BigDecimal::of((string) $listing->price)->multipliedBy($item->quantity);
+                    $effectivePrice = (string) $listing->buyNowPrice();
+                    $lineTotal = BigDecimal::of($effectivePrice)->multipliedBy($item->quantity);
                     $commission = $lineTotal->multipliedBy((string) $listing->commission_percentage)->dividedBy(100, 2, RoundingMode::Down);
                     $sellerOrder->items()->create([
                         'listing_id' => $listing->id,
                         'title' => $listing->title,
                         'quantity' => $item->quantity,
-                        'unit_price' => $listing->price,
+                        'unit_price' => $effectivePrice,
                         'commission_percentage' => $listing->commission_percentage,
                         'commission_amount' => (string) $commission,
                         'total' => (string) $lineTotal,

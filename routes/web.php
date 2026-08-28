@@ -3,13 +3,16 @@
 use App\Http\Controllers\AdminBrandController;
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminHomepageController;
 use App\Http\Controllers\AdminListingController;
+use App\Http\Controllers\AdminPromotionController;
 use App\Http\Controllers\AdminReturnController;
 use App\Http\Controllers\AdminSellerController;
 use App\Http\Controllers\AdminTaxonomyController;
 use App\Http\Controllers\AuctionBidController;
 use App\Http\Controllers\BuyerDashboardController;
 use App\Http\Controllers\BuyerReturnRequestController;
+use App\Http\Controllers\BuyerReviewController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryLookupController;
 use App\Http\Controllers\CheckoutController;
@@ -38,6 +41,7 @@ Route::inertia('/legal/cookies', 'storefront/content/show', ['document' => 'cook
 Route::inertia('/policies/sellers', 'storefront/content/show', ['document' => 'sellers'])->name('policies.sellers');
 Route::inertia('/policies/prohibited-items', 'storefront/content/show', ['document' => 'prohibited'])->name('policies.prohibited');
 Route::get('/listings', [StorefrontController::class, 'index'])->name('listings.index');
+Route::get('/listings/recent', [StorefrontController::class, 'recent'])->name('listings.recent');
 Route::get('/listings/{listing}', [StorefrontController::class, 'show'])->name('listings.show');
 Route::get('/categories/search', CategoryLookupController::class)
     ->middleware('throttle:category-lookups')
@@ -75,6 +79,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/cart/items', [CartController::class, 'store'])->name('cart.items.store');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
     Route::get('/buyer/orders', [BuyerDashboardController::class, 'index'])->name('buyer.orders.index');
+    Route::post('/buyer/order-items/{orderItem}/review', [BuyerReviewController::class, 'store'])->name('buyer.reviews.store');
     Route::get('/buyer/returns', [BuyerReturnRequestController::class, 'index'])->name('buyer.returns.index');
     Route::post('/buyer/returns', [BuyerReturnRequestController::class, 'store'])->name('buyer.returns.store');
     Route::get('/returns/{returnRequest}/evidence/{evidence}', ReturnEvidenceController::class)
@@ -84,6 +89,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/homepage', [AdminHomepageController::class, 'index'])->name('homepage.index');
+    Route::put('/homepage/categories', [AdminHomepageController::class, 'updateCategories'])->name('homepage.categories.update');
+    Route::patch('/homepage/listings/{listing}', [AdminHomepageController::class, 'updateListing'])->name('homepage.listings.update');
+    Route::post('/homepage/promotions', [AdminPromotionController::class, 'store'])->name('homepage.promotions.store');
+    Route::patch('/homepage/promotions/{promotion}', [AdminPromotionController::class, 'update'])->name('homepage.promotions.update');
     Route::get('/returns', [AdminReturnController::class, 'index'])->name('returns.index');
     Route::post('/returns/{returnRequest}/refund-ready', [AdminReturnController::class, 'ready'])->name('returns.ready');
     Route::post('/returns/{returnRequest}/refund', [AdminReturnController::class, 'refund'])->name('returns.refund');

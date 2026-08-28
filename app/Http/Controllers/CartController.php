@@ -25,6 +25,8 @@ class CartController extends Controller
     {
         $checkout->addItem($request->user(), (int) $request->validated('listing_id'), (int) $request->validated('quantity'));
 
-        return to_route('cart.show')->with('status', 'Item added to your cart.');
+        return back()
+            ->with('status', 'Item added to your cart.')
+            ->with('toast', ['type' => 'success', 'message' => 'Added to cart.']);
     }
 }

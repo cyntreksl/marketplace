@@ -35,6 +35,7 @@ class StoreListingRequest extends FormRequest
             'warranty' => ['nullable', 'string', 'max:500'],
             'stock_quantity' => ['required_if:listing_type,buy_now', 'nullable', 'integer', 'min:1', 'max:100000'],
             'price' => ['required_if:listing_type,buy_now', 'nullable', 'decimal:0,2', 'min:1'],
+            'sale_price' => ['nullable', 'decimal:0,2', 'min:1', 'lt:price', 'prohibited_if:listing_type,auction'],
             'starting_price' => ['required_if:listing_type,auction', 'nullable', 'decimal:0,2', 'min:1'],
             'reserve_price' => ['nullable', 'decimal:0,2', 'gte:starting_price'],
             'minimum_increment' => ['required_if:listing_type,auction', 'nullable', 'decimal:0,2', 'min:1'],

@@ -3,6 +3,7 @@ import {
     ClipboardCheck,
     FolderTree,
     LayoutDashboard,
+    PanelsTopLeft,
     Menu,
     Package,
     Plus,
@@ -36,6 +37,7 @@ import { home } from '@/routes';
 import { dashboard as adminDashboard } from '@/routes/admin';
 import { index as adminBrandsIndex } from '@/routes/admin/brands';
 import { index as adminCategoriesIndex } from '@/routes/admin/categories';
+import { index as adminHomepageIndex } from '@/routes/admin/homepage';
 import { index as adminListingsIndex } from '@/routes/admin/listings';
 import { index as adminReturnsIndex } from '@/routes/admin/returns';
 import { index as adminSellersIndex } from '@/routes/admin/sellers';
@@ -77,6 +79,11 @@ const portalDetails: Record<Portal, PortalDetails> = {
                 title: 'Overview',
                 href: adminDashboard(),
                 icon: LayoutDashboard,
+            },
+            {
+                title: 'Homepage',
+                href: adminHomepageIndex(),
+                icon: PanelsTopLeft,
             },
             {
                 title: 'Seller approvals',

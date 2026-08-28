@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Contracts\Repositories\CatalogRepository;
 use App\Contracts\Repositories\ListingRepository;
+use App\Contracts\Repositories\PromotionRepository;
+use App\Contracts\Repositories\ReviewRepository;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Listing;
@@ -14,15 +16,74 @@ class StorefrontService
     public function __construct(
         private readonly ListingRepository $listings,
         private readonly CatalogRepository $catalog,
+        private readonly PromotionRepository $promotions,
+        private readonly ReviewRepository $reviews,
     ) {}
 
     /** @return array<string, mixed> */
     public function homeData(): array
     {
         return [
-            'featuredListings' => $this->listings->paginatePublic([], 6)->through(fn (Listing $listing) => $this->listingData($listing)),
             'categories' => $this->storefrontCategories(),
+            'promotions' => [
+                'hero' => $this->promotionData('hero', 1, [
+                    ['title' => 'Discover better deals, closer to home', 'imageUrl' => '/images/storefront/hero-marketplace.jpg', 'linkUrl' => '/listings'],
+                ]),
+                'secondary' => $this->promotionData('secondary', 2, [
+                    ['title' => 'Refresh your everyday spaces', 'imageUrl' => '/images/storefront/home-lifestyle.jpg', 'linkUrl' => '/listings'],
+                    ['title' => 'Technology that fits your day', 'imageUrl' => '/images/storefront/technology.jpg', 'linkUrl' => '/listings?category=electronics'],
+                ]),
+            ],
+            'popularCategories' => $this->catalog->popularHomepageCategories()
+                ->map(fn (Category $category): array => $category->only(['id', 'name', 'slug']))
+                ->values(),
+            'bestOffers' => $this->listings->homepageBestOffers()->map(fn (Listing $listing): array => $this->listingData($listing))->values(),
+            'newArrivals' => $this->listings->homepageNewArrivals()->map(fn (Listing $listing): array => $this->listingData($listing))->values(),
         ];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function homepageCategorySections(): array
+    {
+        return $this->catalog->featuredHomepageCategories()
+            ->map(fn (Category $category, int $index): array => [
+                'category' => $category->only(['id', 'name', 'slug']),
+                'variant' => ['image', 'tinted', 'clean'][$index % 3],
+                'listings' => $this->listings->homepageForCategory($category->slug)
+                    ->map(fn (Listing $listing): array => $this->listingData($listing))
+                    ->values(),
+            ])
+            ->filter(fn (array $section): bool => $section['listings']->isNotEmpty())
+            ->values()
+            ->all();
+    }
+
+    /** @return array{summary: array{average: float|null, count: int}, reviews: array<int, array<string, mixed>>} */
+    public function homepageSocialProof(): array
+    {
+        return [
+            'summary' => $this->reviews->summary(),
+            'reviews' => $this->reviews->recent(6)->map(fn ($review): array => [
+                'id' => $review->id,
+                'rating' => $review->rating,
+                'comment' => $review->comment,
+                'buyerName' => $review->buyer->name,
+                'listingTitle' => $review->orderItem->title,
+                'listingSlug' => $review->orderItem->listing?->slug,
+                'createdAt' => $review->created_at->toDateString(),
+            ])->values()->all(),
+        ];
+    }
+
+    /** @param array<int, int> $listingIds
+     * @return array<int, array<string, mixed>>
+     */
+    public function recentlyViewedData(array $listingIds): array
+    {
+        return $this->listings->findPublicByIds($listingIds)
+            ->map(fn (Listing $listing): array => $this->listingData($listing))
+            ->values()
+            ->all();
     }
 
     /**
@@ -55,6 +116,13 @@ class StorefrontService
 
         return [
             'listing' => $this->listingData($listing, detailed: true),
+            'reviews' => $this->reviews->forListing((int) $listing->id, 20)->map(fn ($review): array => [
+                'id' => $review->id,
+                'rating' => $review->rating,
+                'comment' => $review->comment,
+                'buyerName' => $review->buyer->name,
+                'createdAt' => $review->created_at->toDateString(),
+            ])->values(),
             'categories' => $this->storefrontCategories(),
             'categoryTrail' => $listing->category === null
                 ? []
@@ -93,7 +161,12 @@ class StorefrontService
             'description' => $detailed ? $listing->description : null,
             'condition' => $listing->condition,
             'listingType' => $listing->listing_type,
-            'price' => $listing->sale_price ?? $listing->price,
+            'price' => $listing->price,
+            'salePrice' => $listing->sale_price,
+            'effectivePrice' => $listing->auction === null ? $listing->buyNowPrice() : $listing->auction->current_price,
+            'discountPercentage' => $this->discountPercentage($listing),
+            'ratingAverage' => $listing->getAttribute('rating_average') === null ? null : round((float) $listing->getAttribute('rating_average'), 1),
+            'reviewCount' => (int) $listing->getAttribute('reviews_count'),
             'location' => $listing->location,
             'warranty' => $listing->warranty,
             'stockQuantity' => $listing->stock_quantity - $listing->reserved_quantity,
@@ -114,5 +187,36 @@ class StorefrontService
                 'bidCount' => $detailed ? $listing->auction->bids->count() : null,
             ],
         ];
+    }
+
+    /**
+     * @param  array<int, array{title: string, imageUrl: string, linkUrl: string}>  $fallbacks
+     * @return array<int, array{id: int|null, title: string, imageUrl: string, linkUrl: string|null}>
+     */
+    private function promotionData(string $placement, int $limit, array $fallbacks): array
+    {
+        $promotions = $this->promotions->activeForPlacement($placement, $limit);
+
+        if ($promotions->isEmpty()) {
+            return collect($fallbacks)
+                ->map(fn (array $promotion): array => ['id' => null, ...$promotion])
+                ->all();
+        }
+
+        return $promotions->map(fn ($promotion): array => [
+            'id' => $promotion->id,
+            'title' => $promotion->title,
+            'imageUrl' => $promotion->imageUrl(),
+            'linkUrl' => $promotion->link_url,
+        ])->values()->all();
+    }
+
+    private function discountPercentage(Listing $listing): ?int
+    {
+        if ($listing->listing_type !== 'buy_now' || $listing->sale_price === null || (float) $listing->price <= 0) {
+            return null;
+        }
+
+        return (int) round((((float) $listing->price - (float) $listing->sale_price) / (float) $listing->price) * 100);
     }
 }

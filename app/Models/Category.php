@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['parent_id', 'google_product_category_id', 'name', 'slug', 'commission_percentage', 'return_window_days', 'cod_enabled', 'is_active', 'is_selectable', 'sort_order'])]
+#[Fillable(['parent_id', 'google_product_category_id', 'name', 'slug', 'commission_percentage', 'return_window_days', 'cod_enabled', 'is_active', 'is_selectable', 'is_popular', 'homepage_order', 'sort_order'])]
 class Category extends Model
 {
     /** @use HasFactory<CategoryFactory> */
@@ -22,6 +22,8 @@ class Category extends Model
             'cod_enabled' => 'boolean',
             'is_active' => 'boolean',
             'is_selectable' => 'boolean',
+            'is_popular' => 'boolean',
+            'homepage_order' => 'integer',
             'commission_percentage' => 'decimal:2',
         ];
     }

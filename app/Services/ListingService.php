@@ -63,6 +63,7 @@ class ListingService
                 'warranty' => $attributes['warranty'] ?? null,
                 'stock_quantity' => $attributes['listing_type'] === 'buy_now' ? $attributes['stock_quantity'] : 1,
                 'price' => $attributes['listing_type'] === 'buy_now' ? $attributes['price'] : null,
+                'sale_price' => $attributes['listing_type'] === 'buy_now' ? ($attributes['sale_price'] ?? null) : null,
                 'commission_percentage' => $category->commission_percentage,
             ]);
             $this->listings->save($listing);
@@ -109,7 +110,10 @@ class ListingService
                 'warranty' => $attributes['warranty'] ?? null,
                 'stock_quantity' => $attributes['listing_type'] === 'buy_now' ? $attributes['stock_quantity'] : 1,
                 'price' => $attributes['listing_type'] === 'buy_now' ? $attributes['price'] : null,
+                'sale_price' => $attributes['listing_type'] === 'buy_now' ? ($attributes['sale_price'] ?? null) : null,
                 'commission_percentage' => $category->commission_percentage,
+                'is_best_offer' => false,
+                'is_new_arrival' => false,
             ]);
             $this->listings->save($listing);
             $this->syncAuction($listing, $attributes);

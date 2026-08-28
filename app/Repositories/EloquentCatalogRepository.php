@@ -159,6 +159,70 @@ class EloquentCatalogRepository implements CatalogRepository
             ->get();
     }
 
+    public function popularHomepageCategories(int $limit = 10): Collection
+    {
+        $categories = Category::query()
+            ->select(['id', 'name', 'slug', 'parent_id', 'sort_order'])
+            ->where('is_active', true)
+            ->where('is_popular', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->limit($limit)
+            ->get();
+
+        if ($categories->isNotEmpty()) {
+            return $categories;
+        }
+
+        return Category::query()
+            ->select(['id', 'name', 'slug', 'parent_id', 'sort_order'])
+            ->whereNull('parent_id')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->limit($limit)
+            ->get();
+    }
+
+    public function featuredHomepageCategories(): Collection
+    {
+        return Category::query()
+            ->select(['id', 'name', 'slug', 'homepage_order'])
+            ->where('is_active', true)
+            ->whereNotNull('homepage_order')
+            ->orderBy('homepage_order')
+            ->limit(5)
+            ->get();
+    }
+
+    public function selectedHomepageCategories(): Collection
+    {
+        return Category::query()
+            ->select(['id', 'name', 'slug', 'is_popular', 'homepage_order'])
+            ->where('is_active', true)
+            ->where(fn (Builder $query): Builder => $query
+                ->where('is_popular', true)
+                ->orWhereNotNull('homepage_order'))
+            ->orderByRaw('homepage_order is null')
+            ->orderBy('homepage_order')
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function replaceHomepageCategories(array $popularCategoryIds, array $featuredCategoryIds): void
+    {
+        Category::query()->where('is_popular', true)->update(['is_popular' => false]);
+        Category::query()->whereNotNull('homepage_order')->update(['homepage_order' => null]);
+
+        if ($popularCategoryIds !== []) {
+            Category::query()->whereIn('id', $popularCategoryIds)->update(['is_popular' => true]);
+        }
+
+        foreach (array_values($featuredCategoryIds) as $index => $categoryId) {
+            Category::query()->whereKey($categoryId)->update(['homepage_order' => $index + 1]);
+        }
+    }
+
     public function availableBrands(): Collection
     {
         return Brand::query()

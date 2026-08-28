@@ -7,10 +7,11 @@ import {
     PackageCheck,
     ShieldCheck,
     ShoppingBag,
+    Star,
     Store,
     Tag,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { store as addCartItem } from '@/actions/App/Http/Controllers/CartController';
 import { RichTextContent } from '@/components/rich-text-editor';
 import { StorefrontBreadcrumbs } from '@/components/storefront-breadcrumbs';
@@ -23,7 +24,10 @@ import type {
     StorefrontCategory,
     StorefrontCategoryNode,
     StorefrontListing,
+    StorefrontReview,
 } from '@/types';
+
+const recentStorageKey = 'prodeals.recentlyViewedListingIds';
 
 function productBreadcrumbs(
     categoryTrail: StorefrontCategoryNode[],
@@ -132,15 +136,42 @@ export default function ListingShow({
     listing,
     categories,
     categoryTrail,
+    reviews,
 }: {
     listing: StorefrontListing;
     categories: StorefrontCategory[];
     categoryTrail: StorefrontCategoryNode[];
+    reviews: StorefrontReview[];
 }) {
-    const price = listing.auction?.currentPrice ?? listing.price;
+    const price = listing.effectivePrice;
     const { auth } = usePage().props;
     const conditionLabel =
         listing.condition.charAt(0).toUpperCase() + listing.condition.slice(1);
+
+    useEffect(() => {
+        try {
+            const stored = JSON.parse(
+                window.localStorage.getItem(recentStorageKey) ?? '[]',
+            );
+            const ids = Array.isArray(stored)
+                ? stored.filter((id): id is number => Number.isInteger(id))
+                : [];
+            window.localStorage.setItem(
+                recentStorageKey,
+                JSON.stringify(
+                    [
+                        listing.id,
+                        ...ids.filter((id) => id !== listing.id),
+                    ].slice(0, 12),
+                ),
+            );
+        } catch {
+            window.localStorage.setItem(
+                recentStorageKey,
+                JSON.stringify([listing.id]),
+            );
+        }
+    }, [listing.id]);
 
     return (
         <StorefrontLayout
@@ -177,6 +208,19 @@ export default function ListingShow({
                             {listing.title}
                         </h1>
 
+                        <div className="mt-3 flex items-center gap-2 text-sm">
+                            <span className="flex items-center gap-1 font-black text-amber-600 dark:text-amber-400">
+                                <Star className="size-4 fill-current" />{' '}
+                                {listing.ratingAverage?.toFixed(1) ?? 'New'}
+                            </span>
+                            <span className="text-slate-500">
+                                {listing.reviewCount} verified{' '}
+                                {listing.reviewCount === 1
+                                    ? 'review'
+                                    : 'reviews'}
+                            </span>
+                        </div>
+
                         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
                             {listing.category && (
                                 <Link
@@ -212,6 +256,19 @@ export default function ListingShow({
                                 <p className="mt-2 text-4xl font-black tracking-tight text-primary sm:text-5xl">
                                     Rs. {Number(price ?? 0).toLocaleString()}
                                 </p>
+                                {listing.salePrice && (
+                                    <div className="mt-2 flex items-center gap-3">
+                                        <span className="text-sm font-semibold text-slate-400 line-through">
+                                            Rs.{' '}
+                                            {Number(
+                                                listing.price ?? 0,
+                                            ).toLocaleString()}
+                                        </span>
+                                        <span className="rounded-full bg-amber-300 px-2.5 py-1 text-xs font-black text-slate-950">
+                                            Save {listing.discountPercentage}%
+                                        </span>
+                                    </div>
+                                )}
                                 {listing.auction && (
                                     <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium text-slate-600 dark:text-slate-300">
                                         <span>
@@ -327,6 +384,57 @@ export default function ListingShow({
                         </div>
                     </section>
                 </div>
+
+                {reviews.length > 0 && (
+                    <section
+                        className="mt-12 rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 dark:border-slate-800 dark:bg-slate-900"
+                        aria-labelledby="verified-reviews-title"
+                    >
+                        <p className="text-xs font-black tracking-[0.16em] text-primary uppercase">
+                            Verified purchases only
+                        </p>
+                        <h2
+                            id="verified-reviews-title"
+                            className="mt-2 text-2xl font-black tracking-tight"
+                        >
+                            Buyer reviews
+                        </h2>
+                        <div className="mt-6 grid gap-4 md:grid-cols-2">
+                            {reviews.map((review) => (
+                                <article
+                                    key={review.id}
+                                    className="rounded-2xl bg-slate-50 p-5 dark:bg-slate-950"
+                                >
+                                    <div
+                                        className="flex gap-0.5 text-amber-500"
+                                        aria-label={`${review.rating} out of 5 stars`}
+                                    >
+                                        {Array.from(
+                                            { length: 5 },
+                                            (_, index) => (
+                                                <Star
+                                                    key={index}
+                                                    className={`size-4 ${index < review.rating ? 'fill-current' : 'opacity-25'}`}
+                                                />
+                                            ),
+                                        )}
+                                    </div>
+                                    {review.comment && (
+                                        <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                            {review.comment}
+                                        </p>
+                                    )}
+                                    <p className="mt-4 text-sm font-black">
+                                        {review.buyerName}{' '}
+                                        <span className="ml-1 text-xs font-semibold text-primary">
+                                            Verified buyer
+                                        </span>
+                                    </p>
+                                </article>
+                            ))}
+                        </div>
+                    </section>
+                )}
             </main>
         </StorefrontLayout>
     );
