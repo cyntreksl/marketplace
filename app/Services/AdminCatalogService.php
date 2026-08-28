@@ -71,6 +71,8 @@ class AdminCatalogService
     /** @param array<string, mixed> $attributes */
     public function updateCategory(User $actor, Category $category, array $attributes, string $reason): Category
     {
+        $attributes['slug'] = $attributes['slug'] ?: Str::slug($attributes['name']);
+
         return DB::transaction(function () use ($actor, $category, $attributes, $reason): Category {
             $before = $category->getAttributes();
             $category->fill($attributes);

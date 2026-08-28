@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AdminBrandController;
+use App\Http\Controllers\AdminCategoryBrowseController;
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminHomepageController;
@@ -103,6 +104,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/listings', [AdminListingController::class, 'index'])->name('listings.index');
     Route::patch('/listings/{listing}', [AdminListingController::class, 'update'])->name('listings.update');
     Route::get('/catalog/categories', [AdminCategoryController::class, 'index'])->name('categories.index');
+    Route::get('/catalog/categories/children', [AdminCategoryBrowseController::class, 'children'])->name('categories.children');
+    Route::get('/catalog/categories/search', [AdminCategoryBrowseController::class, 'search'])->name('categories.search');
+    Route::get('/catalog/categories/{category}/context', [AdminCategoryBrowseController::class, 'context'])->whereNumber('category')->name('categories.context');
     Route::post('/catalog/categories', [AdminCategoryController::class, 'store'])->name('categories.store');
     Route::patch('/catalog/categories/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
     Route::post('/catalog/categories/{category}/image', [AdminCategoryController::class, 'storeImage'])->name('categories.image.store');

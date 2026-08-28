@@ -30,7 +30,7 @@ test('an admin can create replace and remove optional category artwork', functio
         'is_active' => true,
         'image' => UploadedFile::fake()->image('electronics.jpg', 800, 800),
         'reason' => 'Add approved category artwork',
-    ])->assertRedirect(route('admin.categories.index'));
+    ])->assertRedirectContains('/admin/catalog/categories?category=');
 
     $category = Category::query()->sole();
     $originalPath = $category->image_path;
@@ -41,7 +41,7 @@ test('an admin can create replace and remove optional category artwork', functio
     $this->actingAs($admin)->post(route('admin.categories.image.store', $category), [
         'image' => UploadedFile::fake()->image('replacement.webp', 1000, 1000),
         'reason' => 'Use the final approved category crop',
-    ])->assertRedirect(route('admin.categories.index'));
+    ])->assertRedirect(route('admin.categories.index', ['category' => $category->id]));
 
     $replacementPath = $category->refresh()->image_path;
     expect($replacementPath)->not->toBe($originalPath);
@@ -50,7 +50,7 @@ test('an admin can create replace and remove optional category artwork', functio
 
     $this->actingAs($admin)->delete(route('admin.categories.image.destroy', $category), [
         'reason' => 'Remove artwork pending brand approval',
-    ])->assertRedirect(route('admin.categories.index'));
+    ])->assertRedirect(route('admin.categories.index', ['category' => $category->id]));
 
     expect($category->refresh()->image_path)->toBeNull()
         ->and(AuditLog::query()->where('auditable_id', $category->id)->pluck('action')->all())
@@ -138,7 +138,7 @@ test('category activation changes complete subtrees and escalates through inacti
     $this->actingAs($admin)->patch(route('admin.categories.activation.update', $mid), [
         'is_active' => false,
         'reason' => 'Temporarily pause this category branch',
-    ])->assertRedirect(route('admin.categories.index'));
+    ])->assertRedirect(route('admin.categories.index', ['category' => $mid->id]));
 
     expect($root->refresh()->is_active)->toBeTrue()
         ->and($mid->refresh()->is_active)->toBeFalse()
@@ -148,14 +148,14 @@ test('category activation changes complete subtrees and escalates through inacti
     $this->actingAs($admin)->patch(route('admin.categories.activation.update', $root), [
         'is_active' => false,
         'reason' => 'Pause the complete department tree',
-    ])->assertRedirect(route('admin.categories.index'));
+    ])->assertRedirect(route('admin.categories.index', ['category' => $root->id]));
 
     expect(Category::query()->where('is_active', false)->count())->toBe(4);
 
     $this->actingAs($admin)->patch(route('admin.categories.activation.update', $leaf), [
         'is_active' => true,
         'reason' => 'Restore the department and every branch',
-    ])->assertRedirect(route('admin.categories.index'));
+    ])->assertRedirect(route('admin.categories.index', ['category' => $leaf->id]));
 
     expect(Category::query()->where('is_active', true)->count())->toBe(4)
         ->and(AuditLog::query()->where('action', 'category.subtree_activated')->value('after'))

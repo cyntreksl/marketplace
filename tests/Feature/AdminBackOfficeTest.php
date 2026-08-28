@@ -20,7 +20,7 @@ test('operations admins can create and archive local categories with an audit re
     $this->actingAs($admin)->post(route('admin.categories.store'), [
         'name' => 'Wearable technology', 'slug' => 'wearable-technology', 'commission_percentage' => 8,
         'return_window_days' => 7, 'cod_enabled' => true, 'is_active' => true, 'reason' => 'Initial marketplace catalog structure',
-    ])->assertRedirect(route('admin.categories.index'));
+    ])->assertRedirectContains('/admin/catalog/categories?category=');
 
     $category = Category::query()->sole();
     $this->actingAs($admin)->patch(route('admin.categories.update', $category), [

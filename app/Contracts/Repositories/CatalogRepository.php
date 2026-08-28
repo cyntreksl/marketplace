@@ -30,6 +30,34 @@ interface CatalogRepository
 
     public function categoryWithTrashed(int $id): Category;
 
+    public function adminCategoryCount(): int;
+
+    /** @return Collection<int, Category> */
+    public function adminCategoryChildren(?int $parentId): Collection;
+
+    /**
+     * @return Collection<int, Category>
+     */
+    public function searchAdminCategories(
+        ?string $search,
+        string $status,
+        bool $parentOptions = false,
+        ?Category $excludedSubtree = null,
+        int $limit = 50,
+    ): Collection;
+
+    /**
+     * @return array{
+     *     selected: Category,
+     *     trail: Collection<int, Category>,
+     *     columns: array<int, array{parent_id: int|null, categories: Collection<int, Category>}>
+     * }
+     */
+    public function adminCategoryContext(Category $category): array;
+
+    /** @return array<int, int> */
+    public function categorySubtreeIds(Category $category): array;
+
     public function saveCategory(Category $category): Category;
 
     public function categoryActivationRoot(Category $category): Category;

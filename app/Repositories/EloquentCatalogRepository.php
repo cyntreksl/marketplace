@@ -9,6 +9,7 @@ use App\Models\GoogleProductTaxonomyNode;
 use App\Models\MarketplaceSetting;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -63,6 +64,146 @@ class EloquentCatalogRepository implements CatalogRepository
         return Category::withTrashed()->findOrFail($id);
     }
 
+    public function adminCategoryCount(): int
+    {
+        return Category::withTrashed()->count();
+    }
+
+    /** @return Collection<int, Category> */
+    public function adminCategoryChildren(?int $parentId): Collection
+    {
+        $categories = $this->adminCategoryQuery()
+            ->where('parent_id', $parentId)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        return $this->decorateAdminCategoryPaths($categories);
+    }
+
+    /** @return Collection<int, Category> */
+    public function searchAdminCategories(
+        ?string $search,
+        string $status,
+        bool $parentOptions = false,
+        ?Category $excludedSubtree = null,
+        int $limit = 50,
+    ): Collection {
+        $query = $this->adminCategoryQuery();
+
+        if ($search !== null && $search !== '') {
+            $matchingGoogleIds = GoogleProductTaxonomyNode::query()
+                ->whereHas('taxonomyVersion', fn (Builder $query): Builder => $query->where('is_active', true))
+                ->where('full_path', 'like', '%'.$search.'%')
+                ->select('google_product_category_id');
+
+            $query->where(fn (Builder $query): Builder => $query
+                ->where('name', 'like', '%'.$search.'%')
+                ->orWhere('slug', 'like', '%'.$search.'%')
+                ->orWhereIn('google_product_category_id', $matchingGoogleIds));
+        }
+
+        match ($status) {
+            'storefront_visible' => Category::constrainStorefrontAvailability($query),
+            'admin_active' => $query->whereNull('deleted_at')->where('is_active', true),
+            'admin_inactive' => $query->whereNull('deleted_at')->where('is_active', false),
+            'taxonomy_unavailable' => $query->whereNull('deleted_at')->where('is_taxonomy_available', false),
+            'archived' => $query->onlyTrashed(),
+            default => null,
+        };
+
+        if ($parentOptions) {
+            $query->whereNull('deleted_at');
+        }
+
+        if ($excludedSubtree !== null) {
+            $query->whereNotIn('id', $this->categorySubtreeIds($excludedSubtree));
+        }
+
+        $categories = $query
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->limit($limit)
+            ->get();
+
+        return $this->decorateAdminCategoryPaths($categories);
+    }
+
+    public function adminCategoryContext(Category $category): array
+    {
+        $trailIds = [(int) $category->getKey()];
+        $parentId = $category->parent_id;
+
+        while ($parentId !== null) {
+            $parent = Category::withTrashed()
+                ->select(['id', 'parent_id'])
+                ->find($parentId);
+
+            if ($parent === null || in_array((int) $parent->getKey(), $trailIds, true)) {
+                break;
+            }
+
+            array_unshift($trailIds, (int) $parent->getKey());
+            $parentId = $parent->parent_id;
+        }
+
+        $trailModels = $this->adminCategoryQuery()
+            ->whereKey($trailIds)
+            ->get()
+            ->keyBy(fn (Category $category): int => (int) $category->getKey());
+        $trail = collect($trailIds)
+            ->map(function (int $categoryId) use ($trailModels): Category {
+                /** @var Category $trailCategory */
+                $trailCategory = $trailModels->get($categoryId);
+
+                return $trailCategory;
+            });
+        $this->decorateAdminCategoryPaths($trail);
+
+        $columns = [];
+        $columnParentId = null;
+
+        foreach ($trail as $trailCategory) {
+            $columns[] = [
+                'parent_id' => $columnParentId,
+                'categories' => $this->adminCategoryChildren($columnParentId),
+            ];
+            $columnParentId = (int) $trailCategory->getKey();
+        }
+
+        $children = $this->adminCategoryChildren((int) $category->getKey());
+        if ($children->isNotEmpty()) {
+            $columns[] = [
+                'parent_id' => (int) $category->getKey(),
+                'categories' => $children,
+            ];
+        }
+
+        return [
+            'selected' => $trail->last(),
+            'trail' => $trail,
+            'columns' => $columns,
+        ];
+    }
+
+    /** @return array<int, int> */
+    public function categorySubtreeIds(Category $category): array
+    {
+        $categoryIds = [(int) $category->getKey()];
+        $parentIds = $categoryIds;
+
+        while ($parentIds !== []) {
+            $parentIds = Category::withTrashed()
+                ->whereIn('parent_id', $parentIds)
+                ->pluck('id')
+                ->map(fn (int $id): int => $id)
+                ->all();
+            $categoryIds = [...$categoryIds, ...$parentIds];
+        }
+
+        return array_values(array_unique($categoryIds));
+    }
+
     public function saveCategory(Category $category): Category
     {
         $category->save();
@@ -94,20 +235,8 @@ class EloquentCatalogRepository implements CatalogRepository
 
     public function setCategorySubtreeActive(Category $category, bool $isActive): int
     {
-        $categoryIds = [(int) $category->getKey()];
-        $parentIds = $categoryIds;
-
-        while ($parentIds !== []) {
-            $parentIds = Category::withTrashed()
-                ->whereIn('parent_id', $parentIds)
-                ->pluck('id')
-                ->map(fn (int $id): int => $id)
-                ->all();
-            $categoryIds = [...$categoryIds, ...$parentIds];
-        }
-
         return Category::withTrashed()
-            ->whereIn('id', array_values(array_unique($categoryIds)))
+            ->whereIn('id', $this->categorySubtreeIds($category))
             ->update(['is_active' => $isActive]);
     }
 
@@ -428,6 +557,70 @@ class EloquentCatalogRepository implements CatalogRepository
         }
 
         return [...$context['ancestors'], $context['current']];
+    }
+
+    /** @return Builder<Category> */
+    private function adminCategoryQuery(): Builder
+    {
+        return Category::withTrashed()
+            ->withCount(['children as all_children_count' => fn (Builder $query): Builder => $query
+                ->withoutGlobalScope(SoftDeletingScope::class)]);
+    }
+
+    /**
+     * @param  Collection<int, Category>  $categories
+     * @return Collection<int, Category>
+     */
+    private function decorateAdminCategoryPaths(Collection $categories): Collection
+    {
+        $categoryMap = $categories->keyBy(fn (Category $category): int => (int) $category->getKey());
+        $parentIds = $categories->pluck('parent_id')
+            ->filter()
+            ->map(fn (int $id): int => $id)
+            ->unique()
+            ->reject(fn (int $id): bool => $categoryMap->has($id))
+            ->values();
+
+        while ($parentIds->isNotEmpty()) {
+            $parents = Category::withTrashed()
+                ->select(['id', 'parent_id', 'name'])
+                ->whereKey($parentIds)
+                ->get();
+
+            if ($parents->isEmpty()) {
+                break;
+            }
+
+            foreach ($parents as $parent) {
+                $categoryMap->put((int) $parent->getKey(), $parent);
+            }
+
+            $parentIds = $parents->pluck('parent_id')
+                ->filter()
+                ->map(fn (int $id): int => $id)
+                ->unique()
+                ->reject(fn (int $id): bool => $categoryMap->has($id))
+                ->values();
+        }
+
+        return $categories->each(function (Category $category) use ($categoryMap): void {
+            $path = [$category->name];
+            $parentId = $category->parent_id;
+            $visitedIds = [(int) $category->getKey()];
+
+            while ($parentId !== null && ! in_array($parentId, $visitedIds, true)) {
+                $parent = $categoryMap->get($parentId);
+                if (! $parent instanceof Category) {
+                    break;
+                }
+
+                array_unshift($path, $parent->name);
+                $visitedIds[] = (int) $parent->getKey();
+                $parentId = $parent->parent_id;
+            }
+
+            $category->setAttribute('category_path', implode(' > ', $path));
+        });
     }
 
     /**
