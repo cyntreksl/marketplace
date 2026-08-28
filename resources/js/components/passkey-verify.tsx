@@ -46,7 +46,7 @@ export default function PasskeyVerify({
                 <Button
                     type="button"
                     variant="outline"
-                    className="w-full"
+                    className="h-12 w-full rounded-xl bg-background font-semibold"
                     onClick={verify}
                     disabled={isLoading}
                 >
@@ -60,7 +60,7 @@ export default function PasskeyVerify({
                 )}
             </div>
 
-            <div className="relative my-6">
+            <div className="relative my-5 sm:my-6">
                 <div className="absolute inset-0 flex items-center">
                     <Separator className="w-full" />
                 </div>

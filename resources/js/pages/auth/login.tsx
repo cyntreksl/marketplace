@@ -54,10 +54,9 @@ export default function Login({ status, canResetPassword }: Props) {
                                     name="email"
                                     required
                                     autoFocus
-                                    tabIndex={1}
                                     autoComplete="email"
                                     placeholder="email@example.com"
-                                    className="h-11 rounded-xl bg-background px-3.5"
+                                    className="h-12 rounded-xl bg-background px-3.5"
                                 />
                                 <InputError message={errors.email} />
                             </div>
@@ -73,10 +72,9 @@ export default function Login({ status, canResetPassword }: Props) {
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
-                                            className="ml-auto text-sm font-medium text-primary decoration-primary/30"
-                                            tabIndex={5}
+                                            className="ml-auto inline-flex min-h-11 items-center text-sm font-medium text-primary decoration-primary/30"
                                         >
-                                            Forgot your password?
+                                            Forgot password?
                                         </TextLink>
                                     )}
                                 </div>
@@ -84,20 +82,15 @@ export default function Login({ status, canResetPassword }: Props) {
                                     id="password"
                                     name="password"
                                     required
-                                    tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder="Password"
-                                    className="h-11 rounded-xl bg-background px-3.5"
+                                    className="h-12 rounded-xl bg-background px-3.5"
                                 />
                                 <InputError message={errors.password} />
                             </div>
 
-                            <div className="flex items-center gap-3">
-                                <Checkbox
-                                    id="remember"
-                                    name="remember"
-                                    tabIndex={3}
-                                />
+                            <div className="flex min-h-11 items-center gap-3 rounded-xl px-1">
+                                <Checkbox id="remember" name="remember" />
                                 <Label
                                     htmlFor="remember"
                                     className="cursor-pointer text-sm font-medium"
@@ -108,8 +101,7 @@ export default function Login({ status, canResetPassword }: Props) {
 
                             <Button
                                 type="submit"
-                                className="mt-2 h-11 w-full rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
-                                tabIndex={4}
+                                className="mt-1 h-12 w-full rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
                                 disabled={processing}
                                 data-test="login-button"
                             >
@@ -122,8 +114,7 @@ export default function Login({ status, canResetPassword }: Props) {
                             Don't have an account?{' '}
                             <TextLink
                                 href={register()}
-                                className="font-semibold text-primary decoration-primary/30"
-                                tabIndex={5}
+                                className="inline-flex min-h-11 items-center font-semibold text-primary decoration-primary/30"
                             >
                                 Sign up
                             </TextLink>

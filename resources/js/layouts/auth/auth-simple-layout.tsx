@@ -14,20 +14,20 @@ export default function AuthSimpleLayout({
         <div
             className={
                 compact
-                    ? 'min-h-dvh bg-slate-50 text-foreground lg:h-dvh lg:overflow-hidden dark:bg-slate-950'
+                    ? 'min-h-dvh bg-slate-50 text-foreground dark:bg-slate-950'
                     : 'min-h-dvh bg-slate-50 text-foreground lg:grid lg:grid-cols-2 dark:bg-slate-950'
             }
         >
             <main
                 className={
                     compact
-                        ? 'flex min-h-dvh flex-col bg-background px-5 py-4 sm:px-8 sm:py-5 lg:h-dvh lg:min-h-0 lg:px-10 lg:py-5 xl:px-16'
-                        : 'flex min-h-dvh flex-col bg-background px-5 py-6 sm:px-10 lg:px-14 lg:py-10 xl:px-20'
+                        ? 'flex min-h-dvh flex-col overflow-x-hidden bg-background px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-8 sm:py-5 lg:px-10 xl:px-16'
+                        : 'relative flex min-h-dvh flex-col overflow-x-hidden bg-background px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:px-10 sm:py-8 lg:px-14 lg:py-10 xl:px-20'
                 }
             >
                 <Link
                     href={home()}
-                    className="inline-flex w-fit items-center gap-3 rounded-xl text-sm font-semibold text-slate-900 transition-opacity hover:opacity-75 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none dark:text-white"
+                    className="inline-flex min-h-11 w-fit items-center gap-3 rounded-xl text-sm font-semibold text-slate-900 transition-opacity hover:opacity-75 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none dark:text-white"
                 >
                     <BrandLogo />
                 </Link>
@@ -35,13 +35,15 @@ export default function AuthSimpleLayout({
                 <div
                     className={
                         compact
-                            ? 'mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center py-4 lg:min-h-0 lg:py-2'
-                            : 'mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-10 sm:py-12'
+                            ? 'mx-auto flex w-full max-w-3xl flex-1 flex-col py-6 sm:justify-center sm:py-8'
+                            : 'mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-8 sm:py-12'
                     }
                 >
                     <div
                         className={
-                            compact ? 'mb-4 space-y-1.5' : 'mb-8 space-y-3'
+                            compact
+                                ? 'mb-5 space-y-1.5 sm:mb-6'
+                                : 'mb-7 space-y-2.5 sm:mb-8 sm:space-y-3'
                         }
                     >
                         <p
@@ -57,7 +59,7 @@ export default function AuthSimpleLayout({
                             className={
                                 compact
                                     ? 'text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl dark:text-white'
-                                    : 'text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl dark:text-white'
+                                    : 'text-[1.75rem] leading-tight font-bold tracking-tight text-slate-950 sm:text-4xl dark:text-white'
                             }
                         >
                             {title}
@@ -77,7 +79,7 @@ export default function AuthSimpleLayout({
                 </div>
 
                 {!compact && (
-                    <p className="text-center text-xs leading-5 text-muted-foreground sm:text-left">
+                    <p className="mx-auto max-w-md text-center text-xs leading-5 text-muted-foreground sm:mx-0 sm:text-left">
                         Discover great finds from a community of buyers and
                         sellers.
                     </p>

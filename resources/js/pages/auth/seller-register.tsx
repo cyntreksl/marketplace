@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { login } from '@/routes';
+import { login, register } from '@/routes';
 import { store } from '@/routes/register';
 
 type Props = {
@@ -245,7 +245,6 @@ export default function SellerRegister({ passwordRules }: Props) {
                                             type="text"
                                             required
                                             autoFocus
-                                            tabIndex={1}
                                             autoComplete="name"
                                             name="name"
                                             placeholder="Full name"
@@ -265,7 +264,6 @@ export default function SellerRegister({ passwordRules }: Props) {
                                             id="email"
                                             type="email"
                                             required
-                                            tabIndex={2}
                                             autoComplete="email"
                                             name="email"
                                             placeholder="email@example.com"
@@ -285,7 +283,6 @@ export default function SellerRegister({ passwordRules }: Props) {
                                             id="password"
                                             ref={passwordInputReference}
                                             required
-                                            tabIndex={3}
                                             autoComplete="new-password"
                                             name="password"
                                             placeholder="Password"
@@ -305,7 +302,6 @@ export default function SellerRegister({ passwordRules }: Props) {
                                         <PasswordInput
                                             id="password_confirmation"
                                             required
-                                            tabIndex={4}
                                             autoComplete="new-password"
                                             name="password_confirmation"
                                             placeholder="Confirm password"
@@ -363,7 +359,6 @@ export default function SellerRegister({ passwordRules }: Props) {
                                             name="seller_type"
                                             required
                                             defaultValue="individual"
-                                            tabIndex={5}
                                             className="h-12 w-full rounded-xl border bg-background px-3.5 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                                         >
                                             <option value="individual">
@@ -389,7 +384,6 @@ export default function SellerRegister({ passwordRules }: Props) {
                                             id="store_name"
                                             type="text"
                                             required
-                                            tabIndex={6}
                                             name="store_name"
                                             placeholder="Your store name"
                                             className="h-12 rounded-xl bg-background px-3.5"
@@ -411,7 +405,6 @@ export default function SellerRegister({ passwordRules }: Props) {
                                         id="phone"
                                         type="tel"
                                         required
-                                        tabIndex={7}
                                         autoComplete="tel"
                                         name="phone"
                                         placeholder="077 123 4567"
@@ -428,10 +421,9 @@ export default function SellerRegister({ passwordRules }: Props) {
                                 <label className="flex items-start gap-3 text-sm leading-5">
                                     <input
                                         required
-                                        tabIndex={8}
                                         name="accept_terms"
                                         type="checkbox"
-                                        className="mt-1 size-4 rounded border-input text-primary focus:ring-ring"
+                                        className="mt-0.5 size-5 shrink-0 rounded border-input text-primary focus:ring-ring"
                                     />
                                     <span>
                                         I accept the marketplace terms and
@@ -441,7 +433,7 @@ export default function SellerRegister({ passwordRules }: Props) {
                                 <InputError message={errors.accept_terms} />
                             </section>
 
-                            <div className="flex gap-3 border-t pt-3">
+                            <div className="flex gap-3 border-t pt-4">
                                 {currentStep > 1 && (
                                     <Button
                                         type="button"
@@ -449,7 +441,7 @@ export default function SellerRegister({ passwordRules }: Props) {
                                         onClick={() =>
                                             setCurrentStep((step) => step - 1)
                                         }
-                                        className="h-10 flex-1 rounded-xl text-sm font-semibold"
+                                        className="h-12 flex-1 rounded-xl text-sm font-semibold"
                                     >
                                         <ArrowLeft className="size-4" />
                                         Back
@@ -460,7 +452,7 @@ export default function SellerRegister({ passwordRules }: Props) {
                                     <Button
                                         type="button"
                                         onClick={moveToNextStep}
-                                        className="h-10 flex-1 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
+                                        className="h-12 flex-1 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
                                     >
                                         Continue
                                         <ArrowRight className="size-4" />
@@ -468,8 +460,7 @@ export default function SellerRegister({ passwordRules }: Props) {
                                 ) : (
                                     <Button
                                         type="submit"
-                                        className="h-10 flex-1 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
-                                        tabIndex={9}
+                                        className="h-12 flex-1 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
                                         data-test="register-seller-button"
                                     >
                                         {processing && <Spinner />}
@@ -479,15 +470,25 @@ export default function SellerRegister({ passwordRules }: Props) {
                             </div>
                         </div>
 
-                        <div className="text-center text-xs text-muted-foreground">
-                            Already have an account?{' '}
-                            <TextLink
-                                href={login()}
-                                className="font-semibold text-primary decoration-primary/30"
-                                tabIndex={12}
-                            >
-                                Log in
-                            </TextLink>
+                        <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-center text-sm text-muted-foreground">
+                            <span>
+                                Already have an account?{' '}
+                                <TextLink
+                                    href={login()}
+                                    className="inline-flex min-h-11 items-center font-semibold text-primary decoration-primary/30"
+                                >
+                                    Log in
+                                </TextLink>
+                            </span>
+                            <span>
+                                Shopping only?{' '}
+                                <TextLink
+                                    href={register()}
+                                    className="inline-flex min-h-11 items-center font-semibold text-primary decoration-primary/30"
+                                >
+                                    Create a buyer account
+                                </TextLink>
+                            </span>
                         </div>
                     </>
                 )}

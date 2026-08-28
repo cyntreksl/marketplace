@@ -1,4 +1,5 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, Link } from '@inertiajs/react';
+import { ArrowRight, Store } from 'lucide-react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -36,7 +37,6 @@ export default function Register({ passwordRules }: Props) {
                                     type="text"
                                     required
                                     autoFocus
-                                    tabIndex={1}
                                     autoComplete="name"
                                     name="name"
                                     placeholder="Full name"
@@ -56,7 +56,6 @@ export default function Register({ passwordRules }: Props) {
                                     id="email"
                                     type="email"
                                     required
-                                    tabIndex={2}
                                     autoComplete="email"
                                     name="email"
                                     placeholder="email@example.com"
@@ -75,7 +74,6 @@ export default function Register({ passwordRules }: Props) {
                                 <PasswordInput
                                     id="password"
                                     required
-                                    tabIndex={3}
                                     autoComplete="new-password"
                                     name="password"
                                     placeholder="Password"
@@ -95,7 +93,6 @@ export default function Register({ passwordRules }: Props) {
                                 <PasswordInput
                                     id="password_confirmation"
                                     required
-                                    tabIndex={4}
                                     autoComplete="new-password"
                                     name="password_confirmation"
                                     placeholder="Confirm password"
@@ -110,7 +107,6 @@ export default function Register({ passwordRules }: Props) {
                             <Button
                                 type="submit"
                                 className="mt-2 h-12 w-full rounded-xl text-sm font-semibold shadow-lg shadow-primary/20"
-                                tabIndex={5}
                                 data-test="register-user-button"
                             >
                                 {processing && <Spinner />}
@@ -122,23 +118,30 @@ export default function Register({ passwordRules }: Props) {
                             Already have an account?{' '}
                             <TextLink
                                 href={login()}
-                                className="font-semibold text-primary decoration-primary/30"
-                                tabIndex={6}
+                                className="inline-flex min-h-11 items-center font-semibold text-primary decoration-primary/30"
                             >
                                 Log in
                             </TextLink>
                         </div>
 
-                        <div className="text-center text-sm text-muted-foreground">
-                            Want to sell on ProDeals.lk?{' '}
-                            <TextLink
-                                href={sellerRegister()}
-                                className="font-semibold text-primary decoration-primary/30"
-                                tabIndex={7}
-                            >
-                                Become a seller
-                            </TextLink>
-                        </div>
+                        <Link
+                            href={sellerRegister()}
+                            className="group flex min-h-16 items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-3.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
+                        >
+                            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                                <Store className="size-5" />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                                <span className="block text-sm font-semibold text-foreground">
+                                    Want to sell on ProDeals.lk?
+                                </span>
+                                <span className="block text-xs leading-5 text-muted-foreground">
+                                    Create a seller account and submit your
+                                    store for review.
+                                </span>
+                            </span>
+                            <ArrowRight className="size-4 shrink-0 text-primary transition-transform group-hover:translate-x-0.5" />
+                        </Link>
                     </>
                 )}
             </Form>

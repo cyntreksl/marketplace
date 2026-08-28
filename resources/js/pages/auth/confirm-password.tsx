@@ -26,32 +26,38 @@ export default function ConfirmPassword() {
                 separator="Or confirm with password"
             />
 
-            <Form {...store.form()} resetOnSuccess={['password']}>
+            <Form
+                {...store.form()}
+                resetOnSuccess={['password']}
+                disableWhileProcessing
+            >
                 {({ processing, errors }) => (
-                    <div className="space-y-6">
-                        <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
+                    <div className="space-y-5">
+                        <div className="grid gap-2.5">
+                            <Label htmlFor="password" className="font-semibold">
+                                Password
+                            </Label>
                             <PasswordInput
                                 id="password"
                                 name="password"
                                 placeholder="Password"
+                                required
                                 autoComplete="current-password"
                                 autoFocus
+                                className="h-12 rounded-xl bg-background px-3.5"
                             />
 
                             <InputError message={errors.password} />
                         </div>
 
-                        <div className="flex items-center">
-                            <Button
-                                className="w-full"
-                                disabled={processing}
-                                data-test="confirm-password-button"
-                            >
-                                {processing && <Spinner />}
-                                Confirm password
-                            </Button>
-                        </div>
+                        <Button
+                            className="h-12 w-full rounded-xl font-semibold shadow-lg shadow-primary/20"
+                            disabled={processing}
+                            data-test="confirm-password-button"
+                        >
+                            {processing && <Spinner />}
+                            Confirm and continue
+                        </Button>
                     </div>
                 )}
             </Form>
@@ -61,6 +67,5 @@ export default function ConfirmPassword() {
 
 ConfirmPassword.layout = {
     title: 'Confirm password',
-    description:
-        'This is a secure area of the application. Please confirm your password before continuing.',
+    description: 'For your security, confirm your password before continuing.',
 };
