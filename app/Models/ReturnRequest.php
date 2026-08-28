@@ -10,7 +10,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property ReturnReason $reason
+ * @property ReturnStatus $status
+ * @property array<int, array{path: string, name: string, mime: string|null, size: int|null}>|null $evidence
+ * @property Carbon|null $eligibility_expires_at
+ * @property Carbon|null $resolved_at
+ * @property Carbon|null $seller_responded_at
+ * @property Carbon|null $refund_ready_at
+ */
 #[Fillable(['order_item_id', 'buyer_id', 'quantity', 'eligibility_expires_at', 'refund_amount', 'reason', 'status', 'description', 'evidence', 'resolution_reason', 'resolved_by', 'resolved_at', 'seller_responded_at', 'refund_ready_at'])]
 class ReturnRequest extends Model
 {

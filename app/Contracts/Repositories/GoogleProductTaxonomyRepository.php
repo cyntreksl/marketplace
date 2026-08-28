@@ -9,6 +9,10 @@ use Illuminate\Support\Collection;
 
 interface GoogleProductTaxonomyRepository
 {
+    /**
+     * @param  array{archived?: string|null}  $filters
+     * @return LengthAwarePaginator<int, GoogleProductTaxonomyVersion>
+     */
     public function versions(array $filters = []): LengthAwarePaginator;
 
     public function versionWithTrashed(int $id): GoogleProductTaxonomyVersion;

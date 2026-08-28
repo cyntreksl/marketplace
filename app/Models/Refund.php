@@ -8,7 +8,12 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property RefundStatus $status
+ * @property Carbon|null $completed_at
+ */
 #[Fillable(['return_request_id', 'payment_id', 'method', 'amount', 'status', 'idempotency_key', 'provider_reference', 'manual_reference', 'failure_details', 'processed_by', 'completed_at'])]
 class Refund extends Model
 {

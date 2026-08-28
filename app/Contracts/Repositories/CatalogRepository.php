@@ -10,10 +10,22 @@ use Illuminate\Support\Collection;
 
 interface CatalogRepository
 {
+    /**
+     * @param  array{search?: string|null, archived?: string|null}  $filters
+     * @return LengthAwarePaginator<int, Category>
+     */
     public function categories(array $filters = []): LengthAwarePaginator;
 
+    /**
+     * @param  array{search?: string|null, archived?: string|null}  $filters
+     * @return LengthAwarePaginator<int, Brand>
+     */
     public function brands(array $filters = []): LengthAwarePaginator;
 
+    /**
+     * @param  array{search?: string|null, archived?: string|null}  $filters
+     * @return LengthAwarePaginator<int, MarketplaceSetting>
+     */
     public function settings(array $filters = []): LengthAwarePaginator;
 
     public function categoryWithTrashed(int $id): Category;

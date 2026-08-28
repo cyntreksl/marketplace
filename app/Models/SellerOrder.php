@@ -10,7 +10,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property Carbon|null $ready_to_ship_at
+ * @property Carbon|null $completed_at
+ * @property Carbon|null $delivered_at
+ */
 #[Fillable(['number', 'customer_order_id', 'seller_profile_id', 'status', 'subtotal', 'shipping_charge', 'seller_earnings', 'ready_to_ship_at', 'completed_at', 'delivered_at'])]
 class SellerOrder extends Model
 {

@@ -4,14 +4,15 @@ namespace App\Services;
 
 use App\Contracts\CourierAdapter;
 use App\Contracts\Repositories\ReturnRequestRepository;
+use App\Models\OrderItem;
 use App\Models\ReturnRequest;
 use App\Models\SellerOrder;
 use App\Models\User;
 use App\ReturnReason;
 use App\ReturnStatus;
 use Brick\Math\BigDecimal;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -24,30 +25,11 @@ class ReturnWorkflowService
         private readonly AuditLogService $auditLogs,
     ) {}
 
-    /** @return LengthAwarePaginator<int, array<string, mixed>> */
+    /** @return LengthAwarePaginator<int, non-empty-array<string, mixed>> */
     public function buyerItems(User $buyer): LengthAwarePaginator
     {
-        return $this->returns->buyerItems($buyer)->through(function ($item): array {
-            $deliveredAt = $item->sellerOrder->delivered_at;
-            $expiresAt = $deliveredAt?->addDays(7);
-            $remainingQuantity = max(0, $item->quantity - (int) $item->claimed_quantity);
-
-            return [
-                'id' => $item->id,
-                'title' => $item->title,
-                'purchased_quantity' => $item->quantity,
-                'remaining_quantity' => $remainingQuantity,
-                'unit_price' => $item->unit_price,
-                'seller_order_number' => $item->sellerOrder->number,
-                'seller_name' => $item->sellerOrder->sellerProfile->store_name,
-                'delivered_at' => $deliveredAt?->toIso8601String(),
-                'eligibility_expires_at' => $expiresAt?->toIso8601String(),
-                'is_eligible' => $item->sellerOrder->status === 'completed'
-                    && $expiresAt !== null
-                    && now()->lessThanOrEqualTo($expiresAt)
-                    && $remainingQuantity > 0,
-            ];
-        });
+        return $this->returns->buyerItems($buyer)
+            ->through(fn (OrderItem $item): array => $this->serializeBuyerItem($item));
     }
 
     /** @return LengthAwarePaginator<int, array<string, mixed>> */
@@ -56,7 +38,7 @@ class ReturnWorkflowService
         return $this->returns->buyerRequests($buyer)->through(fn (ReturnRequest $returnRequest): array => $this->serializeRequest($returnRequest));
     }
 
-    /** @return LengthAwarePaginator<int, array<string, mixed>> */
+    /** @return LengthAwarePaginator<int, non-empty-array<string, mixed>> */
     public function sellerRequests(User $seller): LengthAwarePaginator
     {
         return $this->returns->sellerRequests($seller)->through(fn (ReturnRequest $returnRequest): array => [
@@ -105,7 +87,7 @@ class ReturnWorkflowService
                     'buyer_id' => $buyer->id,
                     'quantity' => $data['quantity'],
                     'eligibility_expires_at' => $expiresAt,
-                    'refund_amount' => (string) BigDecimal::of($item->unit_price)->multipliedBy($data['quantity']),
+                    'refund_amount' => (string) BigDecimal::of((string) $item->unit_price)->multipliedBy($data['quantity']),
                     'reason' => ReturnReason::from($data['reason']),
                     'status' => ReturnStatus::Requested,
                     'description' => $data['description'],
@@ -202,6 +184,30 @@ class ReturnWorkflowService
 
             return $sellerOrder->refresh();
         });
+    }
+
+    /** @return non-empty-array<string, mixed> */
+    private function serializeBuyerItem(OrderItem $item): array
+    {
+        $deliveredAt = $item->sellerOrder->delivered_at;
+        $expiresAt = $deliveredAt?->addDays(7);
+        $remainingQuantity = max(0, $item->quantity - (int) $item->getAttribute('claimed_quantity'));
+
+        return [
+            'id' => $item->id,
+            'title' => $item->title,
+            'purchased_quantity' => $item->quantity,
+            'remaining_quantity' => $remainingQuantity,
+            'unit_price' => $item->unit_price,
+            'seller_order_number' => $item->sellerOrder->number,
+            'seller_name' => $item->sellerOrder->sellerProfile->store_name,
+            'delivered_at' => $deliveredAt?->toIso8601String(),
+            'eligibility_expires_at' => $expiresAt?->toIso8601String(),
+            'is_eligible' => $item->sellerOrder->status === 'completed'
+                && $expiresAt !== null
+                && now()->lessThanOrEqualTo($expiresAt)
+                && $remainingQuantity > 0,
+        ];
     }
 
     /** @return array<string, mixed> */

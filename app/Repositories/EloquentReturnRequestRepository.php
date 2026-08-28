@@ -7,7 +7,7 @@ use App\Models\OrderItem;
 use App\Models\ReturnRequest;
 use App\Models\SellerOrder;
 use App\Models\User;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class EloquentReturnRequestRepository implements ReturnRequestRepository
 {

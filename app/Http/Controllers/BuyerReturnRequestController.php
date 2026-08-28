@@ -26,7 +26,14 @@ class BuyerReturnRequestController extends Controller
 
     public function store(StoreReturnRequestRequest $request, ReturnWorkflowService $returns): RedirectResponse
     {
-        $returns->requestReturn($request->user(), $request->validated());
+        $validated = $request->validated();
+        $returns->requestReturn($request->user(), [
+            'order_item_id' => $validated['order_item_id'],
+            'quantity' => $validated['quantity'],
+            'reason' => $validated['reason'],
+            'description' => $validated['description'],
+            'evidence' => $validated['evidence'] ?? [],
+        ]);
 
         return to_route('buyer.returns.index')->with('status', 'Return request submitted for the seller to review.');
     }

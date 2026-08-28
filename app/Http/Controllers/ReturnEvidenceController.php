@@ -18,7 +18,8 @@ class ReturnEvidenceController extends Controller
         abort_if($requestRecord === null, 404);
         Gate::authorize('view', $requestRecord);
 
-        $file = ($requestRecord->evidence ?? [])[$evidence] ?? null;
+        $files = $requestRecord->getAttribute('evidence');
+        $file = is_array($files) ? ($files[$evidence] ?? null) : null;
         abort_unless(is_array($file) && isset($file['path'], $file['name']), 404);
 
         return Storage::disk('local')->download($file['path'], $file['name']);

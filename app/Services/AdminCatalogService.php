@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\GoogleProductTaxonomyVersion;
 use App\Models\MarketplaceSetting;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -28,6 +29,7 @@ class AdminCatalogService
         ];
     }
 
+    /** @param array<string, mixed> $attributes */
     public function createCategory(User $actor, array $attributes, string $reason): Category
     {
         $attributes['slug'] = $attributes['slug'] ?: Str::slug($attributes['name']);
@@ -37,11 +39,13 @@ class AdminCatalogService
         return $category;
     }
 
+    /** @param array<string, mixed> $attributes */
     public function updateCategory(User $actor, Category $category, array $attributes, string $reason): Category
     {
         return $this->update($actor, $category, $attributes, $reason, 'category.updated');
     }
 
+    /** @param array<string, mixed> $attributes */
     public function createBrand(User $actor, array $attributes, string $reason): Brand
     {
         $attributes['slug'] = $attributes['slug'] ?: Str::slug($attributes['name']);
@@ -51,11 +55,13 @@ class AdminCatalogService
         return $brand;
     }
 
+    /** @param array<string, mixed> $attributes */
     public function updateBrand(User $actor, Brand $brand, array $attributes, string $reason): Brand
     {
         return $this->update($actor, $brand, $attributes, $reason, 'brand.updated');
     }
 
+    /** @param array<string, mixed> $attributes */
     public function createSetting(User $actor, array $attributes, string $reason): MarketplaceSetting
     {
         $attributes['group'] = self::settingDefinitions()[$attributes['key']]['group'];
@@ -66,6 +72,7 @@ class AdminCatalogService
         return $setting;
     }
 
+    /** @param array<string, mixed> $attributes */
     public function updateSetting(User $actor, MarketplaceSetting $setting, array $attributes, string $reason): MarketplaceSetting
     {
         $attributes['group'] = self::settingDefinitions()[$setting->key]['group'];
@@ -74,21 +81,27 @@ class AdminCatalogService
         return $this->update($actor, $setting, $attributes, $reason, 'setting.updated');
     }
 
-    public function archive(User $actor, Model $model, string $reason): void
+    public function archive(User $actor, Category|Brand|MarketplaceSetting|GoogleProductTaxonomyVersion $model, string $reason): void
     {
         $before = $model->getAttributes();
         $model->delete();
         $this->auditLogs->record($actor, class_basename($model).'.archived', $model, $before, $model->getAttributes(), $reason);
     }
 
-    public function restore(User $actor, Model $model, string $reason): void
+    public function restore(User $actor, Category|Brand|MarketplaceSetting|GoogleProductTaxonomyVersion $model, string $reason): void
     {
         $before = $model->getAttributes();
         $model->restore();
         $this->auditLogs->record($actor, class_basename($model).'.restored', $model, $before, $model->getAttributes(), $reason);
     }
 
-    /** @template T of Model @param T $model @return T */
+    /**
+     * @template T of Model
+     *
+     * @param  T  $model
+     * @param  array<string, mixed>  $attributes
+     * @return T
+     */
     private function update(User $actor, Model $model, array $attributes, string $reason, string $action): Model
     {
         return DB::transaction(function () use ($actor, $model, $attributes, $reason, $action): Model {

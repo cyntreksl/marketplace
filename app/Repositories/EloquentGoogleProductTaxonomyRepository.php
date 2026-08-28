@@ -9,6 +9,10 @@ use Illuminate\Support\Collection;
 
 class EloquentGoogleProductTaxonomyRepository implements GoogleProductTaxonomyRepository
 {
+    /**
+     * @param  array{archived?: string|null}  $filters
+     * @return LengthAwarePaginator<int, GoogleProductTaxonomyVersion>
+     */
     public function versions(array $filters = []): LengthAwarePaginator
     {
         return GoogleProductTaxonomyVersion::query()->withTrashed()->with('importer:id,name')->latest()->paginate(20)->withQueryString();

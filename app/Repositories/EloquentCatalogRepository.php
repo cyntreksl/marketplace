@@ -9,13 +9,16 @@ use App\Models\GoogleProductTaxonomyNode;
 use App\Models\MarketplaceSetting;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class EloquentCatalogRepository implements CatalogRepository
 {
+    /**
+     * @param  array{search?: string|null, archived?: string|null}  $filters
+     * @return LengthAwarePaginator<int, Category>
+     */
     public function categories(array $filters = []): LengthAwarePaginator
     {
         return Category::query()->with(['parent:id,name'])->withTrashed()
@@ -25,6 +28,10 @@ class EloquentCatalogRepository implements CatalogRepository
             ->latest()->paginate(20)->withQueryString();
     }
 
+    /**
+     * @param  array{search?: string|null, archived?: string|null}  $filters
+     * @return LengthAwarePaginator<int, Brand>
+     */
     public function brands(array $filters = []): LengthAwarePaginator
     {
         return Brand::query()->withTrashed()
@@ -34,6 +41,10 @@ class EloquentCatalogRepository implements CatalogRepository
             ->latest()->paginate(20)->withQueryString();
     }
 
+    /**
+     * @param  array{search?: string|null, archived?: string|null}  $filters
+     * @return LengthAwarePaginator<int, MarketplaceSetting>
+     */
     public function settings(array $filters = []): LengthAwarePaginator
     {
         return MarketplaceSetting::query()->withTrashed()->orderBy('group')->orderBy('key')->paginate(30)->withQueryString();
@@ -136,7 +147,7 @@ class EloquentCatalogRepository implements CatalogRepository
     {
         return Category::query()
             ->select(['id', 'name', 'slug', 'sort_order'])
-            ->with(['children' => fn (HasMany $query): HasMany => $query
+            ->with(['children' => fn ($query) => $query
                 ->select(['id', 'parent_id', 'name', 'slug', 'sort_order'])
                 ->where('is_active', true)
                 ->orderBy('sort_order')
@@ -185,7 +196,7 @@ class EloquentCatalogRepository implements CatalogRepository
             'slug' => $category->slug,
             'is_selectable' => $category->is_selectable,
             'has_children' => (int) $category->getAttribute('active_children_count') > 0,
-            'commission_percentage' => $category->commission_percentage,
+            'commission_percentage' => (string) $category->commission_percentage,
         ];
     }
 

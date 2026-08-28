@@ -73,6 +73,10 @@ class GoogleProductTaxonomyImportService
     ): GoogleProductTaxonomyVersion {
         $rows = $this->previewPath($path);
         $checksum = hash_file('sha256', $path);
+        if ($checksum === false) {
+            throw ValidationException::withMessages(['taxonomy_file' => 'The taxonomy file checksum could not be calculated.']);
+        }
+
         $existing = $this->taxonomies->findByChecksum($checksum);
         if ($existing !== null) {
             if ($reuseExisting) {
