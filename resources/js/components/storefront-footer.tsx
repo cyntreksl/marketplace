@@ -1,10 +1,14 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
+    Banknote,
     BadgeCheck,
+    ChevronRight,
     CreditCard,
     Headphones,
     Instagram,
+    Landmark,
     Linkedin,
+    Mail,
     RotateCcw,
     Youtube,
 } from 'lucide-react';
@@ -26,6 +30,12 @@ const socialIcons: Record<string, LucideIcon> = {
     instagram: Instagram,
     linkedin: Linkedin,
     youtube: Youtube,
+};
+
+const paymentIcons: Record<string, LucideIcon> = {
+    'Card payments': CreditCard,
+    'Bank transfer': Landmark,
+    'Cash on delivery': Banknote,
 };
 
 export function StorefrontFooter({ className = '' }: { className?: string }) {
@@ -119,9 +129,9 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                 </div>
             </div>
 
-            <div className="px-4 py-12 sm:px-7 lg:py-16">
-                <div className="mx-auto grid max-w-none gap-10 2xl:grid-cols-[1.1fr_2fr_1fr]">
-                    <div className="max-w-md">
+            <div className="px-4 py-10 sm:px-7 lg:py-12">
+                <div className="mx-auto grid max-w-none gap-10 lg:grid-cols-[minmax(15rem,0.75fr)_minmax(0,2fr)] lg:gap-14 xl:grid-cols-[minmax(17rem,0.8fr)_minmax(0,2.2fr)] xl:gap-20">
+                    <div className="max-w-sm">
                         <Link
                             href={home()}
                             className="inline-flex rounded-xl focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
@@ -132,7 +142,7 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                                 className="text-2xl"
                             />
                         </Link>
-                        <p className="mt-5 text-sm leading-6 text-slate-400">
+                        <p className="mt-4 max-w-xs text-sm leading-6 text-slate-400">
                             Discover products from independent sellers across
                             Sri Lanka with clearer marketplace standards,
                             practical support, and transparent order records.
@@ -163,7 +173,7 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                         )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4">
+                    <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4 lg:gap-x-8">
                         {Object.entries(navigation).map(([heading, links]) => (
                             <nav key={heading} aria-label={`${heading} links`}>
                                 <h2 className="text-xs font-bold tracking-[0.16em] text-white uppercase">
@@ -185,64 +195,97 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                             </nav>
                         ))}
                     </div>
+                </div>
 
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-                        <Headphones className="size-7 text-cyan-300" />
-                        <h2 className="mt-4 font-bold text-white">
-                            Need a hand?
-                        </h2>
-                        <p className="mt-2 text-sm leading-6 text-slate-400">
-                            Our marketplace support team is available{' '}
-                            {marketplace.support.days.toLowerCase()}.
-                        </p>
+                <aside
+                    aria-labelledby="footer-support-heading"
+                    className="mx-auto mt-10 grid max-w-none overflow-hidden rounded-2xl border border-cyan-300/20 bg-white/5 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_auto] md:items-center"
+                >
+                    <div className="flex items-center gap-4 p-5 sm:p-6">
+                        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-cyan-300 text-slate-950 shadow-lg shadow-cyan-300/10">
+                            <Headphones className="size-6" />
+                        </span>
+                        <div>
+                            <h2
+                                id="footer-support-heading"
+                                className="text-base font-bold text-white"
+                            >
+                                Need a hand?
+                            </h2>
+                            <p className="mt-1 text-sm text-slate-400">
+                                Friendly marketplace support,{' '}
+                                {marketplace.support.days.toLowerCase()}.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="grid gap-1 border-t border-white/10 px-5 py-4 sm:px-6 md:border-t-0 md:border-l">
                         <a
                             href={`mailto:${marketplace.support.email}`}
-                            className="mt-4 inline-flex text-sm font-bold text-cyan-300 hover:text-cyan-200"
+                            className="inline-flex w-fit items-center gap-2 text-sm font-bold text-cyan-300 transition hover:text-cyan-200 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:outline-none"
                         >
+                            <Mail className="size-4" />
                             {marketplace.support.email}
                         </a>
-                        <p className="mt-2 text-xs leading-5 text-slate-500">
+                        <p className="text-xs leading-5 text-slate-400">
                             {marketplace.support.hours} ·{' '}
                             {marketplace.support.timezone}
                         </p>
                     </div>
-                </div>
+
+                    <div className="border-t border-white/10 p-5 sm:p-6 md:border-t-0 md:border-l">
+                        <Link
+                            href={contact()}
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-100 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:outline-none md:w-auto"
+                        >
+                            Contact support
+                            <ChevronRight className="size-4" />
+                        </Link>
+                    </div>
+                </aside>
             </div>
 
             <div className="border-t border-white/10 px-4 py-6 sm:px-7">
-                <div className="mx-auto flex max-w-none flex-col gap-5 text-xs leading-5 text-slate-500 xl:flex-row xl:items-end xl:justify-between">
-                    <div className="max-w-4xl">
-                        <p className="font-semibold text-slate-300">
-                            {marketplace.legal_entity.name} · Company number{' '}
-                            <a
-                                href={
-                                    marketplace.legal_entity.companies_house_url
-                                }
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="underline decoration-slate-600 underline-offset-2 hover:text-cyan-300"
-                            >
-                                {marketplace.legal_entity.company_number}
-                            </a>
-                        </p>
-                        <p className="mt-1">
-                            Registered office:{' '}
-                            {marketplace.legal_entity.registered_office}. This
-                            is not a customer returns address.
-                        </p>
-                        <p className="mt-1">
-                            © {currentYear} ProDeals.lk. All rights reserved.
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2 xl:justify-end">
-                        {marketplace.payment_methods.map((method) => (
-                            <span
-                                key={method}
-                                className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-slate-400"
-                            >
-                                {method}
-                            </span>
-                        ))}
+                <div className="mx-auto flex max-w-none flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-sm text-slate-400">
+                        © {currentYear}{' '}
+                        <Link
+                            href={home()}
+                            className="font-extrabold text-white transition hover:text-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+                        >
+                            ProDeals.lk
+                        </Link>
+                        <span className="text-slate-500">
+                            . All rights reserved.
+                        </span>
+                    </p>
+                    <div
+                        className="flex flex-wrap items-center gap-2 sm:justify-end"
+                        aria-label="Accepted payment methods"
+                    >
+                        <span className="mr-1 text-[0.68rem] font-bold tracking-[0.16em] text-slate-500 uppercase">
+                            Ways to pay
+                        </span>
+                        {marketplace.payment_methods.map((method) => {
+                            const PaymentIcon = paymentIcons[method];
+
+                            if (!PaymentIcon) {
+                                return null;
+                            }
+
+                            return (
+                                <span
+                                    key={method}
+                                    className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-slate-300"
+                                >
+                                    <PaymentIcon
+                                        className="size-4 text-cyan-300"
+                                        aria-hidden="true"
+                                    />
+                                    {method}
+                                </span>
+                            );
+                        })}
                     </div>
                 </div>
             </div>

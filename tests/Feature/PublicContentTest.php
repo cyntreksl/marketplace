@@ -30,3 +30,18 @@ test('guests can view every public marketplace content page', function (string $
 test('social profile placeholders stay unconfigured until real links are supplied', function () {
     expect(array_filter(config('marketplace.social_urls')))->toBeEmpty();
 });
+
+test('the storefront shares footer support and payment details', function () {
+    $this->get(route('home'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('marketplace.support.email', 'support@prodeals.lk')
+            ->where('marketplace.support.hours', '09:00–18:00')
+            ->where('marketplace.support.days', 'Seven days a week')
+            ->where('marketplace.support.timezone', 'Sri Lanka Standard Time (UTC+05:30)')
+            ->where('marketplace.payment_methods', [
+                'Card payments',
+                'Bank transfer',
+                'Cash on delivery',
+            ]));
+});
