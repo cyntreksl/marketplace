@@ -35,7 +35,10 @@ class StorefrontService
                 ]),
             ],
             'popularCategories' => $this->catalog->popularHomepageCategories()
-                ->map(fn (Category $category): array => $category->only(['id', 'name', 'slug']))
+                ->map(fn (Category $category): array => [
+                    ...$category->only(['id', 'name', 'slug']),
+                    'image_url' => $category->imageUrl(),
+                ])
                 ->values(),
             'bestOffers' => $this->listings->homepageBestOffers()->map(fn (Listing $listing): array => $this->listingData($listing))->values(),
             'newArrivals' => $this->listings->homepageNewArrivals()->map(fn (Listing $listing): array => $this->listingData($listing))->values(),
@@ -47,7 +50,10 @@ class StorefrontService
     {
         return $this->catalog->featuredHomepageCategories()
             ->map(fn (Category $category, int $index): array => [
-                'category' => $category->only(['id', 'name', 'slug']),
+                'category' => [
+                    ...$category->only(['id', 'name', 'slug']),
+                    'image_url' => $category->imageUrl(),
+                ],
                 'variant' => ['image', 'tinted', 'clean'][$index % 3],
                 'listings' => $this->listings->homepageForCategory($category->slug)
                     ->map(fn (Listing $listing): array => $this->listingData($listing))
@@ -130,25 +136,31 @@ class StorefrontService
         ];
     }
 
-    /**
-     * @return Collection<int, array{id: int, name: string, slug: string, children: array<int, array{id: int, name: string, slug: string}>}>
-     */
+    /** @return Collection<int, array<string, mixed>> */
     private function storefrontCategories(): Collection
     {
         return $this->catalog->activeTopLevelCategories()
-            ->map(fn (Category $category): array => [
-                'id' => $category->id,
-                'name' => $category->name,
-                'slug' => $category->slug,
-                'children' => $category->children
-                    ->map(fn (Category $child): array => [
-                        'id' => $child->id,
-                        'name' => $child->name,
-                        'slug' => $child->slug,
-                    ])
-                    ->values()
-                    ->all(),
-            ]);
+            ->map(fn (Category $category): array => $this->storefrontCategoryData($category));
+    }
+
+    /** @return array<string, mixed> */
+    private function storefrontCategoryData(Category $category): array
+    {
+        return [
+            'id' => $category->id,
+            'name' => $category->name,
+            'slug' => $category->slug,
+            'image_url' => $category->imageUrl(),
+            'children' => $category->children
+                ->map(fn (Category $child): array => [
+                    'id' => $child->id,
+                    'name' => $child->name,
+                    'slug' => $child->slug,
+                    'image_url' => $child->imageUrl(),
+                ])
+                ->values()
+                ->all(),
+        ];
     }
 
     /** @return array<string, mixed> */

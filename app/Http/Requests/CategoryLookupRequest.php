@@ -28,7 +28,10 @@ class CategoryLookupRequest extends FormRequest
             'parent_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('categories', 'id')->where('is_active', true),
+                Rule::exists('categories', 'id')->where(fn ($query) => $query
+                    ->where('is_active', true)
+                    ->where(fn ($query) => $query->whereNull('is_taxonomy_available')->orWhere('is_taxonomy_available', true))
+                    ->whereNull('deleted_at')),
             ],
         ];
     }

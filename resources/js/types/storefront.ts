@@ -2,6 +2,7 @@ export type StorefrontCategory = {
     id: number;
     name: string;
     slug: string;
+    image_url: string | null;
     children: StorefrontCategoryChild[];
 };
 
@@ -9,12 +10,14 @@ export type StorefrontCategoryChild = {
     id: number;
     name: string;
     slug: string;
+    image_url: string | null;
 };
 
 export type StorefrontCategoryNode = {
     id: number;
     name: string;
     slug: string;
+    image_url: string | null;
 };
 
 export type StorefrontSubcategory = StorefrontCategoryNode & {
@@ -94,6 +97,7 @@ export type StorefrontHomepageCategory = {
     id: number;
     name: string;
     slug: string;
+    image_url: string | null;
 };
 
 export type StorefrontCategorySection = {

@@ -29,7 +29,9 @@ class StoreCategoryRequest extends FormRequest
             'google_product_category_id' => ['nullable', 'integer', 'min:1', Rule::unique('categories', 'google_product_category_id')],
             'name' => ['required', 'string', 'max:255'], 'slug' => ['nullable', 'string', 'max:255', Rule::unique('categories', 'slug')],
             'commission_percentage' => ['required', 'numeric', 'between:0,100'], 'return_window_days' => ['required', 'integer', 'min:0', 'max:365'],
-            'cod_enabled' => ['required', 'boolean'], 'is_active' => ['required', 'boolean'], 'reason' => ['required', 'string', 'min:5', 'max:1000'],
+            'cod_enabled' => ['required', 'boolean'], 'is_active' => ['required', 'boolean'],
+            'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'reason' => ['required', 'string', 'min:5', 'max:1000'],
         ];
     }
 }

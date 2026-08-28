@@ -30,6 +30,12 @@ interface CatalogRepository
 
     public function categoryWithTrashed(int $id): Category;
 
+    public function saveCategory(Category $category): Category;
+
+    public function categoryActivationRoot(Category $category): Category;
+
+    public function setCategorySubtreeActive(Category $category, bool $isActive): int;
+
     public function brandWithTrashed(int $id): Brand;
 
     public function findBrandByNameForUpdate(string $name): ?Brand;
@@ -87,13 +93,13 @@ interface CatalogRepository
 
     /**
      * @return array{
-     *     current: array{id: int, name: string, slug: string},
-     *     ancestors: array<int, array{id: int, name: string, slug: string}>,
-     *     children: array<int, array{id: int, name: string, slug: string, has_children: bool}>
+     *     current: array{id: int, name: string, slug: string, image_url: string|null},
+     *     ancestors: array<int, array{id: int, name: string, slug: string, image_url: string|null}>,
+     *     children: array<int, array{id: int, name: string, slug: string, image_url: string|null, has_children: bool}>
      * }|null
      */
     public function activeCategoryContextBySlug(string $slug): ?array;
 
-    /** @return array<int, array{id: int, name: string, slug: string}> */
+    /** @return array<int, array{id: int, name: string, slug: string, image_url: string|null}> */
     public function activeCategoryTrailBySlug(string $slug): array;
 }

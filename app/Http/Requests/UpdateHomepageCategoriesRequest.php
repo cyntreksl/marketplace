@@ -26,9 +26,15 @@ class UpdateHomepageCategoriesRequest extends FormRequest
     {
         return [
             'popular_category_ids' => ['present', 'array', 'max:10'],
-            'popular_category_ids.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where(fn ($query) => $query->where('is_active', true)->whereNull('deleted_at'))],
+            'popular_category_ids.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where(fn ($query) => $query
+                ->where('is_active', true)
+                ->where(fn ($query) => $query->whereNull('is_taxonomy_available')->orWhere('is_taxonomy_available', true))
+                ->whereNull('deleted_at'))],
             'featured_category_ids' => ['present', 'array', 'max:5'],
-            'featured_category_ids.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where(fn ($query) => $query->where('is_active', true)->whereNull('deleted_at'))],
+            'featured_category_ids.*' => ['integer', 'distinct', Rule::exists('categories', 'id')->where(fn ($query) => $query
+                ->where('is_active', true)
+                ->where(fn ($query) => $query->whereNull('is_taxonomy_available')->orWhere('is_taxonomy_available', true))
+                ->whereNull('deleted_at'))],
             'reason' => ['required', 'string', 'min:5', 'max:1000'],
         ];
     }

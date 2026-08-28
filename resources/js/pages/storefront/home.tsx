@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { ListingCard } from '@/components/listing-card';
+import { StorefrontCategoryArtwork } from '@/components/storefront-category-artwork';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import type { StorefrontCategory } from '@/components/storefront-layout';
 import {
@@ -456,14 +457,20 @@ export default function StorefrontHome({
                                         href={listingsIndex({
                                             query: { category: category.slug },
                                         })}
-                                        className="group flex min-h-28 flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-3 text-center transition hover:-translate-y-1 hover:border-primary/40 hover:bg-teal-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-teal-950/40"
+                                        className="group flex flex-col rounded-2xl border border-slate-200 bg-slate-50 p-2 text-center transition hover:-translate-y-1 hover:border-primary/40 hover:bg-teal-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-teal-950/40"
                                     >
-                                        <span
-                                            className={`grid size-11 place-items-center rounded-2xl text-lg font-black ${index % 3 === 0 ? 'bg-amber-100 text-amber-800' : index % 3 === 1 ? 'bg-teal-100 text-teal-800' : 'bg-slate-200 text-slate-700'}`}
-                                        >
-                                            {category.name.charAt(0)}
-                                        </span>
-                                        <span className="mt-3 line-clamp-2 text-xs font-black text-slate-800 group-hover:text-primary dark:text-slate-100">
+                                        <StorefrontCategoryArtwork
+                                            category={category}
+                                            fallback="initial"
+                                            className={
+                                                index % 3 === 0
+                                                    ? 'bg-amber-100 text-amber-800'
+                                                    : index % 3 === 1
+                                                      ? 'bg-teal-100 text-teal-800'
+                                                      : 'bg-slate-200 text-slate-700'
+                                            }
+                                        />
+                                        <span className="mt-2 line-clamp-2 px-1 pb-1 text-xs font-black text-slate-800 group-hover:text-primary dark:text-slate-100">
                                             {category.name}
                                         </span>
                                     </Link>

@@ -64,7 +64,8 @@ test('future taxonomy activation preserves category commerce data and safely ret
         ->commission_percentage->toBe('12.50')
         ->return_window_days->toBe(30)
         ->cod_enabled->toBeFalse()
-        ->is_active->toBeFalse()
+        ->is_active->toBeTrue()
+        ->is_taxonomy_available->toBeFalse()
         ->is_selectable->toBeFalse()
         ->and($manual->refresh()->is_active)->toBeTrue()
         ->and(Category::query()->where('google_product_category_id', 101)->sole()->is_selectable)->toBeTrue();

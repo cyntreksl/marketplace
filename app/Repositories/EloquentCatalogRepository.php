@@ -25,7 +25,15 @@ class EloquentCatalogRepository implements CatalogRepository
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where('name', 'like', "%{$search}%"))
             ->when(($filters['archived'] ?? null) === 'only', fn ($query) => $query->onlyTrashed())
             ->when(($filters['archived'] ?? null) === 'without', fn ($query) => $query->withoutTrashed())
-            ->latest()->paginate(20)->withQueryString();
+            ->latest()
+            ->paginate(20)
+            ->withQueryString()
+            ->through(function (Category $category): Category {
+                $category->setAttribute('image_url', $category->imageUrl());
+                $category->setAttribute('is_storefront_available', $category->isStorefrontAvailable());
+
+                return $category;
+            });
     }
 
     /**
@@ -53,6 +61,54 @@ class EloquentCatalogRepository implements CatalogRepository
     public function categoryWithTrashed(int $id): Category
     {
         return Category::withTrashed()->findOrFail($id);
+    }
+
+    public function saveCategory(Category $category): Category
+    {
+        $category->save();
+
+        return $category;
+    }
+
+    public function categoryActivationRoot(Category $category): Category
+    {
+        $activationRoot = $category;
+        $parentId = $category->parent_id;
+
+        while ($parentId !== null) {
+            $parent = Category::query()->whereKey($parentId)->lockForUpdate()->first();
+
+            if ($parent === null) {
+                break;
+            }
+
+            if (! $parent->is_active) {
+                $activationRoot = $parent;
+            }
+
+            $parentId = $parent->parent_id;
+        }
+
+        return $activationRoot;
+    }
+
+    public function setCategorySubtreeActive(Category $category, bool $isActive): int
+    {
+        $categoryIds = [(int) $category->getKey()];
+        $parentIds = $categoryIds;
+
+        while ($parentIds !== []) {
+            $parentIds = Category::withTrashed()
+                ->whereIn('parent_id', $parentIds)
+                ->pluck('id')
+                ->map(fn (int $id): int => $id)
+                ->all();
+            $categoryIds = [...$categoryIds, ...$parentIds];
+        }
+
+        return Category::withTrashed()
+            ->whereIn('id', array_values(array_unique($categoryIds)))
+            ->update(['is_active' => $isActive]);
     }
 
     public function brandWithTrashed(int $id): Brand
@@ -110,7 +166,7 @@ class EloquentCatalogRepository implements CatalogRepository
         $category->forceFill([
             'parent_id' => $parentId,
             'name' => $name,
-            'is_active' => true,
+            'is_taxonomy_available' => true,
             'is_selectable' => $isSelectable,
             'sort_order' => $sortOrder,
         ])->save();
@@ -123,14 +179,14 @@ class EloquentCatalogRepository implements CatalogRepository
         Category::withTrashed()
             ->whereNotNull('google_product_category_id')
             ->whereNotIn('google_product_category_id', $permittedGoogleProductCategoryIds)
-            ->update(['is_active' => false, 'is_selectable' => false]);
+            ->update(['is_taxonomy_available' => false, 'is_selectable' => false]);
     }
 
     public function selectableCategory(int $id): Category
     {
         $category = Category::query()
             ->whereKey($id)
-            ->where('is_active', true)
+            ->storefrontAvailable()
             ->where('is_selectable', true)
             ->first();
 
@@ -146,14 +202,14 @@ class EloquentCatalogRepository implements CatalogRepository
     public function activeTopLevelCategories(): Collection
     {
         return Category::query()
-            ->select(['id', 'name', 'slug', 'sort_order'])
+            ->select(['id', 'name', 'slug', 'image_path', 'sort_order'])
             ->with(['children' => fn ($query) => $query
-                ->select(['id', 'parent_id', 'name', 'slug', 'sort_order'])
-                ->where('is_active', true)
+                ->select(['id', 'parent_id', 'name', 'slug', 'image_path', 'sort_order'])
+                ->storefrontAvailable()
                 ->orderBy('sort_order')
                 ->orderBy('name')])
             ->whereNull('parent_id')
-            ->where('is_active', true)
+            ->storefrontAvailable()
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
@@ -162,8 +218,8 @@ class EloquentCatalogRepository implements CatalogRepository
     public function popularHomepageCategories(int $limit = 10): Collection
     {
         $categories = Category::query()
-            ->select(['id', 'name', 'slug', 'parent_id', 'sort_order'])
-            ->where('is_active', true)
+            ->select(['id', 'name', 'slug', 'image_path', 'parent_id', 'sort_order'])
+            ->storefrontAvailable()
             ->where('is_popular', true)
             ->orderBy('sort_order')
             ->orderBy('name')
@@ -175,9 +231,9 @@ class EloquentCatalogRepository implements CatalogRepository
         }
 
         return Category::query()
-            ->select(['id', 'name', 'slug', 'parent_id', 'sort_order'])
+            ->select(['id', 'name', 'slug', 'image_path', 'parent_id', 'sort_order'])
             ->whereNull('parent_id')
-            ->where('is_active', true)
+            ->storefrontAvailable()
             ->orderBy('sort_order')
             ->orderBy('name')
             ->limit($limit)
@@ -187,8 +243,8 @@ class EloquentCatalogRepository implements CatalogRepository
     public function featuredHomepageCategories(): Collection
     {
         return Category::query()
-            ->select(['id', 'name', 'slug', 'homepage_order'])
-            ->where('is_active', true)
+            ->select(['id', 'name', 'slug', 'image_path', 'homepage_order'])
+            ->storefrontAvailable()
             ->whereNotNull('homepage_order')
             ->orderBy('homepage_order')
             ->limit(5)
@@ -198,8 +254,8 @@ class EloquentCatalogRepository implements CatalogRepository
     public function selectedHomepageCategories(): Collection
     {
         return Category::query()
-            ->select(['id', 'name', 'slug', 'is_popular', 'homepage_order'])
-            ->where('is_active', true)
+            ->select(['id', 'name', 'slug', 'image_path', 'is_popular', 'homepage_order'])
+            ->storefrontAvailable()
             ->where(fn (Builder $query): Builder => $query
                 ->where('is_popular', true)
                 ->orWhereNotNull('homepage_order'))
@@ -234,8 +290,13 @@ class EloquentCatalogRepository implements CatalogRepository
     public function lookupCategories(?string $search, ?int $parentId): Collection
     {
         $query = Category::query()
-            ->where('is_active', true)
-            ->withCount(['children as active_children_count' => fn (Builder $query): Builder => $query->where('is_active', true)]);
+            ->storefrontAvailable()
+            ->withCount(['children as active_children_count' => fn (Builder $query): Builder => $query
+                ->whereNull('categories.deleted_at')
+                ->where('is_active', true)
+                ->where(fn (Builder $query): Builder => $query
+                    ->whereNull('is_taxonomy_available')
+                    ->orWhere('is_taxonomy_available', true))]);
 
         if ($search !== null && $search !== '') {
             $matchingGoogleIds = GoogleProductTaxonomyNode::query()
@@ -258,7 +319,12 @@ class EloquentCatalogRepository implements CatalogRepository
 
     public function categoryOption(Category $category): array
     {
-        $category->loadCount(['children as active_children_count' => fn (Builder $query): Builder => $query->where('is_active', true)]);
+        $category->loadCount(['children as active_children_count' => fn (Builder $query): Builder => $query
+            ->whereNull('categories.deleted_at')
+            ->where('is_active', true)
+            ->where(fn (Builder $query): Builder => $query
+                ->whereNull('is_taxonomy_available')
+                ->orWhere('is_taxonomy_available', true))]);
         $this->decorateCategoryPaths(collect([$category]));
 
         return [
@@ -274,14 +340,14 @@ class EloquentCatalogRepository implements CatalogRepository
 
     public function activeCategoryOptionBySlug(string $slug): ?array
     {
-        $category = Category::query()->where('slug', $slug)->where('is_active', true)->first();
+        $category = Category::query()->where('slug', $slug)->storefrontAvailable()->first();
 
         return $category === null ? null : $this->categoryOption($category);
     }
 
     public function activeDescendantIdsForSlug(string $slug): array
     {
-        $category = Category::query()->where('slug', $slug)->where('is_active', true)->first();
+        $category = Category::query()->where('slug', $slug)->storefrontAvailable()->first();
         if ($category === null) {
             return [];
         }
@@ -307,7 +373,7 @@ class EloquentCatalogRepository implements CatalogRepository
             ->select('google_product_category_id');
 
         return Category::query()
-            ->where('is_active', true)
+            ->storefrontAvailable()
             ->whereIn('google_product_category_id', $googleIds)
             ->pluck('id')
             ->map(fn (int $id): int => $id)
@@ -317,9 +383,9 @@ class EloquentCatalogRepository implements CatalogRepository
     public function activeCategoryContextBySlug(string $slug): ?array
     {
         $category = Category::query()
-            ->select(['id', 'parent_id', 'name', 'slug'])
+            ->select(['id', 'parent_id', 'name', 'slug', 'image_path'])
             ->where('slug', $slug)
-            ->where('is_active', true)
+            ->storefrontAvailable()
             ->first();
 
         if ($category === null) {
@@ -327,10 +393,15 @@ class EloquentCatalogRepository implements CatalogRepository
         }
 
         $children = Category::query()
-            ->select(['id', 'parent_id', 'name', 'slug', 'sort_order'])
+            ->select(['id', 'parent_id', 'name', 'slug', 'image_path', 'sort_order'])
             ->where('parent_id', $category->id)
-            ->where('is_active', true)
-            ->withCount(['children as active_children_count' => fn (Builder $query): Builder => $query->where('is_active', true)])
+            ->storefrontAvailable()
+            ->withCount(['children as active_children_count' => fn (Builder $query): Builder => $query
+                ->whereNull('categories.deleted_at')
+                ->where('is_active', true)
+                ->where(fn (Builder $query): Builder => $query
+                    ->whereNull('is_taxonomy_available')
+                    ->orWhere('is_taxonomy_available', true))])
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get()
@@ -388,7 +459,7 @@ class EloquentCatalogRepository implements CatalogRepository
         });
     }
 
-    /** @return array<int, array{id: int, name: string, slug: string}> */
+    /** @return array<int, array{id: int, name: string, slug: string, image_url: string|null}> */
     private function activeAncestors(Category $category): array
     {
         $ancestors = [];
@@ -396,9 +467,9 @@ class EloquentCatalogRepository implements CatalogRepository
 
         while ($parentId !== null) {
             $parent = Category::query()
-                ->select(['id', 'parent_id', 'name', 'slug'])
+                ->select(['id', 'parent_id', 'name', 'slug', 'image_path'])
                 ->whereKey($parentId)
-                ->where('is_active', true)
+                ->storefrontAvailable()
                 ->first();
 
             if ($parent === null) {
@@ -412,13 +483,14 @@ class EloquentCatalogRepository implements CatalogRepository
         return $ancestors;
     }
 
-    /** @return array{id: int, name: string, slug: string} */
+    /** @return array{id: int, name: string, slug: string, image_url: string|null} */
     private function categoryNavigationData(Category $category): array
     {
         return [
             'id' => (int) $category->getKey(),
             'name' => $category->name,
             'slug' => $category->slug,
+            'image_url' => $category->imageUrl(),
         ];
     }
 

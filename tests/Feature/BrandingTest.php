@@ -103,13 +103,15 @@ test('the storefront shares an ordered two-level active category menu', function
     $expectedCategories = [
         [
             ...$firstCategory->only(['id', 'name', 'slug']),
+            'image_url' => null,
             'children' => [
-                $firstChild->only(['id', 'name', 'slug']),
-                $laterChild->only(['id', 'name', 'slug']),
+                [...$firstChild->only(['id', 'name', 'slug']), 'image_url' => null],
+                [...$laterChild->only(['id', 'name', 'slug']), 'image_url' => null],
             ],
         ],
         [
             ...$laterCategory->only(['id', 'name', 'slug']),
+            'image_url' => null,
             'children' => [],
         ],
     ];
@@ -143,8 +145,9 @@ test('listing details retain the storefront category menu', function () {
     expect($response->inertiaProps('categories'))->toBe([
         [
             ...$topLevelCategory->only(['id', 'name', 'slug']),
+            'image_url' => null,
             'children' => [
-                $listingCategory->only(['id', 'name', 'slug']),
+                [...$listingCategory->only(['id', 'name', 'slug']), 'image_url' => null],
             ],
         ],
     ]);

@@ -105,6 +105,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/catalog/categories', [AdminCategoryController::class, 'index'])->name('categories.index');
     Route::post('/catalog/categories', [AdminCategoryController::class, 'store'])->name('categories.store');
     Route::patch('/catalog/categories/{category}', [AdminCategoryController::class, 'update'])->name('categories.update');
+    Route::post('/catalog/categories/{category}/image', [AdminCategoryController::class, 'storeImage'])->name('categories.image.store');
+    Route::delete('/catalog/categories/{category}/image', [AdminCategoryController::class, 'destroyImage'])->name('categories.image.destroy');
+    Route::patch('/catalog/categories/{category}/activation', [AdminCategoryController::class, 'updateActivation'])->name('categories.activation.update');
     Route::delete('/catalog/categories/{category}', [AdminCategoryController::class, 'destroy'])->name('categories.destroy');
     Route::post('/catalog/categories/{category}/restore', [AdminCategoryController::class, 'restore'])->name('categories.restore');
     Route::get('/catalog/brands', [AdminBrandController::class, 'index'])->name('brands.index');

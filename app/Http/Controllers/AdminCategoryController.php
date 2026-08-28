@@ -4,12 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Contracts\Repositories\CatalogRepository;
 use App\Http\Requests\ArchiveResourceRequest;
+use App\Http\Requests\RemoveCategoryImageRequest;
+use App\Http\Requests\StoreCategoryImageRequest;
 use App\Http\Requests\StoreCategoryRequest;
+use App\Http\Requests\UpdateCategoryActivationRequest;
 use App\Http\Requests\UpdateCategoryRequest;
 use App\Models\Category;
 use App\Services\AdminCatalogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -38,6 +42,34 @@ class AdminCategoryController extends Controller
         $catalog->updateCategory($request->user(), $category, Arr::except($data, 'reason'), $data['reason']);
 
         return to_route('admin.categories.index')->with('status', 'Category updated.');
+    }
+
+    public function storeImage(StoreCategoryImageRequest $request, Category $category, AdminCatalogService $catalog): RedirectResponse
+    {
+        /** @var UploadedFile $image */
+        $image = $request->file('image');
+        $catalog->replaceCategoryImage($request->user(), $category, $image, $request->validated('reason'));
+
+        return to_route('admin.categories.index')->with('status', 'Category image updated.');
+    }
+
+    public function destroyImage(RemoveCategoryImageRequest $request, Category $category, AdminCatalogService $catalog): RedirectResponse
+    {
+        $catalog->removeCategoryImage($request->user(), $category, $request->validated('reason'));
+
+        return to_route('admin.categories.index')->with('status', 'Category image removed.');
+    }
+
+    public function updateActivation(UpdateCategoryActivationRequest $request, Category $category, AdminCatalogService $catalog): RedirectResponse
+    {
+        $catalog->updateCategoryActivation(
+            $request->user(),
+            $category,
+            $request->boolean('is_active'),
+            $request->validated('reason'),
+        );
+
+        return to_route('admin.categories.index')->with('status', 'Category availability updated.');
     }
 
     public function destroy(ArchiveResourceRequest $request, Category $category, AdminCatalogService $catalog): RedirectResponse

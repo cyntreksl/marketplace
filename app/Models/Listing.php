@@ -91,6 +91,7 @@ class Listing extends Model
     {
         $query->where('listings.status', 'approved')
             ->whereHas('sellerProfile', fn (Builder $query) => $query->whereIn('status', ['approved', 'active']))
+            ->whereHas('category', fn ($query) => Category::constrainStorefrontAvailability($query))
             ->where(function (Builder $query): void {
                 $query->where('listings.listing_type', 'auction')
                     ->orWhereColumn('listings.stock_quantity', '>', 'listings.reserved_quantity');
