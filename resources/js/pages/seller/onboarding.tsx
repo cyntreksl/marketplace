@@ -11,7 +11,7 @@ export default function SellerOnboarding({
         <PortalLayout portal="seller" title="Become a seller">
             <Head title="Seller onboarding" />
             <main className="mx-auto max-w-3xl">
-                <p className="text-sm font-bold tracking-wider text-amber-700 uppercase">
+                <p className="text-sm font-bold tracking-wider text-primary uppercase">
                     Seller portal
                 </p>
                 <h1 className="mt-2 text-4xl font-black">Set up your store</h1>
@@ -33,7 +33,7 @@ export default function SellerOnboarding({
                                         defaultValue={
                                             seller?.seller_type ?? 'individual'
                                         }
-                                        className="rounded-lg border bg-transparent p-3"
+                                        className="rounded-xl border bg-transparent p-3"
                                     >
                                         <option value="individual">
                                             Individual
@@ -49,7 +49,7 @@ export default function SellerOnboarding({
                                         required
                                         name="store_name"
                                         defaultValue={seller?.store_name}
-                                        className="rounded-lg border bg-transparent p-3"
+                                        className="rounded-xl border bg-transparent p-3"
                                     />
                                 </label>
                             </div>
@@ -59,7 +59,7 @@ export default function SellerOnboarding({
                                     required
                                     name="phone"
                                     defaultValue={seller?.phone}
-                                    className="rounded-lg border bg-transparent p-3"
+                                    className="rounded-xl border bg-transparent p-3"
                                 />
                             </label>
                             <div className="grid gap-5 sm:grid-cols-2">
@@ -69,7 +69,7 @@ export default function SellerOnboarding({
                                         required
                                         name="bank_account_name"
                                         defaultValue={seller?.bank_account_name}
-                                        className="rounded-lg border bg-transparent p-3"
+                                        className="rounded-xl border bg-transparent p-3"
                                     />
                                 </label>
                                 <label className="grid gap-2 font-semibold">
@@ -77,7 +77,7 @@ export default function SellerOnboarding({
                                     <input
                                         required
                                         name="bank_account_details"
-                                        className="rounded-lg border bg-transparent p-3"
+                                        className="rounded-xl border bg-transparent p-3"
                                     />
                                 </label>
                             </div>
@@ -97,7 +97,7 @@ export default function SellerOnboarding({
                             ))}
                             <button
                                 disabled={processing}
-                                className="rounded-full bg-amber-400 px-5 py-3 font-bold text-stone-950 disabled:opacity-50"
+                                className="rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground disabled:opacity-50"
                             >
                                 {processing ? 'Saving…' : 'Submit for review'}
                             </button>

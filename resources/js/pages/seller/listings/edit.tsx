@@ -26,7 +26,7 @@ export default function EditSellerListing({
             <main className="mx-auto max-w-7xl">
                 <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <p className="text-xs font-black tracking-[0.2em] text-amber-700 uppercase dark:text-amber-400">
+                        <p className="text-xs font-black tracking-[0.2em] text-primary uppercase">
                             Listing studio
                         </p>
                         <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">

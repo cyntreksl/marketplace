@@ -30,6 +30,18 @@ test('authenticated portals use distinct ProDeals theme colors', function () {
         ->toContain('className={`portal-theme-${portal}');
 });
 
+test('portal controls use semantic colors and consistent corner radii', function () {
+    $portalLayout = file_get_contents(resource_path('js/components/portal-layout.tsx'));
+    $sellerListings = file_get_contents(resource_path('js/pages/seller/listings/index.tsx'));
+
+    expect($portalLayout)
+        ->toContain('rounded-xl bg-slate-100')
+        ->toContain('rounded-xl px-3 text-sm font-medium')
+        ->and($sellerListings)
+        ->toContain('rounded-xl bg-primary')
+        ->not->toContain('rounded-full bg-amber-400');
+});
+
 test('the storefront shares an ordered two-level active category menu', function () {
     $laterCategory = Category::factory()->create([
         'name' => 'Home & Garden',

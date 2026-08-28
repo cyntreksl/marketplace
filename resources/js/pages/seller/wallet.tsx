@@ -32,13 +32,13 @@ export default function SellerWallet({
             <main className="mx-auto max-w-7xl">
                 <Link
                     href={ordersIndex()}
-                    className="text-sm font-bold text-amber-700"
+                    className="text-sm font-bold text-primary"
                 >
                     ← Fulfilment queue
                 </Link>
                 <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_22rem]">
                     <section>
-                        <p className="text-sm font-bold tracking-wider text-amber-700 uppercase">
+                        <p className="text-sm font-bold tracking-wider text-primary uppercase">
                             Seller wallet
                         </p>
                         <h1 className="mt-2 text-4xl font-black">
@@ -98,7 +98,7 @@ export default function SellerWallet({
                                             type="number"
                                             min="5000"
                                             step="0.01"
-                                            className="rounded-lg border bg-transparent p-3"
+                                            className="rounded-xl border bg-transparent p-3"
                                         />
                                     </label>
                                     {Object.values(errors).map((error) => (
@@ -111,7 +111,7 @@ export default function SellerWallet({
                                     ))}
                                     <button
                                         disabled={processing}
-                                        className="rounded-full bg-amber-400 px-4 py-3 font-bold text-stone-950"
+                                        className="rounded-xl bg-primary px-4 py-3 font-bold text-primary-foreground"
                                     >
                                         Request payout
                                     </button>

@@ -131,7 +131,7 @@ export default function AdminReturns({
                                             )}
                                             <button
                                                 disabled={processing}
-                                                className="rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                                                className="rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
                                             >
                                                 Physical return received —
                                                 prepare refund
@@ -195,7 +195,7 @@ export default function AdminReturns({
                                                             disabled={
                                                                 processing
                                                             }
-                                                            className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-5 py-2 text-sm font-bold text-white disabled:opacity-50 dark:bg-white dark:text-slate-950"
+                                                            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
                                                         >
                                                             <CreditCard className="size-4" />
                                                             {record.status ===
@@ -240,7 +240,7 @@ export default function AdminReturns({
                                                             disabled={
                                                                 processing
                                                             }
-                                                            className="self-end rounded-full bg-emerald-600 px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
+                                                            className="self-end rounded-xl bg-emerald-600 px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
                                                         >
                                                             Record completion
                                                         </button>

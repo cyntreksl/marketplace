@@ -236,7 +236,7 @@ export default function BuyerReturns({
                                                     )}
                                                     <button
                                                         disabled={processing}
-                                                        className="justify-self-start rounded-full bg-primary px-5 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                                                        className="justify-self-start rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
                                                     >
                                                         Submit return request
                                                     </button>

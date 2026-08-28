@@ -232,7 +232,7 @@ export function PortalLayout({
                     <BrandLogo showTagline />
                 </Link>
 
-                <div className="mt-8 rounded-2xl bg-slate-100 p-3 dark:bg-slate-900">
+                <div className="mt-8 rounded-xl bg-slate-100 p-3 dark:bg-slate-900">
                     <div className="flex items-center gap-3">
                         <span className="grid size-9 place-items-center rounded-xl bg-white text-primary shadow-sm dark:bg-slate-800">
                             <PortalIcon className="size-4" />

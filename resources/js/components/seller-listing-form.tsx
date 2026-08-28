@@ -423,7 +423,7 @@ export function SellerListingForm({
     }
 
     const inputClass =
-        'rounded-xl border border-stone-300 bg-transparent px-4 py-3 outline-none transition focus:border-amber-500 focus:ring-4 focus:ring-amber-100 dark:border-stone-700 dark:focus:ring-amber-900/30';
+        'rounded-xl border border-stone-300 bg-transparent px-4 py-3 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10 dark:border-stone-700';
 
     return (
         <section className="mt-7 grid gap-6">
@@ -449,7 +449,7 @@ export function SellerListingForm({
                                     }
                                     className={`flex min-h-16 w-full items-center gap-2 rounded-xl px-2 py-2.5 text-left transition sm:px-3 ${
                                         index === activeStep
-                                            ? 'bg-amber-400 text-stone-950 shadow-sm'
+                                            ? 'bg-primary text-primary-foreground shadow-sm'
                                             : complete
                                               ? 'bg-amber-50 text-amber-950 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-100'
                                               : 'text-stone-400 disabled:cursor-not-allowed dark:text-stone-600'
@@ -460,7 +460,7 @@ export function SellerListingForm({
                                             index === activeStep
                                                 ? 'bg-stone-950 text-white'
                                                 : complete
-                                                  ? 'bg-amber-400 text-stone-950'
+                                                  ? 'bg-primary text-primary-foreground'
                                                   : 'bg-stone-100 text-stone-400 dark:bg-stone-800'
                                         }`}
                                     >
@@ -780,7 +780,7 @@ export function SellerListingForm({
                                         }`}
                                     >
                                         <span
-                                            className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${selected ? 'bg-amber-400 text-stone-950' : 'bg-stone-100 text-stone-500 dark:bg-stone-800'}`}
+                                            className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${selected ? 'bg-primary text-primary-foreground' : 'bg-stone-100 text-stone-500 dark:bg-stone-800'}`}
                                         >
                                             <SaleMethodIcon className="size-5" />
                                         </span>
@@ -1302,7 +1302,7 @@ export function SellerListingForm({
                     {form.progress && (
                         <div className="h-1.5 bg-stone-100 dark:bg-stone-800">
                             <div
-                                className="h-full bg-amber-400 transition-[width]"
+                                className="h-full bg-primary transition-[width]"
                                 style={{
                                     width: `${form.progress.percentage}%`,
                                 }}
@@ -1337,7 +1337,7 @@ export function SellerListingForm({
                             <button
                                 type="button"
                                 onClick={nextStep}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-400 px-6 py-3 font-black text-stone-950 shadow-sm transition hover:bg-amber-300"
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 font-black text-primary-foreground shadow-sm transition hover:bg-primary/90"
                             >
                                 Continue
                                 <ChevronRight className="size-4" />
@@ -1359,7 +1359,7 @@ export function SellerListingForm({
                                     type="button"
                                     disabled={form.processing || !canSubmit}
                                     onClick={() => submit(true)}
-                                    className="rounded-xl bg-amber-400 px-5 py-3 font-black text-stone-950 shadow-sm transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="rounded-xl bg-primary px-5 py-3 font-black text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     {form.processing
                                         ? 'Submitting…'
@@ -1383,11 +1383,11 @@ function StepIntro({
 }): ReactNode {
     return (
         <div className="flex items-start gap-4">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-400 font-black text-stone-950 shadow-sm">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary font-black text-primary-foreground shadow-sm">
                 {step}
             </span>
             <div>
-                <p className="text-xs font-bold tracking-wider text-amber-700 uppercase dark:text-amber-400">
+                <p className="text-xs font-bold tracking-wider text-primary uppercase">
                     Step {step} of {steps.length}
                 </p>
                 <h2 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
@@ -1436,7 +1436,7 @@ function NumberField({
                 step={integer ? '1' : '0.01'}
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
-                className="rounded-xl border border-stone-300 bg-transparent px-4 py-3 transition outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-100 dark:border-stone-700 dark:focus:ring-amber-900/30"
+                className="rounded-xl border border-stone-300 bg-transparent px-4 py-3 transition outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 dark:border-stone-700"
             />
             {error && <FieldError error={error} />}
         </label>
@@ -1466,7 +1466,7 @@ function DateField({
                 type="datetime-local"
                 value={value}
                 onChange={(event) => onChange(event.target.value)}
-                className="rounded-xl border border-stone-300 bg-transparent px-4 py-3 transition outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-100 dark:border-stone-700 dark:focus:ring-amber-900/30"
+                className="rounded-xl border border-stone-300 bg-transparent px-4 py-3 transition outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 dark:border-stone-700"
             />
             {error && <FieldError error={error} />}
         </label>
@@ -1489,7 +1489,7 @@ function ReviewSection({
                 <button
                     type="button"
                     onClick={onEdit}
-                    className="text-sm font-bold text-amber-700 hover:text-amber-800"
+                    className="text-sm font-bold text-primary hover:text-primary/80"
                 >
                     Edit
                 </button>

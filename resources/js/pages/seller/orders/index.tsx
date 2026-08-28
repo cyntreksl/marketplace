@@ -25,7 +25,7 @@ export default function SellerOrders({
             <main className="mx-auto max-w-7xl">
                 <div className="flex items-end justify-between">
                     <div>
-                        <p className="text-sm font-bold tracking-wider text-amber-700 uppercase">
+                        <p className="text-sm font-bold tracking-wider text-primary uppercase">
                             Seller portal
                         </p>
                         <h1 className="mt-2 text-4xl font-black">
@@ -34,7 +34,7 @@ export default function SellerOrders({
                     </div>
                     <Link
                         href={walletIndex()}
-                        className="text-sm font-bold text-amber-700"
+                        className="text-sm font-bold text-primary"
                     >
                         Wallet →
                     </Link>
@@ -87,16 +87,16 @@ export default function SellerOrders({
                                                 <input
                                                     name="courier_name"
                                                     placeholder="Courier name"
-                                                    className="rounded-lg border bg-transparent p-2"
+                                                    className="rounded-xl border bg-transparent p-2"
                                                 />
                                                 <input
                                                     name="tracking_number"
                                                     placeholder="Tracking number (optional)"
-                                                    className="rounded-lg border bg-transparent p-2"
+                                                    className="rounded-xl border bg-transparent p-2"
                                                 />
                                                 <button
                                                     disabled={processing}
-                                                    className="rounded-full bg-amber-400 px-4 py-2 text-sm font-bold text-stone-950"
+                                                    className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
                                                 >
                                                     Ready to ship
                                                 </button>
@@ -109,7 +109,7 @@ export default function SellerOrders({
                                         {({ processing }) => (
                                             <button
                                                 disabled={processing}
-                                                className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+                                                className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
                                             >
                                                 Confirm delivery
                                             </button>

@@ -22,7 +22,7 @@ export default function BuyerOrders({ orders }: { orders: { data: Order[] } }) {
             <main className="mx-auto max-w-6xl">
                 <div className="flex items-end justify-between">
                     <div>
-                        <p className="text-sm font-bold tracking-wider text-amber-700 uppercase">
+                        <p className="text-sm font-bold tracking-wider text-primary uppercase">
                             Buyer portal
                         </p>
                         <h1 className="mt-2 text-4xl font-black">
@@ -31,7 +31,7 @@ export default function BuyerOrders({ orders }: { orders: { data: Order[] } }) {
                     </div>
                     <Link
                         href={cartShow()}
-                        className="rounded-full bg-stone-950 px-4 py-2 text-sm font-bold text-white dark:bg-stone-50 dark:text-stone-950"
+                        className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
                     >
                         View cart
                     </Link>

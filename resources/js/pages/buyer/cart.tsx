@@ -25,14 +25,14 @@ export default function BuyerCart({ cart }: { cart: { items: CartItem[] } }) {
             <main className="mx-auto max-w-6xl">
                 <div className="flex items-end justify-between gap-5">
                     <div>
-                        <p className="text-sm font-bold tracking-wider text-amber-700 uppercase">
+                        <p className="text-sm font-bold tracking-wider text-primary uppercase">
                             Buyer portal
                         </p>
                         <h1 className="mt-2 text-4xl font-black">Your cart</h1>
                     </div>
                     <Link
                         href={ordersIndex()}
-                        className="text-sm font-bold text-amber-700"
+                        className="text-sm font-bold text-primary"
                     >
                         Order history
                     </Link>
@@ -166,7 +166,7 @@ export default function BuyerCart({ cart }: { cart: { items: CartItem[] } }) {
                                     ))}
                                     <button
                                         disabled={processing}
-                                        className="rounded-full bg-amber-400 px-5 py-3 font-bold text-stone-950 disabled:opacity-50"
+                                        className="rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground disabled:opacity-50"
                                     >
                                         {processing
                                             ? 'Creating order…'

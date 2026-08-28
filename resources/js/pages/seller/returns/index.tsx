@@ -146,7 +146,7 @@ export default function SellerReturns({
                                                     name="decision"
                                                     value="approved"
                                                     disabled={processing}
-                                                    className="rounded-full bg-emerald-600 px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
+                                                    className="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
                                                 >
                                                     Approve return
                                                 </button>
@@ -154,7 +154,7 @@ export default function SellerReturns({
                                                     name="decision"
                                                     value="rejected"
                                                     disabled={processing}
-                                                    className="rounded-full bg-rose-600 px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
+                                                    className="rounded-xl bg-rose-600 px-5 py-2 text-sm font-bold text-white disabled:opacity-50"
                                                 >
                                                     Reject return
                                                 </button>

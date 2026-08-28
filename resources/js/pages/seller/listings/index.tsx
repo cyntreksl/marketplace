@@ -31,7 +31,7 @@ export default function SellerListings({
             <main className="mx-auto max-w-7xl">
                 <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
                     <div>
-                        <p className="text-sm font-bold tracking-wider text-amber-700 uppercase">
+                        <p className="text-sm font-bold tracking-wider text-primary uppercase">
                             Seller portal
                         </p>
                         <h1 className="mt-2 text-4xl font-black">
@@ -46,7 +46,7 @@ export default function SellerListings({
                     </div>
                     <Link
                         href={create()}
-                        className="rounded-full bg-amber-400 px-5 py-3 text-center font-bold text-stone-950"
+                        className="rounded-xl bg-primary px-5 py-3 text-center font-bold text-primary-foreground"
                     >
                         Create listing
                     </Link>
@@ -100,7 +100,7 @@ export default function SellerListings({
                                         ].includes(listing.status) && (
                                             <Link
                                                 href={edit(listing.id)}
-                                                className="rounded-full border border-stone-300 px-4 py-2 text-sm font-bold dark:border-stone-700"
+                                                className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-bold dark:border-stone-700"
                                             >
                                                 Edit
                                             </Link>
@@ -126,7 +126,7 @@ export default function SellerListings({
                                                                     sellerStatus !==
                                                                         'active')
                                                             }
-                                                            className="rounded-full bg-stone-950 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40 dark:bg-stone-50 dark:text-stone-950"
+                                                            className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40"
                                                         >
                                                             Submit review
                                                         </button>

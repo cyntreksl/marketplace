@@ -22,7 +22,7 @@ export default function AdminSellers({
             <main className="mx-auto max-w-7xl">
                 <Link
                     href={dashboard()}
-                    className="text-sm font-bold text-amber-700"
+                    className="text-sm font-bold text-primary"
                 >
                     ← Operations
                 </Link>
@@ -81,7 +81,7 @@ export default function AdminSellers({
                                         />
                                         <button
                                             disabled={processing}
-                                            className="rounded-full bg-stone-950 px-4 py-2 text-sm font-bold text-white dark:bg-stone-50 dark:text-stone-950"
+                                            className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
                                         >
                                             Save
                                         </button>
