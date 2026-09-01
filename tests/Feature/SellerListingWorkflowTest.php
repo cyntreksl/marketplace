@@ -18,6 +18,8 @@ test('an approved seller can create a draft listing and submit it for moderation
     $this->actingAs($seller->user)
         ->post(route('seller.listings.store'), [
             'category_id' => $category->id,
+            'brand_name' => 'Canon',
+            'sku' => 'CANON-R6-001',
             'title' => 'Canon EOS R6',
             'description' => $description,
             'condition' => 'used',
@@ -114,6 +116,8 @@ test('an approved seller can save a typed brand draft or submit it directly for 
     $this->actingAs($seller->user)
         ->post(route('seller.listings.store'), [
             'category_id' => $category->id,
+            'brand_name' => 'Northstar Optics',
+            'sku' => 'NORTHSTAR-TELESCOPE-001',
             'title' => 'Northstar telescope',
             'description' => 'A compact telescope ready for stargazing.',
             'condition' => 'new',
@@ -186,6 +190,8 @@ test('an unapproved seller cannot submit a new listing directly for review', fun
     $this->actingAs($seller->user)
         ->post(route('seller.listings.store'), [
             'category_id' => $category->id,
+            'brand_name' => 'Draft Brand',
+            'sku' => 'DRAFT-CAMERA-001',
             'title' => 'Draft only camera',
             'description' => 'This listing cannot be submitted yet.',
             'condition' => 'used',

@@ -34,7 +34,7 @@ class SeoHeadService
     public function listing(Listing $listing): array
     {
         $name = (string) config('app.name', 'ProDeals.lk');
-        $title = "{$listing->title} - {$name}";
+        $title = filled($listing->meta_title) ? (string) $listing->meta_title : "{$listing->title} - {$name}";
         $description = $this->listingDescription($listing);
         $cover = $listing->media->first();
         [$image, $width, $height] = $this->listingImage($cover);
@@ -52,6 +52,14 @@ class SeoHeadService
 
     private function listingDescription(Listing $listing): string
     {
+        if (filled($listing->meta_description)) {
+            return (string) $listing->meta_description;
+        }
+
+        if (filled($listing->short_description)) {
+            return (string) $listing->short_description;
+        }
+
         $plainText = html_entity_decode(
             trim((string) preg_replace('/\s+/', ' ', strip_tags((string) $listing->description))),
             ENT_QUOTES | ENT_HTML5,

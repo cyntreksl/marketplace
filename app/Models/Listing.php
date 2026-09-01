@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['seller_profile_id', 'category_id', 'brand_id', 'brand_name', 'title', 'slug', 'description', 'condition', 'listing_type', 'status', 'location', 'specifications', 'warranty', 'stock_quantity', 'reserved_quantity', 'price', 'sale_price', 'commission_percentage', 'moderation_reason', 'submitted_at', 'approved_at', 'is_best_offer', 'is_new_arrival'])]
+#[Fillable(['seller_profile_id', 'category_id', 'brand_id', 'brand_name', 'sku', 'barcode', 'title', 'slug', 'short_description', 'description', 'condition', 'listing_type', 'product_type', 'status', 'location', 'specifications', 'warranty', 'stock_quantity', 'reserved_quantity', 'low_stock_threshold', 'allow_backorders', 'is_active', 'is_featured', 'is_best_seller', 'price', 'sale_price', 'cost_price', 'commission_percentage', 'moderation_reason', 'submitted_at', 'approved_at', 'is_best_offer', 'is_new_arrival', 'meta_title', 'meta_description'])]
 class Listing extends Model
 {
     /** @use HasFactory<ListingFactory> */
@@ -25,11 +25,16 @@ class Listing extends Model
             'specifications' => 'array',
             'price' => 'decimal:2',
             'sale_price' => 'decimal:2',
+            'cost_price' => 'decimal:2',
             'commission_percentage' => 'decimal:2',
             'submitted_at' => 'datetime',
             'approved_at' => 'datetime',
             'is_best_offer' => 'boolean',
             'is_new_arrival' => 'boolean',
+            'allow_backorders' => 'boolean',
+            'is_active' => 'boolean',
+            'is_featured' => 'boolean',
+            'is_best_seller' => 'boolean',
         ];
     }
 
@@ -55,6 +60,18 @@ class Listing extends Model
     public function media(): HasMany
     {
         return $this->hasMany(ListingMedia::class)->orderBy('sort_order');
+    }
+
+    /** @return HasMany<ListingVariantOption, $this> */
+    public function variantOptions(): HasMany
+    {
+        return $this->hasMany(ListingVariantOption::class)->orderBy('position');
+    }
+
+    /** @return HasMany<ListingVariant, $this> */
+    public function variants(): HasMany
+    {
+        return $this->hasMany(ListingVariant::class)->orderBy('position');
     }
 
     /** @return HasOne<Auction, $this> */
@@ -86,14 +103,31 @@ class Listing extends Model
         return $price === null ? null : (string) $price;
     }
 
+    public function stockStatus(): string
+    {
+        $available = $this->stock_quantity - $this->reserved_quantity;
+
+        if ($available <= 0) {
+            return $this->allow_backorders ? 'backorder' : 'out_of_stock';
+        }
+
+        if ($available <= $this->low_stock_threshold) {
+            return 'low_stock';
+        }
+
+        return 'in_stock';
+    }
+
     /** @param Builder<Listing> $query */
     public function scopePubliclyVisible(Builder $query): void
     {
         $query->where('listings.status', 'approved')
+            ->where('listings.is_active', true)
             ->whereHas('sellerProfile', fn (Builder $query) => $query->whereIn('status', ['approved', 'active']))
             ->whereHas('category', fn ($query) => Category::constrainStorefrontAvailability($query))
             ->where(function (Builder $query): void {
                 $query->where('listings.listing_type', 'auction')
+                    ->orWhere('listings.allow_backorders', true)
                     ->orWhereColumn('listings.stock_quantity', '>', 'listings.reserved_quantity');
             });
     }

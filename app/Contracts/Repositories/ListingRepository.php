@@ -60,6 +60,13 @@ interface ListingRepository
 
     public function nextMediaSortOrder(Listing $listing): int;
 
+    /** @param array<int, int> $mediaIds
+     * @return Collection<int, ListingMedia>
+     */
+    public function mediaForListing(Listing $listing, array $mediaIds): Collection;
+
+    public function deleteMedia(ListingMedia $media): void;
+
     public function findForSellerOrFail(SellerProfile $seller, int $listingId, bool $lockForUpdate = false): Listing;
 
     public function delete(Listing $listing): void;

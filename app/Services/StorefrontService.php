@@ -175,6 +175,9 @@ class StorefrontService
             'title' => $listing->title,
             'slug' => $listing->slug,
             'description' => $detailed ? $listing->description : null,
+            'shortDescription' => $detailed ? $listing->short_description : null,
+            'metaTitle' => $detailed ? $listing->meta_title : null,
+            'metaDescription' => $detailed ? $listing->meta_description : null,
             'condition' => $listing->condition,
             'listingType' => $listing->listing_type,
             'price' => $listing->price,
@@ -186,6 +189,7 @@ class StorefrontService
             'location' => $listing->location,
             'warranty' => $listing->warranty,
             'stockQuantity' => $listing->stock_quantity - $listing->reserved_quantity,
+            'stockStatus' => $listing->stockStatus(),
             'category' => $listing->category?->only(['name', 'slug']),
             'brand' => $listing->brand?->only(['name', 'slug']),
             'media' => $listing->media->map(fn ($media) => [

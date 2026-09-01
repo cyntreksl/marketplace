@@ -42,9 +42,15 @@ class SellerListingController extends Controller
         $seller = $request->user()->sellerProfile()->firstOrFail();
 
         return Inertia::render('seller/listings/edit', [
-            'listing' => $listing->load(['auction', 'media', 'category']),
+            'listing' => $listing->load([
+                'auction',
+                'media',
+                'category',
+                'variantOptions.values',
+                'variants.optionValues.option',
+            ]),
             'sellerStatus' => $seller->status,
-            'selectedCategory' => $this->catalog->categoryOption($listing->category),
+            'selectedCategory' => $listing->category === null ? null : $this->catalog->categoryOption($listing->category),
             'brands' => Brand::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
@@ -52,19 +58,21 @@ class SellerListingController extends Controller
     public function store(StoreListingRequest $request): RedirectResponse
     {
         $listing = $this->listings->createDraft($request->user(), $request->validated());
+        $productName = $listing->title ?? 'Product';
 
         return to_route('seller.listings.index')->with('status', $listing->status === 'pending_review'
-            ? "{$listing->title} was submitted for review."
-            : "{$listing->title} was saved as a draft.");
+            ? "{$productName} was submitted for review."
+            : "{$productName} was saved as a draft.");
     }
 
     public function update(UpdateListingRequest $request, Listing $listing): RedirectResponse
     {
         $listing = $this->listings->updateDraft($request->user(), $listing, $request->validated());
+        $productName = $listing->title ?? 'Product';
 
         return to_route('seller.listings.index')->with('status', $listing->status === 'pending_review'
-            ? "{$listing->title} was submitted for review."
-            : "{$listing->title} was updated as a draft.");
+            ? "{$productName} was submitted for review."
+            : "{$productName} was updated as a draft.");
     }
 
     public function submit(SubmitListingRequest $request): RedirectResponse

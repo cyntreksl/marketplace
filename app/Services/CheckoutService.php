@@ -34,7 +34,7 @@ class CheckoutService
             throw ValidationException::withMessages(['listing_id' => 'Auction items cannot be added to a cart.']);
         }
 
-        if ($quantity > $listing->stock_quantity - $listing->reserved_quantity) {
+        if (! $listing->allow_backorders && $quantity > $listing->stock_quantity - $listing->reserved_quantity) {
             throw ValidationException::withMessages(['quantity' => 'This quantity is no longer available.']);
         }
 
@@ -61,11 +61,11 @@ class CheckoutService
             foreach ($cartItems as $cartItem) {
                 $listing = Listing::query()->lockForUpdate()->findOrFail($cartItem->listing_id);
 
-                if ($listing->listing_type !== 'buy_now' || $listing->status !== 'approved') {
+                if ($listing->listing_type !== 'buy_now' || $listing->status !== 'approved' || ! $listing->is_active) {
                     throw ValidationException::withMessages(['cart' => "{$listing->title} is no longer available to purchase."]);
                 }
 
-                if ($listing->stock_quantity - $listing->reserved_quantity < $cartItem->quantity) {
+                if (! $listing->allow_backorders && $listing->stock_quantity - $listing->reserved_quantity < $cartItem->quantity) {
                     throw ValidationException::withMessages(['cart' => "{$listing->title} no longer has enough stock."]);
                 }
 

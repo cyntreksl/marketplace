@@ -11,7 +11,9 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ListingService
 {
@@ -20,6 +22,7 @@ class ListingService
         private readonly CatalogRepository $catalog,
         private readonly AuditLogService $auditLogs,
         private readonly ListingImageService $images,
+        private readonly ListingVariantService $variants,
     ) {}
 
     /**
@@ -46,29 +49,16 @@ class ListingService
         }
 
         return DB::transaction(function () use ($seller, $profile, $attributes, $submitForReview): Listing {
-            $category = $this->catalog->selectableCategory((int) $attributes['category_id']);
-            $listing = new Listing([
+            $listing = new Listing($this->productAttributes($attributes));
+            $listing->forceFill([
                 'seller_profile_id' => $profile->id,
-                'category_id' => $category->id,
-                'brand_id' => $attributes['brand_id'] ?? null,
-                'brand_name' => $attributes['brand_name'] ?? null,
-                'title' => $attributes['title'],
-                'slug' => $this->uniqueSlug($attributes['title']),
-                'description' => $attributes['description'],
-                'condition' => $attributes['condition'],
-                'listing_type' => $attributes['listing_type'],
                 'status' => 'draft',
-                'location' => $attributes['location'],
-                'warranty' => $attributes['warranty'] ?? null,
-                'stock_quantity' => $attributes['listing_type'] === 'buy_now' ? $attributes['stock_quantity'] : 1,
-                'price' => $attributes['listing_type'] === 'buy_now' ? $attributes['price'] : null,
-                'sale_price' => $attributes['listing_type'] === 'buy_now' ? ($attributes['sale_price'] ?? null) : null,
-                'commission_percentage' => $category->commission_percentage,
             ]);
             $this->listings->save($listing);
-            $this->storeImages($listing, $attributes['images'], $attributes['image_crops']);
-
-            $this->syncAuction($listing, $attributes);
+            $this->variants->synchronize($listing, $attributes);
+            $this->synchronizeAggregateStock($listing);
+            $this->storeImages($listing, $attributes['images'] ?? [], $attributes['image_crops'] ?? []);
+            $listing->auction()->delete();
 
             $this->auditLogs->record($seller, 'listing.draft_created', $listing, after: $listing->getAttributes());
 
@@ -93,29 +83,17 @@ class ListingService
                 throw new AuthorizationException('Only drafts and returned listings can be edited.');
             }
 
-            $category = $this->catalog->selectableCategory((int) $attributes['category_id']);
             $before = $listing->getAttributes();
             $listing->forceFill([
-                'category_id' => $category->id,
-                'brand_id' => $attributes['brand_id'] ?? null,
-                'brand_name' => $attributes['brand_name'] ?? null,
-                'title' => $attributes['title'],
-                'slug' => $listing->title === $attributes['title'] ? $listing->slug : $this->uniqueSlug($attributes['title'], $listing->id),
-                'description' => $attributes['description'],
-                'condition' => $attributes['condition'],
-                'listing_type' => $attributes['listing_type'],
+                ...$this->productAttributes($attributes, $listing),
                 'status' => 'draft',
-                'location' => $attributes['location'],
-                'warranty' => $attributes['warranty'] ?? null,
-                'stock_quantity' => $attributes['listing_type'] === 'buy_now' ? $attributes['stock_quantity'] : 1,
-                'price' => $attributes['listing_type'] === 'buy_now' ? $attributes['price'] : null,
-                'sale_price' => $attributes['listing_type'] === 'buy_now' ? ($attributes['sale_price'] ?? null) : null,
-                'commission_percentage' => $category->commission_percentage,
                 'is_best_offer' => false,
-                'is_new_arrival' => false,
             ]);
             $this->listings->save($listing);
-            $this->syncAuction($listing, $attributes);
+            $listing->auction()->delete();
+            $this->images->remove($listing, array_map('intval', $attributes['removed_media_ids'] ?? []));
+            $this->variants->synchronize($listing, $attributes);
+            $this->synchronizeAggregateStock($listing);
 
             if ($attributes['images'] ?? []) {
                 $this->storeImages($listing, $attributes['images'], $attributes['image_crops']);
@@ -177,7 +155,15 @@ class ListingService
             throw new AuthorizationException('Only draft or returned listings can be submitted.');
         }
 
-        $this->catalog->selectableCategory((int) $listing->category_id);
+        if ($listing->category_id !== null) {
+            $this->catalog->selectableCategory((int) $listing->category_id);
+        }
+
+        $this->ensureReadyForReview($listing);
+
+        if ($listing->slug === null && $listing->title !== null) {
+            $listing->slug = $this->uniqueSlug($listing->title, $listing->id);
+        }
 
         $before = $listing->getAttributes();
         $listing->forceFill(['status' => 'pending_review', 'submitted_at' => now(), 'moderation_reason' => null]);
@@ -206,28 +192,105 @@ class ListingService
         }
     }
 
-    /** @param array<string, mixed> $attributes */
-    private function syncAuction(Listing $listing, array $attributes): void
+    /** @param array<string, mixed> $attributes
+     * @return array<string, mixed>
+     */
+    private function productAttributes(array $attributes, ?Listing $listing = null): array
     {
-        if ($listing->listing_type !== 'auction') {
-            $listing->auction()->delete();
+        $category = filled($attributes['category_id'] ?? null)
+            ? $this->catalog->selectableCategory((int) $attributes['category_id'])
+            : null;
+        $title = filled($attributes['title'] ?? null) ? (string) $attributes['title'] : null;
+        $sellingPrice = filled($attributes['selling_price'] ?? null) ? $attributes['selling_price'] : null;
+        $comparePrice = filled($attributes['compare_price'] ?? null) ? $attributes['compare_price'] : null;
 
+        return [
+            'category_id' => $category?->id,
+            'brand_id' => $attributes['brand_id'] ?? null,
+            'brand_name' => $attributes['brand_name'] ?? null,
+            'sku' => $attributes['sku'] ?? null,
+            'barcode' => $attributes['barcode'] ?? null,
+            'title' => $title,
+            'slug' => $listing?->title === $title ? $listing?->slug : $this->uniqueSlug($title, $listing?->id),
+            'short_description' => $attributes['short_description'] ?? null,
+            'description' => $attributes['description'] ?? null,
+            'condition' => $attributes['condition'] ?? null,
+            'listing_type' => 'buy_now',
+            'product_type' => $attributes['product_type'] ?? 'simple',
+            'location' => $attributes['location'] ?? null,
+            'warranty' => $attributes['warranty'] ?? null,
+            'stock_quantity' => ($attributes['product_type'] ?? 'simple') === 'simple' ? (int) ($attributes['stock_quantity'] ?? 0) : 0,
+            'low_stock_threshold' => (int) ($attributes['low_stock_threshold'] ?? 0),
+            'allow_backorders' => (bool) ($attributes['allow_backorders'] ?? false),
+            'is_active' => (bool) ($attributes['is_active'] ?? true),
+            'is_featured' => (bool) ($attributes['is_featured'] ?? false),
+            'is_best_seller' => (bool) ($attributes['is_best_seller'] ?? false),
+            'is_new_arrival' => (bool) ($attributes['is_new_arrival'] ?? false),
+            'price' => $comparePrice ?? $sellingPrice,
+            'sale_price' => $comparePrice === null ? null : $sellingPrice,
+            'cost_price' => filled($attributes['cost_price'] ?? null) ? $attributes['cost_price'] : null,
+            'commission_percentage' => $category?->commission_percentage,
+            'meta_title' => $attributes['meta_title'] ?? null,
+            'meta_description' => $attributes['meta_description'] ?? null,
+        ];
+    }
+
+    private function synchronizeAggregateStock(Listing $listing): void
+    {
+        if ($listing->product_type !== 'variant') {
             return;
         }
 
-        $listing->auction()->updateOrCreate([], [
-            'status' => 'draft',
-            'starting_price' => $attributes['starting_price'],
-            'reserve_price' => $attributes['reserve_price'] ?? null,
-            'minimum_increment' => $attributes['minimum_increment'],
-            'current_price' => $attributes['starting_price'],
-            'starts_at' => $attributes['starts_at'],
-            'ends_at' => $attributes['ends_at'],
-        ]);
+        $listing->forceFill(['stock_quantity' => $listing->variants()->sum('stock_quantity')]);
+        $this->listings->save($listing);
     }
 
-    private function uniqueSlug(string $title, ?int $exceptListingId = null): string
+    private function ensureReadyForReview(Listing $listing): void
     {
+        $validator = Validator::make([
+            ...$listing->only([
+                'category_id',
+                'sku',
+                'title',
+                'description',
+                'condition',
+                'location',
+                'price',
+                'product_type',
+            ]),
+            'brand' => $listing->brand_id ?? $listing->brand_name,
+            'media_count' => $listing->media()->count(),
+            'variant_count' => $listing->variants()->count(),
+            'variants_with_skus' => $listing->variants()->whereNotNull('sku')->count(),
+        ], [
+            'category_id' => ['required', 'integer'],
+            'sku' => ['required', 'string'],
+            'title' => ['required', 'string'],
+            'description' => ['required', 'string'],
+            'condition' => ['required', 'string'],
+            'location' => ['required', 'string'],
+            'price' => ['required', 'numeric', 'min:1'],
+            'brand' => ['required'],
+            'media_count' => ['integer', 'min:1'],
+            'variant_count' => ['exclude_unless:product_type,variant', 'required', 'integer', 'min:1'],
+            'variants_with_skus' => ['exclude_unless:product_type,variant', 'same:variant_count'],
+        ], [
+            'media_count.min' => 'Add at least one product image before submitting for review.',
+            'variant_count.min' => 'Generate at least one complete variant before submitting for review.',
+            'variants_with_skus.same' => 'Every variant needs a SKU before submitting for review.',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+    }
+
+    private function uniqueSlug(?string $title, ?int $exceptListingId = null): ?string
+    {
+        if ($title === null) {
+            return null;
+        }
+
         $base = Str::slug($title) ?: 'listing';
         $slug = $base;
         $counter = 2;

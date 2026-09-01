@@ -163,6 +163,16 @@ class EloquentListingRepository implements ListingRepository
         return (int) $listing->media()->max('sort_order') + 1;
     }
 
+    public function mediaForListing(Listing $listing, array $mediaIds): Collection
+    {
+        return $listing->media()->whereKey($mediaIds)->get();
+    }
+
+    public function deleteMedia(ListingMedia $media): void
+    {
+        $media->delete();
+    }
+
     public function findForSellerOrFail(SellerProfile $seller, int $listingId, bool $lockForUpdate = false): Listing
     {
         return $seller->listings()

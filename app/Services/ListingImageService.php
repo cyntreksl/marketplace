@@ -143,6 +143,36 @@ class ListingImageService
         }
     }
 
+    /** @param array<int, int> $mediaIds */
+    public function remove(Listing $listing, array $mediaIds): void
+    {
+        if ($mediaIds === []) {
+            return;
+        }
+
+        $coverId = $listing->media()->value('id');
+        $mediaItems = $this->listings->mediaForListing($listing, $mediaIds);
+
+        foreach ($mediaItems as $media) {
+            $paths = array_values(array_filter([
+                $media->path,
+                $media->source_path,
+                ...array_values(is_array($media->variants) ? $media->variants : []),
+            ]));
+            $disk = $media->disk;
+            $this->listings->deleteMedia($media);
+            DB::connection()->afterCommit(fn () => Storage::disk($disk)->delete($paths));
+        }
+
+        if ($coverId !== null && in_array((int) $coverId, $mediaIds, true)) {
+            $newCover = $listing->media()->first();
+
+            if ($newCover !== null && $newCover->variant_version !== null) {
+                GenerateListingImageVariants::dispatch($newCover->id, $newCover->variant_version, true)->afterCommit();
+            }
+        }
+    }
+
     public function markFailed(int $mediaId, string $version, ?Throwable $exception): void
     {
         $media = $this->listings->findMedia($mediaId);
