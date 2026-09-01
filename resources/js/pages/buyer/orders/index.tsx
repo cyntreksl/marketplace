@@ -19,6 +19,8 @@ type Order = {
             title: string;
             quantity: number;
             unit_price: string;
+            variant_sku: string | null;
+            variant_options: Record<string, string> | null;
             listing: { slug: string } | null;
             review: { rating: number; comment: string | null } | null;
         }[];
@@ -106,6 +108,25 @@ export default function BuyerOrders({ orders }: { orders: { data: Order[] } }) {
                                                                             }
                                                                         </span>
                                                                     </p>
+                                                                    {item.variant_options && (
+                                                                        <p className="mt-1 text-xs text-primary">
+                                                                            {Object.entries(
+                                                                                item.variant_options,
+                                                                            )
+                                                                                .map(
+                                                                                    ([
+                                                                                        name,
+                                                                                        value,
+                                                                                    ]) =>
+                                                                                        `${name}: ${value}`,
+                                                                                )
+                                                                                .join(
+                                                                                    ' · ',
+                                                                                )}
+                                                                            {item.variant_sku &&
+                                                                                ` · ${item.variant_sku}`}
+                                                                        </p>
+                                                                    )}
                                                                     {item.review && (
                                                                         <span className="flex items-center gap-1 text-xs font-black text-amber-600">
                                                                             <Star className="size-3.5 fill-current" />{' '}

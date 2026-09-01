@@ -6,6 +6,10 @@ import { index as ordersIndex } from '@/routes/buyer/orders';
 type CartItem = {
     id: number;
     quantity: number;
+    variant: {
+        sku: string;
+        option_values: { value: string; option: { name: string } }[];
+    } | null;
     listing: {
         title: string;
         price: string;
@@ -68,6 +72,17 @@ export default function BuyerCart({ cart }: { cart: { items: CartItem[] } }) {
                                                 }{' '}
                                                 · Qty {item.quantity}
                                             </p>
+                                            {item.variant && (
+                                                <p className="mt-1 text-xs text-primary">
+                                                    {item.variant.option_values
+                                                        .map(
+                                                            (value) =>
+                                                                `${value.option.name}: ${value.value}`,
+                                                        )
+                                                        .join(' · ')}{' '}
+                                                    · {item.variant.sku}
+                                                </p>
+                                            )}
                                         </div>
                                         <p className="font-bold">
                                             LKR{' '}
