@@ -17,7 +17,10 @@ export function BrandLogo({
     return (
         <span
             className={cn(
-                'inline-flex items-center gap-2.5',
+                'inline-flex',
+                showTagline
+                    ? 'flex-col items-start gap-1'
+                    : 'items-center gap-2.5',
                 inverse ? 'text-white' : 'text-black dark:text-white',
                 className,
             )}
@@ -38,7 +41,7 @@ export function BrandLogo({
                 </span>
             )}
             {!compact && (
-                <span className="grid min-w-0 leading-none">
+                <span className="min-w-0 leading-none">
                     {showTagline && (
                         <span
                             className={cn(

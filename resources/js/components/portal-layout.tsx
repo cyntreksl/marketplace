@@ -255,7 +255,7 @@ export function PortalLayout({
         <div
             className={`portal-theme-${portal} min-h-dvh bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50`}
         >
-            <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-slate-200 bg-white p-4 lg:flex dark:border-slate-800 dark:bg-slate-950">
+            <aside className="fixed inset-y-0 left-0 z-30 hidden w-[348px] flex-col border-r border-slate-200 bg-white p-4 lg:flex dark:border-slate-800 dark:bg-slate-950">
                 <Link
                     href={home()}
                     className="flex items-center gap-3 rounded-xl px-2 py-2"
@@ -276,7 +276,7 @@ export function PortalLayout({
                 </div>
             </aside>
 
-            <div className="min-h-dvh lg:pl-64">
+            <div className="min-h-dvh lg:pl-[348px]">
                 <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6 lg:px-10 dark:border-slate-800 dark:bg-slate-950/90">
                     <div className="flex min-w-0 items-center gap-3">
                         <Sheet>
