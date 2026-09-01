@@ -11,6 +11,7 @@ use App\Contracts\Repositories\WatchlistRepository;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Listing;
+use App\Models\ProductQuestion;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
@@ -161,7 +162,10 @@ class StorefrontService
         ];
     }
 
-    /** @return array<int, array<string, mixed>> */
+    /**
+     * @param  array<int, int>  $listingIds
+     * @return array<int, array<string, mixed>>
+     */
     public function comparisonData(array $listingIds): array
     {
         return $this->listings->findPublicByIds($listingIds)
@@ -233,7 +237,7 @@ class StorefrontService
             'stockQuantity' => $listing->stock_quantity - $listing->reserved_quantity,
             'stockStatus' => $listing->stockStatus(),
             'productType' => $listing->product_type,
-            'specifications' => $detailed && is_array($listing->specifications) ? $listing->specifications : [],
+            'specifications' => $detailed ? ($listing->specifications ?? []) : [],
             'category' => $listing->category?->only(['name', 'slug']),
             'brand' => $listing->brand?->only(['name', 'slug']),
             'media' => $listing->media->map(fn ($media) => [
@@ -277,13 +281,13 @@ class StorefrontService
     }
 
     /** @return array<string, mixed> */
-    private function questionData($question): array
+    private function questionData(ProductQuestion $question): array
     {
         return [
             'id' => $question->id,
             'question' => $question->question,
             'answer' => $question->answer,
-            'askedBy' => $question->asker?->name ?? 'Marketplace shopper',
+            'askedBy' => $question->asker->name,
             'answeredBy' => $question->answerer?->name,
             'answeredAt' => $question->answered_at?->toIso8601String(),
         ];
@@ -341,7 +345,7 @@ class StorefrontService
             'id' => $promotion->id,
             'title' => $promotion->title,
             'subtitle' => $promotion->subtitle,
-            'endsAt' => $promotion->ends_at->toIso8601String(),
+            'endsAt' => $promotion->ends_at?->toIso8601String(),
             'listings' => $promotion->listings->map(fn (Listing $listing): array => $this->listingData($listing))->values(),
         ];
     }
@@ -358,7 +362,7 @@ class StorefrontService
         return [
             'title' => $promotion->title,
             'subtitle' => $promotion->subtitle,
-            'endsAt' => $promotion->ends_at->toIso8601String(),
+            'endsAt' => $promotion->ends_at?->toIso8601String(),
         ];
     }
 }

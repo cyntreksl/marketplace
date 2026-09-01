@@ -32,9 +32,11 @@ class EloquentWatchlistRepository implements WatchlistRepository
 
     public function add(User $user, Listing $listing): Watchlist
     {
-        $entry = Watchlist::withTrashed()->firstOrNew(['buyer_id' => $user->id, 'listing_id' => $listing->id]);
-        $entry->deleted_at = null;
-        $entry->save();
+        $entry = Watchlist::withTrashed()->firstOrCreate(['buyer_id' => $user->id, 'listing_id' => $listing->id]);
+
+        if ($entry->trashed()) {
+            $entry->restore();
+        }
 
         return $entry;
     }

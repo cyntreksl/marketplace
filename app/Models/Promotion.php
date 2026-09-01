@@ -7,8 +7,10 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
+/** @property Carbon|null $ends_at */
 #[Fillable(['title', 'subtitle', 'cta_label', 'visual_theme', 'image_path', 'image_disk', 'artwork_alt', 'link_url', 'placement', 'sort_order', 'is_active', 'starts_at', 'ends_at'])]
 class Promotion extends Model
 {

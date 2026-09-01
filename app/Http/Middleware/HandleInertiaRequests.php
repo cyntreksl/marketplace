@@ -50,7 +50,7 @@ class HandleInertiaRequests extends Middleware
                     ->exists() ?? false,
             ],
             'commerce' => [
-                'cart_quantity' => fn (): int => $request->user()?->cart?->items()->sum('quantity') ?? 0,
+                'cart_quantity' => fn (): int => (int) ($request->user()?->cart?->items()->sum('quantity') ?? 0),
                 'wishlist_count' => fn (): int => $request->user()?->watchlistEntries()->count() ?? 0,
             ],
             'marketplace' => config('marketplace'),

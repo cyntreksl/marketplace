@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/** @property Carbon|null $answered_at */
 #[Fillable(['listing_id', 'asked_by', 'question', 'answer', 'answered_by', 'answered_at'])]
 class ProductQuestion extends Model
 {

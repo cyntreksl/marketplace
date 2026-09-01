@@ -45,9 +45,9 @@ class CheckoutService
         $cart = Cart::query()->firstOrCreate(['buyer_id' => $buyer->id]);
         $item = $cart->items()->firstOrNew([
             'listing_id' => $listing->id,
-            'selection_key' => $variant?->combination_key ?? 'base',
+            'selection_key' => $variant === null ? 'base' : $variant->combination_key,
         ]);
-        $item->listing_variant_id = $variant?->id;
+        $item->variant()->associate($variant);
         $item->quantity = $quantity;
         $item->save();
 

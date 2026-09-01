@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Brand;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -10,7 +11,11 @@ class UpdateBrandRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
-        $this->merge(['is_featured' => $this->input('is_featured', $this->route('brand')?->is_featured ?? false)]);
+        $brand = $this->route('brand');
+
+        $this->merge([
+            'is_featured' => $this->input('is_featured', $brand instanceof Brand ? $brand->is_featured : false),
+        ]);
     }
 
     /**

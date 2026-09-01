@@ -12,9 +12,11 @@ class UpdatePromotionRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
+        $promotion = $this->route('promotion');
+
         $this->merge([
-            'visual_theme' => $this->input('visual_theme', $this->route('promotion')?->visual_theme ?? 'orange'),
-            'listing_ids' => $this->input('listing_ids', $this->route('promotion')?->listings()->pluck('listings.id')->all() ?? []),
+            'visual_theme' => $this->input('visual_theme', $promotion instanceof Promotion ? $promotion->visual_theme : 'orange'),
+            'listing_ids' => $this->input('listing_ids', $promotion instanceof Promotion ? $promotion->listings()->pluck('listings.id')->all() : []),
         ]);
     }
 
@@ -64,8 +66,14 @@ class UpdatePromotionRequest extends FormRequest
                 $validator->errors()->add('listing_ids', 'A flash sale needs at least one approved listing.');
             }
 
+            $activeHeroPromotions = Promotion::query()->where('placement', 'hero')->where('is_active', true);
+
+            if ($promotion instanceof Promotion) {
+                $activeHeroPromotions->whereKeyNot($promotion->getKey());
+            }
+
             if ($this->boolean('is_active') && $this->input('placement') === 'hero'
-                && Promotion::query()->where('placement', 'hero')->where('is_active', true)->whereKeyNot($promotion?->getKey())->count() >= 5) {
+                && $activeHeroPromotions->count() >= 5) {
                 $validator->errors()->add('placement', 'Only five active hero slides are allowed.');
             }
         }];

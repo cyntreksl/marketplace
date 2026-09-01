@@ -26,6 +26,11 @@ test('wishlist actions require authentication and are idempotent', function () {
     $this->actingAs($buyer)->delete(route('wishlist.destroy', $listing->slug))->assertRedirect();
 
     expect(Watchlist::query()->whereBelongsTo($buyer, 'buyer')->whereBelongsTo($listing)->count())->toBe(0);
+
+    $this->actingAs($buyer)->post(route('wishlist.store', $listing->slug))->assertRedirect();
+
+    expect(Watchlist::query()->whereBelongsTo($buyer, 'buyer')->whereBelongsTo($listing)->count())->toBe(1)
+        ->and(Watchlist::withTrashed()->whereBelongsTo($buyer, 'buyer')->whereBelongsTo($listing)->count())->toBe(1);
 });
 
 test('comparison accepts up to four identifiers and excludes unavailable listings', function () {
