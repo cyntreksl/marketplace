@@ -8,13 +8,13 @@ import {
     Package,
     Plus,
     RotateCcw,
-    ShieldCheck,
     Tags,
     ShoppingBag,
     Store,
     WalletCards,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { Fragment } from 'react';
 import { BrandLogo } from '@/components/brand-logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -60,12 +60,12 @@ type NavigationItem = {
     title: string;
     href: ReturnType<typeof home>;
     icon: LucideIcon;
+    group: string;
 };
 
 type PortalDetails = {
     label: string;
     description: string;
-    icon: LucideIcon;
     navigation: NavigationItem[];
 };
 
@@ -73,102 +73,120 @@ const portalDetails: Record<Portal, PortalDetails> = {
     admin: {
         label: 'Admin workspace',
         description: 'Marketplace operations',
-        icon: ShieldCheck,
         navigation: [
             {
                 title: 'Overview',
                 href: adminDashboard(),
                 icon: LayoutDashboard,
+                group: 'Dashboard',
             },
             {
                 title: 'Homepage',
                 href: adminHomepageIndex(),
                 icon: PanelsTopLeft,
+                group: 'Dashboard',
             },
             {
                 title: 'Seller approvals',
                 href: adminSellersIndex(),
                 icon: Store,
+                group: 'Marketplace',
             },
             {
                 title: 'Listing reviews',
                 href: adminListingsIndex(),
                 icon: ClipboardCheck,
+                group: 'Marketplace',
             },
             {
                 title: 'Returns & refunds',
                 href: adminReturnsIndex(),
                 icon: RotateCcw,
+                group: 'Marketplace',
             },
             {
                 title: 'Categories',
                 href: adminCategoriesIndex(),
                 icon: FolderTree,
+                group: 'Catalog',
             },
-            { title: 'Brands', href: adminBrandsIndex(), icon: Tags },
+            {
+                title: 'Brands',
+                href: adminBrandsIndex(),
+                icon: Tags,
+                group: 'Catalog',
+            },
             {
                 title: 'Google taxonomy',
                 href: adminTaxonomyIndex(),
                 icon: FolderTree,
+                group: 'Catalog',
             },
         ],
     },
     seller: {
         label: 'Seller workspace',
         description: 'Manage your store',
-        icon: Store,
         navigation: [
             {
-                title: 'Products',
+                title: 'All Products',
                 href: sellerListingsIndex(),
                 icon: Package,
+                group: 'Products',
             },
             {
                 title: 'Add New Product',
                 href: sellerListingsCreate(),
                 icon: Plus,
+                group: 'Products',
             },
             {
-                title: 'Orders',
+                title: 'All Orders',
                 href: sellerOrdersIndex(),
                 icon: ShoppingBag,
+                group: 'Orders',
             },
             {
                 title: 'Returns',
                 href: sellerReturnsIndex(),
                 icon: RotateCcw,
+                group: 'Orders',
             },
             {
                 title: 'Wallet',
                 href: sellerWalletIndex(),
                 icon: WalletCards,
+                group: 'Store',
             },
             {
                 title: 'Store profile',
                 href: sellerOnboardingEdit(),
                 icon: Store,
+                group: 'Store',
             },
         ],
     },
     buyer: {
         label: 'Buyer workspace',
         description: 'Orders and checkout',
-        icon: ShoppingBag,
         navigation: [
             {
                 title: 'Your cart',
                 href: cartShow(),
                 icon: ShoppingBag,
+                group: 'Shopping',
             },
             {
                 title: 'Orders',
                 href: buyerOrdersIndex(),
                 icon: ClipboardCheck,
+                group: 'Shopping',
             },
             {
                 title: 'Returns',
                 href: buyerReturnsIndex(),
                 icon: RotateCcw,
+                group: 'Shopping',
             },
         ],
     },
@@ -189,24 +207,31 @@ function PortalNavigation({
             className={cn('grid gap-1', className)}
             aria-label="Portal navigation"
         >
-            {navigation.map((item) => {
+            {navigation.map((item, index) => {
                 const isActive = page.url.split('?')[0] === item.href.url;
+                const beginsGroup = navigation[index - 1]?.group !== item.group;
 
                 return (
-                    <Link
-                        key={item.title}
-                        href={item.href}
-                        prefetch
-                        className={cn(
-                            'flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors',
-                            isActive
-                                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
+                    <Fragment key={item.title}>
+                        {beginsGroup && (
+                            <p className="mt-5 px-3 text-[0.68rem] font-semibold tracking-[0.12em] text-slate-400 uppercase first:mt-0 dark:text-slate-500">
+                                {item.group}
+                            </p>
                         )}
-                    >
-                        <item.icon className="size-4" />
-                        <span>{item.title}</span>
-                    </Link>
+                        <Link
+                            href={item.href}
+                            prefetch
+                            className={cn(
+                                'flex min-h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition-colors',
+                                isActive
+                                    ? 'bg-primary/10 text-primary'
+                                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white',
+                            )}
+                        >
+                            <item.icon className="size-4" />
+                            <span>{item.title}</span>
+                        </Link>
+                    </Fragment>
                 );
             })}
         </nav>
@@ -225,13 +250,12 @@ export function PortalLayout({
     const { auth } = usePage().props;
     const getInitials = useInitials();
     const details = portalDetails[portal];
-    const PortalIcon = details.icon;
 
     return (
         <div
             className={`portal-theme-${portal} min-h-dvh bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50`}
         >
-            <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-slate-200 bg-white p-4 lg:flex dark:border-slate-800 dark:bg-slate-950">
+            <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-slate-200 bg-white p-4 lg:flex dark:border-slate-800 dark:bg-slate-950">
                 <Link
                     href={home()}
                     className="flex items-center gap-3 rounded-xl px-2 py-2"
@@ -239,33 +263,12 @@ export function PortalLayout({
                     <BrandLogo showTagline />
                 </Link>
 
-                <div className="mt-8 rounded-xl bg-slate-100 p-3 dark:bg-slate-900">
-                    <div className="flex items-center gap-3">
-                        <span className="grid size-9 place-items-center rounded-xl bg-white text-primary shadow-sm dark:bg-slate-800">
-                            <PortalIcon className="size-4" />
-                        </span>
-                        <div>
-                            <p className="text-sm font-semibold">
-                                {details.label}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                                {details.description}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+                <PortalNavigation portal={portal} className="mt-8" />
 
-                <div className="mt-6">
-                    <p className="px-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-                        Workspace
-                    </p>
-                    <PortalNavigation portal={portal} className="mt-3" />
-                </div>
-
-                <div className="mt-auto border-t border-slate-200 pt-4 dark:border-slate-800">
+                <div className="mt-auto rounded-xl bg-slate-100 p-2 dark:bg-slate-900">
                     <Link
                         href={home()}
-                        className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                        className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
                     >
                         <ShoppingBag className="size-4" />
                         Browse marketplace
@@ -273,7 +276,7 @@ export function PortalLayout({
                 </div>
             </aside>
 
-            <div className="min-h-dvh lg:pl-72">
+            <div className="min-h-dvh lg:pl-64">
                 <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6 lg:px-10 dark:border-slate-800 dark:bg-slate-950/90">
                     <div className="flex min-w-0 items-center gap-3">
                         <Sheet>

@@ -1,6 +1,7 @@
 import { useHttp } from '@inertiajs/react';
 import {
     Check,
+    ChevronDown,
     ChevronLeft,
     ChevronRight,
     FolderTree,
@@ -8,7 +9,7 @@ import {
     Search,
     X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { search as searchCategories } from '@/routes/categories';
 
 export type CategoryOption = {
@@ -37,6 +38,7 @@ export function CategoryPicker({
     error?: string;
 }) {
     const [query, setQuery] = useState('');
+    const [isOpen, setIsOpen] = useState(false);
     const [options, setOptions] = useState<CategoryOption[]>([]);
     const [breadcrumbs, setBreadcrumbs] = useState<Breadcrumb[]>([]);
     const [loadError, setLoadError] = useState<string | null>(null);
@@ -46,8 +48,31 @@ export function CategoryPicker({
     const currentParent = breadcrumbs.at(-1);
     const currentParentId = currentParent?.id;
     const { cancel, get } = request;
+    const pickerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
+        function closeOnOutsideClick(event: PointerEvent): void {
+            if (
+                pickerRef.current &&
+                !pickerRef.current.contains(event.target as Node)
+            ) {
+                setIsOpen(false);
+            }
+        }
+
+        document.addEventListener('pointerdown', closeOnOutsideClick);
+
+        return () =>
+            document.removeEventListener('pointerdown', closeOnOutsideClick);
+    }, []);
+
+    useEffect(() => {
+        if (!isOpen) {
+            cancel();
+
+            return;
+        }
+
         const timeout = window.setTimeout(
             () => {
                 cancel();
@@ -86,7 +111,7 @@ export function CategoryPicker({
             window.clearTimeout(timeout);
             cancel();
         };
-    }, [cancel, currentParentId, get, query]);
+    }, [cancel, currentParentId, get, isOpen, query]);
 
     function drillInto(category: CategoryOption): void {
         setQuery('');
@@ -109,10 +134,11 @@ export function CategoryPicker({
         }
 
         onSelect(category);
+        setIsOpen(false);
     }
 
     return (
-        <div className="grid gap-3">
+        <div ref={pickerRef} className="relative grid gap-2">
             <div className="flex items-center justify-between gap-3">
                 <label
                     htmlFor="category-picker-search"
@@ -132,160 +158,175 @@ export function CategoryPicker({
                 )}
             </div>
 
-            {selected && (
-                <div
-                    className={`flex items-start gap-3 rounded-xl border p-3 text-sm ${
-                        selectionMode === 'leaf' && !selected.is_selectable
-                            ? 'border-red-300 bg-red-50 text-red-900 dark:border-red-900 dark:bg-red-950/30 dark:text-red-100'
-                            : 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100'
-                    }`}
-                >
-                    <Check className="mt-0.5 size-4 shrink-0" />
-                    <div>
-                        <span className="font-bold">{selected.name}</span>
-                        <span className="mt-0.5 block text-xs opacity-75">
+            <button
+                type="button"
+                role="combobox"
+                aria-expanded={isOpen}
+                aria-controls="category-picker-options"
+                onClick={() => setIsOpen((open) => !open)}
+                className={`flex min-h-12 w-full items-center gap-3 rounded-xl border bg-white px-3 text-left transition focus:border-primary focus:ring-4 focus:ring-primary/10 focus:outline-none dark:bg-slate-950 ${
+                    error
+                        ? 'border-red-500'
+                        : 'border-slate-300 dark:border-slate-700'
+                }`}
+            >
+                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                    <FolderTree className="size-4" />
+                </span>
+                <span className="min-w-0 flex-1">
+                    <span
+                        className={`block truncate text-sm font-semibold ${selected ? '' : 'text-slate-400'}`}
+                    >
+                        {selected?.name ?? 'Select product category'}
+                    </span>
+                    {selected && (
+                        <span className="block truncate text-xs text-slate-500">
                             {selected.path}
                         </span>
-                        {selectionMode === 'leaf' &&
-                            !selected.is_selectable && (
-                                <span className="mt-1 block font-semibold">
-                                    This category can no longer accept listings.
-                                    Choose a leaf category below.
-                                </span>
-                            )}
-                    </div>
-                </div>
-            )}
-
-            <div className="overflow-hidden rounded-xl border border-stone-300 bg-white dark:border-stone-700 dark:bg-stone-950">
-                <div className="relative border-b border-stone-200 dark:border-stone-800">
-                    <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-stone-400" />
-                    <input
-                        id="category-picker-search"
-                        value={query}
-                        onChange={(event) => setQuery(event.target.value)}
-                        placeholder="Search all categories"
-                        autoComplete="off"
-                        className="w-full bg-transparent py-3 pr-10 pl-10 text-sm outline-none focus:ring-4 focus:ring-amber-100 dark:focus:ring-amber-900/30"
-                    />
-                    {request.processing && (
-                        <LoaderCircle className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-amber-600" />
                     )}
-                </div>
-
-                {query.trim() === '' && (
-                    <nav
-                        aria-label="Category breadcrumbs"
-                        className="flex min-h-10 items-center gap-1 overflow-x-auto border-b border-stone-200 px-2 text-xs dark:border-stone-800"
-                    >
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setQuery('');
-                                setBreadcrumbs([]);
-                            }}
-                            className="shrink-0 rounded-md px-2 py-1 font-semibold hover:bg-stone-100 dark:hover:bg-stone-800"
-                        >
-                            Departments
-                        </button>
-                        {breadcrumbs.map((crumb, index) => (
-                            <span
-                                key={crumb.id}
-                                className="flex shrink-0 items-center gap-1"
-                            >
-                                <ChevronRight className="size-3 text-stone-400" />
-                                <button
-                                    type="button"
-                                    onClick={() => returnTo(index)}
-                                    className="rounded-md px-2 py-1 font-semibold hover:bg-stone-100 dark:hover:bg-stone-800"
-                                >
-                                    {crumb.name}
-                                </button>
-                            </span>
-                        ))}
-                    </nav>
+                </span>
+                {selected ? (
+                    <Check className="size-4 shrink-0 text-emerald-600" />
+                ) : (
+                    <ChevronDown className="size-4 shrink-0 text-slate-400" />
                 )}
+            </button>
 
-                <div
-                    role="listbox"
-                    aria-label="Category options"
-                    className="max-h-72 overflow-y-auto p-1"
-                >
-                    {currentParent && query.trim() === '' && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setQuery('');
-                                setBreadcrumbs((trail) => trail.slice(0, -1));
-                            }}
-                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-900"
+            {isOpen && (
+                <div className="absolute top-full right-0 left-0 z-50 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/15 dark:border-slate-700 dark:bg-slate-950">
+                    <div className="relative border-b border-slate-200 dark:border-slate-800">
+                        <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-slate-400" />
+                        <input
+                            id="category-picker-search"
+                            value={query}
+                            onChange={(event) => setQuery(event.target.value)}
+                            placeholder="Search categories"
+                            autoComplete="off"
+                            autoFocus
+                            className="h-12 w-full bg-transparent pr-11 pl-11 text-sm outline-none"
+                        />
+                        {request.processing && (
+                            <LoaderCircle className="absolute top-1/2 right-4 size-4 -translate-y-1/2 animate-spin text-primary" />
+                        )}
+                    </div>
+
+                    {query.trim() === '' && (
+                        <nav
+                            aria-label="Category breadcrumbs"
+                            className="flex min-h-10 items-center gap-1 overflow-x-auto border-b border-slate-200 px-2 text-xs dark:border-slate-800"
                         >
-                            <ChevronLeft className="size-4" />
-                            Back
-                        </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setQuery('');
+                                    setBreadcrumbs([]);
+                                }}
+                                className="shrink-0 rounded-md px-2 py-1 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"
+                            >
+                                All categories
+                            </button>
+                            {breadcrumbs.map((crumb, index) => (
+                                <span
+                                    key={crumb.id}
+                                    className="flex shrink-0 items-center gap-1"
+                                >
+                                    <ChevronRight className="size-3 text-slate-400" />
+                                    <button
+                                        type="button"
+                                        onClick={() => returnTo(index)}
+                                        className="rounded-md px-2 py-1 font-semibold hover:bg-slate-100 dark:hover:bg-slate-800"
+                                    >
+                                        {crumb.name}
+                                    </button>
+                                </span>
+                            ))}
+                        </nav>
                     )}
 
-                    {!request.processing && loadError && (
-                        <p className="p-6 text-center text-sm text-red-600">
-                            {loadError}
-                        </p>
-                    )}
+                    <div
+                        id="category-picker-options"
+                        role="listbox"
+                        aria-label="Category options"
+                        className="max-h-80 overflow-y-auto p-2"
+                    >
+                        {currentParent && query.trim() === '' && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setQuery('');
+                                    setBreadcrumbs((trail) =>
+                                        trail.slice(0, -1),
+                                    );
+                                }}
+                                className="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900"
+                            >
+                                <ChevronLeft className="size-4" />
+                                Back
+                            </button>
+                        )}
 
-                    {!request.processing &&
-                        !loadError &&
-                        options.length === 0 && (
-                            <p className="p-6 text-center text-sm text-stone-500">
-                                No categories found.
+                        {!request.processing && loadError && (
+                            <p className="p-6 text-center text-sm text-red-600">
+                                {loadError}
                             </p>
                         )}
 
-                    {options.map((category) => {
-                        const isSelected = selected?.id === category.id;
+                        {!request.processing &&
+                            !loadError &&
+                            options.length === 0 && (
+                                <p className="p-6 text-center text-sm text-slate-500">
+                                    No categories found.
+                                </p>
+                            )}
 
-                        return (
-                            <div
-                                key={category.id}
-                                role="option"
-                                aria-selected={isSelected}
-                                className={`flex items-center gap-1 rounded-lg ${isSelected ? 'bg-amber-50 dark:bg-amber-950/30' : 'hover:bg-stone-50 dark:hover:bg-stone-900'}`}
-                            >
-                                <button
-                                    type="button"
-                                    onClick={() => choose(category)}
-                                    className="flex min-w-0 flex-1 items-start gap-3 px-3 py-2.5 text-left"
+                        {options.map((category) => {
+                            const isSelected = selected?.id === category.id;
+
+                            return (
+                                <div
+                                    key={category.id}
+                                    role="option"
+                                    aria-selected={isSelected}
+                                    className={`flex items-center gap-1 rounded-xl ${isSelected ? 'bg-primary/10' : 'hover:bg-slate-50 dark:hover:bg-slate-900'}`}
                                 >
-                                    <FolderTree className="mt-0.5 size-4 shrink-0 text-amber-700 dark:text-amber-400" />
-                                    <span className="min-w-0">
-                                        <span className="block truncate text-sm font-semibold">
-                                            {category.name}
-                                        </span>
-                                        {query.trim() !== '' && (
-                                            <span className="block truncate text-xs text-stone-500">
-                                                {category.path}
+                                    <button
+                                        type="button"
+                                        onClick={() => choose(category)}
+                                        className="flex min-w-0 flex-1 items-start gap-3 px-3 py-3 text-left"
+                                    >
+                                        <FolderTree className="mt-0.5 size-4 shrink-0 text-primary" />
+                                        <span className="min-w-0">
+                                            <span className="block truncate text-sm font-semibold">
+                                                {category.name}
                                             </span>
+                                            {category.path !== category.name &&
+                                                (query.trim() !== '' ||
+                                                    !category.is_selectable) && (
+                                                    <span className="block truncate text-xs text-slate-500">
+                                                        {category.path}
+                                                    </span>
+                                                )}
+                                        </span>
+                                        {isSelected && (
+                                            <Check className="mt-0.5 ml-auto size-4 shrink-0 text-primary" />
                                         )}
-                                    </span>
-                                    {isSelected && (
-                                        <Check className="mt-0.5 ml-auto size-4 shrink-0 text-amber-700" />
-                                    )}
-                                </button>
-                                {category.has_children &&
-                                    (selectionMode === 'any' ||
-                                        category.is_selectable) && (
+                                    </button>
+                                    {category.has_children && (
                                         <button
                                             type="button"
                                             onClick={() => drillInto(category)}
                                             aria-label={`Browse ${category.name}`}
-                                            className="mr-1 rounded-lg p-2 text-stone-500 hover:bg-stone-200 hover:text-stone-900 dark:hover:bg-stone-800 dark:hover:text-stone-100"
+                                            className="mr-1 rounded-lg p-2 text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-white"
                                         >
                                             <ChevronRight className="size-4" />
                                         </button>
                                     )}
-                            </div>
-                        );
-                    })}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
-            </div>
+            )}
 
             {error && <p className="text-sm text-red-600">{error}</p>}
         </div>

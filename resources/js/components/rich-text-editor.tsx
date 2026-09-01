@@ -1,17 +1,5 @@
-import {
-    Bold,
-    Heading2,
-    Italic,
-    List,
-    ListOrdered,
-    Quote,
-    Redo2,
-    Underline,
-    Undo2,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import { useEffect, useRef } from 'react';
-import type { ClipboardEvent, ReactNode } from 'react';
+import { Editor } from '@tinymce/tinymce-react';
+import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 const allowedTags = new Set([
@@ -33,37 +21,6 @@ const tagAliases: Record<string, string> = {
     div: 'p',
     i: 'em',
 };
-
-const toolbarTools: {
-    label: string;
-    icon: LucideIcon;
-    command: string;
-    value?: string;
-}[] = [
-    { label: 'Bold', icon: Bold, command: 'bold' },
-    { label: 'Italic', icon: Italic, command: 'italic' },
-    { label: 'Underline', icon: Underline, command: 'underline' },
-    {
-        label: 'Heading',
-        icon: Heading2,
-        command: 'formatBlock',
-        value: 'h2',
-    },
-    {
-        label: 'Quote',
-        icon: Quote,
-        command: 'formatBlock',
-        value: 'blockquote',
-    },
-    { label: 'Bulleted list', icon: List, command: 'insertUnorderedList' },
-    {
-        label: 'Numbered list',
-        icon: ListOrdered,
-        command: 'insertOrderedList',
-    },
-    { label: 'Undo', icon: Undo2, command: 'undo' },
-    { label: 'Redo', icon: Redo2, command: 'redo' },
-];
 
 export function sanitizeRichText(value: string): string {
     return value
@@ -112,128 +69,57 @@ export function RichTextEditor({
     placeholder: string;
     value: string;
 }): ReactNode {
-    const editorRef = useRef<HTMLDivElement>(null);
-    const selectionRef = useRef<Range | null>(null);
-
-    useEffect(() => {
-        const editor = editorRef.current;
-        const sanitizedValue = sanitizeRichText(value);
-
-        if (editor && sanitizeRichText(editor.innerHTML) !== sanitizedValue) {
-            editor.innerHTML = sanitizedValue;
-        }
-    }, [value]);
-
-    function syncValue(): void {
-        const editor = editorRef.current;
-
-        if (editor) {
-            const sanitizedValue = sanitizeRichText(editor.innerHTML);
-            const nextValue =
-                richTextPlainText(sanitizedValue) === '' ? '' : sanitizedValue;
-
-            if (nextValue === '' && editor.innerHTML !== '') {
-                editor.innerHTML = '';
-            }
-
-            onChange(nextValue);
-        }
-    }
-
-    function rememberSelection(): void {
-        const editor = editorRef.current;
-        const selection = document.getSelection();
-
-        if (
-            editor &&
-            selection?.rangeCount &&
-            editor.contains(selection.getRangeAt(0).commonAncestorContainer)
-        ) {
-            selectionRef.current = selection.getRangeAt(0).cloneRange();
-        }
-    }
-
-    function runCommand(command: string, commandValue?: string): void {
-        const editor = editorRef.current;
-        const selection = document.getSelection();
-
-        editor?.focus();
-
-        if (selection && selectionRef.current) {
-            selection.removeAllRanges();
-            selection.addRange(selectionRef.current);
-        }
-
-        document.execCommand(command, false, commandValue);
-        syncValue();
-        rememberSelection();
-    }
-
-    function pastePlainText(event: ClipboardEvent<HTMLDivElement>): void {
-        event.preventDefault();
-        document.execCommand(
-            'insertText',
-            false,
-            event.clipboardData.getData('text/plain'),
-        );
-        syncValue();
-    }
+    const isDark =
+        typeof document !== 'undefined' &&
+        document.documentElement.classList.contains('dark');
+    const apiKey = import.meta.env.VITE_TINYMCE_API_KEY ?? 'no-api-key';
 
     return (
         <div
             className={cn(
-                'overflow-hidden rounded-xl border bg-transparent transition focus-within:border-amber-500 focus-within:ring-4 focus-within:ring-amber-100 dark:focus-within:ring-amber-900/30',
+                'overflow-hidden rounded-xl border bg-white transition focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 dark:bg-slate-950',
                 error
                     ? 'border-red-500 dark:border-red-500'
-                    : 'border-stone-300 dark:border-stone-700',
+                    : 'border-slate-300 dark:border-slate-700',
             )}
         >
-            <div
-                role="toolbar"
-                aria-label="Description formatting"
-                className="flex flex-wrap gap-1 border-b border-stone-200 bg-stone-50 p-2 dark:border-stone-700 dark:bg-stone-950"
-            >
-                {toolbarTools.map((tool) => {
-                    const Icon = tool.icon;
-
-                    return (
-                        <button
-                            key={tool.label}
-                            type="button"
-                            title={tool.label}
-                            aria-label={tool.label}
-                            onMouseDown={(event) => event.preventDefault()}
-                            onClick={() => runCommand(tool.command, tool.value)}
-                            className="inline-flex size-9 items-center justify-center rounded-lg text-stone-600 transition hover:bg-white hover:text-stone-950 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-amber-500 dark:text-stone-300 dark:hover:bg-stone-800 dark:hover:text-white"
-                        >
-                            <Icon className="size-4" />
-                        </button>
-                    );
-                })}
-            </div>
-            <div
-                ref={editorRef}
+            <Editor
                 id={id}
-                role="textbox"
-                aria-label="Description"
-                aria-multiline="true"
-                aria-invalid={error ? true : undefined}
-                data-placeholder={placeholder}
-                contentEditable
-                suppressContentEditableWarning
-                onFocus={() =>
-                    document.execCommand(
-                        'defaultParagraphSeparator',
-                        false,
-                        'p',
-                    )
-                }
-                onInput={syncValue}
-                onKeyUp={rememberSelection}
-                onMouseUp={rememberSelection}
-                onBlur={rememberSelection}
-                onPaste={pastePlainText}
-                className="min-h-48 px-4 py-3 text-sm leading-7 whitespace-pre-wrap outline-none empty:before:pointer-events-none empty:before:text-stone-400 empty:before:content-[attr(data-placeholder)] [&_blockquote]:border-l-4 [&_blockquote]:border-amber-400 [&_blockquote]:pl-4 [&_h2]:text-xl [&_h2]:font-black [&_h3]:text-lg [&_h3]:font-bold [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:my-2 [&_ul]:list-disc [&_ul]:pl-6"
+                apiKey={apiKey}
+                cloudChannel="8"
+                value={value}
+                rollback={false}
+                onEditorChange={(content) => {
+                    const sanitizedValue = sanitizeRichText(content);
+                    onChange(
+                        richTextPlainText(sanitizedValue) === ''
+                            ? ''
+                            : sanitizedValue,
+                    );
+                }}
+                init={{
+                    height: 280,
+                    min_height: 240,
+                    max_height: 520,
+                    menubar: false,
+                    branding: false,
+                    promotion: false,
+                    resize: true,
+                    statusbar: true,
+                    elementpath: false,
+                    placeholder,
+                    plugins: ['autoresize', 'code', 'lists', 'wordcount'],
+                    toolbar:
+                        'undo redo | blocks | bold italic underline | bullist numlist blockquote | removeformat code',
+                    block_formats:
+                        'Paragraph=p; Heading 2=h2; Heading 3=h3; Quote=blockquote',
+                    valid_elements:
+                        'p,br,strong/b,em/i,u,h2,h3,blockquote,ul,ol,li',
+                    skin: isDark ? 'oxide-dark' : 'oxide',
+                    content_css: isDark ? 'dark' : 'default',
+                    content_style:
+                        'body { font-family: Instrument Sans, ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.75; }',
+                }}
             />
         </div>
     );

@@ -45,6 +45,9 @@ type VariantRow = {
     selections: string[];
     sku: string;
     stock_quantity: number | '';
+    image: File | null;
+    remove_image: boolean;
+    existing_image: ListingMedia | null;
 };
 
 type StoredVariantOption = {
@@ -61,6 +64,7 @@ type StoredVariant = {
         value: string;
         option: { position: number };
     }[];
+    image: ListingMedia | null;
 };
 
 export type SellerProductFormListing = {
@@ -177,6 +181,9 @@ export function SellerProductForm({
                         .map((value) => value.value),
                     sku: variant.sku ?? '',
                     stock_quantity: variant.stock_quantity,
+                    image: null,
+                    remove_image: false,
+                    existing_image: variant.image,
                 })),
         [listing?.variants],
     );
@@ -276,6 +283,9 @@ export function SellerProductForm({
                         ? existing.sku
                         : suggestedSku(baseSku, selections),
                 stock_quantity: existing?.stock_quantity ?? 0,
+                image: existing?.image ?? null,
+                remove_image: existing?.remove_image ?? false,
+                existing_image: existing?.existing_image ?? null,
             };
         });
 
@@ -323,8 +333,8 @@ export function SellerProductForm({
         ? Math.max(
               1,
               Math.min(
-                  centeredFourByThreeCrop(cropImage.size).width / 1200,
-                  centeredFourByThreeCrop(cropImage.size).height / 900,
+                  centeredFourByThreeCrop(cropImage.size).width / 800,
+                  centeredFourByThreeCrop(cropImage.size).height / 600,
               ),
           )
         : 1;
@@ -358,6 +368,15 @@ export function SellerProductForm({
         );
     }
 
+    function updateVariant(index: number, changes: Partial<VariantRow>): void {
+        setField(
+            'variants',
+            form.data.variants.map((variant, variantIndex) =>
+                variantIndex === index ? { ...variant, ...changes } : variant,
+            ),
+        );
+    }
+
     async function addImages(files: FileList | null): Promise<void> {
         if (!files) {
             return;
@@ -381,8 +400,8 @@ export function SellerProductForm({
 
                     if (
                         size === null ||
-                        size.width < 1200 ||
-                        size.height < 900 ||
+                        size.width < 800 ||
+                        size.height < 600 ||
                         size.width > 6000 ||
                         size.height > 6000
                     ) {
@@ -409,7 +428,7 @@ export function SellerProductForm({
         setImageError(
             prepared.length === incoming.length
                 ? null
-                : 'Some images were skipped. Use JPG, PNG, or WebP files from 1200 × 900 to 6000 × 6000 pixels and no larger than 5 MB.',
+                : 'Some images were skipped. Use JPG, PNG, or WebP files from 800 × 600 to 6000 × 6000 pixels and no larger than 5 MB.',
         );
     }
 
@@ -432,6 +451,13 @@ export function SellerProductForm({
         form.transform((data) => ({
             ...data,
             description: sanitizeRichText(data.description),
+            variants: data.variants.map((variant) => ({
+                selections: variant.selections,
+                sku: variant.sku,
+                stock_quantity: variant.stock_quantity,
+                image: variant.image,
+                remove_image: variant.remove_image,
+            })),
             submit_for_review: submitForReview,
         }));
         const options = {
@@ -945,11 +971,17 @@ export function SellerProductForm({
 
                                 {form.data.variants.length > 0 && (
                                     <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
-                                        <table className="w-full min-w-[38rem] text-left text-sm">
+                                        <table className="w-full min-w-[48rem] text-left text-sm">
                                             <thead className="bg-slate-50 text-xs tracking-wide text-slate-500 uppercase dark:bg-slate-950">
                                                 <tr>
                                                     <th className="px-4 py-3">
                                                         Combination
+                                                    </th>
+                                                    <th className="w-28 px-4 py-3">
+                                                        Image
+                                                        <span className="ml-1 font-normal tracking-normal normal-case">
+                                                            (optional)
+                                                        </span>
                                                     </th>
                                                     <th className="px-4 py-3">
                                                         SKU
@@ -977,6 +1009,47 @@ export function SellerProductForm({
                                                                     )}
                                                                 </td>
                                                                 <td className="px-4 py-3">
+                                                                    <VariantImageInput
+                                                                        combination={variant.selections.join(
+                                                                            ' / ',
+                                                                        )}
+                                                                        file={
+                                                                            variant.image
+                                                                        }
+                                                                        existingImage={
+                                                                            variant.existing_image
+                                                                        }
+                                                                        removeExisting={
+                                                                            variant.remove_image
+                                                                        }
+                                                                        onChange={(
+                                                                            image,
+                                                                        ) =>
+                                                                            updateVariant(
+                                                                                index,
+                                                                                {
+                                                                                    image,
+                                                                                    remove_image: false,
+                                                                                },
+                                                                            )
+                                                                        }
+                                                                        onRemove={() =>
+                                                                            updateVariant(
+                                                                                index,
+                                                                                {
+                                                                                    image: null,
+                                                                                    remove_image:
+                                                                                        variant.existing_image !==
+                                                                                        null,
+                                                                                },
+                                                                            )
+                                                                        }
+                                                                        error={errorFor(
+                                                                            `variants.${index}.image`,
+                                                                        )}
+                                                                    />
+                                                                </td>
+                                                                <td className="px-4 py-3">
                                                                     <input
                                                                         value={
                                                                             variant.sku
@@ -987,23 +1060,13 @@ export function SellerProductForm({
                                                                             manuallyEditedSkus.current.add(
                                                                                 key,
                                                                             );
-                                                                            setField(
-                                                                                'variants',
-                                                                                form.data.variants.map(
-                                                                                    (
-                                                                                        row,
-                                                                                        rowIndex,
-                                                                                    ) =>
-                                                                                        rowIndex ===
-                                                                                        index
-                                                                                            ? {
-                                                                                                  ...row,
-                                                                                                  sku: event
-                                                                                                      .target
-                                                                                                      .value,
-                                                                                              }
-                                                                                            : row,
-                                                                                ),
+                                                                            updateVariant(
+                                                                                index,
+                                                                                {
+                                                                                    sku: event
+                                                                                        .target
+                                                                                        .value,
+                                                                                },
                                                                             );
                                                                         }}
                                                                         className={inputClass(
@@ -1024,31 +1087,21 @@ export function SellerProductForm({
                                                                         onChange={(
                                                                             event,
                                                                         ) =>
-                                                                            setField(
-                                                                                'variants',
-                                                                                form.data.variants.map(
-                                                                                    (
-                                                                                        row,
-                                                                                        rowIndex,
-                                                                                    ) =>
-                                                                                        rowIndex ===
-                                                                                        index
-                                                                                            ? {
-                                                                                                  ...row,
-                                                                                                  stock_quantity:
-                                                                                                      event
-                                                                                                          .target
-                                                                                                          .value ===
-                                                                                                      ''
-                                                                                                          ? ''
-                                                                                                          : Number(
-                                                                                                                event
-                                                                                                                    .target
-                                                                                                                    .value,
-                                                                                                            ),
-                                                                                              }
-                                                                                            : row,
-                                                                                ),
+                                                                            updateVariant(
+                                                                                index,
+                                                                                {
+                                                                                    stock_quantity:
+                                                                                        event
+                                                                                            .target
+                                                                                            .value ===
+                                                                                        ''
+                                                                                            ? ''
+                                                                                            : Number(
+                                                                                                  event
+                                                                                                      .target
+                                                                                                      .value,
+                                                                                              ),
+                                                                                },
                                                                             )
                                                                         }
                                                                         className={inputClass(
@@ -1117,7 +1170,7 @@ export function SellerProductForm({
                                 Choose Files
                             </span>
                             <span className="mt-4 text-xs leading-5 text-slate-500">
-                                1200×900 minimum, JPG/PNG/WebP
+                                800×600 minimum, JPG/PNG/WebP
                                 <br />5 MB per image · maximum 5
                             </span>
                         </label>
@@ -1381,11 +1434,11 @@ export function SellerProductForm({
                                 }
 
                                 if (
-                                    draftCrop.width < 1200 ||
-                                    draftCrop.height < 900
+                                    draftCrop.width < 800 ||
+                                    draftCrop.height < 600
                                 ) {
                                     setImageError(
-                                        'Keep at least 1200 × 900 source pixels inside the crop.',
+                                        'Keep at least 800 × 600 source pixels inside the crop.',
                                     );
 
                                     return;
@@ -1533,6 +1586,91 @@ function ToggleRow({
                 </span>
             </span>
         </label>
+    );
+}
+
+function VariantImageInput({
+    combination,
+    error,
+    existingImage,
+    file,
+    onChange,
+    onRemove,
+    removeExisting,
+}: {
+    combination: string;
+    error?: string;
+    existingImage: ListingMedia | null;
+    file: File | null;
+    onChange: (file: File) => void;
+    onRemove: () => void;
+    removeExisting: boolean;
+}) {
+    const previewUrl = useMemo(
+        () => (file ? URL.createObjectURL(file) : null),
+        [file],
+    );
+
+    useEffect(
+        () => () => {
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        },
+        [previewUrl],
+    );
+
+    const displayedUrl =
+        previewUrl ?? (!removeExisting ? existingImage?.url : null);
+
+    return (
+        <div className="grid w-20 gap-1.5">
+            <label
+                className={cn(
+                    'group relative grid aspect-square cursor-pointer place-items-center overflow-hidden rounded-lg border border-dashed bg-slate-50 text-slate-400 transition hover:border-primary hover:text-primary dark:bg-slate-950',
+                    error
+                        ? 'border-red-500'
+                        : 'border-slate-300 dark:border-slate-700',
+                )}
+            >
+                <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    aria-label={`Upload image for ${combination}`}
+                    className="sr-only"
+                    onChange={(event) => {
+                        const selectedFile = event.target.files?.[0];
+
+                        if (selectedFile) {
+                            onChange(selectedFile);
+                        }
+
+                        event.target.value = '';
+                    }}
+                />
+                {displayedUrl ? (
+                    <img
+                        src={displayedUrl}
+                        alt={`${combination} variant`}
+                        className="h-full w-full object-cover"
+                    />
+                ) : (
+                    <ImagePlus className="size-5" />
+                )}
+                <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-slate-950/65 py-1 text-center text-[0.6rem] font-bold text-white opacity-0 transition group-hover:opacity-100">
+                    {displayedUrl ? 'Replace' : 'Add image'}
+                </span>
+            </label>
+            {displayedUrl && (
+                <button
+                    type="button"
+                    onClick={onRemove}
+                    className="text-[0.65rem] font-semibold text-red-600 hover:underline"
+                >
+                    Remove
+                </button>
+            )}
+        </div>
     );
 }
 
