@@ -6,7 +6,9 @@ use App\Contracts\Repositories\ListingRepository;
 use App\Jobs\GenerateListingImageVariants;
 use App\Models\Listing;
 use App\Models\ListingMedia;
+use App\Models\ListingVariant;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -23,6 +25,10 @@ class ListingImageService
 {
     private const CACHE_CONTROL = 'public, max-age=31536000, immutable';
 
+    private const MINIMUM_HEIGHT = 600;
+
+    private const MINIMUM_WIDTH = 800;
+
     public function __construct(
         private readonly ImageManagerInterface $images,
         private readonly ListingRepository $listings,
@@ -33,16 +39,46 @@ class ListingImageService
      */
     public function store(Listing $listing, UploadedFile $upload, array $crop, int $sortOrder, bool $isCover): ListingMedia
     {
+        return $this->storeImage($listing, $upload, $crop, $sortOrder, $isCover);
+    }
+
+    public function storeVariant(Listing $listing, ListingVariant $variant, UploadedFile $upload): ListingMedia
+    {
+        return $this->storeImage($listing, $upload, null, 0, false, $variant);
+    }
+
+    /** @param Collection<int, ListingMedia> $mediaItems */
+    public function removeVariantImages(Collection $mediaItems): void
+    {
+        foreach ($mediaItems as $media) {
+            $this->removeMedia($media);
+        }
+    }
+
+    /**
+     * @param  array{x: int, y: int, width: int, height: int}|null  $crop
+     */
+    private function storeImage(
+        Listing $listing,
+        UploadedFile $upload,
+        ?array $crop,
+        int $sortOrder,
+        bool $isCover,
+        ?ListingVariant $variant = null,
+    ): ListingMedia {
         $disk = $this->mediaDisk();
         $version = (string) Str::uuid();
-        $directory = "listings/{$listing->id}/{$version}";
+        $directory = $variant === null
+            ? "listings/{$listing->id}/{$version}"
+            : "listings/{$listing->id}/variants/{$variant->id}/{$version}";
         $sourcePath = $directory.'/source.webp';
         $canonicalPath = $directory.'/main.webp';
         $storedPaths = [];
 
         try {
             $sourceImage = $this->images->decodeSplFileInfo($upload);
-            $this->validateCrop($sourceImage, $crop);
+            $resolvedCrop = $crop ?? $this->centeredFourByThreeCrop($sourceImage);
+            $this->validateCrop($sourceImage, $resolvedCrop);
 
             if (! $this->putImage($disk, $sourcePath, $sourceImage, new WebpEncoder(quality: 90, strip: true))) {
                 throw new RuntimeException('The listing image source could not be stored.');
@@ -50,7 +86,7 @@ class ListingImageService
 
             $storedPaths[] = $sourcePath;
             $canonical = (clone $sourceImage)
-                ->crop($crop['width'], $crop['height'], $crop['x'], $crop['y'])
+                ->crop($resolvedCrop['width'], $resolvedCrop['height'], $resolvedCrop['x'], $resolvedCrop['y'])
                 ->resize(1200, 900);
 
             if (! $this->putImage($disk, $canonicalPath, $canonical, new WebpEncoder(quality: 85, strip: true))) {
@@ -58,21 +94,24 @@ class ListingImageService
             }
 
             $storedPaths[] = $canonicalPath;
-            $media = $this->listings->createMedia($listing, [
+            $attributes = [
                 'disk' => $disk,
                 'path' => $canonicalPath,
                 'source_path' => $sourcePath,
-                'crop_x' => $crop['x'],
-                'crop_y' => $crop['y'],
-                'crop_width' => $crop['width'],
-                'crop_height' => $crop['height'],
+                'crop_x' => $resolvedCrop['x'],
+                'crop_y' => $resolvedCrop['y'],
+                'crop_width' => $resolvedCrop['width'],
+                'crop_height' => $resolvedCrop['height'],
                 'variant_version' => $version,
                 'variants' => null,
                 'processing_status' => 'pending',
                 'processing_error' => null,
-                'type' => 'image',
+                'type' => $variant === null ? 'image' : 'variant_image',
                 'sort_order' => $sortOrder,
-            ]);
+            ];
+            $media = $variant === null
+                ? $this->listings->createMedia($listing, $attributes)
+                : $this->listings->createVariantMedia($variant, $attributes);
 
             DB::connection()->afterRollBack(fn () => Storage::disk($disk)->delete($storedPaths));
             GenerateListingImageVariants::dispatch($media->id, $version, $isCover)->afterCommit();
@@ -154,14 +193,7 @@ class ListingImageService
         $mediaItems = $this->listings->mediaForListing($listing, $mediaIds);
 
         foreach ($mediaItems as $media) {
-            $paths = array_values(array_filter([
-                $media->path,
-                $media->source_path,
-                ...array_values(is_array($media->variants) ? $media->variants : []),
-            ]));
-            $disk = $media->disk;
-            $this->listings->deleteMedia($media);
-            DB::connection()->afterCommit(fn () => Storage::disk($disk)->delete($paths));
+            $this->removeMedia($media);
         }
 
         if ($coverId !== null && in_array((int) $coverId, $mediaIds, true)) {
@@ -196,16 +228,52 @@ class ListingImageService
         $isFourByThree = abs(($crop['width'] * 3) - ($crop['height'] * 4)) <= 4;
         $isInsideImage = $crop['x'] >= 0
             && $crop['y'] >= 0
-            && $crop['width'] >= 1200
-            && $crop['height'] >= 900
+            && $crop['width'] >= self::MINIMUM_WIDTH
+            && $crop['height'] >= self::MINIMUM_HEIGHT
             && $image->width() >= $crop['x'] + $crop['width']
             && $image->height() >= $crop['y'] + $crop['height'];
 
         if (! $isFourByThree || ! $isInsideImage) {
             throw ValidationException::withMessages([
-                'image_crops' => 'Each photo must have a valid 4:3 crop with at least 1200 × 900 source pixels.',
+                'image_crops' => 'Each photo must have a valid 4:3 crop with at least 800 × 600 source pixels.',
             ]);
         }
+    }
+
+    /** @return array{x: int, y: int, width: int, height: int} */
+    private function centeredFourByThreeCrop(ImageInterface $image): array
+    {
+        if ($image->width() / $image->height() > 4 / 3) {
+            $width = (int) floor($image->height() * 4 / 3);
+
+            return [
+                'x' => (int) floor(($image->width() - $width) / 2),
+                'y' => 0,
+                'width' => $width,
+                'height' => $image->height(),
+            ];
+        }
+
+        $height = (int) floor($image->width() * 3 / 4);
+
+        return [
+            'x' => 0,
+            'y' => (int) floor(($image->height() - $height) / 2),
+            'width' => $image->width(),
+            'height' => $height,
+        ];
+    }
+
+    private function removeMedia(ListingMedia $media): void
+    {
+        $paths = array_values(array_filter([
+            $media->path,
+            $media->source_path,
+            ...array_values(is_array($media->variants) ? $media->variants : []),
+        ]));
+        $disk = $media->disk;
+        $this->listings->deleteMedia($media);
+        DB::connection()->afterCommit(fn () => Storage::disk($disk)->delete($paths));
     }
 
     private function putWebpVariant(string $disk, string $path, string $canonical, int $width, int $height): void

@@ -277,6 +277,72 @@ test('editing options keeps unchanged inventory suggests new skus and removes ob
         ->and($listing->variants()->sole()->sku)->toBe('SHIRT-001-BLUE');
 });
 
+test('variant combination images are optional and persist with an unchanged combination', function () {
+    Storage::fake('public');
+    $seller = SellerProfile::factory()->create();
+    $category = Category::factory()->create();
+    $payload = variantProductPayload($category, [
+        'variant_options' => [['name' => 'Color', 'values' => ['Red']]],
+        'variants' => [[
+            'selections' => ['Red'],
+            'sku' => 'SHIRT-RED',
+            'stock_quantity' => 3,
+            'image' => UploadedFile::fake()->image('red-shirt.jpg', 800, 600),
+        ]],
+    ]);
+
+    $this->actingAs($seller->user)
+        ->post(route('seller.listings.store'), $payload)
+        ->assertRedirect(route('seller.listings.index', absolute: false))
+        ->assertSessionHasNoErrors();
+
+    $listing = Listing::query()->sole();
+    $variant = $listing->variants()->with('image')->sole();
+    $image = $variant->image;
+
+    expect($listing->media()->count())->toBe(0)
+        ->and($image)->not->toBeNull()
+        ->and($image->type)->toBe('variant_image')
+        ->and($image->listing_id)->toBe($listing->id)
+        ->and(Storage::disk('public')->exists($image->path))->toBeTrue();
+
+    $this->actingAs($seller->user)
+        ->put(route('seller.listings.update', $listing), variantProductPayload($category, [
+            'variant_options' => [['name' => 'Color', 'values' => ['Red']]],
+            'variants' => [[
+                'selections' => ['Red'],
+                'sku' => 'SHIRT-RED',
+                'stock_quantity' => 4,
+            ]],
+        ]))
+        ->assertSessionHasNoErrors();
+
+    expect($listing->variants()->with('image')->sole()->image?->id)->toBe($image->id);
+
+    $this->actingAs($seller->user)
+        ->get(route('seller.listings.edit', $listing))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('listing.variants.0.image.id', $image->id)
+            ->where('listing.variants.0.image.url', $image->url));
+
+    $this->actingAs($seller->user)
+        ->put(route('seller.listings.update', $listing), variantProductPayload($category, [
+            'variant_options' => [['name' => 'Color', 'values' => ['Red']]],
+            'variants' => [[
+                'selections' => ['Red'],
+                'sku' => 'SHIRT-RED',
+                'stock_quantity' => 4,
+                'remove_image' => true,
+            ]],
+        ]))
+        ->assertSessionHasNoErrors();
+
+    expect($listing->variants()->with('image')->sole()->image)->toBeNull()
+        ->and(ListingMedia::query()->find($image->id))->toBeNull()
+        ->and(Storage::disk('public')->missing($image->path))->toBeTrue();
+});
+
 test('active availability backorders and stock status control public purchasing', function () {
     $inactive = Listing::factory()->create(['is_active' => false, 'stock_quantity' => 10]);
     $outOfStock = Listing::factory()->create(['stock_quantity' => 0, 'allow_backorders' => false]);

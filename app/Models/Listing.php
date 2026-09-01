@@ -59,7 +59,9 @@ class Listing extends Model
     /** @return HasMany<ListingMedia, $this> */
     public function media(): HasMany
     {
-        return $this->hasMany(ListingMedia::class)->orderBy('sort_order');
+        return $this->hasMany(ListingMedia::class)
+            ->whereNull('listing_variant_id')
+            ->orderBy('sort_order');
     }
 
     /** @return HasMany<ListingVariantOption, $this> */

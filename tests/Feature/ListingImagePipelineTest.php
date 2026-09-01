@@ -74,6 +74,23 @@ test('new listing photos are synchronously cropped to a canonical webp image', f
         ->and($sourceSize['mime'])->toBe('image/webp');
 });
 
+test('listing photos accept the reduced eight hundred by six hundred minimum', function () {
+    Storage::fake('public');
+    $seller = SellerProfile::factory()->create();
+    $category = Category::factory()->create();
+
+    $this->actingAs($seller->user)
+        ->post(route('seller.listings.store'), validListingImagePayload($category, [
+            'images' => [UploadedFile::fake()->image('minimum.jpg', 800, 600)],
+            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 800, 'height' => 600]],
+        ]))
+        ->assertRedirect(route('seller.listings.index', absolute: false))
+        ->assertSessionHasNoErrors();
+
+    expect(Listing::query()->sole()->media()->sole()->crop_width)->toBe(800)
+        ->and(Listing::query()->sole()->media()->sole()->crop_height)->toBe(600);
+});
+
 test('listing image validation rejects invalid dimensions and crop bounds', function () {
     Storage::fake('public');
     $seller = SellerProfile::factory()->create();
@@ -81,8 +98,8 @@ test('listing image validation rejects invalid dimensions and crop bounds', func
 
     $this->actingAs($seller->user)
         ->post(route('seller.listings.store'), validListingImagePayload($category, [
-            'images' => [UploadedFile::fake()->image('small.jpg', 1199, 899)],
-            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1200, 'height' => 900]],
+            'images' => [UploadedFile::fake()->image('small.jpg', 799, 599)],
+            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 800, 'height' => 600]],
         ]))
         ->assertSessionHasErrors('images.0');
 

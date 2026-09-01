@@ -4,6 +4,7 @@ namespace App\Contracts\Repositories;
 
 use App\Models\Listing;
 use App\Models\ListingMedia;
+use App\Models\ListingVariant;
 use App\Models\SellerProfile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -48,6 +49,9 @@ interface ListingRepository
 
     /** @param array<string, mixed> $attributes */
     public function createMedia(Listing $listing, array $attributes): ListingMedia;
+
+    /** @param array<string, mixed> $attributes */
+    public function createVariantMedia(ListingVariant $variant, array $attributes): ListingMedia;
 
     public function findMedia(int $mediaId): ?ListingMedia;
 

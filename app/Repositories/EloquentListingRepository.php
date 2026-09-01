@@ -6,6 +6,7 @@ use App\Contracts\Repositories\CatalogRepository;
 use App\Contracts\Repositories\ListingRepository;
 use App\Models\Listing;
 use App\Models\ListingMedia;
+use App\Models\ListingVariant;
 use App\Models\SellerProfile;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -134,6 +135,14 @@ class EloquentListingRepository implements ListingRepository
     public function createMedia(Listing $listing, array $attributes): ListingMedia
     {
         return $listing->media()->create($attributes);
+    }
+
+    public function createVariantMedia(ListingVariant $variant, array $attributes): ListingMedia
+    {
+        return $variant->image()->create([
+            ...$attributes,
+            'listing_id' => $variant->listing_id,
+        ]);
     }
 
     public function findMedia(int $mediaId): ?ListingMedia

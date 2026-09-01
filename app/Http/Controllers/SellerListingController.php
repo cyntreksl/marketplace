@@ -47,6 +47,7 @@ class SellerListingController extends Controller
                 'media',
                 'category',
                 'variantOptions.values',
+                'variants.image',
                 'variants.optionValues.option',
             ]),
             'sellerStatus' => $seller->status,

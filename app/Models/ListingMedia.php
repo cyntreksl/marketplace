@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Storage;
  * @property string|null $processing_status
  */
 #[Appends(['url'])]
-#[Fillable(['listing_id', 'disk', 'path', 'source_path', 'crop_x', 'crop_y', 'crop_width', 'crop_height', 'variant_version', 'variants', 'processing_status', 'processing_error', 'type', 'sort_order'])]
+#[Fillable(['listing_id', 'listing_variant_id', 'disk', 'path', 'source_path', 'crop_x', 'crop_y', 'crop_width', 'crop_height', 'variant_version', 'variants', 'processing_status', 'processing_error', 'type', 'sort_order'])]
 class ListingMedia extends Model
 {
     /** @use HasFactory<ListingMediaFactory> */
@@ -39,6 +39,12 @@ class ListingMedia extends Model
     public function listing(): BelongsTo
     {
         return $this->belongsTo(Listing::class)->withTrashed();
+    }
+
+    /** @return BelongsTo<ListingVariant, $this> */
+    public function listingVariant(): BelongsTo
+    {
+        return $this->belongsTo(ListingVariant::class);
     }
 
     /** @return Attribute<string, never> */

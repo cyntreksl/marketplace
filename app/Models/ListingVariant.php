@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['listing_id', 'seller_profile_id', 'combination_key', 'sku', 'stock_quantity', 'position'])]
 class ListingVariant extends Model
@@ -36,5 +37,11 @@ class ListingVariant extends Model
             'listing_variant_id',
             'listing_variant_option_value_id',
         )->with('option');
+    }
+
+    /** @return HasOne<ListingMedia, $this> */
+    public function image(): HasOne
+    {
+        return $this->hasOne(ListingMedia::class);
     }
 }

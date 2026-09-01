@@ -16,13 +16,13 @@ trait ValidatesListingImages
                 'image',
                 'mimes:jpg,jpeg,png,webp',
                 'max:5120',
-                Rule::dimensions()->minWidth(1200)->minHeight(900)->maxWidth(6000)->maxHeight(6000),
+                Rule::dimensions()->minWidth(800)->minHeight(600)->maxWidth(6000)->maxHeight(6000),
             ],
             'image_crops' => [$required ? 'required' : 'required_with:images', 'array', $required ? 'min:1' : 'min:0', 'max:5'],
             'image_crops.*.x' => ['required', 'integer', 'min:0', 'max:6000'],
             'image_crops.*.y' => ['required', 'integer', 'min:0', 'max:6000'],
-            'image_crops.*.width' => ['required', 'integer', 'min:1200', 'max:6000'],
-            'image_crops.*.height' => ['required', 'integer', 'min:900', 'max:6000'],
+            'image_crops.*.width' => ['required', 'integer', 'min:800', 'max:6000'],
+            'image_crops.*.height' => ['required', 'integer', 'min:600', 'max:6000'],
         ];
     }
 

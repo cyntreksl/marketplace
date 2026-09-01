@@ -4,18 +4,23 @@ namespace App\Services;
 
 use App\Contracts\Repositories\ListingVariantRepository;
 use App\Models\Listing;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ListingVariantService
 {
-    public function __construct(private readonly ListingVariantRepository $variants) {}
+    public function __construct(
+        private readonly ListingVariantRepository $variants,
+        private readonly ListingImageService $images,
+    ) {}
 
     /** @param array<string, mixed> $attributes */
     public function synchronize(Listing $listing, array $attributes): void
     {
         if (($attributes['product_type'] ?? 'simple') !== 'variant') {
+            $this->images->removeVariantImages($this->variants->imagesExcept($listing, []));
             $this->variants->deleteForListing($listing);
 
             return;
@@ -52,7 +57,28 @@ class ListingVariantService
             throw ValidationException::withMessages(['variants' => 'Variant rows must exactly match the generated option combinations.']);
         }
 
-        $this->variants->replaceForListing($listing, $options, $variants);
+        $this->images->removeVariantImages($this->variants->imagesExcept($listing, $expectedKeys->all()));
+        $synchronizedVariants = $this->variants->replaceForListing($listing, $options, $variants);
+
+        foreach ($synchronizedVariants as $variant) {
+            $submitted = $submittedVariants->get($variant->combination_key, []);
+            $upload = $submitted['image'] ?? null;
+            $existingImage = $variant->image()->first();
+
+            if ($upload instanceof UploadedFile) {
+                if ($existingImage !== null) {
+                    $this->images->removeVariantImages(collect([$existingImage]));
+                }
+
+                $this->images->storeVariant($listing, $variant, $upload);
+
+                continue;
+            }
+
+            if (($submitted['remove_image'] ?? false) && $existingImage !== null) {
+                $this->images->removeVariantImages(collect([$existingImage]));
+            }
+        }
     }
 
     /** @param array<int, mixed> $options
