@@ -5,12 +5,12 @@ import { dashboard } from '@/routes/admin';
 
 type Listing = {
     id: number;
-    title: string;
+    title: string | null;
     status: string;
     listing_type: string;
     moderation_reason: string | null;
     seller_profile: { store_name: string };
-    category: { name: string };
+    category: { name: string } | null;
 };
 export default function AdminListings({
     listings,
@@ -35,10 +35,12 @@ export default function AdminListings({
                             className="grid gap-4 rounded-2xl border border-stone-200 bg-white p-5 lg:grid-cols-[1fr_auto] dark:border-stone-800 dark:bg-stone-900"
                         >
                             <div>
-                                <p className="font-bold">{listing.title}</p>
+                                <p className="font-bold">
+                                    {listing.title ?? 'Untitled product'}
+                                </p>
                                 <p className="mt-1 text-sm text-stone-500">
                                     {listing.seller_profile.store_name} ·{' '}
-                                    {listing.category.name} ·{' '}
+                                    {listing.category?.name ?? 'No category'} ·{' '}
                                     {listing.listing_type}
                                 </p>
                                 <p className="mt-2 text-sm capitalize">

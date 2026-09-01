@@ -3,7 +3,6 @@ import {
     create,
     destroy,
     edit,
-    submit,
 } from '@/actions/App/Http/Controllers/SellerListingController';
 import { PortalLayout } from '@/components/portal-layout';
 import {
@@ -18,14 +17,14 @@ import {
 
 type Listing = {
     id: number;
-    title: string;
+    title: string | null;
     status: string;
     moderation_reason: string | null;
     listing_type: string;
     price: string | null;
     has_orders: boolean;
     created_at: string;
-    category: { name: string };
+    category: { name: string } | null;
     auction: { status: string; ends_at: string } | null;
 };
 
@@ -37,17 +36,15 @@ export default function SellerListings({
     listings: { data: Listing[] };
 }) {
     return (
-        <PortalLayout portal="seller" title="Your listings">
-            <Head title="Seller listings" />
+        <PortalLayout portal="seller" title="Products">
+            <Head title="Products" />
             <main className="mx-auto max-w-7xl">
                 <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
                     <div>
                         <p className="text-sm font-bold tracking-wider text-primary uppercase">
                             Seller portal
                         </p>
-                        <h1 className="mt-2 text-4xl font-black">
-                            Your listings
-                        </h1>
+                        <h1 className="mt-2 text-4xl font-black">Products</h1>
                         <p className="mt-2 text-stone-600 dark:text-stone-300">
                             Account status:{' '}
                             <span className="font-bold capitalize">
@@ -59,21 +56,21 @@ export default function SellerListings({
                         href={create()}
                         className="rounded-xl bg-primary px-5 py-3 text-center font-bold text-primary-foreground"
                     >
-                        Create listing
+                        Add New Product
                     </Link>
                 </div>
 
                 {sellerStatus !== 'approved' && sellerStatus !== 'active' && (
                     <p className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:bg-amber-950/40 dark:text-amber-100">
                         You can prepare drafts now. Your account must be
-                        approved before you submit a listing for review.
+                        approved before you submit a product for review.
                     </p>
                 )}
 
                 <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
                     {listings.data.length === 0 ? (
                         <div className="p-12 text-center text-stone-500">
-                            No listings yet. Add your first item when you are
+                            No products yet. Add your first item when you are
                             ready.
                         </div>
                     ) : (
@@ -85,10 +82,13 @@ export default function SellerListings({
                                 >
                                     <div>
                                         <p className="font-bold">
-                                            {listing.title}
+                                            {listing.title ??
+                                                'Untitled product'}
                                         </p>
                                         <p className="mt-1 text-sm text-stone-500">
-                                            {listing.category.name} ·{' '}
+                                            {listing.category?.name ??
+                                                'No category'}{' '}
+                                            ·{' '}
                                             {listing.listing_type === 'auction'
                                                 ? 'Auction'
                                                 : `LKR ${listing.price}`}
@@ -115,35 +115,6 @@ export default function SellerListings({
                                             >
                                                 Edit
                                             </Link>
-                                        )}
-                                        {[
-                                            'draft',
-                                            'changes_requested',
-                                            'rejected',
-                                        ].includes(listing.status) && (
-                                            <Form {...submit.form()}>
-                                                {({ processing }) => (
-                                                    <>
-                                                        <input
-                                                            type="hidden"
-                                                            name="listing_id"
-                                                            value={listing.id}
-                                                        />
-                                                        <button
-                                                            disabled={
-                                                                processing ||
-                                                                (sellerStatus !==
-                                                                    'approved' &&
-                                                                    sellerStatus !==
-                                                                        'active')
-                                                            }
-                                                            className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40"
-                                                        >
-                                                            Submit review
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </Form>
                                         )}
                                         {listing.status !== 'archived' && (
                                             <Dialog>

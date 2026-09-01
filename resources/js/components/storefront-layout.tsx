@@ -28,11 +28,13 @@ export type { StorefrontCategory } from '@/components/storefront-category-menu';
 export function StorefrontLayout({
     children,
     title,
+    description,
     categories = [],
     activeCategorySlugs = [],
 }: {
     children: React.ReactNode;
     title: string;
+    description?: string | null;
     categories?: StorefrontCategory[];
     activeCategorySlugs?: string[];
 }) {
@@ -59,7 +61,11 @@ export function StorefrontLayout({
 
     return (
         <>
-            <Head title={title} />
+            <Head title={title}>
+                {description && (
+                    <meta name="description" content={description} />
+                )}
+            </Head>
             <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
                 <header className="sticky top-0 z-40 bg-white shadow-sm dark:bg-slate-950">
                     <nav

@@ -177,7 +177,8 @@ export default function ListingShow({
 
     return (
         <StorefrontLayout
-            title={listing.title}
+            title={listing.metaTitle ?? listing.title}
+            description={listing.metaDescription ?? listing.shortDescription}
             categories={categories}
             activeCategorySlugs={categoryTrail.map((category) => category.slug)}
         >
@@ -209,6 +210,12 @@ export default function ListingShow({
                         <h1 className="mt-5 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl lg:text-5xl dark:text-white">
                             {listing.title}
                         </h1>
+
+                        {listing.shortDescription && (
+                            <p className="mt-3 text-base leading-7 text-slate-600 dark:text-slate-300">
+                                {listing.shortDescription}
+                            </p>
+                        )}
 
                         <div className="mt-3 flex items-center gap-2 text-sm">
                             <span className="flex items-center gap-1 font-black text-amber-600 dark:text-amber-400">

@@ -71,6 +71,9 @@ export type StorefrontListing = {
     title: string;
     slug: string;
     description: string | null;
+    shortDescription: string | null;
+    metaTitle: string | null;
+    metaDescription: string | null;
     condition: 'new' | 'used' | 'refurbished';
     listingType: 'buy_now' | 'auction';
     price: string | null;
@@ -82,6 +85,7 @@ export type StorefrontListing = {
     location: string;
     warranty: string | null;
     stockQuantity: number;
+    stockStatus: 'in_stock' | 'low_stock' | 'out_of_stock' | 'backorder';
     category: { name: string; slug: string } | null;
     brand: { name: string; slug: string } | null;
     media: StorefrontListingMedia[];

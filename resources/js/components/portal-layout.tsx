@@ -119,12 +119,12 @@ const portalDetails: Record<Portal, PortalDetails> = {
         icon: Store,
         navigation: [
             {
-                title: 'Your listings',
+                title: 'Products',
                 href: sellerListingsIndex(),
                 icon: Package,
             },
             {
-                title: 'Create listing',
+                title: 'Add New Product',
                 href: sellerListingsCreate(),
                 icon: Plus,
             },
