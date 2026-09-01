@@ -30,13 +30,15 @@ class PromotionService
     public function create(User $actor, array $attributes, string $reason): Promotion
     {
         $image = Arr::pull($attributes, 'image');
+        $listingIds = Arr::pull($attributes, 'listing_ids', []);
         $stored = $this->storeImage($image);
         $attributes['image_path'] = $stored['path'];
         $attributes['image_disk'] = $stored['disk'];
 
         try {
-            return DB::transaction(function () use ($actor, $attributes, $reason): Promotion {
+            return DB::transaction(function () use ($actor, $attributes, $listingIds, $reason): Promotion {
                 $promotion = $this->promotions->save(new Promotion($attributes));
+                $this->syncListings($promotion, $listingIds);
                 $this->auditLogs->record($actor, 'promotion.created', $promotion, after: $promotion->getAttributes(), reason: $reason);
 
                 return $promotion;
@@ -54,9 +56,10 @@ class PromotionService
         $oldImagePath = $promotion->image_path;
         $oldImageDisk = $promotion->image_disk ?: $this->mediaDisk();
         $stored = null;
+        $listingIds = Arr::pull($attributes, 'listing_ids', []);
 
         try {
-            $promotion = DB::transaction(function () use ($actor, $promotion, $attributes, $reason, &$stored): Promotion {
+            $promotion = DB::transaction(function () use ($actor, $promotion, $attributes, $listingIds, $reason, &$stored): Promotion {
                 $before = $promotion->getAttributes();
                 $image = Arr::pull($attributes, 'image');
 
@@ -68,6 +71,7 @@ class PromotionService
 
                 $promotion->fill($attributes);
                 $this->promotions->save($promotion);
+                $this->syncListings($promotion, $listingIds);
                 $this->auditLogs->record($actor, 'promotion.updated', $promotion, $before, $promotion->getAttributes(), $reason);
 
                 return $promotion;
@@ -108,5 +112,13 @@ class PromotionService
     private function mediaDisk(): string
     {
         return (string) config('filesystems.media', 'public');
+    }
+
+    /** @param array<int, int> $listingIds */
+    private function syncListings(Promotion $promotion, array $listingIds): void
+    {
+        $promotion->listings()->sync(collect($listingIds)->values()->mapWithKeys(
+            fn (int $listingId, int $position): array => [$listingId => ['position' => $position]],
+        )->all());
     }
 }

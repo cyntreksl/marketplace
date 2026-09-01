@@ -11,12 +11,17 @@ use App\Http\Controllers\AdminReturnController;
 use App\Http\Controllers\AdminSellerController;
 use App\Http\Controllers\AdminTaxonomyController;
 use App\Http\Controllers\AuctionBidController;
+use App\Http\Controllers\BrandDirectoryController;
 use App\Http\Controllers\BuyerDashboardController;
 use App\Http\Controllers\BuyerReturnRequestController;
 use App\Http\Controllers\BuyerReviewController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryLookupController;
 use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\ComparisonController;
+use App\Http\Controllers\OrderTrackingController;
+use App\Http\Controllers\ProductQuestionController;
+use App\Http\Controllers\ProductQuestionQueueController;
 use App\Http\Controllers\ReturnEvidenceController;
 use App\Http\Controllers\SellerListingController;
 use App\Http\Controllers\SellerOnboardingController;
@@ -26,6 +31,7 @@ use App\Http\Controllers\SellerReturnRequestController;
 use App\Http\Controllers\SellerWalletController;
 use App\Http\Controllers\SiteManifestController;
 use App\Http\Controllers\StorefrontController;
+use App\Http\Controllers\WatchlistController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StorefrontController::class, 'home'])->name('home');
@@ -44,8 +50,16 @@ Route::inertia('/legal/cookies', 'storefront/content/show', ['document' => 'cook
 Route::inertia('/policies/sellers', 'storefront/content/show', ['document' => 'sellers'])->name('policies.sellers');
 Route::inertia('/policies/prohibited-items', 'storefront/content/show', ['document' => 'prohibited'])->name('policies.prohibited');
 Route::get('/listings', [StorefrontController::class, 'index'])->name('listings.index');
+Route::get('/collections/{collection}', [StorefrontController::class, 'collection'])
+    ->whereIn('collection', ['featured', 'deals', 'best-sellers', 'new-arrivals', 'clearance'])
+    ->name('collections.show');
+Route::get('/brands', BrandDirectoryController::class)->name('brands.index');
 Route::get('/listings/recent', [StorefrontController::class, 'recent'])->name('listings.recent');
 Route::get('/listings/{listing}', [StorefrontController::class, 'show'])->name('listings.show');
+Route::get('/compare', [ComparisonController::class, 'index'])->name('compare.index');
+Route::get('/compare/listings', [ComparisonController::class, 'listings'])->name('compare.listings');
+Route::get('/order-tracking', [OrderTrackingController::class, 'index'])->name('order-tracking.index');
+Route::post('/order-tracking', [OrderTrackingController::class, 'store'])->middleware('throttle:order-tracking')->name('order-tracking.store');
 Route::get('/categories/search', CategoryLookupController::class)
     ->middleware('throttle:category-lookups')
     ->name('categories.search');
@@ -85,6 +99,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/buyer/order-items/{orderItem}/review', [BuyerReviewController::class, 'store'])->name('buyer.reviews.store');
     Route::get('/buyer/returns', [BuyerReturnRequestController::class, 'index'])->name('buyer.returns.index');
     Route::post('/buyer/returns', [BuyerReturnRequestController::class, 'store'])->name('buyer.returns.store');
+    Route::get('/wishlist', [WatchlistController::class, 'index'])->name('wishlist.index');
+    Route::post('/wishlist/{listing:slug}', [WatchlistController::class, 'store'])->name('wishlist.store');
+    Route::delete('/wishlist/{listing:slug}', [WatchlistController::class, 'destroy'])->name('wishlist.destroy');
+    Route::post('/listings/{listing:slug}/questions', [ProductQuestionController::class, 'store'])->name('listings.questions.store');
+    Route::patch('/product-questions/{question}', [ProductQuestionController::class, 'update'])->name('product-questions.update');
+    Route::get('/product-questions', ProductQuestionQueueController::class)->name('product-questions.index');
     Route::get('/returns/{returnRequest}/evidence/{evidence}', ReturnEvidenceController::class)
         ->whereNumber('evidence')
         ->name('returns.evidence.show');

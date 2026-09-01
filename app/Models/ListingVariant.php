@@ -10,11 +10,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['listing_id', 'seller_profile_id', 'combination_key', 'sku', 'stock_quantity', 'position'])]
+#[Fillable(['listing_id', 'seller_profile_id', 'combination_key', 'sku', 'stock_quantity', 'reserved_quantity', 'position'])]
 class ListingVariant extends Model
 {
     /** @use HasFactory<ListingVariantFactory> */
     use HasFactory;
+
+    public function availableQuantity(): int
+    {
+        return max(0, $this->stock_quantity - $this->reserved_quantity);
+    }
 
     /** @return BelongsTo<Listing, $this> */
     public function listing(): BelongsTo

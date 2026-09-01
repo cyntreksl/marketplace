@@ -12,6 +12,8 @@ interface PromotionRepository
     /** @return Collection<int, Promotion> */
     public function activeForPlacement(string $placement, int $limit): Collection;
 
+    public function activeFlashSale(): ?Promotion;
+
     /** @return LengthAwarePaginator<int, Promotion> */
     public function paginateForAdmin(): LengthAwarePaginator;
 

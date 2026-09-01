@@ -47,7 +47,7 @@ test('reviews require valid ratings and ownership of a delivered purchase', func
     $this->actingAs($buyer)->post(route('buyer.reviews.store', $undelivered), ['rating' => 5])->assertNotFound();
 });
 
-test('verified review aggregates appear on products and the deferred homepage social proof', function () {
+test('verified review aggregates appear on products while the homepage review wall stays removed', function () {
     $buyer = User::factory()->create();
     $item = deliveredItemFor($buyer);
     Review::factory()->create(['order_item_id' => $item->id, 'buyer_id' => $buyer->id, 'seller_profile_id' => $item->sellerOrder->seller_profile_id, 'rating' => 4, 'comment' => 'A dependable marketplace purchase.']);
@@ -58,10 +58,5 @@ test('verified review aggregates appear on products and the deferred homepage so
         ->where('listing.reviewCount', 1)
         ->has('reviews', 1));
 
-    $this->get(route('home'))->assertInertia(fn (Assert $page) => $page
-        ->missing('socialProof')
-        ->loadDeferredProps('homepage-below-fold', fn (Assert $reload) => $reload
-            ->where('socialProof.summary.count', 1)
-            ->where('socialProof.summary.average', 4)
-            ->has('socialProof.reviews', 1)));
+    $this->get(route('home'))->assertInertia(fn (Assert $page) => $page->missing('socialProof'));
 });

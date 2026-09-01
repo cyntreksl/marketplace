@@ -54,17 +54,18 @@ class HomeMerchandisingService
         });
     }
 
-    public function updateListing(User $actor, Listing $listing, bool $isBestOffer, bool $isNewArrival, string $reason): Listing
+    /** @param array{is_featured: bool, is_best_offer: bool, is_best_seller: bool, is_new_arrival: bool, is_clearance: bool} $placements */
+    public function updateListing(User $actor, Listing $listing, array $placements, string $reason): Listing
     {
-        if ($isBestOffer && ! $this->isEligibleBestOffer($listing)) {
+        if (($placements['is_best_offer'] || $placements['is_clearance']) && ! $this->isEligibleBestOffer($listing)) {
             throw ValidationException::withMessages([
                 'is_best_offer' => 'Best Offers must be approved buy-now listings with a lower sale price.',
             ]);
         }
 
-        return DB::transaction(function () use ($actor, $listing, $isBestOffer, $isNewArrival, $reason): Listing {
+        return DB::transaction(function () use ($actor, $listing, $placements, $reason): Listing {
             $before = $listing->getAttributes();
-            $listing = $this->listings->updateMerchandising($listing, $isBestOffer, $isNewArrival);
+            $listing = $this->listings->updateMerchandising($listing, $placements);
             $this->auditLogs->record($actor, 'listing.merchandising_updated', $listing, $before, $listing->getAttributes(), $reason);
 
             return $listing;

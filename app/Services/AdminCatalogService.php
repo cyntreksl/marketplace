@@ -12,7 +12,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Throwable;
 
 class AdminCatalogService
@@ -168,7 +170,13 @@ class AdminCatalogService
     /** @param array<string, mixed> $attributes */
     public function createBrand(User $actor, array $attributes, string $reason): Brand
     {
+        $logo = Arr::pull($attributes, 'logo');
         $attributes['slug'] = $attributes['slug'] ?: Str::slug($attributes['name']);
+        if ($logo instanceof UploadedFile) {
+            $stored = $this->storeBrandLogo($logo);
+            $attributes['logo_path'] = $stored['path'];
+            $attributes['logo_disk'] = $stored['disk'];
+        }
         $brand = Brand::query()->create($attributes);
         $this->auditLogs->record($actor, 'brand.created', $brand, null, $brand->getAttributes(), $reason);
 
@@ -178,7 +186,36 @@ class AdminCatalogService
     /** @param array<string, mixed> $attributes */
     public function updateBrand(User $actor, Brand $brand, array $attributes, string $reason): Brand
     {
-        return $this->update($actor, $brand, $attributes, $reason, 'brand.updated');
+        $logo = Arr::pull($attributes, 'logo');
+        $oldPath = $brand->logo_path;
+        $oldDisk = $brand->logo_disk ?: (string) config('filesystems.media', 'public');
+
+        if ($logo instanceof UploadedFile) {
+            $stored = $this->storeBrandLogo($logo);
+            $attributes['logo_path'] = $stored['path'];
+            $attributes['logo_disk'] = $stored['disk'];
+        }
+
+        $brand = $this->update($actor, $brand, $attributes, $reason, 'brand.updated');
+
+        if ($logo instanceof UploadedFile && $oldPath !== null) {
+            Storage::disk($oldDisk)->delete($oldPath);
+        }
+
+        return $brand;
+    }
+
+    /** @return array{disk: string, path: string} */
+    private function storeBrandLogo(UploadedFile $logo): array
+    {
+        $disk = (string) config('filesystems.media', 'public');
+        $path = Storage::disk($disk)->putFileAs('brands', $logo, $logo->hashName());
+
+        if ($path === false) {
+            throw new RuntimeException('The brand logo could not be stored.');
+        }
+
+        return ['disk' => $disk, 'path' => $path];
     }
 
     /** @param array<string, mixed> $attributes */

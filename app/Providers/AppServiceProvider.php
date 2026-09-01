@@ -9,10 +9,13 @@ use App\Contracts\Repositories\CatalogRepository;
 use App\Contracts\Repositories\GoogleProductTaxonomyRepository;
 use App\Contracts\Repositories\ListingRepository;
 use App\Contracts\Repositories\ListingVariantRepository;
+use App\Contracts\Repositories\OrderTrackingRepository;
+use App\Contracts\Repositories\ProductQuestionRepository;
 use App\Contracts\Repositories\PromotionRepository;
 use App\Contracts\Repositories\RefundRepository;
 use App\Contracts\Repositories\ReturnRequestRepository;
 use App\Contracts\Repositories\ReviewRepository;
+use App\Contracts\Repositories\WatchlistRepository;
 use App\Couriers\ManualCourierAdapter;
 use App\Models\User;
 use App\Payments\StripePaymentGateway;
@@ -21,10 +24,13 @@ use App\Repositories\EloquentCatalogRepository;
 use App\Repositories\EloquentGoogleProductTaxonomyRepository;
 use App\Repositories\EloquentListingRepository;
 use App\Repositories\EloquentListingVariantRepository;
+use App\Repositories\EloquentOrderTrackingRepository;
+use App\Repositories\EloquentProductQuestionRepository;
 use App\Repositories\EloquentPromotionRepository;
 use App\Repositories\EloquentRefundRepository;
 use App\Repositories\EloquentReturnRequestRepository;
 use App\Repositories\EloquentReviewRepository;
+use App\Repositories\EloquentWatchlistRepository;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -50,9 +56,12 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ListingRepository::class, EloquentListingRepository::class);
         $this->app->bind(ListingVariantRepository::class, EloquentListingVariantRepository::class);
         $this->app->bind(PromotionRepository::class, EloquentPromotionRepository::class);
+        $this->app->bind(ProductQuestionRepository::class, EloquentProductQuestionRepository::class);
+        $this->app->bind(OrderTrackingRepository::class, EloquentOrderTrackingRepository::class);
         $this->app->bind(ReviewRepository::class, EloquentReviewRepository::class);
         $this->app->bind(RefundRepository::class, EloquentRefundRepository::class);
         $this->app->bind(ReturnRequestRepository::class, EloquentReturnRequestRepository::class);
+        $this->app->bind(WatchlistRepository::class, EloquentWatchlistRepository::class);
         $this->app->bind(PaymentGateway::class, StripePaymentGateway::class);
         $this->app->bind(CourierAdapter::class, ManualCourierAdapter::class);
     }
@@ -95,6 +104,7 @@ class AppServiceProvider extends ServiceProvider
     {
         RateLimiter::for('auction-bids', fn ($request) => Limit::perMinute(12)->by($request->user()?->id.'|'.$request->ip()));
         RateLimiter::for('category-lookups', fn ($request) => Limit::perMinute(120)->by($request->user()?->id.'|'.$request->ip()));
+        RateLimiter::for('order-tracking', fn ($request) => Limit::perMinute(8)->by($request->ip()));
     }
 
     protected function configureMailNotifications(): void

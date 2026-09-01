@@ -5,6 +5,8 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 function operationsAdmin(): User
 {
@@ -47,6 +49,28 @@ test('operations admins can browse and maintain brands', function () {
     $this->actingAs($admin)->delete(route('admin.brands.destroy', $brand), ['reason' => 'Duplicate manufacturer entry'])->assertRedirect();
 
     expect($brand->fresh()->trashed())->toBeTrue();
+});
+
+test('operations admins can upload and order featured brand artwork', function () {
+    Storage::fake('public');
+    config()->set('filesystems.media', 'public');
+    $admin = operationsAdmin();
+
+    $this->actingAs($admin)->post(route('admin.brands.store'), [
+        'name' => 'Nova',
+        'slug' => 'nova',
+        'logo' => UploadedFile::fake()->image('nova.png'),
+        'is_featured' => true,
+        'homepage_order' => 2,
+        'reason' => 'Add an approved homepage manufacturer',
+    ])->assertRedirect();
+
+    $brand = Brand::query()->sole();
+    Storage::disk('public')->assertExists($brand->logo_path);
+
+    expect($brand->is_featured)->toBeTrue()
+        ->and($brand->homepage_order)->toBe(2)
+        ->and($brand->logoUrl())->not->toBeNull();
 });
 
 test('a super admin restores an archived catalog record', function () {

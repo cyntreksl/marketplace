@@ -10,6 +10,7 @@ return [
 
     'support' => [
         'email' => 'support@prodeals.lk',
+        'phone' => null,
         'privacy_email' => 'support@prodeals.lk',
         'hours' => '09:00–18:00',
         'days' => 'Seven days a week',
@@ -29,5 +30,15 @@ return [
         'instagram' => null,
         'linkedin' => null,
         'youtube' => null,
+    ],
+
+    'storefront' => [
+        'currency' => 'LKR',
+        'delivery_locations' => ['Colombo 03', 'Colombo 01', 'Colombo 05', 'Kandy', 'Galle', 'Jaffna'],
+        'newsletter_url' => null,
+        'google_play_url' => null,
+        'app_store_url' => null,
+        'installments_url' => null,
+        'business_deals_url' => null,
     ],
 ];

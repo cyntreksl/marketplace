@@ -45,8 +45,13 @@ class AdminHomepageController extends Controller
         $merchandising->updateListing(
             $request->user(),
             $listing,
-            $request->boolean('is_best_offer'),
-            $request->boolean('is_new_arrival'),
+            [
+                'is_featured' => $request->boolean('is_featured'),
+                'is_best_offer' => $request->boolean('is_best_offer'),
+                'is_best_seller' => $request->boolean('is_best_seller'),
+                'is_new_arrival' => $request->boolean('is_new_arrival'),
+                'is_clearance' => $request->boolean('is_clearance'),
+            ],
             $request->validated('reason'),
         );
 

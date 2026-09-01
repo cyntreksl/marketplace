@@ -23,9 +23,25 @@ class EloquentPromotionRepository implements PromotionRepository
             ->get();
     }
 
+    public function activeFlashSale(): ?Promotion
+    {
+        return Promotion::query()
+            ->where('placement', 'flash_sale')
+            ->where('is_active', true)
+            ->where(fn ($query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
+            ->where('ends_at', '>=', now())
+            ->with(['listings' => fn ($query) => $query
+                ->publiclyVisible()
+                ->withAvg('reviews as rating_average', 'rating')
+                ->withCount('reviews')
+                ->with(['brand:id,name,slug', 'category:id,name,slug', 'media', 'sellerProfile:id,store_name,slug', 'auction'])])
+            ->orderBy('sort_order')
+            ->first();
+    }
+
     public function paginateForAdmin(): LengthAwarePaginator
     {
-        return Promotion::query()->orderBy('placement')->orderBy('sort_order')->paginate(20);
+        return Promotion::query()->with('listings:id,title')->orderBy('placement')->orderBy('sort_order')->paginate(20);
     }
 
     public function save(Promotion $promotion): Promotion

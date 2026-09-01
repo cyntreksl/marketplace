@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Listing;
 use App\Models\Promotion;
 use App\Models\Role;
 use App\Models\User;
@@ -56,8 +57,9 @@ test('the storefront returns only active currently scheduled promotions in displ
 
     $promotions = $this->get(route('home'))->assertOk()->inertiaProps('promotions.hero');
 
-    expect($promotions)->toHaveCount(1)
-        ->and($promotions[0]['title'])->toBe('First');
+    expect($promotions)->toHaveCount(2)
+        ->and($promotions[0]['title'])->toBe('First')
+        ->and($promotions[1]['title'])->toBe('Second');
 });
 
 test('non operations users cannot manage promotions', function () {
@@ -71,4 +73,32 @@ test('non operations users cannot manage promotions', function () {
         'is_active' => true,
         'reason' => 'Attempt unauthorized promotion write',
     ])->assertForbidden();
+});
+
+test('flash sales require an end time and preserve ordered public listings', function () {
+    Storage::fake('public');
+    config()->set('filesystems.media', 'public');
+    $admin = User::factory()->create();
+    $admin->roles()->attach(Role::factory()->create(['name' => Role::Admin, 'label' => 'Administrator']));
+    $listings = Listing::factory()->count(2)->create(['sale_price' => '20000.00']);
+
+    $this->actingAs($admin)->post(route('admin.homepage.promotions.store'), [
+        'title' => 'Flash Sale',
+        'image' => UploadedFile::fake()->image('flash.jpg'),
+        'placement' => 'flash_sale',
+        'sort_order' => 0,
+        'is_active' => true,
+        'starts_at' => now()->subMinute()->toDateTimeString(),
+        'ends_at' => now()->addHour()->toDateTimeString(),
+        'listing_ids' => $listings->reverse()->pluck('id')->all(),
+        'reason' => 'Run a short verified inventory campaign',
+    ])->assertRedirect(route('admin.homepage.index'));
+
+    $promotion = Promotion::query()->sole();
+
+    expect($promotion->listings()->pluck('listings.id')->all())->toBe($listings->reverse()->pluck('id')->all());
+
+    $this->get(route('home'))->assertInertia(fn ($page) => $page
+        ->where('flashSale.id', $promotion->id)
+        ->where('flashSale.listings.0.id', $listings->last()->id));
 });

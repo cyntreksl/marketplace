@@ -9,6 +9,20 @@ use Illuminate\Validation\Validator;
 
 class UpdateListingMerchandisingRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $listing = $this->route('listing');
+        if (! $listing instanceof Listing) {
+            return;
+        }
+
+        foreach (['is_featured', 'is_best_offer', 'is_best_seller', 'is_new_arrival', 'is_clearance'] as $field) {
+            if (! $this->has($field)) {
+                $this->merge([$field => (bool) $listing->getAttribute($field)]);
+            }
+        }
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -27,8 +41,11 @@ class UpdateListingMerchandisingRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'is_featured' => ['required', 'boolean'],
             'is_best_offer' => ['required', 'boolean'],
+            'is_best_seller' => ['required', 'boolean'],
             'is_new_arrival' => ['required', 'boolean'],
+            'is_clearance' => ['required', 'boolean'],
             'reason' => ['required', 'string', 'min:5', 'max:1000'],
         ];
     }
@@ -39,7 +56,7 @@ class UpdateListingMerchandisingRequest extends FormRequest
         return [function (Validator $validator): void {
             $listing = $this->route('listing');
 
-            if (($this->boolean('is_best_offer') || $this->boolean('is_new_arrival'))
+            if (($this->boolean('is_featured') || $this->boolean('is_best_offer') || $this->boolean('is_best_seller') || $this->boolean('is_new_arrival') || $this->boolean('is_clearance'))
                 && (! $listing instanceof Listing || $listing->status !== 'approved')) {
                 $validator->errors()->add('is_new_arrival', 'Only approved listings can be featured on the homepage.');
             }
@@ -50,6 +67,14 @@ class UpdateListingMerchandisingRequest extends FormRequest
                 || $listing->sale_price === null
                 || (float) $listing->sale_price >= (float) $listing->price)) {
                 $validator->errors()->add('is_best_offer', 'Best Offers must be approved buy-now listings with a lower sale price.');
+            }
+
+            if ($this->boolean('is_clearance') && (! $listing instanceof Listing
+                || $listing->status !== 'approved'
+                || $listing->listing_type !== 'buy_now'
+                || $listing->sale_price === null
+                || (float) $listing->sale_price >= (float) $listing->price)) {
+                $validator->errors()->add('is_clearance', 'Clearance placement requires an approved buy-now listing with a lower sale price.');
             }
         }];
     }

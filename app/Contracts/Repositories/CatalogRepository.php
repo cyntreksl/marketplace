@@ -93,6 +93,12 @@ interface CatalogRepository
     /** @return Collection<int, Category> */
     public function activeTopLevelCategories(): Collection;
 
+    /** @return Collection<int, Brand> */
+    public function publicBrands(): Collection;
+
+    /** @return Collection<int, Brand> */
+    public function topBrands(int $limit = 8): Collection;
+
     /** @return Collection<int, Category> */
     public function popularHomepageCategories(int $limit = 10): Collection;
 

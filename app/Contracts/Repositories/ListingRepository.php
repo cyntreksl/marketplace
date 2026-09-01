@@ -40,7 +40,20 @@ interface ListingRepository
      */
     public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator;
 
-    public function updateMerchandising(Listing $listing, bool $isBestOffer, bool $isNewArrival): Listing;
+    /** @param array{is_featured: bool, is_best_offer: bool, is_best_seller: bool, is_new_arrival: bool, is_clearance: bool} $placements */
+    public function updateMerchandising(Listing $listing, array $placements): Listing;
+
+    /** @return Collection<int, Listing> */
+    public function featuredDeals(int $limit = 10): Collection;
+
+    /** @return Collection<int, Listing> */
+    public function bestSellers(int $limit = 10): Collection;
+
+    /** @return Collection<int, Listing> */
+    public function clearance(int $limit = 10): Collection;
+
+    /** @return Collection<int, Listing> */
+    public function related(Listing $listing, int $limit = 4): Collection;
 
     /** @return LengthAwarePaginator<int, Listing> */
     public function paginateForSeller(SellerProfile $seller, int $perPage = 15): LengthAwarePaginator;

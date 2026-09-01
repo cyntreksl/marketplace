@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\CustomerOrder;
 use App\Models\Listing;
+use App\Models\ListingVariant;
 use App\Models\Payment;
 use App\Models\SellerOrder;
 use App\Models\User;
@@ -22,7 +23,7 @@ class CheckoutService
         private readonly AuditLogService $auditLogs,
     ) {}
 
-    public function addItem(User $buyer, int $listingId, int $quantity): Cart
+    public function addItem(User $buyer, int $listingId, int $quantity, ?int $listingVariantId = null): Cart
     {
         if ($quantity < 1) {
             throw ValidationException::withMessages(['quantity' => 'Choose at least one item.']);
@@ -34,12 +35,19 @@ class CheckoutService
             throw ValidationException::withMessages(['listing_id' => 'Auction items cannot be added to a cart.']);
         }
 
-        if (! $listing->allow_backorders && $quantity > $listing->stock_quantity - $listing->reserved_quantity) {
+        $variant = $this->resolveVariant($listing, $listingVariantId);
+        $availableQuantity = $variant?->availableQuantity() ?? ($listing->stock_quantity - $listing->reserved_quantity);
+
+        if (! $listing->allow_backorders && $quantity > $availableQuantity) {
             throw ValidationException::withMessages(['quantity' => 'This quantity is no longer available.']);
         }
 
         $cart = Cart::query()->firstOrCreate(['buyer_id' => $buyer->id]);
-        $item = $cart->items()->firstOrNew(['listing_id' => $listing->id]);
+        $item = $cart->items()->firstOrNew([
+            'listing_id' => $listing->id,
+            'selection_key' => $variant?->combination_key ?? 'base',
+        ]);
+        $item->listing_variant_id = $variant?->id;
         $item->quantity = $quantity;
         $item->save();
 
@@ -51,13 +59,14 @@ class CheckoutService
     {
         return DB::transaction(function () use ($buyer, $paymentMethod, $shippingAddress): CustomerOrder {
             $cart = Cart::query()->where('buyer_id', $buyer->id)->lockForUpdate()->firstOrFail();
-            $cartItems = $cart->items()->with('listing.sellerProfile')->lockForUpdate()->get();
+            $cartItems = $cart->items()->with(['listing.sellerProfile', 'variant.optionValues.option'])->lockForUpdate()->get();
 
             if ($cartItems->isEmpty()) {
                 throw ValidationException::withMessages(['cart' => 'Your cart is empty.']);
             }
 
             $lockedListings = [];
+            $lockedVariants = [];
             foreach ($cartItems as $cartItem) {
                 $listing = Listing::query()->lockForUpdate()->findOrFail($cartItem->listing_id);
 
@@ -65,11 +74,23 @@ class CheckoutService
                     throw ValidationException::withMessages(['cart' => "{$listing->title} is no longer available to purchase."]);
                 }
 
-                if (! $listing->allow_backorders && $listing->stock_quantity - $listing->reserved_quantity < $cartItem->quantity) {
+                $variant = $cartItem->listing_variant_id === null
+                    ? null
+                    : ListingVariant::query()->with('optionValues.option')->lockForUpdate()->find($cartItem->listing_variant_id);
+
+                if ($listing->product_type === 'variant' && ($variant === null || $variant->listing_id !== $listing->id)) {
+                    throw ValidationException::withMessages(['cart' => "Choose an available option for {$listing->title}."]);
+                }
+
+                $availableQuantity = $variant?->availableQuantity() ?? ($listing->stock_quantity - $listing->reserved_quantity);
+                if (! $listing->allow_backorders && $availableQuantity < $cartItem->quantity) {
                     throw ValidationException::withMessages(['cart' => "{$listing->title} no longer has enough stock."]);
                 }
 
                 $lockedListings[$listing->id] = $listing;
+                if ($variant !== null) {
+                    $lockedVariants[$cartItem->id] = $variant;
+                }
             }
 
             $subtotal = BigDecimal::zero();
@@ -109,12 +130,16 @@ class CheckoutService
 
                 foreach ($items as $item) {
                     $listing = $lockedListings[$item->listing_id];
+                    $variant = $lockedVariants[$item->id] ?? null;
                     $effectivePrice = (string) $listing->buyNowPrice();
                     $lineTotal = BigDecimal::of($effectivePrice)->multipliedBy($item->quantity);
                     $commission = $lineTotal->multipliedBy((string) $listing->commission_percentage)->dividedBy(100, 2, RoundingMode::Down);
                     $sellerOrder->items()->create([
                         'listing_id' => $listing->id,
+                        'listing_variant_id' => $variant?->id,
                         'title' => $listing->title,
+                        'variant_sku' => $variant?->sku,
+                        'variant_options' => $variant === null ? null : $this->variantOptions($variant),
                         'quantity' => $item->quantity,
                         'unit_price' => $effectivePrice,
                         'commission_percentage' => $listing->commission_percentage,
@@ -122,6 +147,7 @@ class CheckoutService
                         'total' => (string) $lineTotal,
                     ]);
                     $listing->increment('reserved_quantity', $item->quantity);
+                    $variant?->increment('reserved_quantity', $item->quantity);
                 }
             }
 
@@ -142,5 +168,37 @@ class CheckoutService
     private function orderNumber(string $prefix): string
     {
         return $prefix.'-'.now()->format('ymd').'-'.Str::upper(Str::random(8));
+    }
+
+    private function resolveVariant(Listing $listing, ?int $listingVariantId): ?ListingVariant
+    {
+        if ($listing->product_type !== 'variant') {
+            if ($listingVariantId !== null) {
+                throw ValidationException::withMessages(['listing_variant_id' => 'This product does not use selectable options.']);
+            }
+
+            return null;
+        }
+
+        if ($listingVariantId === null) {
+            throw ValidationException::withMessages(['listing_variant_id' => 'Choose all product options before adding this item.']);
+        }
+
+        $variant = ListingVariant::query()->whereBelongsTo($listing)->with('optionValues.option')->find($listingVariantId);
+
+        if ($variant === null) {
+            throw ValidationException::withMessages(['listing_variant_id' => 'The selected product option is unavailable.']);
+        }
+
+        return $variant;
+    }
+
+    /** @return array<string, string> */
+    private function variantOptions(ListingVariant $variant): array
+    {
+        return $variant->optionValues
+            ->sortBy(fn ($value) => $value->option->position)
+            ->mapWithKeys(fn ($value): array => [$value->option->name => $value->value])
+            ->all();
     }
 }

@@ -6,9 +6,10 @@ use Database\Factories\PromotionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['title', 'image_path', 'image_disk', 'link_url', 'placement', 'sort_order', 'is_active', 'starts_at', 'ends_at'])]
+#[Fillable(['title', 'subtitle', 'cta_label', 'visual_theme', 'image_path', 'image_disk', 'artwork_alt', 'link_url', 'placement', 'sort_order', 'is_active', 'starts_at', 'ends_at'])]
 class Promotion extends Model
 {
     /** @use HasFactory<PromotionFactory> */
@@ -30,5 +31,11 @@ class Promotion extends Model
         }
 
         return Storage::disk($this->image_disk ?: (string) config('filesystems.media', 'public'))->url($this->image_path);
+    }
+
+    /** @return BelongsToMany<Listing, $this> */
+    public function listings(): BelongsToMany
+    {
+        return $this->belongsToMany(Listing::class)->withPivot('position')->orderByPivot('position');
     }
 }

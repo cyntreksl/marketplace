@@ -48,7 +48,12 @@ class EloquentCatalogRepository implements CatalogRepository
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where('name', 'like', "%{$search}%"))
             ->when(($filters['archived'] ?? null) === 'only', fn ($query) => $query->onlyTrashed())
             ->when(($filters['archived'] ?? null) === 'without', fn ($query) => $query->withoutTrashed())
-            ->latest()->paginate(20)->withQueryString();
+            ->orderByRaw('homepage_order is null')->orderBy('homepage_order')->latest()->paginate(20)->withQueryString()
+            ->through(function (Brand $brand): Brand {
+                $brand->setAttribute('logo_url', $brand->logoUrl());
+
+                return $brand;
+            });
     }
 
     /**
@@ -352,6 +357,35 @@ class EloquentCatalogRepository implements CatalogRepository
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
+    }
+
+    public function publicBrands(): Collection
+    {
+        return Brand::query()
+            ->withCount(['listings' => fn ($query) => $query->publiclyVisible()])
+            ->orderBy('name')
+            ->get()
+            ->map(function (Brand $brand): Brand {
+                $brand->setAttribute('logo_url', $brand->logoUrl());
+
+                return $brand;
+            });
+    }
+
+    public function topBrands(int $limit = 8): Collection
+    {
+        return Brand::query()
+            ->where('is_featured', true)
+            ->orderByRaw('homepage_order is null')
+            ->orderBy('homepage_order')
+            ->orderBy('name')
+            ->limit($limit)
+            ->get()
+            ->map(function (Brand $brand): Brand {
+                $brand->setAttribute('logo_url', $brand->logoUrl());
+
+                return $brand;
+            });
     }
 
     public function popularHomepageCategories(int $limit = 10): Collection

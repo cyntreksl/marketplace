@@ -20,6 +20,8 @@ class BrandFactory extends Factory
         return [
             'name' => fake()->unique()->company(),
             'slug' => fake()->unique()->slug(),
+            'is_featured' => false,
+            'homepage_order' => null,
         ];
     }
 }

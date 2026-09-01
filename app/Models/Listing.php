@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['seller_profile_id', 'category_id', 'brand_id', 'brand_name', 'sku', 'barcode', 'title', 'slug', 'short_description', 'description', 'condition', 'listing_type', 'product_type', 'status', 'location', 'specifications', 'warranty', 'stock_quantity', 'reserved_quantity', 'low_stock_threshold', 'allow_backorders', 'is_active', 'is_featured', 'is_best_seller', 'price', 'sale_price', 'cost_price', 'commission_percentage', 'moderation_reason', 'submitted_at', 'approved_at', 'is_best_offer', 'is_new_arrival', 'meta_title', 'meta_description'])]
+#[Fillable(['seller_profile_id', 'category_id', 'brand_id', 'brand_name', 'sku', 'barcode', 'title', 'slug', 'short_description', 'description', 'condition', 'listing_type', 'product_type', 'status', 'location', 'specifications', 'warranty', 'stock_quantity', 'reserved_quantity', 'low_stock_threshold', 'allow_backorders', 'is_active', 'is_featured', 'is_best_seller', 'price', 'sale_price', 'cost_price', 'commission_percentage', 'moderation_reason', 'submitted_at', 'approved_at', 'is_best_offer', 'is_new_arrival', 'is_clearance', 'meta_title', 'meta_description'])]
 class Listing extends Model
 {
     /** @use HasFactory<ListingFactory> */
@@ -35,6 +35,7 @@ class Listing extends Model
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'is_best_seller' => 'boolean',
+            'is_clearance' => 'boolean',
         ];
     }
 
@@ -92,6 +93,18 @@ class Listing extends Model
     public function reviews(): HasManyThrough
     {
         return $this->hasManyThrough(Review::class, OrderItem::class);
+    }
+
+    /** @return HasMany<ProductQuestion, $this> */
+    public function questions(): HasMany
+    {
+        return $this->hasMany(ProductQuestion::class);
+    }
+
+    /** @return HasMany<Watchlist, $this> */
+    public function watchlistEntries(): HasMany
+    {
+        return $this->hasMany(Watchlist::class);
     }
 
     public function buyNowPrice(): ?string

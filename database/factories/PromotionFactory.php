@@ -19,6 +19,10 @@ class PromotionFactory extends Factory
     {
         return [
             'title' => fake()->sentence(3),
+            'subtitle' => fake()->sentence(),
+            'cta_label' => 'Shop now',
+            'visual_theme' => 'orange',
+            'artwork_alt' => fake()->sentence(),
             'image_path' => 'promotions/'.fake()->uuid().'.webp',
             'link_url' => '/listings',
             'placement' => 'hero',

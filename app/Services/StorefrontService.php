@@ -4,11 +4,14 @@ namespace App\Services;
 
 use App\Contracts\Repositories\CatalogRepository;
 use App\Contracts\Repositories\ListingRepository;
+use App\Contracts\Repositories\ProductQuestionRepository;
 use App\Contracts\Repositories\PromotionRepository;
 use App\Contracts\Repositories\ReviewRepository;
+use App\Contracts\Repositories\WatchlistRepository;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Listing;
+use App\Models\User;
 use Illuminate\Support\Collection;
 
 class StorefrontService
@@ -20,6 +23,8 @@ class StorefrontService
         private readonly ReviewRepository $reviews,
         private readonly SeoHeadService $seo,
         private readonly StaticMediaService $staticMedia,
+        private readonly ProductQuestionRepository $questions,
+        private readonly WatchlistRepository $watchlists,
     ) {}
 
     /** @return array<string, mixed> */
@@ -28,7 +33,7 @@ class StorefrontService
         return [
             'categories' => $this->storefrontCategories(),
             'promotions' => [
-                'hero' => $this->promotionData('hero', 1, [
+                'hero' => $this->promotionData('hero', 5, [
                     ['title' => 'Discover better deals, closer to home', 'imageUrl' => $this->staticMedia->url('images/storefront/hero-marketplace.jpg'), 'linkUrl' => '/listings'],
                 ]),
                 'secondary' => $this->promotionData('secondary', 2, [
@@ -43,7 +48,14 @@ class StorefrontService
                 ])
                 ->values(),
             'bestOffers' => $this->listings->homepageBestOffers()->map(fn (Listing $listing): array => $this->listingData($listing))->values(),
+            'featuredDeals' => $this->listings->featuredDeals()->map(fn (Listing $listing): array => $this->listingData($listing))->values(),
+            'bestSellers' => $this->listings->bestSellers()->map(fn (Listing $listing): array => $this->listingData($listing))->values(),
             'newArrivals' => $this->listings->homepageNewArrivals()->map(fn (Listing $listing): array => $this->listingData($listing))->values(),
+            'topBrands' => $this->catalog->topBrands()->map(fn (Brand $brand): array => [
+                ...$brand->only(['id', 'name', 'slug']),
+                'logoUrl' => $brand->getAttribute('logo_url'),
+            ])->values(),
+            'flashSale' => $this->flashSaleData(),
         ];
     }
 
@@ -119,7 +131,7 @@ class StorefrontService
     }
 
     /** @return array<string, mixed> */
-    public function listingDetailsData(string $slug): array
+    public function listingDetailsData(string $slug, ?User $viewer = null): array
     {
         $listing = $this->listings->findPublicBySlug($slug);
 
@@ -137,7 +149,37 @@ class StorefrontService
             'categoryTrail' => $listing->category === null
                 ? []
                 : $this->catalog->activeCategoryTrailBySlug($listing->category->slug),
+            'questions' => $this->questions->answeredFor($listing)->map(fn ($question): array => $this->questionData($question))->values(),
+            'pendingQuestions' => $this->questions->pendingForViewer($listing, $viewer)->map(fn ($question): array => $this->questionData($question))->values(),
+            'isWishlisted' => $viewer === null ? false : $this->watchlists->contains($viewer, $listing),
+            'activeCampaign' => $this->activeCampaignFor($listing),
+            'categoryPolicies' => $listing->category === null ? null : [
+                'returnWindowDays' => $listing->category->return_window_days,
+                'codEnabled' => $listing->category->cod_enabled,
+            ],
+            'relatedListings' => $this->listings->related($listing)->map(fn (Listing $related): array => $this->listingData($related))->values(),
         ];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function comparisonData(array $listingIds): array
+    {
+        return $this->listings->findPublicByIds($listingIds)
+            ->map(fn (Listing $listing): array => $this->listingData($listing, detailed: true))
+            ->values()
+            ->all();
+    }
+
+    /** @return Collection<int, array<string, mixed>> */
+    public function navigationCategories(): Collection
+    {
+        return $this->storefrontCategories();
+    }
+
+    /** @return array<string, mixed> */
+    public function cardData(Listing $listing): array
+    {
+        return $this->listingData($listing);
     }
 
     /** @return Collection<int, array<string, mixed>> */
@@ -190,6 +232,8 @@ class StorefrontService
             'warranty' => $listing->warranty,
             'stockQuantity' => $listing->stock_quantity - $listing->reserved_quantity,
             'stockStatus' => $listing->stockStatus(),
+            'productType' => $listing->product_type,
+            'specifications' => $detailed && is_array($listing->specifications) ? $listing->specifications : [],
             'category' => $listing->category?->only(['name', 'slug']),
             'brand' => $listing->brand?->only(['name', 'slug']),
             'media' => $listing->media->map(fn ($media) => [
@@ -209,12 +253,45 @@ class StorefrontService
                 'endsAt' => $listing->auction->ends_at->toIso8601String(),
                 'bidCount' => $detailed ? $listing->auction->bids->count() : null,
             ],
+            'variantOptions' => $detailed
+                ? $listing->variantOptions->map(fn ($option): array => [
+                    'id' => $option->id,
+                    'name' => $option->name,
+                    'values' => $option->values->pluck('value')->values(),
+                ])->values()
+                : [],
+            'variants' => $detailed
+                ? $listing->variants->map(fn ($variant): array => [
+                    'id' => $variant->id,
+                    'sku' => $variant->sku,
+                    'selectionKey' => $variant->combination_key,
+                    'selections' => $variant->optionValues->sortBy(fn ($value) => $value->option->position)->mapWithKeys(fn ($value): array => [$value->option->name => $value->value]),
+                    'stockQuantity' => $variant->availableQuantity(),
+                    'image' => $variant->image === null ? null : [
+                        'thumbnailUrl' => $variant->image->urlForVariant('thumbnail'),
+                        'cardUrl' => $variant->image->urlForVariant('card'),
+                    ],
+                ])->values()
+                : [],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function questionData($question): array
+    {
+        return [
+            'id' => $question->id,
+            'question' => $question->question,
+            'answer' => $question->answer,
+            'askedBy' => $question->asker?->name ?? 'Marketplace shopper',
+            'answeredBy' => $question->answerer?->name,
+            'answeredAt' => $question->answered_at?->toIso8601String(),
         ];
     }
 
     /**
      * @param  array<int, array{title: string, imageUrl: string, linkUrl: string}>  $fallbacks
-     * @return array<int, array{id: int|null, title: string, imageUrl: string, linkUrl: string|null}>
+     * @return array<int, array<string, mixed>>
      */
     private function promotionData(string $placement, int $limit, array $fallbacks): array
     {
@@ -229,6 +306,10 @@ class StorefrontService
         return $promotions->map(fn ($promotion): array => [
             'id' => $promotion->id,
             'title' => $promotion->title,
+            'subtitle' => $promotion->subtitle,
+            'ctaLabel' => $promotion->cta_label,
+            'visualTheme' => $promotion->visual_theme,
+            'artworkAlt' => $promotion->artwork_alt,
             'imageUrl' => $promotion->imageUrl() ?? $this->staticMedia->url(
                 $promotion->placement === 'hero'
                     ? 'images/storefront/hero-marketplace.jpg'
@@ -245,5 +326,39 @@ class StorefrontService
         }
 
         return (int) round((((float) $listing->price - (float) $listing->sale_price) / (float) $listing->price) * 100);
+    }
+
+    /** @return array<string, mixed>|null */
+    private function flashSaleData(): ?array
+    {
+        $promotion = $this->promotions->activeFlashSale();
+
+        if ($promotion === null) {
+            return null;
+        }
+
+        return [
+            'id' => $promotion->id,
+            'title' => $promotion->title,
+            'subtitle' => $promotion->subtitle,
+            'endsAt' => $promotion->ends_at->toIso8601String(),
+            'listings' => $promotion->listings->map(fn (Listing $listing): array => $this->listingData($listing))->values(),
+        ];
+    }
+
+    /** @return array<string, mixed>|null */
+    private function activeCampaignFor(Listing $listing): ?array
+    {
+        $promotion = $this->promotions->activeFlashSale();
+
+        if ($promotion === null || ! $promotion->listings->contains('id', $listing->id)) {
+            return null;
+        }
+
+        return [
+            'title' => $promotion->title,
+            'subtitle' => $promotion->subtitle,
+            'endsAt' => $promotion->ends_at->toIso8601String(),
+        ];
     }
 }

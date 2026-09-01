@@ -23,6 +23,16 @@ class EloquentListingRepository implements ListingRepository
 
         $query = $this->publicQuery()
             ->leftJoin('auctions', 'auctions.listing_id', '=', 'listings.id')
+            ->when($filters['collection'] ?? null, function (Builder $query, string $collection): void {
+                match ($collection) {
+                    'featured' => $query->where('listings.is_featured', true),
+                    'deals' => $query->where('listings.is_best_offer', true)->whereNotNull('listings.sale_price')->whereColumn('listings.sale_price', '<', 'listings.price'),
+                    'best-sellers' => $query->where('listings.is_best_seller', true),
+                    'new-arrivals' => $query->where('listings.is_new_arrival', true),
+                    'clearance' => $query->where('listings.is_clearance', true)->whereNotNull('listings.sale_price')->whereColumn('listings.sale_price', '<', 'listings.price'),
+                    default => null,
+                };
+            })
             ->when($filters['search'] ?? null, fn ($query, string $search) => $query->where('listings.title', 'like', "%{$search}%"))
             ->when($filters['category'] ?? null, fn ($query, string $category) => $query->whereIn('listings.category_id', $this->catalog->activeDescendantIdsForSlug($category)))
             ->when($filters['brand'] ?? null, fn ($query, string $brand) => $query->whereHas('brand', fn ($query) => $query->where('slug', $brand)))
@@ -44,6 +54,9 @@ class EloquentListingRepository implements ListingRepository
             ->with([
                 'sellerProfile.user:id,name',
                 'auction.bids.buyer:id,name',
+                'variantOptions.values',
+                'variants.optionValues.option',
+                'variants.image',
             ])
             ->where('slug', $slug)
             ->firstOrFail();
@@ -105,14 +118,45 @@ class EloquentListingRepository implements ListingRepository
             ->withQueryString();
     }
 
-    public function updateMerchandising(Listing $listing, bool $isBestOffer, bool $isNewArrival): Listing
+    public function updateMerchandising(Listing $listing, array $placements): Listing
     {
-        $listing->forceFill([
-            'is_best_offer' => $isBestOffer,
-            'is_new_arrival' => $isNewArrival,
-        ])->save();
+        $listing->forceFill($placements)->save();
 
         return $listing;
+    }
+
+    public function featuredDeals(int $limit = 10): Collection
+    {
+        return $this->publicQuery()->where('listings.is_featured', true)->latest('listings.created_at')->limit($limit)->get();
+    }
+
+    public function bestSellers(int $limit = 10): Collection
+    {
+        return $this->publicQuery()->where('listings.is_best_seller', true)->latest('listings.created_at')->limit($limit)->get();
+    }
+
+    public function clearance(int $limit = 10): Collection
+    {
+        return $this->publicQuery()
+            ->where('listings.is_clearance', true)
+            ->where('listings.listing_type', 'buy_now')
+            ->whereNotNull('listings.sale_price')
+            ->whereColumn('listings.sale_price', '<', 'listings.price')
+            ->latest('listings.created_at')->limit($limit)->get();
+    }
+
+    public function related(Listing $listing, int $limit = 4): Collection
+    {
+        return $this->publicQuery()
+            ->whereKeyNot($listing->id)
+            ->where(function (Builder $query) use ($listing): void {
+                $query->where('listings.category_id', $listing->category_id)
+                    ->when($listing->brand_id !== null, fn (Builder $brandQuery) => $brandQuery->orWhere('listings.brand_id', $listing->brand_id));
+            })
+            ->orderByRaw('CASE WHEN listings.category_id = ? THEN 0 ELSE 1 END', [$listing->category_id])
+            ->latest('listings.created_at')
+            ->limit($limit)
+            ->get();
     }
 
     public function paginateForSeller(SellerProfile $seller, int $perPage = 15): LengthAwarePaginator
@@ -205,7 +249,7 @@ class EloquentListingRepository implements ListingRepository
             ->withCount('reviews')
             ->with([
                 'brand:id,name,slug',
-                'category:id,name,slug',
+                'category:id,name,slug,return_window_days,cod_enabled',
                 'media:id,listing_id,disk,path,type,sort_order,variant_version,variants,processing_status',
                 'sellerProfile:id,store_name,slug',
                 'auction:id,listing_id,status,current_price,ends_at',

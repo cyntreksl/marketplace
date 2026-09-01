@@ -49,6 +49,10 @@ class HandleInertiaRequests extends Middleware
                     ->whereIn('name', [Role::IndividualSeller, Role::BusinessSeller])
                     ->exists() ?? false,
             ],
+            'commerce' => [
+                'cart_quantity' => fn (): int => $request->user()?->cart?->items()->sum('quantity') ?? 0,
+                'wishlist_count' => fn (): int => $request->user()?->watchlistEntries()->count() ?? 0,
+            ],
             'marketplace' => config('marketplace'),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

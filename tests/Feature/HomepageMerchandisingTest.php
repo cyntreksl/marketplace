@@ -66,7 +66,7 @@ test('best offers require a discounted approved buy now listing', function () {
     ])->assertSessionHasErrors('is_best_offer');
 });
 
-test('homepage output filters curated listings and defers lower sections', function () {
+test('homepage output filters curated listings and uses the reference-first collection order', function () {
     Storage::fake('public');
     Storage::disk('public')->put('categories/featured/banner.webp', 'banner');
     $category = Category::factory()->create([
@@ -84,17 +84,13 @@ test('homepage output filters curated listings and defers lower sections', funct
         ->where('bestOffers.0.id', $visible->id)
         ->has('newArrivals', 1)
         ->missing('categorySections')
-        ->loadDeferredProps('homepage-below-fold', fn (Assert $reload) => $reload
-            ->has('categorySections', 1)
-            ->where('categorySections.0.category.banner_image_url', Storage::disk('public')->url($category->banner_image_path))
-            ->where('categorySections.0.listings.0.id', $visible->id)
-            ->has('socialProof')));
+        ->missing('socialProof'));
 
     $homeComponent = file_get_contents(resource_path('js/pages/storefront/home.tsx'));
 
     expect($homeComponent)
-        ->toContain('section.category.banner_image_url')
-        ->toContain('bg-gradient-to-br from-slate-950 via-teal-950 to-primary');
+        ->toContain('Featured Deals')
+        ->toContain('New Arrivals');
 });
 
 test('recently viewed listings preserve requested order and exclude unavailable products', function () {
@@ -109,4 +105,19 @@ test('recently viewed listings preserve requested order and exclude unavailable 
         ->assertJsonCount(2, 'listings');
 
     $this->getJson(route('listings.recent', ['ids' => range(1, 13)]))->assertUnprocessable()->assertJsonValidationErrors('ids');
+});
+
+test('public merchandising collections enforce listing visibility and genuine discounts', function () {
+    $featured = Listing::factory()->create(['is_featured' => true]);
+    $clearance = Listing::factory()->create(['is_clearance' => true, 'price' => '10000.00', 'sale_price' => '7000.00']);
+    Listing::factory()->create(['is_clearance' => true, 'price' => '10000.00', 'sale_price' => null]);
+    Listing::factory()->create(['is_featured' => true, 'status' => 'draft', 'approved_at' => null]);
+
+    $this->get(route('collections.show', 'featured'))->assertInertia(fn (Assert $page) => $page
+        ->has('listings.data', 1)
+        ->where('listings.data.0.id', $featured->id));
+
+    $this->get(route('collections.show', 'clearance'))->assertInertia(fn (Assert $page) => $page
+        ->has('listings.data', 1)
+        ->where('listings.data.0.id', $clearance->id));
 });
