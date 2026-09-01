@@ -46,9 +46,22 @@ type VariantRow = {
     sku: string;
     stock_quantity: number | '';
     image: File | null;
+    image_crop: ListingImageCrop | null;
+    image_size: ListingImageSize | null;
     remove_image: boolean;
     existing_image: ListingMedia | null;
 };
+
+type CropTarget =
+    | { kind: 'product'; index: number; required: boolean }
+    | {
+          kind: 'variant';
+          index: number;
+          combination: string;
+          file: File;
+          size: ListingImageSize;
+          url: string;
+      };
 
 type StoredVariantOption = {
     name: string;
@@ -150,10 +163,17 @@ export function SellerProductForm({
     const [isDraggingImages, setIsDraggingImages] = useState(false);
     const [imageSizes, setImageSizes] = useState<ListingImageSize[]>([]);
     const [imageError, setImageError] = useState<string | null>(null);
-    const [cropImageIndex, setCropImageIndex] = useState<number | null>(null);
+    const [cropTarget, setCropTarget] = useState<CropTarget | null>(null);
+    const [pendingProductCropIndexes, setPendingProductCropIndexes] = useState<
+        number[]
+    >([]);
+    const [variantImageErrors, setVariantImageErrors] = useState<
+        Record<string, string>
+    >({});
     const [cropPosition, setCropPosition] = useState<Point>({ x: 0, y: 0 });
     const [cropZoom, setCropZoom] = useState(1);
     const [draftCrop, setDraftCrop] = useState<ListingImageCrop | null>(null);
+    const [cropError, setCropError] = useState<string | null>(null);
     const existingOptions = useMemo(
         () =>
             [...(listing?.variant_options ?? [])]
@@ -182,6 +202,8 @@ export function SellerProductForm({
                     sku: variant.sku ?? '',
                     stock_quantity: variant.stock_quantity,
                     image: null,
+                    image_crop: null,
+                    image_size: null,
                     remove_image: false,
                     existing_image: variant.image,
                 })),
@@ -236,6 +258,15 @@ export function SellerProductForm({
         [imagePreviewUrls],
     );
 
+    useEffect(
+        () => () => {
+            if (cropTarget?.kind === 'variant') {
+                URL.revokeObjectURL(cropTarget.url);
+            }
+        },
+        [cropTarget],
+    );
+
     const visibleExistingMedia = (listing?.media ?? []).filter(
         (media) => !form.data.removed_media_ids.includes(media.id),
     );
@@ -284,6 +315,8 @@ export function SellerProductForm({
                         : suggestedSku(baseSku, selections),
                 stock_quantity: existing?.stock_quantity ?? 0,
                 image: existing?.image ?? null,
+                image_crop: existing?.image_crop ?? null,
+                image_size: existing?.image_size ?? null,
                 remove_image: existing?.remove_image ?? false,
                 existing_image: existing?.existing_image ?? null,
             };
@@ -322,13 +355,19 @@ export function SellerProductForm({
               ? 'Low stock'
               : 'In stock';
     const cropImage =
-        cropImageIndex === null
+        cropTarget === null
             ? null
-            : {
-                  url: imagePreviewUrls[cropImageIndex],
-                  size: imageSizes[cropImageIndex],
-                  crop: form.data.image_crops[cropImageIndex],
-              };
+            : cropTarget.kind === 'product'
+              ? {
+                    url: imagePreviewUrls[cropTarget.index],
+                    size: imageSizes[cropTarget.index],
+                    crop: form.data.image_crops[cropTarget.index],
+                }
+              : {
+                    url: cropTarget.url,
+                    size: cropTarget.size,
+                    crop: draftCrop ?? centeredFourByThreeCrop(cropTarget.size),
+                };
     const maximumCropZoom = cropImage?.size
         ? Math.max(
               1,
@@ -375,6 +414,79 @@ export function SellerProductForm({
                 variantIndex === index ? { ...variant, ...changes } : variant,
             ),
         );
+    }
+
+    function openProductCrop(
+        index: number,
+        required: boolean,
+        initialCrop = form.data.image_crops[index],
+    ): void {
+        setCropTarget({ kind: 'product', index, required });
+        setDraftCrop(initialCrop);
+        setCropError(null);
+        setCropPosition({ x: 0, y: 0 });
+        setCropZoom(1);
+    }
+
+    async function openVariantCrop(
+        index: number,
+        combination: string,
+        file: File,
+        initialCrop?: ListingImageCrop | null,
+        knownSize?: ListingImageSize | null,
+    ): Promise<void> {
+        const key = combinationKey(
+            form.data.variants[index]?.selections ?? [],
+            form.data.variant_options,
+        );
+
+        if (
+            !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
+            file.size > 5 * 1024 * 1024
+        ) {
+            setVariantImageErrors((errors) => ({
+                ...errors,
+                [key]: 'Use a JPG, PNG, or WebP image no larger than 5 MB.',
+            }));
+
+            return;
+        }
+
+        const size = knownSize ?? (await readImageSize(file).catch(() => null));
+
+        if (
+            size === null ||
+            size.width < 800 ||
+            size.height < 600 ||
+            size.width > 6000 ||
+            size.height > 6000
+        ) {
+            setVariantImageErrors((errors) => ({
+                ...errors,
+                [key]: 'Use an image from 800 × 600 to 6000 × 6000 pixels.',
+            }));
+
+            return;
+        }
+
+        setVariantImageErrors((errors) => {
+            const nextErrors = { ...errors };
+            delete nextErrors[key];
+
+            return nextErrors;
+        });
+        setCropTarget({
+            kind: 'variant',
+            index,
+            combination,
+            file,
+            size,
+            url: URL.createObjectURL(file),
+        });
+        setDraftCrop(initialCrop ?? centeredFourByThreeCrop(size));
+        setCropError(null);
+        setCropPosition({ x: 0, y: 0 });
+        setCropZoom(1);
     }
 
     async function addImages(files: FileList | null): Promise<void> {
@@ -425,6 +537,16 @@ export function SellerProductForm({
             ...sizes,
             ...prepared.map(({ size }) => size),
         ]);
+        const firstNewIndex = form.data.images.length;
+        const newIndexes = prepared.map(
+            (_, preparedIndex) => firstNewIndex + preparedIndex,
+        );
+        setPendingProductCropIndexes(newIndexes);
+
+        if (newIndexes.length > 0) {
+            openProductCrop(newIndexes[0], true, prepared[0].crop);
+        }
+
         setImageError(
             prepared.length === incoming.length
                 ? null
@@ -445,6 +567,129 @@ export function SellerProductForm({
         setImageSizes((sizes) =>
             sizes.filter((_, imageIndex) => imageIndex !== index),
         );
+        setPendingProductCropIndexes((indexes) =>
+            indexes
+                .filter((pendingIndex) => pendingIndex !== index)
+                .map((pendingIndex) =>
+                    pendingIndex > index ? pendingIndex - 1 : pendingIndex,
+                ),
+        );
+    }
+
+    function closeCrop(): void {
+        if (cropTarget?.kind !== 'product' || !cropTarget.required) {
+            setCropTarget(null);
+
+            return;
+        }
+
+        const removedIndex = cropTarget.index;
+        const nextImages = form.data.images.filter(
+            (_, imageIndex) => imageIndex !== removedIndex,
+        );
+        const nextCrops = form.data.image_crops.filter(
+            (_, imageIndex) => imageIndex !== removedIndex,
+        );
+        const nextSizes = imageSizes.filter(
+            (_, imageIndex) => imageIndex !== removedIndex,
+        );
+        const remainingIndexes = pendingProductCropIndexes
+            .filter((pendingIndex) => pendingIndex !== removedIndex)
+            .map((pendingIndex) =>
+                pendingIndex > removedIndex ? pendingIndex - 1 : pendingIndex,
+            );
+
+        form.setData({
+            ...form.data,
+            images: nextImages,
+            image_crops: nextCrops,
+        });
+        setImageSizes(nextSizes);
+        setPendingProductCropIndexes(remainingIndexes);
+
+        if (remainingIndexes.length === 0) {
+            setCropTarget(null);
+
+            return;
+        }
+
+        const nextIndex = remainingIndexes[0];
+        openProductCrop(nextIndex, true, nextCrops[nextIndex]);
+    }
+
+    function applyCrop(): void {
+        if (cropTarget === null || draftCrop === null) {
+            return;
+        }
+
+        if (draftCrop.width < 800 || draftCrop.height < 600) {
+            const message =
+                'Keep at least 800 × 600 source pixels inside the crop.';
+            setCropError(message);
+
+            if (cropTarget.kind === 'product') {
+                setImageError(message);
+            } else {
+                const key = combinationKey(
+                    form.data.variants[cropTarget.index]?.selections ?? [],
+                    form.data.variant_options,
+                );
+                setVariantImageErrors((errors) => ({
+                    ...errors,
+                    [key]: message,
+                }));
+            }
+
+            return;
+        }
+
+        if (cropTarget.kind === 'variant') {
+            const key = combinationKey(
+                form.data.variants[cropTarget.index]?.selections ?? [],
+                form.data.variant_options,
+            );
+            updateVariant(cropTarget.index, {
+                image: cropTarget.file,
+                image_crop: draftCrop,
+                image_size: cropTarget.size,
+                remove_image: false,
+            });
+            setVariantImageErrors((errors) => {
+                const nextErrors = { ...errors };
+                delete nextErrors[key];
+
+                return nextErrors;
+            });
+            setCropTarget(null);
+
+            return;
+        }
+
+        const updatedCrops = form.data.image_crops.map((crop, index) =>
+            index === cropTarget.index ? draftCrop : crop,
+        );
+        form.setData({ ...form.data, image_crops: updatedCrops });
+        setImageError(null);
+
+        if (!cropTarget.required) {
+            setCropTarget(null);
+
+            return;
+        }
+
+        const remainingIndexes = pendingProductCropIndexes.filter(
+            (pendingIndex) => pendingIndex !== cropTarget.index,
+        );
+        setPendingProductCropIndexes(remainingIndexes);
+
+        if (remainingIndexes.length === 0) {
+            setCropTarget(null);
+
+            return;
+        }
+
+        const nextIndex = remainingIndexes[0];
+        openProductCrop(nextIndex, true, updatedCrops[nextIndex]);
     }
 
     function submit(submitForReview: boolean): void {
@@ -456,6 +701,7 @@ export function SellerProductForm({
                 sku: variant.sku,
                 stock_quantity: variant.stock_quantity,
                 image: variant.image,
+                image_crop: variant.image_crop,
                 remove_image: variant.remove_image,
             })),
             submit_for_review: submitForReview,
@@ -1022,31 +1268,64 @@ export function SellerProductForm({
                                                                         removeExisting={
                                                                             variant.remove_image
                                                                         }
-                                                                        onChange={(
+                                                                        crop={
+                                                                            variant.image_crop
+                                                                        }
+                                                                        size={
+                                                                            variant.image_size
+                                                                        }
+                                                                        onSelect={(
                                                                             image,
                                                                         ) =>
-                                                                            updateVariant(
+                                                                            void openVariantCrop(
                                                                                 index,
-                                                                                {
-                                                                                    image,
-                                                                                    remove_image: false,
-                                                                                },
+                                                                                variant.selections.join(
+                                                                                    ' / ',
+                                                                                ),
+                                                                                image,
                                                                             )
                                                                         }
+                                                                        onEdit={() => {
+                                                                            if (
+                                                                                variant.image
+                                                                            ) {
+                                                                                void openVariantCrop(
+                                                                                    index,
+                                                                                    variant.selections.join(
+                                                                                        ' / ',
+                                                                                    ),
+                                                                                    variant.image,
+                                                                                    variant.image_crop,
+                                                                                    variant.image_size,
+                                                                                );
+                                                                            }
+                                                                        }}
                                                                         onRemove={() =>
                                                                             updateVariant(
                                                                                 index,
                                                                                 {
                                                                                     image: null,
+                                                                                    image_crop:
+                                                                                        null,
+                                                                                    image_size:
+                                                                                        null,
                                                                                     remove_image:
                                                                                         variant.existing_image !==
                                                                                         null,
                                                                                 },
                                                                             )
                                                                         }
-                                                                        error={errorFor(
-                                                                            `variants.${index}.image`,
-                                                                        )}
+                                                                        error={
+                                                                            variantImageErrors[
+                                                                                key
+                                                                            ] ??
+                                                                            errorFor(
+                                                                                `variants.${index}.image_crop`,
+                                                                            ) ??
+                                                                            errorFor(
+                                                                                `variants.${index}.image`,
+                                                                            )
+                                                                        }
                                                                     />
                                                                 </td>
                                                                 <td className="px-4 py-3">
@@ -1153,9 +1432,10 @@ export function SellerProductForm({
                                 multiple
                                 accept="image/jpeg,image/png,image/webp"
                                 className="sr-only"
-                                onChange={(event) =>
-                                    void addImages(event.target.files)
-                                }
+                                onChange={(event) => {
+                                    void addImages(event.target.files);
+                                    event.target.value = '';
+                                }}
                             />
                             <span className="grid size-14 place-items-center rounded-full bg-white text-primary shadow-sm dark:bg-slate-900">
                                 <UploadCloud className="size-7" />
@@ -1193,17 +1473,14 @@ export function SellerProductForm({
                                 ))}
                                 {form.data.images.map((file, index) => (
                                     <ImageThumbnail
-                                        key={`${file.name}-${file.lastModified}`}
+                                        key={`${file.name}-${file.lastModified}-${index}`}
                                         src={imagePreviewUrls[index]}
                                         alt={file.name}
-                                        onEdit={() => {
-                                            setCropImageIndex(index);
-                                            setDraftCrop(
-                                                form.data.image_crops[index],
-                                            );
-                                            setCropPosition({ x: 0, y: 0 });
-                                            setCropZoom(1);
-                                        }}
+                                        crop={form.data.image_crops[index]}
+                                        size={imageSizes[index]}
+                                        onEdit={() =>
+                                            openProductCrop(index, false)
+                                        }
                                         onRemove={() => removeNewImage(index)}
                                     />
                                 ))}
@@ -1371,21 +1648,26 @@ export function SellerProductForm({
             </div>
 
             <Dialog
-                open={cropImageIndex !== null}
-                onOpenChange={(open) => !open && setCropImageIndex(null)}
+                open={cropTarget !== null}
+                onOpenChange={(open) => !open && closeCrop()}
             >
                 <DialogContent className="sm:max-w-3xl">
                     <DialogHeader>
-                        <DialogTitle>Crop product image</DialogTitle>
+                        <DialogTitle>
+                            {cropTarget?.kind === 'variant'
+                                ? `Crop ${cropTarget.combination} image`
+                                : 'Crop product image'}
+                        </DialogTitle>
                         <DialogDescription>
                             Keep the important part of the image inside the 4:3
-                            frame.
+                            frame, then save the crop to continue.
                         </DialogDescription>
                     </DialogHeader>
                     {cropImage && (
                         <>
                             <div className="relative h-[28rem] overflow-hidden rounded-xl bg-slate-950">
                                 <Cropper
+                                    key={cropImage.url}
                                     image={cropImage.url}
                                     crop={cropPosition}
                                     zoom={cropZoom}
@@ -1395,11 +1677,12 @@ export function SellerProductForm({
                                     initialCroppedAreaPixels={cropImage.crop}
                                     onCropChange={setCropPosition}
                                     onZoomChange={setCropZoom}
-                                    onCropComplete={(_, croppedAreaPixels) =>
+                                    onCropComplete={(_, croppedAreaPixels) => {
                                         setDraftCrop(
                                             normalizeCrop(croppedAreaPixels),
-                                        )
-                                    }
+                                        );
+                                        setCropError(null);
+                                    }}
                                 />
                             </div>
                             <input
@@ -1413,50 +1696,26 @@ export function SellerProductForm({
                                 }
                                 className="w-full accent-primary"
                             />
+                            {cropError && <ErrorText>{cropError}</ErrorText>}
                         </>
                     )}
                     <DialogFooter>
                         <button
                             type="button"
-                            onClick={() => setCropImageIndex(null)}
+                            onClick={closeCrop}
                             className="rounded-xl border px-4 py-2 text-sm font-bold"
                         >
-                            Cancel
+                            {cropTarget?.kind === 'product' &&
+                            cropTarget.required
+                                ? 'Discard image'
+                                : 'Cancel'}
                         </button>
                         <button
                             type="button"
-                            onClick={() => {
-                                if (
-                                    cropImageIndex === null ||
-                                    draftCrop === null
-                                ) {
-                                    return;
-                                }
-
-                                if (
-                                    draftCrop.width < 800 ||
-                                    draftCrop.height < 600
-                                ) {
-                                    setImageError(
-                                        'Keep at least 800 × 600 source pixels inside the crop.',
-                                    );
-
-                                    return;
-                                }
-
-                                setField(
-                                    'image_crops',
-                                    form.data.image_crops.map((crop, index) =>
-                                        index === cropImageIndex
-                                            ? draftCrop
-                                            : crop,
-                                    ),
-                                );
-                                setCropImageIndex(null);
-                            }}
+                            onClick={applyCrop}
                             className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
                         >
-                            Apply crop
+                            Save crop
                         </button>
                     </DialogFooter>
                 </DialogContent>
@@ -1591,20 +1850,26 @@ function ToggleRow({
 
 function VariantImageInput({
     combination,
+    crop,
     error,
     existingImage,
     file,
-    onChange,
+    onEdit,
     onRemove,
+    onSelect,
     removeExisting,
+    size,
 }: {
     combination: string;
+    crop: ListingImageCrop | null;
     error?: string;
     existingImage: ListingMedia | null;
     file: File | null;
-    onChange: (file: File) => void;
+    onEdit: () => void;
     onRemove: () => void;
+    onSelect: (file: File) => void;
     removeExisting: boolean;
+    size: ListingImageSize | null;
 }) {
     const previewUrl = useMemo(
         () => (file ? URL.createObjectURL(file) : null),
@@ -1624,10 +1889,10 @@ function VariantImageInput({
         previewUrl ?? (!removeExisting ? existingImage?.url : null);
 
     return (
-        <div className="grid w-20 gap-1.5">
+        <div className="grid w-24 gap-1.5">
             <label
                 className={cn(
-                    'group relative grid aspect-square cursor-pointer place-items-center overflow-hidden rounded-lg border border-dashed bg-slate-50 text-slate-400 transition hover:border-primary hover:text-primary dark:bg-slate-950',
+                    'group relative grid aspect-4/3 cursor-pointer place-items-center overflow-hidden rounded-lg border border-dashed bg-slate-50 text-slate-400 transition hover:border-primary hover:text-primary dark:bg-slate-950',
                     error
                         ? 'border-red-500'
                         : 'border-slate-300 dark:border-slate-700',
@@ -1642,18 +1907,27 @@ function VariantImageInput({
                         const selectedFile = event.target.files?.[0];
 
                         if (selectedFile) {
-                            onChange(selectedFile);
+                            onSelect(selectedFile);
                         }
 
                         event.target.value = '';
                     }}
                 />
                 {displayedUrl ? (
-                    <img
-                        src={displayedUrl}
-                        alt={`${combination} variant`}
-                        className="h-full w-full object-cover"
-                    />
+                    file && crop && size ? (
+                        <CroppedImagePreview
+                            src={displayedUrl}
+                            alt={`${combination} variant`}
+                            crop={crop}
+                            size={size}
+                        />
+                    ) : (
+                        <img
+                            src={displayedUrl}
+                            alt={`${combination} variant`}
+                            className="h-full w-full object-cover"
+                        />
+                    )
                 ) : (
                     <ImagePlus className="size-5" />
                 )}
@@ -1662,13 +1936,29 @@ function VariantImageInput({
                 </span>
             </label>
             {displayedUrl && (
-                <button
-                    type="button"
-                    onClick={onRemove}
-                    className="text-[0.65rem] font-semibold text-red-600 hover:underline"
-                >
-                    Remove
-                </button>
+                <div className="flex items-center justify-between gap-2 text-[0.65rem] font-semibold">
+                    {file && crop && size ? (
+                        <button
+                            type="button"
+                            onClick={onEdit}
+                            className="text-primary hover:underline"
+                        >
+                            Crop
+                        </button>
+                    ) : (
+                        <span />
+                    )}
+                    <button
+                        type="button"
+                        onClick={onRemove}
+                        className="text-red-600 hover:underline"
+                    >
+                        Remove
+                    </button>
+                </div>
+            )}
+            {error && (
+                <span className="text-[0.65rem] text-red-600">{error}</span>
             )}
         </div>
     );
@@ -1676,28 +1966,41 @@ function VariantImageInput({
 
 function ImageThumbnail({
     alt,
+    crop,
     onEdit,
     onRemove,
+    size,
     src,
 }: {
     alt: string;
+    crop?: ListingImageCrop;
     onEdit?: () => void;
     onRemove: () => void;
+    size?: ListingImageSize;
     src: string;
 }) {
     return (
-        <div className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
+        <div className="group relative aspect-4/3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
             <button
                 type="button"
                 onClick={onEdit}
                 disabled={!onEdit}
                 className="h-full w-full disabled:cursor-default"
             >
-                <img
-                    src={src}
-                    alt={alt}
-                    className="h-full w-full object-cover"
-                />
+                {crop && size ? (
+                    <CroppedImagePreview
+                        src={src}
+                        alt={alt}
+                        crop={crop}
+                        size={size}
+                    />
+                ) : (
+                    <img
+                        src={src}
+                        alt={alt}
+                        className="h-full w-full object-cover"
+                    />
+                )}
             </button>
             <button
                 type="button"
@@ -1708,6 +2011,34 @@ function ImageThumbnail({
                 <X className="size-3.5" />
             </button>
         </div>
+    );
+}
+
+function CroppedImagePreview({
+    alt,
+    crop,
+    size,
+    src,
+}: {
+    alt: string;
+    crop: ListingImageCrop;
+    size: ListingImageSize;
+    src: string;
+}) {
+    return (
+        <span className="relative block h-full w-full overflow-hidden">
+            <img
+                src={src}
+                alt={alt}
+                className="absolute max-w-none"
+                style={{
+                    width: `${(size.width / crop.width) * 100}%`,
+                    height: `${(size.height / crop.height) * 100}%`,
+                    left: `${-(crop.x / crop.width) * 100}%`,
+                    top: `${-(crop.y / crop.height) * 100}%`,
+                }}
+            />
+        </span>
     );
 }
 

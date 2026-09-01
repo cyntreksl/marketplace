@@ -5,6 +5,7 @@ namespace App\Http\Requests\Concerns;
 use App\Models\Category;
 use App\Models\Listing;
 use App\Models\ListingVariant;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -71,6 +72,11 @@ trait ValidatesProductData
                 'max:5120',
                 Rule::dimensions()->minWidth(800)->minHeight(600)->maxWidth(6000)->maxHeight(6000),
             ],
+            'variants.*.image_crop' => ['nullable', 'array'],
+            'variants.*.image_crop.x' => ['nullable', 'integer', 'min:0', 'max:6000'],
+            'variants.*.image_crop.y' => ['nullable', 'integer', 'min:0', 'max:6000'],
+            'variants.*.image_crop.width' => ['nullable', 'integer', 'min:800', 'max:6000'],
+            'variants.*.image_crop.height' => ['nullable', 'integer', 'min:600', 'max:6000'],
             'variants.*.remove_image' => ['sometimes', 'boolean'],
             'removed_media_ids' => ['nullable', 'array', 'max:5'],
             'removed_media_ids.*' => ['integer', 'distinct'],
@@ -82,6 +88,24 @@ trait ValidatesProductData
     protected function prepareProductForValidation(): void
     {
         $this->prepareListingImageCrops();
+        $variants = $this->input('variants');
+
+        if (is_array($variants)) {
+            $variants = array_map(function (mixed $variant): mixed {
+                if (! is_array($variant) || ! is_array($variant['image_crop'] ?? null)) {
+                    return $variant;
+                }
+
+                $variant['image_crop'] = [
+                    'x' => (int) ($variant['image_crop']['x'] ?? 0),
+                    'y' => (int) ($variant['image_crop']['y'] ?? 0),
+                    'width' => (int) ($variant['image_crop']['width'] ?? 0),
+                    'height' => (int) ($variant['image_crop']['height'] ?? 0),
+                ];
+
+                return $variant;
+            }, $variants);
+        }
 
         $sellingPrice = $this->input('selling_price');
         $comparePrice = $this->input('compare_price');
@@ -107,6 +131,7 @@ trait ValidatesProductData
             'is_featured' => $this->boolean('is_featured'),
             'is_best_seller' => $this->boolean('is_best_seller'),
             'is_new_arrival' => $this->boolean('is_new_arrival'),
+            'variants' => $variants,
             'submit_for_review' => $this->boolean('submit_for_review'),
         ]);
     }
@@ -128,6 +153,7 @@ trait ValidatesProductData
             }
 
             $this->validateListingImageCrops($validator, $existingMediaCount);
+            $this->validateVariantImageCrops($validator);
             $this->validateSelectedCategory($validator);
             $this->validateRemovedMedia($validator, $listing);
             $this->validateVariantMatrix($validator, $listing);
@@ -145,6 +171,44 @@ trait ValidatesProductData
                 $validator->errors()->add('images', 'Add at least one product image before submitting for review.');
             }
         }];
+    }
+
+    private function validateVariantImageCrops(Validator $validator): void
+    {
+        $variantsInput = $this->input('variants', []);
+
+        foreach (is_array($variantsInput) ? $variantsInput : [] as $index => $variant) {
+            $upload = $this->file("variants.{$index}.image");
+
+            if (! $upload instanceof UploadedFile) {
+                continue;
+            }
+
+            $crop = Arr::get((array) $variant, 'image_crop');
+            $dimensions = $upload->isValid() ? @getimagesize($upload->getPathname()) : false;
+
+            if (! is_array($crop) || $dimensions === false) {
+                $validator->errors()->add("variants.{$index}.image_crop", 'Crop and save each variant image before submitting.');
+
+                continue;
+            }
+
+            $x = (int) Arr::get($crop, 'x', -1);
+            $y = (int) Arr::get($crop, 'y', -1);
+            $width = (int) Arr::get($crop, 'width', 0);
+            $height = (int) Arr::get($crop, 'height', 0);
+            $isFourByThree = abs(($width * 3) - ($height * 4)) <= 4;
+            $isInsideImage = $x >= 0
+                && $y >= 0
+                && $width >= 800
+                && $height >= 600
+                && $x + $width <= $dimensions[0]
+                && $y + $height <= $dimensions[1];
+
+            if (! $isFourByThree || ! $isInsideImage) {
+                $validator->errors()->add("variants.{$index}.image_crop", 'Variant image crops must be a valid 4:3 area of at least 800 × 600 pixels.');
+            }
+        }
     }
 
     private function validateRemovedMedia(Validator $validator, mixed $listing): void

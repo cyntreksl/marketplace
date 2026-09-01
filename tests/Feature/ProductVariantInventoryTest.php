@@ -287,7 +287,8 @@ test('variant combination images are optional and persist with an unchanged comb
             'selections' => ['Red'],
             'sku' => 'SHIRT-RED',
             'stock_quantity' => 3,
-            'image' => UploadedFile::fake()->image('red-shirt.jpg', 800, 600),
+            'image' => UploadedFile::fake()->image('red-shirt.jpg', 1200, 900),
+            'image_crop' => ['x' => 200, 'y' => 150, 'width' => 800, 'height' => 600],
         ]],
     ]);
 
@@ -304,6 +305,10 @@ test('variant combination images are optional and persist with an unchanged comb
         ->and($image)->not->toBeNull()
         ->and($image->type)->toBe('variant_image')
         ->and($image->listing_id)->toBe($listing->id)
+        ->and($image->crop_x)->toBe(200)
+        ->and($image->crop_y)->toBe(150)
+        ->and($image->crop_width)->toBe(800)
+        ->and($image->crop_height)->toBe(600)
         ->and(Storage::disk('public')->exists($image->path))->toBeTrue();
 
     $this->actingAs($seller->user)
@@ -341,6 +346,39 @@ test('variant combination images are optional and persist with an unchanged comb
     expect($listing->variants()->with('image')->sole()->image)->toBeNull()
         ->and(ListingMedia::query()->find($image->id))->toBeNull()
         ->and(Storage::disk('public')->missing($image->path))->toBeTrue();
+});
+
+test('variant image uploads require a saved valid crop', function () {
+    Storage::fake('public');
+    $seller = SellerProfile::factory()->create();
+    $category = Category::factory()->create();
+    $variant = [
+        'selections' => ['Red'],
+        'sku' => 'SHIRT-RED',
+        'stock_quantity' => 3,
+        'image' => UploadedFile::fake()->image('red-shirt.jpg', 1200, 900),
+    ];
+    $payload = variantProductPayload($category, [
+        'variant_options' => [['name' => 'Color', 'values' => ['Red']]],
+        'variants' => [$variant],
+    ]);
+
+    $this->actingAs($seller->user)
+        ->post(route('seller.listings.store'), $payload)
+        ->assertSessionHasErrors('variants.0.image_crop');
+
+    $this->actingAs($seller->user)
+        ->post(route('seller.listings.store'), [
+            ...$payload,
+            'variants' => [[
+                ...$variant,
+                'image' => UploadedFile::fake()->image('red-shirt.jpg', 1200, 900),
+                'image_crop' => ['x' => 500, 'y' => 400, 'width' => 800, 'height' => 600],
+            ]],
+        ])
+        ->assertSessionHasErrors('variants.0.image_crop');
+
+    expect(Listing::query()->count())->toBe(0);
 });
 
 test('active availability backorders and stock status control public purchasing', function () {

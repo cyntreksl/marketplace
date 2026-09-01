@@ -63,14 +63,28 @@ class ListingVariantService
         foreach ($synchronizedVariants as $variant) {
             $submitted = $submittedVariants->get($variant->combination_key, []);
             $upload = $submitted['image'] ?? null;
+            $crop = $submitted['image_crop'] ?? null;
             $existingImage = $variant->image()->first();
 
             if ($upload instanceof UploadedFile) {
+                if (! is_array($crop)) {
+                    throw ValidationException::withMessages([
+                        'variants' => 'Crop and save each variant image before submitting.',
+                    ]);
+                }
+
+                $resolvedCrop = [
+                    'x' => (int) Arr::get($crop, 'x', 0),
+                    'y' => (int) Arr::get($crop, 'y', 0),
+                    'width' => (int) Arr::get($crop, 'width', 0),
+                    'height' => (int) Arr::get($crop, 'height', 0),
+                ];
+
                 if ($existingImage !== null) {
                     $this->images->removeVariantImages(collect([$existingImage]));
                 }
 
-                $this->images->storeVariant($listing, $variant, $upload);
+                $this->images->storeVariant($listing, $variant, $upload, $resolvedCrop);
 
                 continue;
             }

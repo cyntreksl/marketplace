@@ -42,9 +42,12 @@ class ListingImageService
         return $this->storeImage($listing, $upload, $crop, $sortOrder, $isCover);
     }
 
-    public function storeVariant(Listing $listing, ListingVariant $variant, UploadedFile $upload): ListingMedia
+    /**
+     * @param  array{x: int, y: int, width: int, height: int}  $crop
+     */
+    public function storeVariant(Listing $listing, ListingVariant $variant, UploadedFile $upload, array $crop): ListingMedia
     {
-        return $this->storeImage($listing, $upload, null, 0, false, $variant);
+        return $this->storeImage($listing, $upload, $crop, 0, false, $variant);
     }
 
     /** @param Collection<int, ListingMedia> $mediaItems */
@@ -56,12 +59,12 @@ class ListingImageService
     }
 
     /**
-     * @param  array{x: int, y: int, width: int, height: int}|null  $crop
+     * @param  array{x: int, y: int, width: int, height: int}  $crop
      */
     private function storeImage(
         Listing $listing,
         UploadedFile $upload,
-        ?array $crop,
+        array $crop,
         int $sortOrder,
         bool $isCover,
         ?ListingVariant $variant = null,
@@ -77,8 +80,7 @@ class ListingImageService
 
         try {
             $sourceImage = $this->images->decodeSplFileInfo($upload);
-            $resolvedCrop = $crop ?? $this->centeredFourByThreeCrop($sourceImage);
-            $this->validateCrop($sourceImage, $resolvedCrop);
+            $this->validateCrop($sourceImage, $crop);
 
             if (! $this->putImage($disk, $sourcePath, $sourceImage, new WebpEncoder(quality: 90, strip: true))) {
                 throw new RuntimeException('The listing image source could not be stored.');
@@ -86,7 +88,7 @@ class ListingImageService
 
             $storedPaths[] = $sourcePath;
             $canonical = (clone $sourceImage)
-                ->crop($resolvedCrop['width'], $resolvedCrop['height'], $resolvedCrop['x'], $resolvedCrop['y'])
+                ->crop($crop['width'], $crop['height'], $crop['x'], $crop['y'])
                 ->resize(1200, 900);
 
             if (! $this->putImage($disk, $canonicalPath, $canonical, new WebpEncoder(quality: 85, strip: true))) {
@@ -98,10 +100,10 @@ class ListingImageService
                 'disk' => $disk,
                 'path' => $canonicalPath,
                 'source_path' => $sourcePath,
-                'crop_x' => $resolvedCrop['x'],
-                'crop_y' => $resolvedCrop['y'],
-                'crop_width' => $resolvedCrop['width'],
-                'crop_height' => $resolvedCrop['height'],
+                'crop_x' => $crop['x'],
+                'crop_y' => $crop['y'],
+                'crop_width' => $crop['width'],
+                'crop_height' => $crop['height'],
                 'variant_version' => $version,
                 'variants' => null,
                 'processing_status' => 'pending',
@@ -238,30 +240,6 @@ class ListingImageService
                 'image_crops' => 'Each photo must have a valid 4:3 crop with at least 800 × 600 source pixels.',
             ]);
         }
-    }
-
-    /** @return array{x: int, y: int, width: int, height: int} */
-    private function centeredFourByThreeCrop(ImageInterface $image): array
-    {
-        if ($image->width() / $image->height() > 4 / 3) {
-            $width = (int) floor($image->height() * 4 / 3);
-
-            return [
-                'x' => (int) floor(($image->width() - $width) / 2),
-                'y' => 0,
-                'width' => $width,
-                'height' => $image->height(),
-            ];
-        }
-
-        $height = (int) floor($image->width() * 3 / 4);
-
-        return [
-            'x' => 0,
-            'y' => (int) floor(($image->height() - $height) / 2),
-            'width' => $image->width(),
-            'height' => $height,
-        ];
     }
 
     private function removeMedia(ListingMedia $media): void
