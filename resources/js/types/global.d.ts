@@ -13,6 +13,7 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
+            commerce: { cart_quantity: number; wishlist_count: number };
             marketplace: MarketplaceDetails;
             sidebarOpen: boolean;
             [key: string]: unknown;

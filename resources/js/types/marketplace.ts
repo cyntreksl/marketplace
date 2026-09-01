@@ -7,6 +7,7 @@ export type MarketplaceDetails = {
     };
     support: {
         email: string;
+        phone: string | null;
         privacy_email: string;
         hours: string;
         days: string;
@@ -15,4 +16,13 @@ export type MarketplaceDetails = {
     legal_effective_date: string;
     payment_methods: string[];
     social_urls: Record<string, string | null>;
+    storefront: {
+        currency: 'LKR';
+        delivery_locations: string[];
+        newsletter_url: string | null;
+        google_play_url: string | null;
+        app_store_url: string | null;
+        installments_url: string | null;
+        business_deals_url: string | null;
+    };
 };

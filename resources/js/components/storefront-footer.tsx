@@ -1,298 +1,217 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
-    Banknote,
     BadgeCheck,
-    ChevronRight,
-    CreditCard,
     Headphones,
-    Instagram,
-    Landmark,
-    Linkedin,
-    Mail,
     RotateCcw,
-    Youtube,
+    ShieldCheck,
+    Truck,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
-import { about, buying, contact, faq, help, home, selling } from '@/routes';
-import { cookies, privacy, terms } from '@/routes/legal';
-import { index as listingsIndex } from '@/routes/listings';
-import { prohibited, returns, sellers, shipping } from '@/routes/policies';
-import { register as sellerRegister } from '@/routes/seller';
-import { index as sellerListingsIndex } from '@/routes/seller/listings';
-import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
-
-type FooterLink = {
-    label: string;
-    href: ReturnType<typeof about>;
-};
-
-const socialIcons: Record<string, LucideIcon> = {
-    instagram: Instagram,
-    linkedin: Linkedin,
-    youtube: Youtube,
-};
-
-const paymentIcons: Record<string, LucideIcon> = {
-    'Card payments': CreditCard,
-    'Bank transfer': Landmark,
-    'Cash on delivery': Banknote,
-};
 
 export function StorefrontFooter({ className = '' }: { className?: string }) {
-    const { auth, marketplace } = usePage().props;
-    const currentYear = new Date().getFullYear();
-    const sellerDestination = auth.is_seller
-        ? sellerListingsIndex()
-        : auth.user
-          ? sellerOnboardingEdit()
-          : sellerRegister();
-    const sellerLinkLabel = auth.is_seller
-        ? 'Seller portal'
-        : 'Become a seller';
-    const navigation: Record<string, FooterLink[]> = {
-        Shop: [
-            { label: 'Browse all products', href: listingsIndex() },
-            {
-                label: 'Live auctions',
-                href: listingsIndex({ query: { listing_type: 'auction' } }),
-            },
-            { label: 'Buying guide', href: buying() },
-            { label: 'Shipping policy', href: shipping() },
-        ],
-        Help: [
-            { label: 'Help centre', href: help() },
-            { label: 'Contact support', href: contact() },
-            { label: 'Frequently asked questions', href: faq() },
-            { label: 'Returns & refunds', href: returns() },
-        ],
-        Sell: [
-            { label: sellerLinkLabel, href: sellerDestination },
-            { label: 'Selling guide', href: selling() },
-            { label: 'Seller policy', href: sellers() },
-            { label: 'Prohibited items', href: prohibited() },
-        ],
-        Company: [
-            { label: 'About ProDeals.lk', href: about() },
-            { label: 'Terms and conditions', href: terms() },
-            { label: 'Privacy notice', href: privacy() },
-            { label: 'Cookie policy', href: cookies() },
-        ],
-    };
-    const configuredSocials = Object.entries(marketplace.social_urls).filter(
-        (entry): entry is [string, string] => Boolean(entry[1]),
-    );
+    const { marketplace } = usePage().props;
 
     return (
-        <footer
-            className={`border-t border-primary/20 bg-slate-950 text-slate-200 ${className}`}
-        >
-            <div className="border-b border-white/10 bg-primary text-primary-foreground">
-                <div className="mx-auto grid max-w-none gap-px bg-white/15 sm:grid-cols-2 xl:grid-cols-4">
+        <footer className={`mt-12 bg-white ${className}`}>
+            <div className="mx-auto max-w-[96rem] px-4 sm:px-6">
+                <div className="grid gap-4 rounded-xl bg-orange-50/70 px-5 py-5 sm:grid-cols-2 lg:grid-cols-4">
                     {[
                         [
+                            Truck,
+                            'Fast & Free Delivery',
+                            'Islandwide on eligible orders',
+                        ],
+                        [
+                            ShieldCheck,
+                            '1 Year Warranty',
+                            'Genuine products with warranty',
+                        ],
+                        [
                             BadgeCheck,
-                            'Moderated marketplace',
-                            'Seller and listing review',
-                        ],
-                        [
-                            CreditCard,
-                            'Flexible payment',
-                            'Card, transfer and COD',
-                        ],
-                        [
-                            RotateCcw,
-                            'Eligible returns',
-                            'Seven days after delivery',
+                            'Secure Payments',
+                            '100% safe & encrypted checkout',
                         ],
                         [
                             Headphones,
-                            'Support every day',
-                            '09:00–18:00 Sri Lanka time',
+                            'Islandwide Support',
+                            'Call or chat with our team',
                         ],
-                    ].map(([Icon, title, description]) => {
-                        const TrustIcon = Icon as LucideIcon;
+                    ].map(([Icon, title, copy]) => {
+                        const TrustIcon = Icon as typeof Truck;
 
                         return (
                             <div
                                 key={title as string}
-                                className="flex items-center gap-3 bg-primary px-5 py-5 sm:px-7"
+                                className="flex items-center gap-3"
                             >
-                                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/15">
-                                    <TrustIcon className="size-5" />
-                                </span>
+                                <TrustIcon className="size-5 shrink-0 text-[#ff5a00]" />
                                 <span>
-                                    <span className="block text-sm font-bold">
+                                    <strong className="block text-xs">
                                         {title as string}
-                                    </span>
-                                    <span className="block text-xs text-primary-foreground/75">
-                                        {description as string}
+                                    </strong>
+                                    <span className="text-[10px] text-slate-500">
+                                        {copy as string}
                                     </span>
                                 </span>
                             </div>
                         );
                     })}
                 </div>
-            </div>
 
-            <div className="px-4 py-10 sm:px-7 lg:py-12">
-                <div className="mx-auto grid max-w-none gap-10 lg:grid-cols-[minmax(15rem,0.75fr)_minmax(0,2fr)] lg:gap-14 xl:grid-cols-[minmax(17rem,0.8fr)_minmax(0,2.2fr)] xl:gap-20">
-                    <div className="max-w-sm">
-                        <Link
-                            href={home()}
-                            className="inline-flex rounded-xl focus-visible:ring-2 focus-visible:ring-[#ff6000] focus-visible:outline-none"
-                        >
-                            <BrandLogo
-                                inverse
-                                showTagline
-                                className="text-2xl"
-                            />
-                        </Link>
-                        <p className="mt-4 max-w-xs text-sm leading-6 text-slate-400">
-                            Discover products from independent sellers across
-                            Sri Lanka with clearer marketplace standards,
-                            practical support, and transparent order records.
+                <div className="mt-6 grid overflow-hidden rounded-xl bg-gradient-to-r from-orange-50 to-white lg:grid-cols-2">
+                    <section className="border-b border-orange-100 p-6 lg:border-r lg:border-b-0">
+                        <h2 className="text-lg font-extrabold">Stay Updated</h2>
+                        <p className="mt-1 text-xs text-slate-500">
+                            Get the latest deals, new arrivals and offers
+                            straight to your inbox.
                         </p>
-                        {configuredSocials.length > 0 && (
-                            <div className="mt-6 flex gap-2">
-                                {configuredSocials.map(([network, url]) => {
-                                    const SocialIcon = socialIcons[network];
-
-                                    if (!SocialIcon) {
-                                        return null;
-                                    }
-
-                                    return (
-                                        <a
-                                            key={network}
-                                            href={url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            aria-label={`ProDeals.lk on ${network}`}
-                                            className="grid size-10 place-items-center rounded-xl border border-white/15 text-slate-300 transition hover:border-[#ff6000] hover:text-[#ff6000]"
-                                        >
-                                            <SocialIcon className="size-4" />
-                                        </a>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4 lg:gap-x-8">
-                        {Object.entries(navigation).map(([heading, links]) => (
-                            <nav key={heading} aria-label={`${heading} links`}>
-                                <h2 className="text-xs font-bold tracking-[0.16em] text-white uppercase">
-                                    {heading}
-                                </h2>
-                                <ul className="mt-4 grid gap-3 text-sm text-slate-400">
-                                    {links.map((link) => (
-                                        <li key={link.label}>
-                                            <Link
-                                                href={link.href}
-                                                prefetch
-                                                className="transition hover:text-[#ff6000] focus-visible:text-[#ff6000] focus-visible:outline-none"
-                                            >
-                                                {link.label}
-                                            </Link>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </nav>
-                        ))}
-                    </div>
+                        <div className="mt-4 flex max-w-xl overflow-hidden rounded-lg border bg-white">
+                            <input
+                                disabled
+                                aria-label="Email address"
+                                placeholder="Enter your email address"
+                                className="min-w-0 flex-1 px-4 py-3 text-sm disabled:bg-white"
+                            />
+                            <button
+                                disabled
+                                title="Newsletter signup is not configured"
+                                className="cursor-not-allowed bg-[#ff5a00] px-6 text-sm font-bold text-white opacity-60"
+                            >
+                                Subscribe
+                            </button>
+                        </div>
+                        <p className="mt-2 text-[10px] text-slate-400">
+                            Newsletter signup is coming soon.
+                        </p>
+                    </section>
+                    <section className="p-6">
+                        <h2 className="text-lg font-extrabold">
+                            Download the prodeals.lk App
+                        </h2>
+                        <p className="mt-1 text-xs text-slate-500">
+                            Shop on the go and get app exclusive offers.
+                        </p>
+                        <div className="mt-4 flex gap-3">
+                            {[
+                                [
+                                    'Google Play',
+                                    marketplace.storefront.google_play_url,
+                                ],
+                                [
+                                    'App Store',
+                                    marketplace.storefront.app_store_url,
+                                ],
+                            ].map(([label, url]) =>
+                                url ? (
+                                    <a
+                                        key={label}
+                                        href={url}
+                                        className="rounded-lg bg-slate-950 px-5 py-3 text-xs font-bold text-white"
+                                    >
+                                        {label}
+                                    </a>
+                                ) : (
+                                    <button
+                                        key={label}
+                                        disabled
+                                        title={`${label} link is not configured`}
+                                        className="cursor-not-allowed rounded-lg bg-slate-300 px-5 py-3 text-xs font-bold text-white"
+                                    >
+                                        {label}
+                                    </button>
+                                ),
+                            )}
+                        </div>
+                    </section>
                 </div>
 
-                <aside
-                    aria-labelledby="footer-support-heading"
-                    className="mx-auto mt-10 grid max-w-none overflow-hidden rounded-2xl border border-[#ff6000]/20 bg-white/5 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_auto] md:items-center"
-                >
-                    <div className="flex items-center gap-4 p-5 sm:p-6">
-                        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#ff6000] text-white shadow-lg shadow-[#ff6000]/10">
-                            <Headphones className="size-6" />
-                        </span>
-                        <div>
-                            <h2
-                                id="footer-support-heading"
-                                className="text-base font-bold text-white"
-                            >
-                                Need a hand?
-                            </h2>
-                            <p className="mt-1 text-sm text-slate-400">
-                                Friendly marketplace support,{' '}
-                                {marketplace.support.days.toLowerCase()}.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="grid gap-1 border-t border-white/10 px-5 py-4 sm:px-6 md:border-t-0 md:border-l">
+                <div className="grid gap-8 py-10 md:grid-cols-[1.2fr_2fr]">
+                    <div>
+                        <BrandLogo className="text-xl" />
+                        <p className="mt-3 max-w-sm text-xs leading-5 text-slate-500">
+                            Sri Lanka’s marketplace for trusted products,
+                            transparent offers, and supported shopping.
+                        </p>
                         <a
                             href={`mailto:${marketplace.support.email}`}
-                            className="inline-flex w-fit items-center gap-2 text-sm font-bold text-[#ff6000] transition hover:text-[#ff8a4c] focus-visible:ring-2 focus-visible:ring-[#ff6000] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:outline-none"
+                            className="mt-3 inline-block text-xs font-bold text-[#c2410c]"
                         >
-                            <Mail className="size-4" />
                             {marketplace.support.email}
                         </a>
-                        <p className="text-xs leading-5 text-slate-400">
-                            {marketplace.support.hours} ·{' '}
-                            {marketplace.support.timezone}
-                        </p>
                     </div>
-
-                    <div className="border-t border-white/10 p-5 sm:p-6 md:border-t-0 md:border-l">
-                        <Link
-                            href={contact()}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-orange-100 focus-visible:ring-2 focus-visible:ring-[#ff6000] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:outline-none md:w-auto"
-                        >
-                            Contact support
-                            <ChevronRight className="size-4" />
-                        </Link>
-                    </div>
-                </aside>
-            </div>
-
-            <div className="border-t border-white/10 px-4 py-6 sm:px-7">
-                <div className="mx-auto flex max-w-none flex-col gap-6 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
-                    <p className="text-center text-sm text-slate-400 sm:text-left">
-                        © {currentYear}{' '}
-                        <Link
-                            href={home()}
-                            className="font-extrabold text-white transition hover:text-[#ff6000] focus-visible:ring-2 focus-visible:ring-[#ff6000] focus-visible:outline-none"
-                        >
-                            ProDeals.lk
-                        </Link>
-                        <span className="text-slate-500">
-                            . All rights reserved.
-                        </span>
-                    </p>
-                    <div
-                        className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end"
-                        aria-label="Accepted payment methods"
+                    <nav
+                        className="grid grid-cols-2 gap-6 text-xs sm:grid-cols-4"
+                        aria-label="Footer"
                     >
-                        <span className="col-span-2 mb-1 text-center text-[0.68rem] font-bold tracking-[0.16em] text-slate-500 uppercase sm:mr-1 sm:mb-0 sm:text-left">
-                            Ways to pay
-                        </span>
-                        {marketplace.payment_methods.map((method) => {
-                            const PaymentIcon = paymentIcons[method];
-
-                            if (!PaymentIcon) {
-                                return null;
-                            }
-
-                            return (
-                                <span
-                                    key={method}
-                                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-center text-xs font-semibold text-slate-300 last:col-span-2 sm:min-h-0 sm:justify-start sm:text-left sm:last:col-span-1"
-                                >
-                                    <PaymentIcon
-                                        className="size-4 text-[#ff6000]"
-                                        aria-hidden="true"
-                                    />
-                                    {method}
-                                </span>
-                            );
-                        })}
-                    </div>
+                        {[
+                            [
+                                'Shop',
+                                [
+                                    ['All products', '/listings'],
+                                    ['Deals', '/collections/deals'],
+                                    ['Brands', '/brands'],
+                                    ['Track order', '/order-tracking'],
+                                ],
+                            ],
+                            [
+                                'Help',
+                                [
+                                    ['Help center', '/help'],
+                                    ['Contact us', '/contact'],
+                                    ['Shipping', '/policies/shipping'],
+                                    ['Returns', '/policies/returns-refunds'],
+                                ],
+                            ],
+                            [
+                                'Company',
+                                [
+                                    ['About', '/about'],
+                                    ['Selling', '/selling'],
+                                    ['Buying', '/buying'],
+                                    ['FAQ', '/faq'],
+                                ],
+                            ],
+                            [
+                                'Legal',
+                                [
+                                    ['Terms', '/legal/terms'],
+                                    ['Privacy', '/legal/privacy'],
+                                    ['Cookies', '/legal/cookies'],
+                                    ['Seller policy', '/policies/sellers'],
+                                ],
+                            ],
+                        ].map(([heading, links]) => (
+                            <div key={heading as string}>
+                                <h2 className="font-extrabold">
+                                    {heading as string}
+                                </h2>
+                                <ul className="mt-3 grid gap-2 text-slate-500">
+                                    {(links as string[][]).map(
+                                        ([label, href]) => (
+                                            <li key={href}>
+                                                <Link
+                                                    href={href}
+                                                    className="hover:text-[#ff5a00]"
+                                                >
+                                                    {label}
+                                                </Link>
+                                            </li>
+                                        ),
+                                    )}
+                                </ul>
+                            </div>
+                        ))}
+                    </nav>
+                </div>
+                <div className="flex flex-col gap-3 border-t py-5 text-[10px] text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+                    <span>
+                        © {new Date().getFullYear()} ProDeals.lk. All rights
+                        reserved.
+                    </span>
+                    <span className="flex items-center gap-2">
+                        <RotateCcw className="size-3" /> Eligible returns ·
+                        Secure checkout · LKR payments
+                    </span>
                 </div>
             </div>
         </footer>

@@ -76,6 +76,7 @@ export type StorefrontListing = {
     metaDescription: string | null;
     condition: 'new' | 'used' | 'refurbished';
     listingType: 'buy_now' | 'auction';
+    productType: 'simple' | 'variant';
     price: string | null;
     salePrice: string | null;
     effectivePrice: string | null;
@@ -91,11 +92,29 @@ export type StorefrontListing = {
     media: StorefrontListingMedia[];
     seller: { store_name: string; slug: string } | null;
     auction: StorefrontListingAuction | null;
+    specifications: Record<string, string | number | boolean>;
+    variantOptions: {
+        id: number;
+        name: string;
+        values: string[];
+    }[];
+    variants: {
+        id: number;
+        sku: string;
+        selectionKey: string;
+        selections: Record<string, string>;
+        stockQuantity: number;
+        image: { thumbnailUrl: string; cardUrl: string } | null;
+    }[];
 };
 
 export type StorefrontPromotion = {
     id: number | null;
     title: string;
+    subtitle?: string | null;
+    ctaLabel?: string | null;
+    visualTheme?: 'orange' | 'dark' | 'light';
+    artworkAlt?: string | null;
     imageUrl: string;
     linkUrl: string | null;
 };

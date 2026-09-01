@@ -1,36 +1,44 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
 import {
-    ChevronRight,
-    Globe2,
-    Headphones,
+    CircleHelp,
+    Heart,
+    MapPin,
+    PackageSearch,
     Search,
-    ShoppingBag,
+    ShoppingCart,
     UserRound,
 } from 'lucide-react';
+import { useState } from 'react';
 import { BrandLogo } from '@/components/brand-logo';
-import {
-    categoryContainsSlug,
-    DesktopStorefrontCategoryMenu,
-    MobileStorefrontCategoryMenu,
-} from '@/components/storefront-category-menu';
+import { MobileStorefrontCategoryMenu } from '@/components/storefront-category-menu';
 import type { StorefrontCategory } from '@/components/storefront-category-menu';
 import { StorefrontFooter } from '@/components/storefront-footer';
-import { home, login, register } from '@/routes';
+import { home, login } from '@/routes';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
 import { show as cartShow } from '@/routes/cart';
 import { index as listingsIndex } from '@/routes/listings';
-import { register as sellerRegister } from '@/routes/seller';
-import { index as sellerListingsIndex } from '@/routes/seller/listings';
-import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
 
 export type { StorefrontCategory } from '@/components/storefront-category-menu';
+
+const deliveryStorageKey = 'prodeals.deliveryLocation';
+
+function CountBadge({ count }: { count: number }) {
+    if (count < 1) {
+        return null;
+    }
+
+    return (
+        <span className="absolute -top-1 -right-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#ff5a00] px-1 text-[9px] font-bold text-white">
+            {count > 99 ? '99+' : count}
+        </span>
+    );
+}
 
 export function StorefrontLayout({
     children,
     title,
     description,
     categories = [],
-    activeCategorySlugs = [],
 }: {
     children: React.ReactNode;
     title: string;
@@ -38,211 +46,240 @@ export function StorefrontLayout({
     categories?: StorefrontCategory[];
     activeCategorySlugs?: string[];
 }) {
-    const page = usePage();
-    const { auth } = page.props;
-    const requestedCategorySlug = new URLSearchParams(
-        page.url.split('?')[1] ?? '',
-    ).get('category');
-    const requestedCategoryIsVisible = categories.some((category) =>
-        categoryContainsSlug(category, requestedCategorySlug),
-    );
-    const selectedCategorySlug = requestedCategoryIsVisible
-        ? requestedCategorySlug
-        : ([...activeCategorySlugs]
-              .reverse()
-              .find((slug) =>
-                  categories.some((category) =>
-                      categoryContainsSlug(category, slug),
-                  ),
-              ) ?? null);
-    const isAllProductsSelected =
-        page.url.split('?')[0] === listingsIndex.url() &&
-        requestedCategorySlug === null;
+    const { auth, commerce, marketplace } = usePage().props;
+    const locations = marketplace.storefront.delivery_locations;
+    const [location, setLocation] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = window.localStorage.getItem(deliveryStorageKey);
+
+            if (saved && locations.includes(saved)) {
+                return saved;
+            }
+        }
+
+        return locations[0] ?? 'Colombo 03';
+    });
+
+    const setDeliveryLocation = (value: string) => {
+        setLocation(value);
+        window.localStorage.setItem(deliveryStorageKey, value);
+    };
+
+    const navigation = [
+        ['Today’s Deals', '/collections/deals'],
+        ['Best Sellers', '/collections/best-sellers'],
+        ['New Arrivals', '/collections/new-arrivals'],
+        ['Brands', '/brands'],
+        ['Clearance Sale', '/collections/clearance'],
+    ] as const;
 
     return (
-        <>
+        <div className="min-h-screen bg-white text-slate-950">
             <Head title={title}>
                 {description && (
                     <meta name="description" content={description} />
                 )}
             </Head>
-            <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
-                <header className="sticky top-0 z-40 bg-white shadow-sm dark:bg-slate-950">
-                    <nav
-                        className="mx-auto grid max-w-none grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center gap-2 px-4 py-3 sm:flex sm:gap-5 sm:px-7 sm:py-4"
-                        aria-label="Main navigation"
-                    >
-                        <MobileStorefrontCategoryMenu
-                            categories={categories}
-                            selectedCategorySlug={selectedCategorySlug}
-                            isAllProductsSelected={isAllProductsSelected}
-                        />
-                        <Link
-                            href={home()}
-                            className="mx-auto flex min-w-0 rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none sm:mx-0 sm:shrink-0"
-                        >
-                            <BrandLogo className="text-xl min-[400px]:text-2xl" />
-                        </Link>
-                        <Form
-                            {...listingsIndex.form()}
-                            className="hidden min-w-0 flex-1 lg:block"
-                        >
-                            <label className="relative block">
-                                <span className="sr-only">Search products</span>
-                                <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-slate-400" />
-                                <input
-                                    name="search"
-                                    placeholder="Search deals, brands and more"
-                                    className="h-11 w-full rounded-full border border-slate-200 bg-slate-50 py-2 pr-12 pl-11 text-sm transition outline-none placeholder:text-slate-400 focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-900 dark:focus:bg-slate-950"
-                                />
-                                <button
-                                    type="submit"
-                                    className="absolute top-1.5 right-1.5 grid size-8 place-items-center rounded-full bg-primary text-primary-foreground transition hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
-                                    aria-label="Search products"
-                                >
-                                    <ChevronRight className="size-4" />
-                                </button>
-                            </label>
-                        </Form>
-                        <div className="ml-auto hidden items-center gap-6 2xl:flex">
-                            <div className="flex items-center gap-2 text-sm">
-                                <Headphones className="size-7 text-primary" />
-                                <span>
-                                    <span className="block font-bold">
-                                        Browse with ease
-                                    </span>
-                                    <span className="text-primary">
-                                        Find something for every day
-                                    </span>
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                                <Globe2 className="size-7 text-primary" />
-                                <span>
-                                    <span className="block font-bold">
-                                        Made for Sri Lanka
-                                    </span>
-                                    <span className="text-primary">
-                                        Discover local marketplace finds
-                                    </span>
-                                </span>
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-end gap-1 text-sm font-semibold sm:ml-auto">
-                            <Link
-                                className="hidden items-center gap-1 rounded-full px-3 py-2 text-slate-600 transition hover:bg-primary/10 hover:text-primary sm:flex dark:text-slate-300 dark:hover:bg-slate-900"
-                                href={
-                                    auth.is_seller
-                                        ? sellerListingsIndex()
-                                        : auth.user
-                                          ? sellerOnboardingEdit()
-                                          : sellerRegister()
+            <header className="relative z-40 border-b border-slate-100 bg-white">
+                <div className="bg-[#c2410c] text-white">
+                    <div className="mx-auto flex max-w-[96rem] items-center justify-between gap-4 px-4 py-2 text-[11px] sm:px-6">
+                        <label className="flex items-center gap-1.5 font-semibold">
+                            <MapPin className="size-3.5" />
+                            <span className="hidden sm:inline">Deliver to</span>
+                            <select
+                                value={location}
+                                onChange={(event) =>
+                                    setDeliveryLocation(event.target.value)
                                 }
+                                className="max-w-32 bg-transparent font-bold outline-none"
+                                aria-label="Delivery location"
                             >
-                                {auth.is_seller
-                                    ? 'Seller portal'
-                                    : 'Become a seller'}
+                                {locations.map((item) => (
+                                    <option
+                                        key={item}
+                                        value={item}
+                                        className="text-slate-900"
+                                    >
+                                        {item}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <span className="hidden font-semibold sm:block">
+                            LKR · Sri Lankan Rupee
+                        </span>
+                        <div className="flex items-center gap-4 font-semibold">
+                            <Link
+                                href="/help"
+                                className="flex items-center gap-1 hover:underline"
+                            >
+                                <CircleHelp className="size-3.5" /> Help Center
                             </Link>
                             <Link
-                                className="hidden items-center gap-1 rounded-full px-3 py-2 text-slate-600 transition hover:bg-primary/10 hover:text-primary sm:flex dark:text-slate-300 dark:hover:bg-slate-900"
-                                href={listingsIndex({
-                                    query: { listing_type: 'auction' },
-                                })}
+                                href="/order-tracking"
+                                className="hidden items-center gap-1 hover:underline sm:flex"
                             >
-                                Auctions
-                            </Link>
-                            {auth.user ? (
-                                <>
-                                    <Link
-                                        className="grid size-10 place-items-center rounded-full text-slate-600 transition hover:bg-primary/10 hover:text-primary dark:text-slate-300 dark:hover:bg-slate-900"
-                                        href={cartShow()}
-                                        aria-label="Shopping bag"
-                                    >
-                                        <ShoppingBag className="size-5" />
-                                    </Link>
-                                    <Link
-                                        className="hidden items-center gap-2 rounded-full bg-primary px-4 py-2 text-primary-foreground shadow-sm shadow-primary/25 transition hover:bg-primary/90 sm:flex"
-                                        href={buyerOrdersIndex()}
-                                    >
-                                        <UserRound className="size-4" />
-                                        My orders
-                                    </Link>
-                                </>
-                            ) : (
-                                <>
-                                    <Link
-                                        className="grid size-10 place-items-center rounded-full text-slate-600 transition hover:bg-primary/10 hover:text-primary sm:hidden dark:text-slate-300 dark:hover:bg-slate-900"
-                                        href={login()}
-                                        aria-label="Sign in"
-                                    >
-                                        <UserRound className="size-5" />
-                                    </Link>
-                                    <Link
-                                        className="hidden px-3 py-2 text-slate-600 hover:text-primary sm:block dark:text-slate-300"
-                                        href={login()}
-                                    >
-                                        Sign in
-                                    </Link>
-                                    <Link
-                                        className="hidden rounded-full bg-primary px-4 py-2 text-primary-foreground shadow-sm shadow-primary/25 transition hover:bg-primary/90 sm:block"
-                                        href={register()}
-                                    >
-                                        Join now
-                                    </Link>
-                                </>
-                            )}
-                        </div>
-                    </nav>
-                    <div className="relative hidden border-y border-primary/20 bg-primary/10 lg:block dark:border-slate-800 dark:bg-slate-900">
-                        <div className="mx-auto flex max-w-none items-center gap-1 px-7 py-2">
-                            <DesktopStorefrontCategoryMenu
-                                categories={categories}
-                                selectedCategorySlug={selectedCategorySlug}
-                                isAllProductsSelected={isAllProductsSelected}
-                            />
-                            {categories.slice(0, 5).map((category) => {
-                                const isSelected = categoryContainsSlug(
-                                    category,
-                                    selectedCategorySlug,
-                                );
-
-                                return (
-                                    <Link
-                                        key={category.id}
-                                        href={listingsIndex({
-                                            query: {
-                                                category: category.slug,
-                                            },
-                                        })}
-                                        aria-current={
-                                            category.slug ===
-                                            selectedCategorySlug
-                                                ? 'page'
-                                                : undefined
-                                        }
-                                        className={`rounded-full px-4 py-2 text-sm font-bold transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
-                                            isSelected
-                                                ? 'bg-white text-primary shadow-sm dark:bg-slate-800'
-                                                : 'text-slate-600 hover:bg-white hover:text-primary dark:text-slate-300 dark:hover:bg-slate-800'
-                                        }`}
-                                    >
-                                        {category.name}
-                                    </Link>
-                                );
-                            })}
-                            <Link
-                                href={cartShow()}
-                                className="ml-auto flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-white hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none dark:text-slate-300 dark:hover:bg-slate-800"
-                            >
-                                <ShoppingBag className="size-4" />
-                                Cart
+                                <PackageSearch className="size-3.5" /> Order
+                                Tracking
                             </Link>
                         </div>
                     </div>
-                </header>
-                <div>{children}</div>
-                <StorefrontFooter />
-            </div>
-        </>
+                </div>
+
+                <div className="mx-auto flex max-w-[96rem] items-center gap-3 px-4 py-3 sm:px-6 lg:gap-6">
+                    <MobileStorefrontCategoryMenu
+                        categories={categories}
+                        selectedCategorySlug={null}
+                        isAllProductsSelected={false}
+                    />
+                    <Link
+                        href={home()}
+                        className="shrink-0"
+                        aria-label="ProDeals.lk home"
+                    >
+                        <BrandLogo className="text-xl sm:text-2xl" />
+                    </Link>
+                    <Form
+                        {...listingsIndex.form()}
+                        className="hidden min-w-0 flex-1 md:block"
+                    >
+                        <label className="flex h-11 overflow-hidden rounded-lg border border-slate-200 bg-white focus-within:border-[#ff5a00] focus-within:ring-2 focus-within:ring-orange-100">
+                            <span className="sr-only">Search products</span>
+                            <input
+                                name="search"
+                                placeholder="Search for phones, laptops, TVs and more..."
+                                className="min-w-0 flex-1 px-4 text-sm outline-none"
+                            />
+                            <select
+                                name="category"
+                                aria-label="Search category"
+                                className="hidden border-l border-slate-100 bg-white px-3 text-xs text-slate-500 outline-none lg:block"
+                            >
+                                <option value="">All Categories</option>
+                                {categories.map((category) => (
+                                    <option
+                                        key={category.id}
+                                        value={category.slug}
+                                    >
+                                        {category.name}
+                                    </option>
+                                ))}
+                            </select>
+                            <button
+                                className="m-1 grid w-10 place-items-center rounded-md bg-[#ff5a00] text-white"
+                                aria-label="Search"
+                            >
+                                <Search className="size-4" />
+                            </button>
+                        </label>
+                    </Form>
+                    <div className="ml-auto flex items-center gap-1 sm:gap-3">
+                        <Link
+                            href={auth.user ? buyerOrdersIndex() : login()}
+                            className="hidden items-center gap-2 rounded-lg p-2 hover:bg-slate-50 sm:flex"
+                        >
+                            <UserRound className="size-5" />
+                            <span className="hidden text-[11px] leading-4 lg:block">
+                                <span className="block text-slate-500">
+                                    My Account
+                                </span>
+                                <strong>
+                                    {auth.user
+                                        ? auth.user.name.split(' ')[0]
+                                        : 'Sign in'}
+                                </strong>
+                            </span>
+                        </Link>
+                        <Link
+                            href={auth.user ? '/wishlist' : login().url}
+                            className="relative grid size-10 place-items-center rounded-lg hover:bg-slate-50"
+                            aria-label="Wishlist"
+                        >
+                            <Heart className="size-5" />
+                            <CountBadge count={commerce.wishlist_count} />
+                        </Link>
+                        <Link
+                            href={auth.user ? cartShow() : login()}
+                            className="relative flex items-center gap-2 rounded-lg p-2 hover:bg-slate-50"
+                            aria-label="Cart"
+                        >
+                            <ShoppingCart className="size-5" />
+                            <CountBadge count={commerce.cart_quantity} />
+                            <span className="hidden text-xs font-bold lg:block">
+                                Cart
+                            </span>
+                        </Link>
+                        {marketplace.support.phone ? (
+                            <a
+                                href={`tel:${marketplace.support.phone}`}
+                                className="hidden rounded-full border px-4 py-2 text-xs font-bold xl:block"
+                            >
+                                {marketplace.support.phone}
+                            </a>
+                        ) : (
+                            <button
+                                disabled
+                                title="Call-to-order is not configured"
+                                className="hidden cursor-not-allowed rounded-full border px-4 py-2 text-xs text-slate-400 xl:block"
+                            >
+                                Call to Order
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                <div className="mx-auto max-w-[96rem] px-4 pb-3 sm:px-6">
+                    <div className="flex [scrollbar-width:none] items-center gap-5 overflow-x-auto text-xs font-bold whitespace-nowrap">
+                        <Link
+                            href={listingsIndex()}
+                            className="rounded-lg border px-4 py-2 hover:border-[#ff5a00] hover:text-[#ff5a00]"
+                        >
+                            ☰ &nbsp; All Categories
+                        </Link>
+                        {navigation.map(([label, href]) => (
+                            <Link
+                                key={href}
+                                href={href}
+                                className="py-2 hover:text-[#ff5a00]"
+                            >
+                                {label}
+                            </Link>
+                        ))}
+                        <button
+                            disabled
+                            title="Installments are not configured"
+                            className="cursor-not-allowed py-2 text-slate-400"
+                        >
+                            Installment Plans
+                        </button>
+                        <button
+                            disabled
+                            title="Business deals are not configured"
+                            className="cursor-not-allowed py-2 text-slate-400"
+                        >
+                            Business Deals
+                        </button>
+                    </div>
+                    <Form {...listingsIndex.form()} className="mt-3 md:hidden">
+                        <label className="flex h-10 rounded-lg border border-slate-200">
+                            <span className="sr-only">Search products</span>
+                            <input
+                                name="search"
+                                placeholder="Search products"
+                                className="min-w-0 flex-1 px-3 text-sm outline-none"
+                            />
+                            <button
+                                className="grid w-10 place-items-center text-[#ff5a00]"
+                                aria-label="Search"
+                            >
+                                <Search className="size-4" />
+                            </button>
+                        </label>
+                    </Form>
+                </div>
+            </header>
+            {children}
+            <StorefrontFooter />
+        </div>
     );
 }

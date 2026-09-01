@@ -1,15 +1,13 @@
-import { Deferred, Link, useHttp, usePage } from '@inertiajs/react';
+import { Link, useHttp } from '@inertiajs/react';
 import {
-    ArrowRight,
-    BadgeCheck,
+    ChevronLeft,
     ChevronRight,
-    ShieldCheck,
-    Sparkles,
-    Star,
-    Store,
-    Truck,
+    Grid2X2,
+    Pause,
+    Play,
+    Zap,
 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ListingCard } from '@/components/listing-card';
 import { StorefrontCategoryArtwork } from '@/components/storefront-category-artwork';
 import { StorefrontLayout } from '@/components/storefront-layout';
@@ -17,21 +15,23 @@ import type { StorefrontCategory } from '@/components/storefront-layout';
 import {
     index as listingsIndex,
     recent as recentListings,
-    show as listingShow,
 } from '@/routes/listings';
-import { register as sellerRegister } from '@/routes/seller';
-import { index as sellerListingsIndex } from '@/routes/seller/listings';
-import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
 import type {
-    StorefrontCategorySection,
     StorefrontHomepageCategory,
     StorefrontListing,
     StorefrontPromotion,
-    StorefrontSocialProof,
 } from '@/types';
 
 const recentStorageKey = 'prodeals.recentlyViewedListingIds';
 
+type Brand = { id: number; name: string; slug: string; logoUrl: string | null };
+type FlashSale = {
+    id: number;
+    title: string;
+    subtitle: string | null;
+    endsAt: string;
+    listings: StorefrontListing[];
+};
 type HomeProps = {
     categories: StorefrontCategory[];
     promotions: {
@@ -39,64 +39,143 @@ type HomeProps = {
         secondary: StorefrontPromotion[];
     };
     popularCategories: StorefrontHomepageCategory[];
+    featuredDeals: StorefrontListing[];
     bestOffers: StorefrontListing[];
+    bestSellers: StorefrontListing[];
     newArrivals: StorefrontListing[];
-    categorySections?: StorefrontCategorySection[];
-    socialProof?: StorefrontSocialProof;
+    topBrands: Brand[];
+    flashSale: FlashSale | null;
 };
 
-function readRecentListingIds(): number[] {
-    if (typeof window === 'undefined') {
-        return [];
-    }
+function HeroCarousel({ slides }: { slides: StorefrontPromotion[] }) {
+    const [active, setActive] = useState(0);
+    const [paused, setPaused] = useState(false);
+    const reducedMotion =
+        typeof window !== 'undefined' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const slide = slides[active];
 
-    try {
-        const stored = JSON.parse(
-            window.localStorage.getItem(recentStorageKey) ?? '[]',
+    useEffect(() => {
+        if (paused || reducedMotion || slides.length < 2) {
+            return;
+        }
+
+        const timer = window.setInterval(
+            () => setActive((value) => (value + 1) % slides.length),
+            6500,
         );
 
-        return Array.isArray(stored)
-            ? stored
-                  .filter((id): id is number => Number.isInteger(id) && id > 0)
-                  .slice(0, 12)
-            : [];
-    } catch {
-        return [];
+        return () => window.clearInterval(timer);
+    }, [paused, reducedMotion, slides.length]);
+
+    if (!slide) {
+        return null;
     }
+
+    const move = (direction: number) =>
+        setActive((active + direction + slides.length) % slides.length);
+
+    return (
+        <section
+            className="relative min-h-[17rem] overflow-hidden rounded-xl bg-orange-100 sm:min-h-[22rem]"
+            aria-roledescription="carousel"
+            aria-label="Featured offers"
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
+            onFocus={() => setPaused(true)}
+            onBlur={() => setPaused(false)}
+        >
+            <img
+                src={slide.imageUrl}
+                alt={slide.artworkAlt ?? ''}
+                className="absolute inset-0 size-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-50/95 via-orange-50/65 to-transparent" />
+            <div className="relative z-10 flex min-h-[17rem] max-w-xl flex-col justify-center p-7 sm:min-h-[22rem] sm:p-12">
+                <p className="text-[10px] font-extrabold tracking-wide text-[#ff5a00] uppercase">
+                    Big tech. Bigger savings.
+                </p>
+                <h1 className="mt-2 text-3xl leading-none font-black tracking-tight sm:text-5xl">
+                    {slide.title}
+                </h1>
+                <p className="mt-3 max-w-sm text-sm text-slate-700">
+                    {slide.subtitle ??
+                        'Top brands. Unbeatable prices. Only at prodeals.lk.'}
+                </p>
+                <Link
+                    href={slide.linkUrl ?? listingsIndex()}
+                    className="mt-5 inline-flex w-max items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-xs font-bold text-white"
+                >
+                    {slide.ctaLabel ?? 'Shop All Deals'}{' '}
+                    <ChevronRight className="size-4" />
+                </Link>
+            </div>
+            {slides.length > 1 && (
+                <>
+                    <button
+                        onClick={() => move(-1)}
+                        className="absolute top-1/2 left-3 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-white/90 shadow"
+                        aria-label="Previous slide"
+                    >
+                        <ChevronLeft className="size-4" />
+                    </button>
+                    <button
+                        onClick={() => move(1)}
+                        className="absolute top-1/2 right-3 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-white/90 shadow"
+                        aria-label="Next slide"
+                    >
+                        <ChevronRight className="size-4" />
+                    </button>
+                    <div className="absolute inset-x-0 bottom-3 flex items-center justify-center gap-1.5">
+                        {slides.map((item, index) => (
+                            <button
+                                key={`${item.id}-${index}`}
+                                onClick={() => setActive(index)}
+                                aria-label={`Show slide ${index + 1}`}
+                                aria-current={index === active}
+                                className={`h-2 rounded-full transition-all ${index === active ? 'w-5 bg-[#ff5a00]' : 'w-2 bg-white'}`}
+                            />
+                        ))}
+                        <button
+                            onClick={() => setPaused((value) => !value)}
+                            className="ml-2 grid size-6 place-items-center rounded-full bg-white"
+                            aria-label={
+                                paused ? 'Play carousel' : 'Pause carousel'
+                            }
+                        >
+                            {paused ? (
+                                <Play className="size-3" />
+                            ) : (
+                                <Pause className="size-3" />
+                            )}
+                        </button>
+                    </div>
+                </>
+            )}
+        </section>
+    );
 }
 
-function SectionHeading({
-    eyebrow,
+function SectionTitle({
     title,
     href,
-    copy,
+    icon,
 }: {
-    eyebrow: string;
     title: string;
-    href?: ReturnType<typeof listingsIndex>;
-    copy?: string;
+    href?: string;
+    icon?: React.ReactNode;
 }) {
     return (
-        <div className="mb-6 flex items-end justify-between gap-4">
-            <div>
-                <p className="text-xs font-black tracking-[0.18em] text-primary uppercase">
-                    {eyebrow}
-                </p>
-                <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl dark:text-white">
-                    {title}
-                </h2>
-                {copy && (
-                    <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                        {copy}
-                    </p>
-                )}
-            </div>
+        <div className="mb-3 flex items-center gap-2 border-b border-slate-100 pb-2">
+            <span className="h-0.5 w-6 bg-[#ff5a00]" />
+            {icon}
+            <h2 className="text-sm font-extrabold">{title}</h2>
             {href && (
                 <Link
                     href={href}
-                    className="hidden shrink-0 items-center gap-1 text-sm font-black text-primary hover:underline sm:flex"
+                    className="ml-auto text-[10px] font-semibold text-slate-500 hover:text-[#ff5a00]"
                 >
-                    View all <ArrowRight className="size-4" />
+                    View All
                 </Link>
             )}
         </div>
@@ -104,235 +183,134 @@ function SectionHeading({
 }
 
 function ProductRow({ listings }: { listings: StorefrontListing[] }) {
-    return (
-        <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-4">
-            {listings.map((listing) => (
-                <div
-                    key={listing.id}
-                    className="w-[78vw] max-w-72 shrink-0 snap-start sm:w-auto sm:max-w-none"
-                >
-                    <ListingCard listing={listing} />
-                </div>
-            ))}
-        </div>
-    );
-}
+    const row = useRef<HTMLDivElement>(null);
+    const scroll = (direction: number) =>
+        row.current?.scrollBy({
+            left: direction * Math.max(row.current.clientWidth * 0.8, 260),
+            behavior: 'smooth',
+        });
 
-function DeferredSkeleton() {
-    return (
-        <div
-            className="mx-auto max-w-[90rem] px-4 py-10 sm:px-6 lg:px-8"
-            aria-label="Loading more homepage products"
-        >
-            <div className="h-4 w-28 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
-            <div className="mt-3 h-8 w-72 max-w-full animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
-            <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-                {[0, 1, 2, 3].map((item) => (
-                    <div
-                        key={item}
-                        className="aspect-[3/4] animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800"
-                    />
-                ))}
-            </div>
-        </div>
-    );
-}
-
-function CategorySections({
-    sections,
-}: {
-    sections: StorefrontCategorySection[];
-}) {
-    return sections.map((section, index) => {
-        const isTinted = section.variant === 'tinted';
-        const isImageLed = section.variant === 'image';
-
+    if (listings.length === 0) {
         return (
-            <section
-                key={section.category.id}
-                className={
-                    isTinted
-                        ? 'bg-teal-50/80 dark:bg-teal-950/15'
-                        : 'bg-white dark:bg-slate-950'
-                }
-            >
-                <div
-                    className={`mx-auto max-w-[90rem] px-4 py-12 sm:px-6 lg:px-8 ${isImageLed ? 'lg:grid lg:grid-cols-[18rem_1fr] lg:gap-7' : ''}`}
-                >
-                    <div
-                        className={
-                            isImageLed
-                                ? 'relative mb-6 flex flex-col justify-end overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-teal-950 to-primary p-7 text-white lg:mb-0'
-                                : ''
-                        }
-                    >
-                        {isImageLed && section.category.banner_image_url && (
-                            <>
-                                <img
-                                    src={section.category.banner_image_url}
-                                    alt=""
-                                    className="absolute inset-0 size-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/65 to-slate-950/10" />
-                            </>
-                        )}
-                        <div className="relative z-10">
-                            <p
-                                className={`text-xs font-black tracking-[0.18em] uppercase ${isImageLed ? 'text-amber-300' : 'text-primary'}`}
-                            >
-                                Curated category {index + 1}
-                            </p>
-                            <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
-                                {section.category.name}
-                            </h2>
-                            <p
-                                className={`mt-3 text-sm leading-6 ${isImageLed ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}
-                            >
-                                Hand-picked public listings across this category
-                                and its subcategories.
-                            </p>
-                            <Link
-                                href={listingsIndex({
-                                    query: {
-                                        category: section.category.slug,
-                                    },
-                                })}
-                                className={`mt-5 inline-flex items-center gap-2 text-sm font-black ${isImageLed ? 'text-white' : 'text-primary'}`}
-                            >
-                                Explore category{' '}
-                                <ArrowRight className="size-4" />
-                            </Link>
-                        </div>
-                    </div>
-                    <div className={isImageLed ? '' : 'mt-6'}>
-                        <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:grid-cols-2 sm:px-0 lg:grid-cols-3">
-                            {section.listings.map((listing) => (
-                                <div
-                                    key={listing.id}
-                                    className="w-[78vw] max-w-72 shrink-0 snap-start sm:w-auto sm:max-w-none"
-                                >
-                                    <ListingCard listing={listing} />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </section>
+            <p className="rounded-xl border border-dashed p-6 text-center text-xs text-slate-600">
+                Products will appear here as the collection is curated.
+            </p>
         );
-    });
-}
-
-function Reviews({ socialProof }: { socialProof?: StorefrontSocialProof }) {
-    if (
-        !socialProof ||
-        socialProof.summary.count === 0 ||
-        socialProof.reviews.length === 0
-    ) {
-        return null;
     }
 
     return (
-        <section className="bg-slate-950 text-white">
-            <div className="mx-auto max-w-[90rem] px-4 py-14 sm:px-6 lg:px-8">
-                <div className="grid gap-8 lg:grid-cols-[18rem_1fr]">
-                    <div>
-                        <div className="flex items-center gap-2 text-amber-300">
-                            <BadgeCheck className="size-5" />
-                            <span className="text-xs font-black tracking-[0.16em] uppercase">
-                                Verified purchases
-                            </span>
-                        </div>
-                        <h2 className="mt-4 text-3xl font-black tracking-tight">
-                            Trusted by real buyers
-                        </h2>
-                        <div className="mt-5 flex items-end gap-3">
-                            <span className="text-5xl font-black">
-                                {socialProof.summary.average?.toFixed(1)}
-                            </span>
-                            <span className="pb-1 text-sm text-slate-400">
-                                from {socialProof.summary.count} verified{' '}
-                                {socialProof.summary.count === 1
-                                    ? 'review'
-                                    : 'reviews'}
-                            </span>
-                        </div>
+        <div className="relative">
+            <div
+                ref={row}
+                className="flex snap-x snap-mandatory [scrollbar-width:none] gap-3 overflow-x-auto pb-2"
+            >
+                {listings.map((listing) => (
+                    <div
+                        key={listing.id}
+                        className="w-[68vw] max-w-56 shrink-0 snap-start sm:w-52 lg:w-[calc(20%-0.6rem)] lg:max-w-none"
+                    >
+                        <ListingCard listing={listing} />
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        {socialProof.reviews.map((review) => (
-                            <article
-                                key={review.id}
-                                className="rounded-2xl border border-white/10 bg-white/5 p-5"
-                            >
-                                <div
-                                    className="flex gap-0.5 text-amber-300"
-                                    aria-label={`${review.rating} out of 5 stars`}
-                                >
-                                    {Array.from({ length: 5 }, (_, index) => (
-                                        <Star
-                                            key={index}
-                                            className={`size-4 ${index < review.rating ? 'fill-current' : 'opacity-25'}`}
-                                        />
-                                    ))}
-                                </div>
-                                {review.comment && (
-                                    <p className="mt-4 line-clamp-4 text-sm leading-6 text-slate-200">
-                                        “{review.comment}”
-                                    </p>
-                                )}
-                                <p className="mt-5 text-sm font-black">
-                                    {review.buyerName}
-                                </p>
-                                {review.listingSlug && (
-                                    <Link
-                                        href={listingShow(review.listingSlug)}
-                                        className="mt-1 block truncate text-xs text-teal-300 hover:underline"
-                                    >
-                                        {review.listingTitle}
-                                    </Link>
-                                )}
-                            </article>
-                        ))}
-                    </div>
-                </div>
+                ))}
             </div>
-        </section>
+            {listings.length > 4 && (
+                <div className="absolute -top-11 right-0 flex gap-1">
+                    <button
+                        onClick={() => scroll(-1)}
+                        className="grid size-7 place-items-center rounded-full border bg-white"
+                        aria-label="Scroll products left"
+                    >
+                        <ChevronLeft className="size-3" />
+                    </button>
+                    <button
+                        onClick={() => scroll(1)}
+                        className="grid size-7 place-items-center rounded-full border bg-white"
+                        aria-label="Scroll products right"
+                    >
+                        <ChevronRight className="size-3" />
+                    </button>
+                </div>
+            )}
+        </div>
     );
+}
+
+function Countdown({ endsAt }: { endsAt: string }) {
+    const [remaining, setRemaining] = useState(() =>
+        Math.max(0, new Date(endsAt).getTime() - Date.now()),
+    );
+    useEffect(() => {
+        const timer = window.setInterval(
+            () =>
+                setRemaining(
+                    Math.max(0, new Date(endsAt).getTime() - Date.now()),
+                ),
+            1000,
+        );
+
+        return () => window.clearInterval(timer);
+    }, [endsAt]);
+    const total = Math.floor(remaining / 1000);
+    const values = [
+        Math.floor(total / 3600),
+        Math.floor((total % 3600) / 60),
+        total % 60,
+    ];
+
+    return (
+        <span
+            className="ml-2 flex gap-1"
+            aria-label={`${values[0]} hours ${values[1]} minutes ${values[2]} seconds remaining`}
+        >
+            {values.map((value, index) => (
+                <span
+                    key={index}
+                    className="rounded border border-orange-200 bg-orange-50 px-2 py-1 text-[10px] font-extrabold text-[#ff5a00]"
+                >
+                    {String(value).padStart(2, '0')}
+                </span>
+            ))}
+        </span>
+    );
+}
+
+function readRecentIds(): number[] {
+    try {
+        const value = JSON.parse(
+            window.localStorage.getItem(recentStorageKey) ?? '[]',
+        );
+
+        return Array.isArray(value)
+            ? value
+                  .filter((id): id is number => Number.isInteger(id))
+                  .slice(0, 12)
+            : [];
+    } catch {
+        return [];
+    }
 }
 
 function RecentlyViewed() {
     const http = useHttp<{ ids: number[] }, { listings: StorefrontListing[] }>(
-        () => ({ ids: readRecentListingIds() }),
+        () => ({ ids: typeof window === 'undefined' ? [] : readRecentIds() }),
     );
-
     useEffect(() => {
         if (http.data.ids.length > 0) {
             void http.get(recentListings.url()).catch(() => undefined);
         }
-        // The stored IDs are intentionally read once per homepage mount.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (
         http.data.ids.length === 0 ||
-        (!http.processing && (http.response?.listings.length ?? 0) === 0)
+        (!http.processing && !http.response?.listings.length)
     ) {
         return null;
     }
 
     return (
-        <section className="bg-slate-100 dark:bg-slate-900/50">
-            <div className="mx-auto max-w-[90rem] px-4 py-12 sm:px-6 lg:px-8">
-                <SectionHeading
-                    eyebrow="Continue browsing"
-                    title="Recently viewed"
-                    copy="Pick up where you left off. This history stays on this device."
-                />
-                {http.processing && !http.response ? (
-                    <DeferredSkeleton />
-                ) : (
-                    <ProductRow listings={http.response?.listings ?? []} />
-                )}
-            </div>
+        <section className="mt-7">
+            <SectionTitle title="Recently Viewed" />
+            <ProductRow listings={http.response?.listings ?? []} />
         </section>
     );
 }
@@ -341,218 +319,150 @@ export default function StorefrontHome({
     categories,
     promotions,
     popularCategories,
+    featuredDeals,
     bestOffers,
     newArrivals,
-    categorySections,
-    socialProof,
+    topBrands,
+    flashSale,
 }: HomeProps) {
-    const { auth } = usePage().props;
-    const hero = promotions.hero[0];
-    const sellerDestination = auth.is_seller
-        ? sellerListingsIndex()
-        : auth.user
-          ? sellerOnboardingEdit()
-          : sellerRegister();
-
     return (
         <StorefrontLayout
             title="Sri Lanka’s marketplace for better deals"
             categories={categories}
         >
-            <main className="overflow-hidden bg-[#f7f5ef] dark:bg-slate-950">
-                <section className="mx-auto max-w-[90rem] px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
-                    <div className="grid gap-4 lg:grid-cols-[1.7fr_1fr]">
-                        {hero && (
-                            <Link
-                                href={hero.linkUrl ?? listingsIndex()}
-                                className="group relative min-h-[28rem] overflow-hidden rounded-3xl bg-slate-950 text-white shadow-2xl shadow-slate-950/15 sm:min-h-[34rem]"
-                            >
-                                <img
-                                    src={hero.imageUrl}
-                                    alt={hero.title}
-                                    className="absolute inset-0 h-full w-full object-cover opacity-80 transition duration-700 group-hover:scale-[1.02]"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/65 to-transparent" />
-                                <div className="relative flex h-full max-w-2xl flex-col justify-end p-7 sm:p-10 lg:p-12">
-                                    <span className="inline-flex w-max items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-xs font-black tracking-[0.16em] text-teal-200 uppercase ring-1 ring-white/20 backdrop-blur">
-                                        <Sparkles className="size-4" /> Discover
-                                        ProDeals
-                                    </span>
-                                    <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-                                        {hero.title}
-                                    </h1>
-                                    <p className="mt-4 max-w-xl text-base leading-7 text-slate-200">
-                                        Shop trusted local listings, visible
-                                        savings, and unique finds from sellers
-                                        across Sri Lanka.
-                                    </p>
-                                    <span className="mt-7 inline-flex w-max items-center gap-2 rounded-xl bg-amber-400 px-5 py-3 font-black text-slate-950 transition group-hover:bg-amber-300">
-                                        Explore deals{' '}
-                                        <ArrowRight className="size-4" />
-                                    </span>
-                                </div>
-                            </Link>
-                        )}
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-                            {promotions.secondary.map((promotion, index) => (
+            <main className="mx-auto max-w-[96rem] px-4 py-4 sm:px-6">
+                <HeroCarousel slides={promotions.hero} />
+
+                <section
+                    className="mt-4 flex snap-x [scrollbar-width:none] gap-3 overflow-x-auto pb-2"
+                    aria-label="Popular categories"
+                >
+                    {popularCategories.map((category) => (
+                        <Link
+                            key={category.id}
+                            href={listingsIndex({
+                                query: { category: category.slug },
+                            })}
+                            className="flex w-28 shrink-0 snap-start flex-col items-center rounded-lg border border-slate-200 p-2 text-center hover:border-orange-200 sm:w-36"
+                        >
+                            <StorefrontCategoryArtwork
+                                category={category}
+                                fallback="initial"
+                                className="aspect-[4/3] w-full rounded-md bg-slate-50"
+                            />
+                            <span className="mt-2 line-clamp-1 text-[10px] font-bold">
+                                {category.name}
+                            </span>
+                        </Link>
+                    ))}
+                    <Link
+                        href={listingsIndex()}
+                        className="grid w-24 shrink-0 place-items-center rounded-lg border text-[10px] font-bold hover:text-[#ff5a00]"
+                    >
+                        <Grid2X2 className="size-6 text-[#ff5a00]" />
+                        View All
+                    </Link>
+                </section>
+
+                <section className="mt-5">
+                    <SectionTitle
+                        title="Featured Deals"
+                        href="/collections/featured"
+                    />
+                    <ProductRow
+                        listings={
+                            featuredDeals.length ? featuredDeals : bestOffers
+                        }
+                    />
+                </section>
+
+                {topBrands.length > 0 && (
+                    <section className="mt-6">
+                        <SectionTitle
+                            title="Top Brands You Trust"
+                            href="/brands"
+                        />
+                        <div className="flex [scrollbar-width:none] gap-3 overflow-x-auto pb-2">
+                            {topBrands.map((brand) => (
                                 <Link
-                                    key={`${promotion.id ?? 'fallback'}-${index}`}
+                                    key={brand.id}
+                                    href={listingsIndex({
+                                        query: { brand: brand.slug },
+                                    })}
+                                    className="flex h-14 min-w-36 items-center justify-center rounded-lg border px-5 hover:border-orange-200"
+                                >
+                                    {brand.logoUrl ? (
+                                        <img
+                                            src={brand.logoUrl}
+                                            alt={brand.name}
+                                            className="max-h-8 max-w-24 object-contain"
+                                        />
+                                    ) : (
+                                        <span className="text-sm font-black">
+                                            {brand.name}
+                                        </span>
+                                    )}
+                                </Link>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {flashSale && (
+                    <section className="mt-6">
+                        <div className="flex items-center border-b pb-2">
+                            <Zap className="size-4 fill-[#ff5a00] text-[#ff5a00]" />
+                            <h2 className="ml-2 text-sm font-extrabold">
+                                {flashSale.title}
+                            </h2>
+                            <Countdown endsAt={flashSale.endsAt} />
+                        </div>
+                        <div className="mt-3">
+                            <ProductRow listings={flashSale.listings} />
+                        </div>
+                    </section>
+                )}
+
+                {promotions.secondary.length > 0 && (
+                    <section className="mt-6 grid gap-4 md:grid-cols-2">
+                        {promotions.secondary
+                            .slice(0, 2)
+                            .map((promotion, index) => (
+                                <Link
+                                    key={`${promotion.id}-${index}`}
                                     href={promotion.linkUrl ?? listingsIndex()}
-                                    className="group relative min-h-56 overflow-hidden rounded-3xl bg-primary text-white shadow-lg"
+                                    className={`relative min-h-40 overflow-hidden rounded-xl ${promotion.visualTheme === 'dark' ? 'bg-slate-950 text-white' : 'bg-orange-500 text-white'}`}
                                 >
                                     <img
                                         src={promotion.imageUrl}
-                                        alt={promotion.title}
-                                        className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                                        alt={promotion.artworkAlt ?? ''}
+                                        className="absolute inset-0 size-full object-cover"
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/25 to-transparent" />
-                                    <div className="absolute inset-x-0 bottom-0 p-6">
-                                        <p className="text-2xl font-black tracking-tight">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent" />
+                                    <div className="relative max-w-xs p-7">
+                                        <h2 className="text-2xl font-black">
                                             {promotion.title}
+                                        </h2>
+                                        <p className="mt-1 text-sm">
+                                            {promotion.subtitle}
                                         </p>
-                                        <span className="mt-2 inline-flex items-center gap-1 text-sm font-bold text-teal-200">
-                                            Shop collection{' '}
-                                            <ChevronRight className="size-4" />
+                                        <span className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-xs font-bold text-slate-950">
+                                            {promotion.ctaLabel ??
+                                                'Explore Now'}
                                         </span>
                                     </div>
                                 </Link>
                             ))}
-                        </div>
-                    </div>
-                    <div className="mt-4 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-3 dark:border-slate-800 dark:bg-slate-900">
-                        {[
-                            [
-                                ShieldCheck,
-                                'Buyer-first marketplace',
-                                'Shop approved public listings',
-                            ],
-                            [
-                                Truck,
-                                'Islandwide discovery',
-                                'Find sellers across Sri Lanka',
-                            ],
-                            [
-                                Store,
-                                'Local seller variety',
-                                'New choices added by sellers',
-                            ],
-                        ].map(([Icon, title, copy]) => (
-                            <div
-                                key={String(title)}
-                                className="flex items-center gap-3 px-2 py-1"
-                            >
-                                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-teal-50 text-primary dark:bg-teal-950">
-                                    <Icon className="size-5" />
-                                </span>
-                                <div>
-                                    <p className="text-sm font-black">
-                                        {String(title)}
-                                    </p>
-                                    <p className="text-xs text-slate-500">
-                                        {String(copy)}
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    </section>
+                )}
+
+                <section className="mt-6">
+                    <SectionTitle
+                        title="New Arrivals"
+                        href="/collections/new-arrivals"
+                    />
+                    <ProductRow listings={newArrivals} />
                 </section>
-
-                {popularCategories.length > 0 && (
-                    <section className="bg-white dark:bg-slate-950">
-                        <div className="mx-auto max-w-[90rem] px-4 py-11 sm:px-6 lg:px-8">
-                            <SectionHeading
-                                eyebrow="Shop your way"
-                                title="Popular Categories"
-                                copy="Jump into the departments shoppers are exploring now."
-                            />
-                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-10">
-                                {popularCategories.map((category, index) => (
-                                    <Link
-                                        key={category.id}
-                                        href={listingsIndex({
-                                            query: { category: category.slug },
-                                        })}
-                                        className="group flex flex-col rounded-2xl border border-slate-200 bg-slate-50 p-2 text-center transition hover:-translate-y-1 hover:border-primary/40 hover:bg-teal-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-teal-950/40"
-                                    >
-                                        <StorefrontCategoryArtwork
-                                            category={category}
-                                            fallback="initial"
-                                            className={
-                                                index % 3 === 0
-                                                    ? 'bg-amber-100 text-amber-800'
-                                                    : index % 3 === 1
-                                                      ? 'bg-teal-100 text-teal-800'
-                                                      : 'bg-slate-200 text-slate-700'
-                                            }
-                                        />
-                                        <span className="mt-2 line-clamp-2 px-1 pb-1 text-xs font-black text-slate-800 group-hover:text-primary dark:text-slate-100">
-                                            {category.name}
-                                        </span>
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
-                    </section>
-                )}
-
-                {bestOffers.length > 0 && (
-                    <section className="bg-amber-50/80 dark:bg-amber-950/10">
-                        <div className="mx-auto max-w-[90rem] px-4 py-12 sm:px-6 lg:px-8">
-                            <SectionHeading
-                                eyebrow="Limited-time value"
-                                title="Best Offers"
-                                href={listingsIndex({
-                                    query: { sort: 'price_asc' },
-                                })}
-                                copy="Admin-curated discounts from approved Buy Now listings."
-                            />
-                            <ProductRow listings={bestOffers} />
-                        </div>
-                    </section>
-                )}
-                {newArrivals.length > 0 && (
-                    <section className="bg-white dark:bg-slate-950">
-                        <div className="mx-auto max-w-[90rem] px-4 py-12 sm:px-6 lg:px-8">
-                            <SectionHeading
-                                eyebrow="Just listed"
-                                title="New Arrivals"
-                                href={listingsIndex()}
-                                copy="Freshly curated listings worth seeing before everyone else."
-                            />
-                            <ProductRow listings={newArrivals} />
-                        </div>
-                    </section>
-                )}
-
-                <Deferred
-                    data={['categorySections', 'socialProof']}
-                    fallback={<DeferredSkeleton />}
-                >
-                    <CategorySections sections={categorySections ?? []} />
-                    <Reviews socialProof={socialProof} />
-                </Deferred>
-
-                <section className="bg-primary text-primary-foreground">
-                    <div className="mx-auto flex max-w-[90rem] flex-col justify-between gap-5 px-4 py-9 sm:flex-row sm:items-center sm:px-6 lg:px-8">
-                        <div>
-                            <p className="text-xs font-black tracking-[0.16em] text-teal-100 uppercase">
-                                Grow with ProDeals
-                            </p>
-                            <h2 className="mt-2 text-2xl font-black">
-                                Turn your products into someone’s next great
-                                find.
-                            </h2>
-                        </div>
-                        <Link
-                            href={sellerDestination}
-                            className="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-white px-5 font-black text-primary"
-                        >
-                            {auth.is_seller ? 'Seller portal' : 'Start selling'}{' '}
-                            <ArrowRight className="size-4" />
-                        </Link>
-                    </div>
-                </section>
-
                 <RecentlyViewed />
             </main>
         </StorefrontLayout>
