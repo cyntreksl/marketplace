@@ -140,7 +140,7 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                     <div className="max-w-sm">
                         <Link
                             href={home()}
-                            className="inline-flex rounded-xl focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+                            className="inline-flex rounded-xl focus-visible:ring-2 focus-visible:ring-[#ff6000] focus-visible:outline-none"
                         >
                             <BrandLogo
                                 inverse
@@ -169,7 +169,7 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             aria-label={`ProDeals.lk on ${network}`}
-                                            className="grid size-10 place-items-center rounded-xl border border-white/15 text-slate-300 transition hover:border-cyan-300 hover:text-cyan-300"
+                                            className="grid size-10 place-items-center rounded-xl border border-white/15 text-slate-300 transition hover:border-[#ff6000] hover:text-[#ff6000]"
                                         >
                                             <SocialIcon className="size-4" />
                                         </a>
@@ -191,7 +191,7 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                                             <Link
                                                 href={link.href}
                                                 prefetch
-                                                className="transition hover:text-cyan-300 focus-visible:text-cyan-300 focus-visible:outline-none"
+                                                className="transition hover:text-[#ff6000] focus-visible:text-[#ff6000] focus-visible:outline-none"
                                             >
                                                 {link.label}
                                             </Link>
@@ -205,10 +205,10 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
 
                 <aside
                     aria-labelledby="footer-support-heading"
-                    className="mx-auto mt-10 grid max-w-none overflow-hidden rounded-2xl border border-cyan-300/20 bg-white/5 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_auto] md:items-center"
+                    className="mx-auto mt-10 grid max-w-none overflow-hidden rounded-2xl border border-[#ff6000]/20 bg-white/5 md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)_auto] md:items-center"
                 >
                     <div className="flex items-center gap-4 p-5 sm:p-6">
-                        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-cyan-300 text-slate-950 shadow-lg shadow-cyan-300/10">
+                        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#ff6000] text-white shadow-lg shadow-[#ff6000]/10">
                             <Headphones className="size-6" />
                         </span>
                         <div>
@@ -228,7 +228,7 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                     <div className="grid gap-1 border-t border-white/10 px-5 py-4 sm:px-6 md:border-t-0 md:border-l">
                         <a
                             href={`mailto:${marketplace.support.email}`}
-                            className="inline-flex w-fit items-center gap-2 text-sm font-bold text-cyan-300 transition hover:text-cyan-200 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:outline-none"
+                            className="inline-flex w-fit items-center gap-2 text-sm font-bold text-[#ff6000] transition hover:text-[#ff8a4c] focus-visible:ring-2 focus-visible:ring-[#ff6000] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:outline-none"
                         >
                             <Mail className="size-4" />
                             {marketplace.support.email}
@@ -242,7 +242,7 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                     <div className="border-t border-white/10 p-5 sm:p-6 md:border-t-0 md:border-l">
                         <Link
                             href={contact()}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-100 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:outline-none md:w-auto"
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-orange-100 focus-visible:ring-2 focus-visible:ring-[#ff6000] focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 focus-visible:outline-none md:w-auto"
                         >
                             Contact support
                             <ChevronRight className="size-4" />
@@ -257,7 +257,7 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                         © {currentYear}{' '}
                         <Link
                             href={home()}
-                            className="font-extrabold text-white transition hover:text-cyan-300 focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:outline-none"
+                            className="font-extrabold text-white transition hover:text-[#ff6000] focus-visible:ring-2 focus-visible:ring-[#ff6000] focus-visible:outline-none"
                         >
                             ProDeals.lk
                         </Link>
@@ -285,7 +285,7 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                                     className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-center text-xs font-semibold text-slate-300 last:col-span-2 sm:min-h-0 sm:justify-start sm:text-left sm:last:col-span-1"
                                 >
                                     <PaymentIcon
-                                        className="size-4 text-cyan-300"
+                                        className="size-4 text-[#ff6000]"
                                         aria-hidden="true"
                                     />
                                     {method}

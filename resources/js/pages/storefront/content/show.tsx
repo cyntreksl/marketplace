@@ -67,7 +67,7 @@ export default function StorefrontContentPage({
     return (
         <StorefrontLayout title={document.title}>
             <main className="bg-slate-100/70 dark:bg-slate-950">
-                <section className="border-b border-slate-200 bg-gradient-to-br from-slate-950 via-[#102a5c] to-primary px-4 py-14 text-white sm:px-7 sm:py-20 dark:border-slate-800">
+                <section className="border-b border-slate-200 bg-gradient-to-br from-slate-950 via-[#000000] to-primary px-4 py-14 text-white sm:px-7 sm:py-20 dark:border-slate-800">
                     <div className="mx-auto max-w-7xl">
                         <p className="text-xs font-bold tracking-[0.18em] text-cyan-300 uppercase">
                             {document.eyebrow}

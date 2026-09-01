@@ -1,4 +1,3 @@
-import type { CSSProperties } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { cn } from '@/lib/utils';
 
@@ -15,31 +14,31 @@ export function BrandLogo({
     inverse = false,
     showTagline = false,
 }: BrandLogoProps) {
-    const iconStyle = {
-        '--prodeals-spark': '#f6c65b',
-    } as CSSProperties;
-
     return (
         <span
             className={cn(
                 'inline-flex items-center gap-2.5',
-                inverse ? 'text-white' : 'text-slate-950 dark:text-white',
+                inverse ? 'text-white' : 'text-black dark:text-white',
                 className,
             )}
         >
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#102a5c] text-white shadow-lg shadow-[#102a5c]/20">
-                <AppLogoIcon
-                    aria-hidden="true"
-                    className="size-6"
-                    style={iconStyle}
+            {!compact ? (
+                <img
+                    src={
+                        inverse
+                            ? '/prodeals-logo-inverse.svg'
+                            : '/prodeals-logo.svg'
+                    }
+                    alt="ProDeals.lk"
+                    className="h-12 w-48 shrink-0 object-contain"
                 />
-            </span>
+            ) : (
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#ff6000] text-white shadow-lg shadow-[#ff6000]/20">
+                    <AppLogoIcon aria-hidden="true" className="size-6" />
+                </span>
+            )}
             {!compact && (
                 <span className="grid min-w-0 leading-none">
-                    <span className="font-black tracking-[-0.055em]">
-                        ProDeals
-                        <span className="text-[#0f766e]">.lk</span>
-                    </span>
                     {showTagline && (
                         <span
                             className={cn(

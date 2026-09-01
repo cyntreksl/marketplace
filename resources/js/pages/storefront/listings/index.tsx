@@ -145,7 +145,7 @@ export default function ListingsIndex({
                     items={breadcrumbItems(categoryContext)}
                 />
 
-                <section className="relative mt-5 overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-[#102a5c] to-primary px-5 py-8 text-white shadow-2xl shadow-slate-950/10 sm:px-8 sm:py-10 lg:px-12">
+                <section className="relative mt-5 overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-[#000000] to-primary px-5 py-8 text-white shadow-2xl shadow-slate-950/10 sm:px-8 sm:py-10 lg:px-12">
                     <div className="absolute -top-28 right-0 size-72 rounded-full bg-white/10 blur-3xl" />
                     <div className="absolute -bottom-36 left-1/3 size-80 rounded-full bg-primary/30 blur-3xl" />
                     <div className="relative grid items-end gap-7 lg:grid-cols-[minmax(0,1fr)_minmax(24rem,0.75fr)]">

@@ -4,8 +4,8 @@
     "description": "Better deals. Closer to home.",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#F7F8FC",
-    "theme_color": "#102A5C",
+    "background_color": "#FFFFFF",
+    "theme_color": "#FF6000",
     "icons": [
         {
             "src": "/apple-touch-icon.png",

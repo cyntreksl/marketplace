@@ -63,11 +63,11 @@ test('authenticated portals use distinct ProDeals theme colors', function () {
     $portalLayout = file_get_contents(resource_path('js/components/portal-layout.tsx'));
 
     expect($stylesheet)
-        ->toContain('.portal-theme-buyer {', '--primary: #0f766e;')
+        ->toContain('.portal-theme-buyer {', '--primary: #ff6000;')
         ->toContain('.portal-theme-seller {', '--primary: #b45309;')
-        ->toContain('.portal-theme-admin {', '--primary: #173a75;')
+        ->toContain('.portal-theme-admin {', '--primary: #171717;')
         ->toContain('.dark .portal-theme-buyer {')
-        ->toContain('.dark .portal-theme-seller {', '--primary: #f6c65b;')
+        ->toContain('.dark .portal-theme-seller {', '--primary: #ff6000;')
         ->toContain('.dark .portal-theme-admin {')
         ->and($portalLayout)
         ->toContain('className={`portal-theme-${portal}');
@@ -83,6 +83,24 @@ test('portal controls use semantic colors and consistent corner radii', function
         ->and($sellerListings)
         ->toContain('rounded-xl bg-primary')
         ->not->toContain('rounded-full bg-amber-400');
+});
+
+test('the refreshed logo components point to the new asset variants', function () {
+    $brandLogo = file_get_contents(resource_path('js/components/brand-logo.tsx'));
+    $appHeader = file_get_contents(resource_path('js/components/app-header.tsx'));
+    $appLogoIcon = file_get_contents(resource_path('js/components/app-logo-icon.tsx'));
+
+    expect(file_exists(public_path('prodeals-logo-inverse.svg')))->toBeTrue()
+        ->and(file_exists(public_path('prodeals-icon-inverse.svg')))->toBeTrue()
+        ->and($brandLogo)
+        ->toContain('/prodeals-logo.svg')
+        ->toContain('/prodeals-logo-inverse.svg')
+        ->not->toContain('brightness-0 invert')
+        ->and($appHeader)
+        ->toContain('<BrandLogo compact />')
+        ->not->toContain('AppLogoIcon')
+        ->and($appLogoIcon)
+        ->toContain('/prodeals-icon-inverse.svg');
 });
 
 test('the storefront shares an ordered two-level active category menu', function () {
