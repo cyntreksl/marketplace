@@ -28,7 +28,10 @@ type Listing = {
     price: string | null;
     sale_price: string | null;
     is_best_offer: boolean;
+    is_featured: boolean;
+    is_best_seller: boolean;
     is_new_arrival: boolean;
+    is_clearance: boolean;
     seller_profile: { store_name: string };
     category: { name: string };
 };
@@ -36,11 +39,16 @@ type Promotion = {
     id: number;
     title: string;
     link_url: string | null;
-    placement: 'hero' | 'secondary';
+    subtitle: string | null;
+    cta_label: string | null;
+    visual_theme: 'orange' | 'dark' | 'light';
+    artwork_alt: string | null;
+    placement: 'hero' | 'secondary' | 'flash_sale';
     sort_order: number;
     is_active: boolean;
     starts_at: string | null;
     ends_at: string | null;
+    listings: { id: number; title: string }[];
 };
 
 function asOption(category: SelectedCategory): CategoryOption {
@@ -308,6 +316,30 @@ export default function AdminHomepage({
                                     className="rounded-xl border bg-transparent p-3"
                                 />
                                 <input
+                                    name="subtitle"
+                                    placeholder="Subtitle (optional)"
+                                    className="rounded-xl border bg-transparent p-3"
+                                />
+                                <input
+                                    name="cta_label"
+                                    placeholder="CTA label (optional)"
+                                    className="rounded-xl border bg-transparent p-3"
+                                />
+                                <input
+                                    name="artwork_alt"
+                                    placeholder="Artwork alt text"
+                                    className="rounded-xl border bg-transparent p-3"
+                                />
+                                <select
+                                    name="visual_theme"
+                                    defaultValue="orange"
+                                    className="rounded-xl border bg-transparent p-3"
+                                >
+                                    <option value="orange">Orange theme</option>
+                                    <option value="dark">Dark theme</option>
+                                    <option value="light">Light theme</option>
+                                </select>
+                                <input
                                     required
                                     type="file"
                                     name="image"
@@ -325,6 +357,31 @@ export default function AdminHomepage({
                                 >
                                     <option value="hero">Hero</option>
                                     <option value="secondary">Secondary</option>
+                                    <option value="flash_sale">
+                                        Flash sale
+                                    </option>
+                                </select>
+                                <select
+                                    multiple
+                                    name="listing_ids[]"
+                                    aria-label="Flash sale listings"
+                                    className="min-h-28 rounded-xl border bg-transparent p-3 md:col-span-2"
+                                >
+                                    {listings.data
+                                        .filter(
+                                            (listing) =>
+                                                listing.status === 'approved' &&
+                                                listing.listing_type ===
+                                                    'buy_now',
+                                        )
+                                        .map((listing) => (
+                                            <option
+                                                key={listing.id}
+                                                value={listing.id}
+                                            >
+                                                {listing.title}
+                                            </option>
+                                        ))}
                                 </select>
                                 <input
                                     type="number"
@@ -391,6 +448,43 @@ export default function AdminHomepage({
                                             className="rounded-lg border bg-transparent p-2"
                                         />
                                         <input
+                                            name="subtitle"
+                                            defaultValue={
+                                                promotion.subtitle ?? ''
+                                            }
+                                            placeholder="Subtitle"
+                                            className="rounded-lg border bg-transparent p-2"
+                                        />
+                                        <input
+                                            name="cta_label"
+                                            defaultValue={
+                                                promotion.cta_label ?? ''
+                                            }
+                                            placeholder="CTA label"
+                                            className="rounded-lg border bg-transparent p-2"
+                                        />
+                                        <input
+                                            name="artwork_alt"
+                                            defaultValue={
+                                                promotion.artwork_alt ?? ''
+                                            }
+                                            placeholder="Artwork alt"
+                                            className="rounded-lg border bg-transparent p-2"
+                                        />
+                                        <select
+                                            name="visual_theme"
+                                            defaultValue={
+                                                promotion.visual_theme
+                                            }
+                                            className="rounded-lg border bg-transparent p-2"
+                                        >
+                                            <option value="orange">
+                                                Orange
+                                            </option>
+                                            <option value="dark">Dark</option>
+                                            <option value="light">Light</option>
+                                        </select>
+                                        <input
                                             type="file"
                                             name="image"
                                             accept="image/*"
@@ -412,6 +506,35 @@ export default function AdminHomepage({
                                             <option value="secondary">
                                                 Secondary
                                             </option>
+                                            <option value="flash_sale">
+                                                Flash sale
+                                            </option>
+                                        </select>
+                                        <select
+                                            multiple
+                                            name="listing_ids[]"
+                                            defaultValue={promotion.listings.map(
+                                                (listing) => String(listing.id),
+                                            )}
+                                            aria-label="Promotion listings"
+                                            className="min-h-24 rounded-lg border bg-transparent p-2 sm:col-span-2"
+                                        >
+                                            {listings.data
+                                                .filter(
+                                                    (listing) =>
+                                                        listing.status ===
+                                                            'approved' &&
+                                                        listing.listing_type ===
+                                                            'buy_now',
+                                                )
+                                                .map((listing) => (
+                                                    <option
+                                                        key={listing.id}
+                                                        value={listing.id}
+                                                    >
+                                                        {listing.title}
+                                                    </option>
+                                                ))}
                                         </select>
                                         <input
                                             type="number"
@@ -522,10 +645,26 @@ export default function AdminHomepage({
                                 <Form
                                     {...updateListing.form(listing.id)}
                                     options={{ preserveScroll: true }}
-                                    className="grid gap-2 sm:grid-cols-[1fr_1fr_1.5fr_auto]"
+                                    className="grid gap-2 sm:grid-cols-3"
                                 >
                                     {({ processing, errors }) => (
                                         <>
+                                            <select
+                                                name="is_featured"
+                                                defaultValue={
+                                                    listing.is_featured
+                                                        ? '1'
+                                                        : '0'
+                                                }
+                                                className="rounded-lg border bg-transparent p-2"
+                                            >
+                                                <option value="0">
+                                                    Not Featured
+                                                </option>
+                                                <option value="1">
+                                                    Featured Deal
+                                                </option>
+                                            </select>
                                             <select
                                                 name="is_best_offer"
                                                 defaultValue={
@@ -543,6 +682,22 @@ export default function AdminHomepage({
                                                 </option>
                                             </select>
                                             <select
+                                                name="is_best_seller"
+                                                defaultValue={
+                                                    listing.is_best_seller
+                                                        ? '1'
+                                                        : '0'
+                                                }
+                                                className="rounded-lg border bg-transparent p-2"
+                                            >
+                                                <option value="0">
+                                                    Not Best Seller
+                                                </option>
+                                                <option value="1">
+                                                    Best Seller
+                                                </option>
+                                            </select>
+                                            <select
                                                 name="is_new_arrival"
                                                 defaultValue={
                                                     listing.is_new_arrival
@@ -556,6 +711,22 @@ export default function AdminHomepage({
                                                 </option>
                                                 <option value="1">
                                                     New Arrival
+                                                </option>
+                                            </select>
+                                            <select
+                                                name="is_clearance"
+                                                defaultValue={
+                                                    listing.is_clearance
+                                                        ? '1'
+                                                        : '0'
+                                                }
+                                                className="rounded-lg border bg-transparent p-2"
+                                            >
+                                                <option value="0">
+                                                    Not Clearance
+                                                </option>
+                                                <option value="1">
+                                                    Clearance
                                                 </option>
                                             </select>
                                             <input
@@ -575,7 +746,7 @@ export default function AdminHomepage({
                                                 (error) => (
                                                     <p
                                                         key={error}
-                                                        className="text-xs text-red-600 sm:col-span-4"
+                                                        className="text-xs text-red-600 sm:col-span-3"
                                                     >
                                                         {error}
                                                     </p>

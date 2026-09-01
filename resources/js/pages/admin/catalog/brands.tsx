@@ -1,6 +1,6 @@
 import { Form, Head } from '@inertiajs/react';
 import { PortalLayout } from '@/components/portal-layout';
-import { store } from '@/routes/admin/brands';
+import { store, update } from '@/routes/admin/brands';
 
 export default function Brands({
     brands,
@@ -11,6 +11,9 @@ export default function Brands({
             name: string;
             slug: string;
             deleted_at: string | null;
+            logo_url: string | null;
+            is_featured: boolean;
+            homepage_order: number | null;
         }[];
     };
 }) {
@@ -35,6 +38,32 @@ export default function Brands({
                                 <input
                                     name="slug"
                                     placeholder="URL slug (optional)"
+                                    className="rounded-xl border p-3"
+                                />
+                                <input
+                                    type="file"
+                                    name="logo"
+                                    accept="image/*"
+                                    className="rounded-xl border p-3"
+                                />
+                                <input
+                                    type="hidden"
+                                    name="is_featured"
+                                    value="0"
+                                />
+                                <label className="flex items-center gap-2 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        name="is_featured"
+                                        value="1"
+                                    />{' '}
+                                    Featured on homepage
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    name="homepage_order"
+                                    placeholder="Homepage order"
                                     className="rounded-xl border p-3"
                                 />
                                 <textarea
@@ -69,11 +98,70 @@ export default function Brands({
                                 key={brand.id}
                                 className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
                             >
-                                <h3 className="font-semibold">{brand.name}</h3>
-                                <p className="mt-1 text-sm text-muted-foreground">
-                                    /{brand.slug}
-                                </p>
-                                <span className="mt-4 inline-block text-xs font-semibold text-primary">
+                                {brand.logo_url && (
+                                    <img
+                                        src={brand.logo_url}
+                                        alt={brand.name}
+                                        className="mb-3 h-10 max-w-32 object-contain"
+                                    />
+                                )}
+                                <Form
+                                    {...update.form(brand.id)}
+                                    className="grid gap-2"
+                                >
+                                    <input
+                                        required
+                                        name="name"
+                                        defaultValue={brand.name}
+                                        className="rounded-lg border bg-transparent p-2 text-sm"
+                                    />
+                                    <input
+                                        name="slug"
+                                        defaultValue={brand.slug}
+                                        className="rounded-lg border bg-transparent p-2 text-sm"
+                                    />
+                                    <input
+                                        type="file"
+                                        name="logo"
+                                        accept="image/*"
+                                        className="rounded-lg border p-2 text-xs"
+                                    />
+                                    <input
+                                        type="hidden"
+                                        name="is_featured"
+                                        value="0"
+                                    />
+                                    <label className="flex items-center gap-2 text-xs">
+                                        <input
+                                            type="checkbox"
+                                            name="is_featured"
+                                            value="1"
+                                            defaultChecked={brand.is_featured}
+                                        />{' '}
+                                        Featured homepage brand
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        name="homepage_order"
+                                        defaultValue={
+                                            brand.homepage_order ?? ''
+                                        }
+                                        placeholder="Homepage order"
+                                        className="rounded-lg border bg-transparent p-2 text-sm"
+                                    />
+                                    <input
+                                        required
+                                        minLength={5}
+                                        name="reason"
+                                        placeholder="Update reason"
+                                        className="rounded-lg border bg-transparent p-2 text-sm"
+                                    />
+                                    <button className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground">
+                                        Save brand
+                                    </button>
+                                </Form>
+                                <span className="mt-3 inline-block text-xs font-semibold text-primary">
                                     {brand.deleted_at ? 'Archived' : 'Active'}
                                 </span>
                             </article>
