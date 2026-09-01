@@ -286,6 +286,7 @@ export function SellerProductForm({
     const variantRows = form.data.variants;
     const productType = form.data.product_type;
     const baseSku = form.data.sku;
+    const baseStockQuantity = form.data.stock_quantity;
     const setFormData = form.setData;
 
     useEffect(() => {
@@ -303,7 +304,7 @@ export function SellerProductForm({
                 variant,
             ]),
         );
-        const nextVariants = combinations.map((selections) => {
+        let nextVariants = combinations.map((selections) => {
             const key = combinationKey(selections, variantOptions);
             const existing = existingByKey.get(key);
 
@@ -322,11 +323,23 @@ export function SellerProductForm({
             };
         });
 
+        if (
+            variantRows.length === 0 &&
+            nextVariants.length > 0 &&
+            baseStockQuantity !== ''
+        ) {
+            nextVariants = distributeStockEvenly(
+                nextVariants,
+                Number(baseStockQuantity),
+            );
+        }
+
         if (JSON.stringify(nextVariants) !== JSON.stringify(variantRows)) {
             setFormData('variants', nextVariants);
         }
     }, [
         baseSku,
+        baseStockQuantity,
         combinations,
         productType,
         setFormData,
@@ -336,11 +349,9 @@ export function SellerProductForm({
 
     const aggregateStock =
         form.data.product_type === 'variant'
-            ? form.data.variants.reduce(
-                  (total, variant) =>
-                      total + Number(variant.stock_quantity || 0),
-                  0,
-              )
+            ? form.data.variants.length > 0
+                ? totalVariantStock(form.data.variants)
+                : Number(form.data.stock_quantity || 0)
             : Number(form.data.stock_quantity || 0);
     const availableStock = Math.max(
         0,
@@ -414,6 +425,45 @@ export function SellerProductForm({
                 variantIndex === index ? { ...variant, ...changes } : variant,
             ),
         );
+    }
+
+    function updateStockQuantity(value: number | ''): void {
+        if (form.data.product_type !== 'variant' || value === '') {
+            setField('stock_quantity', value);
+
+            return;
+        }
+
+        const stockQuantity = Math.max(0, Math.floor(value));
+        const variants = distributeStockEvenly(
+            form.data.variants,
+            stockQuantity,
+        );
+
+        form.setData({
+            ...form.data,
+            stock_quantity: stockQuantity,
+            variants,
+        });
+        form.clearErrors('stock_quantity');
+    }
+
+    function updateVariantStock(
+        index: number,
+        stockQuantity: number | '',
+    ): void {
+        const variants = form.data.variants.map((variant, variantIndex) =>
+            variantIndex === index
+                ? { ...variant, stock_quantity: stockQuantity }
+                : variant,
+        );
+
+        form.setData({
+            ...form.data,
+            stock_quantity: totalVariantStock(variants),
+            variants,
+        });
+        form.clearErrors('stock_quantity', `variants.${index}.stock_quantity`);
     }
 
     function openProductCrop(
@@ -1024,19 +1074,17 @@ export function SellerProductForm({
                                     min="0"
                                     value={
                                         form.data.product_type === 'variant'
-                                            ? aggregateStock
+                                            ? form.data.stock_quantity === ''
+                                                ? ''
+                                                : aggregateStock
                                             : form.data.stock_quantity
                                     }
                                     onChange={(event) =>
-                                        setField(
-                                            'stock_quantity',
+                                        updateStockQuantity(
                                             event.target.value === ''
                                                 ? ''
                                                 : Number(event.target.value),
                                         )
-                                    }
-                                    disabled={
-                                        form.data.product_type === 'variant'
                                     }
                                     className={inputClass(
                                         errorFor('stock_quantity'),
@@ -1044,7 +1092,9 @@ export function SellerProductForm({
                                 />
                                 {form.data.product_type === 'variant' && (
                                     <p className="mt-1.5 text-xs text-slate-500">
-                                        Calculated from the generated variants.
+                                        {form.data.variants.length > 0
+                                            ? 'Editing this total distributes stock evenly across combinations. Fine-tune each row below.'
+                                            : 'Enter total stock now; it will be distributed when combinations are generated.'}
                                     </p>
                                 )}
                             </Field>
@@ -1366,21 +1416,18 @@ export function SellerProductForm({
                                                                         onChange={(
                                                                             event,
                                                                         ) =>
-                                                                            updateVariant(
+                                                                            updateVariantStock(
                                                                                 index,
-                                                                                {
-                                                                                    stock_quantity:
-                                                                                        event
-                                                                                            .target
-                                                                                            .value ===
-                                                                                        ''
-                                                                                            ? ''
-                                                                                            : Number(
-                                                                                                  event
-                                                                                                      .target
-                                                                                                      .value,
-                                                                                              ),
-                                                                                },
+                                                                                event
+                                                                                    .target
+                                                                                    .value ===
+                                                                                    ''
+                                                                                    ? ''
+                                                                                    : Number(
+                                                                                          event
+                                                                                              .target
+                                                                                              .value,
+                                                                                      ),
                                                                             )
                                                                         }
                                                                         className={inputClass(
@@ -2106,6 +2153,31 @@ function calculateCombinationCount(options: VariantOption[]): number {
     }
 
     return completeOptions.reduce((total, values) => total * values.length, 1);
+}
+
+function distributeStockEvenly(
+    variants: VariantRow[],
+    totalStock: number,
+): VariantRow[] {
+    if (variants.length === 0) {
+        return variants;
+    }
+
+    const normalizedTotal = Math.max(0, Math.floor(totalStock));
+    const stockPerVariant = Math.floor(normalizedTotal / variants.length);
+    const remainder = normalizedTotal % variants.length;
+
+    return variants.map((variant, index) => ({
+        ...variant,
+        stock_quantity: stockPerVariant + (index < remainder ? 1 : 0),
+    }));
+}
+
+function totalVariantStock(variants: VariantRow[]): number {
+    return variants.reduce(
+        (total, variant) => total + Number(variant.stock_quantity || 0),
+        0,
+    );
 }
 
 function combinationKey(
