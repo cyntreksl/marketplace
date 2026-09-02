@@ -3,6 +3,7 @@
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Listing;
+use App\Models\ListingMedia;
 use App\Models\OrderItem;
 use App\Models\SellerProfile;
 use App\Models\User;
@@ -188,6 +189,10 @@ test('a seller can view their product details', function () {
         'model' => 'X-T5',
         'specifications' => ['Details' => 'Weather sealed body'],
     ]);
+    $media = ListingMedia::factory()->for($listing)->create([
+        'path' => 'listings/draft-camera/main.webp',
+        'sort_order' => 0,
+    ]);
 
     $this->actingAs($seller->user)
         ->get(route('seller.listings.show', $listing))
@@ -199,7 +204,9 @@ test('a seller can view their product details', function () {
             ->where('listing.model', 'X-T5')
             ->where('listing.specifications.Details', 'Weather sealed body')
             ->where('listing.category.id', $listing->category_id)
-            ->where('listing.brand.id', $listing->brand_id));
+            ->where('listing.brand.id', $listing->brand_id)
+            ->where('listing.media.0.id', $media->id)
+            ->where('listing.media.0.url', $media->url));
 });
 
 test('a seller cannot view another sellers product details', function () {

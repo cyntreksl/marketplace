@@ -61,6 +61,8 @@ type NavigationItem = {
     href: ReturnType<typeof home>;
     icon: LucideIcon;
     group: string;
+    activePrefix?: boolean;
+    activeExclude?: string[];
 };
 
 type PortalDetails = {
@@ -133,6 +135,8 @@ const portalDetails: Record<Portal, PortalDetails> = {
                 href: sellerListingsIndex(),
                 icon: Package,
                 group: 'Products',
+                activePrefix: true,
+                activeExclude: [sellerListingsCreate().url],
             },
             {
                 title: 'Add New Product',
@@ -201,6 +205,7 @@ function PortalNavigation({
 }) {
     const page = usePage();
     const { navigation } = portalDetails[portal];
+    const currentPath = page.url.split('?')[0];
 
     return (
         <nav
@@ -208,7 +213,12 @@ function PortalNavigation({
             aria-label="Portal navigation"
         >
             {navigation.map((item, index) => {
-                const isActive = page.url.split('?')[0] === item.href.url;
+                const isExcluded = item.activeExclude?.includes(currentPath);
+                const isActive =
+                    !isExcluded &&
+                    (currentPath === item.href.url ||
+                        (item.activePrefix === true &&
+                            currentPath.startsWith(`${item.href.url}/`)));
                 const beginsGroup = navigation[index - 1]?.group !== item.group;
 
                 return (

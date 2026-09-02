@@ -169,20 +169,26 @@ function DetailRow({
 }
 
 function ProductGallery({ listing }: { listing: Listing }) {
-    const [selectedId, setSelectedId] = useState(listing.media[0]?.id ?? null);
+    const galleryMedia =
+        listing.media.length > 0
+            ? listing.media
+            : listing.variants
+                  .map((variant) => variant.image)
+                  .filter((media): media is ListingMedia => media !== null);
+    const [selectedId, setSelectedId] = useState(galleryMedia[0]?.id ?? null);
     const selected =
-        listing.media.find((media) => media.id === selectedId) ??
-        listing.media[0];
+        galleryMedia.find((media) => media.id === selectedId) ??
+        galleryMedia[0];
 
     return (
         <div
             className={`grid gap-3 ${
-                listing.media.length > 1 ? 'sm:grid-cols-[4.5rem_1fr]' : ''
+                galleryMedia.length > 1 ? 'sm:grid-cols-[4.5rem_1fr]' : ''
             }`}
         >
-            {listing.media.length > 1 && (
+            {galleryMedia.length > 1 && (
                 <div className="order-2 flex gap-2 overflow-x-auto sm:order-1 sm:flex-col">
-                    {listing.media.map((media, index) => (
+                    {galleryMedia.map((media, index) => (
                         <button
                             key={media.id}
                             type="button"
