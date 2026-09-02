@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Role;
 use App\Models\SellerProfile;
 use App\Models\User;
+use Illuminate\Support\Facades\Vite;
 
 test('a buyer can view an empty cart and order history', function () {
     $buyer = User::factory()->create();
@@ -65,6 +66,24 @@ test('a seller can access each workspace screen', function () {
             ->where('availableBalance', '0')
             ->has('entries.data', 0)
             ->has('payouts', 0));
+});
+
+test('the seller product form limits HTTP asset preload headers', function () {
+    $seller = SellerProfile::factory()->create();
+
+    Vite::useHotFile(storage_path('framework/testing/missing-vite-hot'));
+
+    try {
+        $response = $this->actingAs($seller->user)
+            ->get(route('seller.listings.create'))
+            ->assertOk();
+
+        expect(substr_count((string) $response->headers->get('Link'), '<'))
+            ->toBeGreaterThan(0)
+            ->toBeLessThanOrEqual(5);
+    } finally {
+        Vite::useHotFile(public_path('hot'));
+    }
 });
 
 test('an operations admin can view dashboard and moderation queues', function () {
