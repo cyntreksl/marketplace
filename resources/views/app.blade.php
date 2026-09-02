@@ -13,8 +13,7 @@
             }
         </style>
 
-        <link rel="icon" href="{{ $staticMedia->url('favicon.ico') }}" sizes="any">
-        <link rel="icon" href="{{ $staticMedia->url('favicon.svg') }}" type="image/svg+xml">
+        <link rel="icon" href="{{ $staticMedia->url('favicon.png') }}" type="image/png" sizes="128x128">
         <link rel="apple-touch-icon" href="{{ $staticMedia->url('apple-touch-icon.png') }}">
         <link rel="manifest" href="{{ route('site.manifest') }}">
 

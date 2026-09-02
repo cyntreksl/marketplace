@@ -10,6 +10,7 @@ class StaticMediaService
     public const ASSETS = [
         'apple-touch-icon.png',
         'favicon.ico',
+        'favicon.png',
         'favicon.svg',
         'prodeals-email-logo.png',
         'prodeals-logo.svg',
