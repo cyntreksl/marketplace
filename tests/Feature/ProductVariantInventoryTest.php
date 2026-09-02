@@ -22,7 +22,6 @@ function variantProductPayload(Category $category, array $overrides = []): array
         'location' => 'Colombo',
         'selling_price' => '4500.00',
         'compare_price' => '5000.00',
-        'cost_price' => '2500.00',
         'low_stock_threshold' => 2,
         'allow_backorders' => false,
         'is_active' => true,
@@ -76,6 +75,16 @@ test('a seller can save and edit a completely incomplete product draft', functio
             ->where('listing.variants', []));
 });
 
+test('seller product forms ignore legacy cost price input', function () {
+    $seller = SellerProfile::factory()->create();
+
+    $this->actingAs($seller->user)
+        ->post(route('seller.listings.store'), ['cost_price' => '2500.00'])
+        ->assertSessionHasNoErrors();
+
+    expect(Listing::query()->sole()->cost_price)->toBeNull();
+});
+
 test('submission requires a complete product while drafts still enforce pricing safety', function () {
     $seller = SellerProfile::factory()->create();
 
@@ -126,7 +135,7 @@ test('a complete variant product generates the exact matrix and aggregate invent
         ->stock_quantity->toBe(10)
         ->price->toBe('5000.00')
         ->sale_price->toBe('4500.00')
-        ->cost_price->toBe('2500.00')
+        ->cost_price->toBeNull()
         ->is_featured->toBeTrue()
         ->is_best_seller->toBeTrue()
         ->is_new_arrival->toBeTrue()
@@ -147,7 +156,6 @@ test('a complete variant product generates the exact matrix and aggregate invent
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->where('listing.sku', 'SHIRT-001')
-            ->where('listing.cost_price', '2500.00')
             ->where('listing.meta_title', 'Everyday Cotton Shirt')
             ->where('listing.variant_options.0.name', 'Color')
             ->where('listing.variant_options.1.name', 'Size')

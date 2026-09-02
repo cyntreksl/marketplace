@@ -48,7 +48,6 @@ trait ValidatesProductData
             'stock_quantity' => [Rule::requiredIf($publishing && $this->input('product_type') === 'simple'), 'nullable', 'integer', 'min:0', 'max:100000'],
             'selling_price' => [Rule::excludeIf($this->input('product_type') === 'variant'), Rule::requiredIf($publishing), 'nullable', 'decimal:0,2', 'min:1'],
             'compare_price' => [Rule::excludeIf($this->input('product_type') === 'variant'), 'nullable', 'decimal:0,2', 'gt:selling_price'],
-            'cost_price' => ['nullable', 'decimal:0,2', 'min:0'],
             'low_stock_threshold' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'allow_backorders' => ['required', 'boolean'],
             'is_active' => ['required', 'boolean'],

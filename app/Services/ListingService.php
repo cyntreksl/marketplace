@@ -229,7 +229,6 @@ class ListingService
             'is_new_arrival' => (bool) ($attributes['is_new_arrival'] ?? false),
             'price' => $isVariantProduct ? null : ($comparePrice ?? $sellingPrice),
             'sale_price' => $isVariantProduct || $comparePrice === null ? null : $sellingPrice,
-            'cost_price' => filled($attributes['cost_price'] ?? null) ? $attributes['cost_price'] : null,
             'commission_percentage' => $category?->commission_percentage,
             'meta_title' => $attributes['meta_title'] ?? null,
             'meta_description' => $attributes['meta_description'] ?? null,

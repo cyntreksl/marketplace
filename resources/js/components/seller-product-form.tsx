@@ -109,7 +109,6 @@ export type SellerProductFormListing = {
     is_new_arrival: boolean;
     price: string | null;
     sale_price: string | null;
-    cost_price: string | null;
     meta_title: string | null;
     meta_description: string | null;
     media?: ListingMedia[];
@@ -134,7 +133,6 @@ type ProductFormData = {
     stock_quantity: number | '';
     selling_price: string;
     compare_price: string;
-    cost_price: string;
     low_stock_threshold: number | '';
     allow_backorders: boolean;
     is_active: boolean;
@@ -241,7 +239,6 @@ export function SellerProductForm({
         stock_quantity: listing?.stock_quantity ?? '',
         selling_price: listing?.sale_price ?? listing?.price ?? '',
         compare_price: listing?.sale_price ? (listing.price ?? '') : '',
-        cost_price: listing?.cost_price ?? '',
         low_stock_threshold: listing?.low_stock_threshold ?? 0,
         allow_backorders: listing?.allow_backorders ?? false,
         is_active: listing?.is_active ?? true,
@@ -1128,19 +1125,6 @@ export function SellerProductForm({
                             {form.data.product_type === 'simple' ? (
                                 <>
                                     <Field
-                                        label="Selling Price (LKR)"
-                                        error={errorFor('selling_price')}
-                                        required
-                                    >
-                                        <MoneyInput
-                                            value={form.data.selling_price}
-                                            onChange={(value) =>
-                                                setField('selling_price', value)
-                                            }
-                                            error={errorFor('selling_price')}
-                                        />
-                                    </Field>
-                                    <Field
                                         label="Market Price (LKR)"
                                         error={errorFor('compare_price')}
                                     >
@@ -1153,15 +1137,16 @@ export function SellerProductForm({
                                         />
                                     </Field>
                                     <Field
-                                        label="Cost Price (LKR)"
-                                        error={errorFor('cost_price')}
+                                        label="Selling Price (LKR)"
+                                        error={errorFor('selling_price')}
+                                        required
                                     >
                                         <MoneyInput
-                                            value={form.data.cost_price}
+                                            value={form.data.selling_price}
                                             onChange={(value) =>
-                                                setField('cost_price', value)
+                                                setField('selling_price', value)
                                             }
-                                            error={errorFor('cost_price')}
+                                            error={errorFor('selling_price')}
                                         />
                                     </Field>
                                     <Field
