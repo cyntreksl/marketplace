@@ -102,6 +102,19 @@ test('homepage output filters curated listings and uses the reference-first coll
         ->toContain('Call to Order');
 });
 
+test('homepage default slider starts with the home appliances campaign', function () {
+    $response = $this->get(route('home'))->assertOk();
+
+    expect($response->inertiaProps('promotions.hero'))
+        ->toHaveCount(2)
+        ->and($response->inertiaProps('promotions.hero.0.title'))
+        ->toBe('Upgrade your everyday essentials')
+        ->and($response->inertiaProps('promotions.hero.0.imageUrl'))
+        ->toEndWith('/images/storefront/hero-home-appliances.webp')
+        ->and(public_path('images/storefront/hero-home-appliances.webp'))
+        ->toBeFile();
+});
+
 test('recently viewed listings preserve requested order and exclude unavailable products', function () {
     $first = Listing::factory()->create();
     $second = Listing::factory()->create();

@@ -35,6 +35,14 @@ class StorefrontService
             'categories' => $this->storefrontCategories(),
             'promotions' => [
                 'hero' => $this->promotionData('hero', 5, [
+                    [
+                        'title' => 'Upgrade your everyday essentials',
+                        'subtitle' => 'Smart appliances and must-have tech at prices worth celebrating.',
+                        'ctaLabel' => 'Shop the Sale',
+                        'artworkAlt' => 'Kitchen appliances and personal technology featured in a limited-time sale',
+                        'imageUrl' => $this->staticMedia->url('images/storefront/hero-home-appliances.webp'),
+                        'linkUrl' => '/collections/deals',
+                    ],
                     ['title' => 'Discover better deals, closer to home', 'imageUrl' => $this->staticMedia->url('images/storefront/hero-marketplace.jpg'), 'linkUrl' => '/listings'],
                 ]),
                 'secondary' => $this->promotionData('secondary', 2, [
