@@ -2,6 +2,7 @@ import { Link, useForm } from '@inertiajs/react';
 import {
     Boxes,
     Check,
+    CircleHelp,
     ImagePlus,
     Info,
     PackageCheck,
@@ -35,6 +36,11 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { index as productsIndex } from '@/routes/seller/listings';
 
@@ -917,7 +923,11 @@ export function SellerProductForm({
                                     error={errorFor('sku')}
                                 />
                             </Field>
-                            <Field label="Barcode" error={errorFor('barcode')}>
+                            <Field
+                                label="Barcode"
+                                error={errorFor('barcode')}
+                                helpText="Keep internal or non-standard codes here; they are never treated as a GTIN."
+                            >
                                 <TextInput
                                     value={form.data.barcode}
                                     onChange={(value) =>
@@ -926,10 +936,6 @@ export function SellerProductForm({
                                     placeholder="Enter barcode (optional)"
                                     error={errorFor('barcode')}
                                 />
-                                <p className="text-xs text-slate-500">
-                                    Keep internal or non-standard codes here;
-                                    they are never treated as a GTIN.
-                                </p>
                             </Field>
                             <Field label="Model" error={errorFor('model')}>
                                 <TextInput
@@ -946,6 +952,7 @@ export function SellerProductForm({
                                     <Field
                                         label="GTIN / UPC / EAN"
                                         error={errorFor('gtin')}
+                                        helpText="Use the genuine UPC, EAN, ISBN-style, or GTIN printed by the manufacturer."
                                     >
                                         <TextInput
                                             value={form.data.gtin}
@@ -955,11 +962,6 @@ export function SellerProductForm({
                                             placeholder="Valid 8, 12, 13, or 14 digit code"
                                             error={errorFor('gtin')}
                                         />
-                                        <p className="text-xs text-slate-500">
-                                            Use the genuine UPC, EAN,
-                                            ISBN-style, or GTIN printed by the
-                                            manufacturer.
-                                        </p>
                                     </Field>
                                     <Field label="MPN" error={errorFor('mpn')}>
                                         <TextInput
@@ -1158,6 +1160,7 @@ export function SellerProductForm({
                                     <Field
                                         label="Market Price (LKR)"
                                         error={errorFor('compare_price')}
+                                        helpText="Optional discount reference price."
                                     >
                                         <MoneyInput
                                             value={form.data.compare_price}
@@ -1167,9 +1170,6 @@ export function SellerProductForm({
                                             error={errorFor('compare_price')}
                                             ariaLabel="Optional market price in LKR"
                                         />
-                                        <p className="mt-1 truncate text-xs leading-4 text-slate-500">
-                                            Optional discount reference price.
-                                        </p>
                                     </Field>
                                     <Field
                                         label="Stock Quantity"
@@ -2171,23 +2171,77 @@ function Field({
     children,
     className,
     error,
+    helpText,
     label,
     required = false,
 }: {
     children: ReactNode;
     className?: string;
     error?: string;
+    helpText?: string;
     label: string;
     required?: boolean;
 }) {
     return (
         <label className={cn('block', className)}>
-            <span className="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-100">
-                {label} {required && <span className="text-red-500">*</span>}
+            <span className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                <span>
+                    {label}{' '}
+                    {required && <span className="text-red-500">*</span>}
+                </span>
+                {helpText && (
+                    <FormHelpTooltip label={label}>{helpText}</FormHelpTooltip>
+                )}
             </span>
             {children}
             {error && <ErrorText>{error}</ErrorText>}
         </label>
+    );
+}
+
+function FormHelpTooltip({
+    children,
+    label,
+}: {
+    children: ReactNode;
+    label: string;
+}) {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <Tooltip open={open} onOpenChange={setOpen}>
+            <TooltipTrigger asChild>
+                <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`More information about ${label}`}
+                    className="inline-flex size-5 shrink-0 cursor-help items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none dark:hover:bg-slate-800"
+                    onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setOpen((isOpen) => !isOpen);
+                    }}
+                    onKeyDown={(event) => {
+                        if (event.key !== 'Enter' && event.key !== ' ') {
+                            return;
+                        }
+
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setOpen((isOpen) => !isOpen);
+                    }}
+                >
+                    <CircleHelp className="size-4" aria-hidden="true" />
+                </span>
+            </TooltipTrigger>
+            <TooltipContent
+                side="top"
+                sideOffset={8}
+                className="max-w-64 text-center text-xs leading-5"
+            >
+                {children}
+            </TooltipContent>
+        </Tooltip>
     );
 }
 
@@ -2438,9 +2492,11 @@ function ToggleRow({
                 className="mt-0.5"
             />
             <span>
-                <span className="block text-sm font-semibold">{label}</span>
-                <span className="mt-0.5 block text-xs leading-5 text-slate-500">
-                    {description}
+                <span className="flex items-center gap-1.5 text-sm font-semibold">
+                    {label}
+                    <FormHelpTooltip label={label}>
+                        {description}
+                    </FormHelpTooltip>
                 </span>
             </span>
         </label>
