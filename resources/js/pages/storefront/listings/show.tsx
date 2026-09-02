@@ -737,7 +737,9 @@ export default function ListingShow({
                                     >
                                         <dt className="font-bold">{name}</dt>
                                         <dd className="text-slate-500">
-                                            {String(value)}
+                                            <span className="whitespace-pre-line">
+                                                {String(value)}
+                                            </span>
                                         </dd>
                                     </div>
                                 ))}

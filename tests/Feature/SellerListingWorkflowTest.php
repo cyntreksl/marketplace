@@ -23,6 +23,7 @@ test('an approved seller can create a draft listing and submit it for moderation
             'model' => 'EOS R6 Mark II',
             'title' => 'Canon EOS R6',
             'description' => $description,
+            'specifications_text' => "24MP full-frame sensor\nDual card slots",
             'condition' => 'used',
             'listing_type' => 'buy_now',
             'location' => 'Colombo',
@@ -38,6 +39,7 @@ test('an approved seller can create a draft listing and submit it for moderation
     expect($listing->status)->toBe('draft')
         ->and($listing->commission_percentage)->toBe('8.00')
         ->and($listing->model)->toBe('EOS R6 Mark II')
+        ->and($listing->specifications)->toBe(['Details' => "24MP full-frame sensor\nDual card slots"])
         ->and($listing->description)->toBe($description)
         ->and($listing->media)->toHaveCount(1);
 
@@ -143,6 +145,7 @@ test('a seller can revise a returned listing before submitting it again', functi
         'seller_profile_id' => $seller->id,
         'status' => 'changes_requested',
         'moderation_reason' => 'Please clarify the warranty coverage.',
+        'specifications' => ['Details' => 'Body only kit'],
     ]);
 
     $this->actingAs($seller->user)
@@ -150,7 +153,8 @@ test('a seller can revise a returned listing before submitting it again', functi
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('seller/listings/edit')
-            ->where('listing.id', $listing->id));
+            ->where('listing.id', $listing->id)
+            ->where('listing.specifications.Details', 'Body only kit'));
 
     $this->actingAs($seller->user)
         ->put(route('seller.listings.update', $listing), [
@@ -158,6 +162,7 @@ test('a seller can revise a returned listing before submitting it again', functi
             'brand_id' => $listing->brand_id,
             'title' => 'Canon EOS R6 with warranty',
             'description' => 'A well cared for full-frame camera body with a six month warranty.',
+            'specifications_text' => 'Full-frame sensor with dual card slots',
             'condition' => 'used',
             'listing_type' => 'buy_now',
             'location' => 'Colombo',
@@ -170,6 +175,7 @@ test('a seller can revise a returned listing before submitting it again', functi
     expect($listing->refresh())
         ->status->toBe('draft')
         ->title->toBe('Canon EOS R6 with warranty')
+        ->specifications->toBe(['Details' => 'Full-frame sensor with dual card slots'])
         ->commission_percentage->toBe('10.00');
 });
 
@@ -180,6 +186,7 @@ test('a seller can view their product details', function () {
         'status' => 'draft',
         'title' => 'Draft mirrorless camera',
         'model' => 'X-T5',
+        'specifications' => ['Details' => 'Weather sealed body'],
     ]);
 
     $this->actingAs($seller->user)
@@ -190,6 +197,7 @@ test('a seller can view their product details', function () {
             ->where('listing.id', $listing->id)
             ->where('listing.title', 'Draft mirrorless camera')
             ->where('listing.model', 'X-T5')
+            ->where('listing.specifications.Details', 'Weather sealed body')
             ->where('listing.category.id', $listing->category_id)
             ->where('listing.brand.id', $listing->brand_id));
 });

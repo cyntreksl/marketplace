@@ -58,6 +58,7 @@ type Listing = {
     model: string | null;
     short_description: string | null;
     description: string | null;
+    specifications: Record<string, string | number | boolean> | null;
     condition: string | null;
     product_type: 'simple' | 'variant';
     listing_type: string;
@@ -230,6 +231,7 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
         0,
         listing.stock_quantity - listing.reserved_quantity,
     );
+    const specifications = listing.specifications ?? {};
 
     return (
         <PortalLayout
@@ -389,6 +391,30 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
                                 ) : (
                                     <p className="mt-3 text-sm text-slate-500">
                                         No description added.
+                                    </p>
+                                )}
+                            </div>
+                            <div className="mt-5 border-t border-slate-200 pt-5 dark:border-slate-800">
+                                <h3 className="font-black">Specifications</h3>
+                                {Object.keys(specifications).length > 0 ? (
+                                    <dl className="mt-3 grid gap-3">
+                                        {Object.entries(specifications).map(
+                                            ([name, value]) => (
+                                                <DetailRow
+                                                    key={name}
+                                                    label={name}
+                                                    value={
+                                                        <span className="whitespace-pre-line">
+                                                            {String(value)}
+                                                        </span>
+                                                    }
+                                                />
+                                            ),
+                                        )}
+                                    </dl>
+                                ) : (
+                                    <p className="mt-3 text-sm text-slate-500">
+                                        No specifications added.
                                     </p>
                                 )}
                             </div>

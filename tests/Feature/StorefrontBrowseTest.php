@@ -36,6 +36,7 @@ test('product pages receive a full root to leaf category trail', function () {
     $listing = Listing::factory()->create([
         'category_id' => $leaf->id,
         'model' => 'ThinkPad T14',
+        'specifications' => ['Details' => '16GB RAM, 512GB SSD'],
     ]);
 
     $this->get(route('listings.show', $listing->slug))
@@ -44,6 +45,7 @@ test('product pages receive a full root to leaf category trail', function () {
             ->component('storefront/listings/show')
             ->has('categoryTrail', 3)
             ->where('listing.model', 'ThinkPad T14')
+            ->where('listing.specifications.Details', '16GB RAM, 512GB SSD')
             ->where('categoryTrail.0.id', $root->id)
             ->where('categoryTrail.1.id', $parent->id)
             ->where('categoryTrail.2.id', $leaf->id));

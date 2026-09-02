@@ -85,6 +85,7 @@ type StoredVariant = {
     }[];
     image: ListingMedia | null;
 };
+type Specifications = Record<string, string | number | boolean>;
 
 export type SellerProductFormListing = {
     title: string | null;
@@ -96,6 +97,7 @@ export type SellerProductFormListing = {
     brand_name: string | null;
     short_description: string | null;
     description: string | null;
+    specifications: Specifications | null;
     condition: string | null;
     product_type: 'simple' | 'variant';
     location: string | null;
@@ -127,6 +129,7 @@ type ProductFormData = {
     title: string;
     short_description: string;
     description: string;
+    specifications_text: string;
     condition: string;
     model: string;
     product_type: 'simple' | 'variant';
@@ -235,6 +238,7 @@ export function SellerProductForm({
         title: listing?.title ?? '',
         short_description: listing?.short_description ?? '',
         description: listing?.description ?? '',
+        specifications_text: specificationsText(listing?.specifications),
         condition: listing?.condition ?? 'new',
         product_type: listing?.product_type ?? 'simple',
         location: listing?.location ?? '',
@@ -1094,6 +1098,32 @@ export function SellerProductForm({
                                     }
                                     placeholder="Enter product full description..."
                                     error={errorFor('description')}
+                                />
+                            </Field>
+                            <Field
+                                label="Specifications"
+                                error={errorFor('specifications_text')}
+                                className="md:col-span-3"
+                            >
+                                <textarea
+                                    value={form.data.specifications_text}
+                                    onChange={(event) =>
+                                        setField(
+                                            'specifications_text',
+                                            event.target.value,
+                                        )
+                                    }
+                                    rows={6}
+                                    placeholder="Enter product specifications (optional)"
+                                    aria-invalid={
+                                        errorFor('specifications_text')
+                                            ? true
+                                            : undefined
+                                    }
+                                    className={inputClass(
+                                        errorFor('specifications_text'),
+                                        'h-auto resize-y py-3',
+                                    )}
                                 />
                             </Field>
                         </div>
@@ -2403,6 +2433,20 @@ function centeredFourByThreeCrop(size: ListingImageSize): ListingImageCrop {
         width: size.width,
         height,
     };
+}
+
+function specificationsText(specifications?: Specifications | null): string {
+    if (!specifications) {
+        return '';
+    }
+
+    if (typeof specifications.Details === 'string') {
+        return specifications.Details;
+    }
+
+    return Object.entries(specifications)
+        .map(([name, value]) => `${name}: ${String(value)}`)
+        .join('\n');
 }
 
 function hasFourByThreeRatio(size: ListingImageSize): boolean {

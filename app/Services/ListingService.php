@@ -224,6 +224,7 @@ class ListingService
             'slug' => $listing?->title === $title ? $listing?->slug : $this->uniqueSlug($title, $listing?->id),
             'short_description' => $attributes['short_description'] ?? null,
             'description' => $attributes['description'] ?? null,
+            'specifications' => $this->specificationAttributes($attributes['specifications_text'] ?? null),
             'condition' => $attributes['condition'] ?? null,
             'listing_type' => 'buy_now',
             'product_type' => $attributes['product_type'] ?? 'simple',
@@ -264,6 +265,16 @@ class ListingService
             'sale_price' => $marketPrice === null ? null : $sellingPrice,
         ]);
         $this->listings->save($listing);
+    }
+
+    /** @return array<string, string>|null */
+    private function specificationAttributes(mixed $specifications): ?array
+    {
+        if (! is_string($specifications) || trim($specifications) === '') {
+            return null;
+        }
+
+        return ['Details' => trim($specifications)];
     }
 
     private function ensureReadyForReview(Listing $listing): void

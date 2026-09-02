@@ -42,6 +42,7 @@ trait ValidatesProductData
             'title' => [$requiredForPublishing, 'nullable', 'string', 'max:160'],
             'short_description' => ['nullable', 'string', 'max:160'],
             'description' => [$requiredForPublishing, 'nullable', 'string', 'max:10000'],
+            'specifications_text' => ['nullable', 'string', 'max:10000'],
             'condition' => [$requiredForPublishing, 'nullable', Rule::in(['new', 'used', 'refurbished'])],
             'product_type' => ['required', Rule::in(['simple', 'variant'])],
             'location' => [$requiredForPublishing, 'nullable', 'string', 'max:120'],
@@ -127,6 +128,7 @@ trait ValidatesProductData
             'barcode' => $this->squishedOrNull('barcode'),
             'model' => $this->squishedOrNull('model'),
             'short_description' => $this->squishedOrNull('short_description'),
+            'specifications_text' => $this->trimmedOrNull('specifications_text'),
             'meta_title' => $this->squishedOrNull('meta_title'),
             'meta_description' => $this->squishedOrNull('meta_description'),
             'selling_price' => $sellingPrice,
@@ -380,5 +382,12 @@ trait ValidatesProductData
         $value = $this->input($key);
 
         return is_string($value) && filled($value) ? Str::squish($value) : null;
+    }
+
+    private function trimmedOrNull(string $key): ?string
+    {
+        $value = $this->input($key);
+
+        return is_string($value) && filled($value) ? trim($value) : null;
     }
 }
