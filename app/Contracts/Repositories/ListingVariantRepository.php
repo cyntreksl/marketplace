@@ -11,7 +11,7 @@ interface ListingVariantRepository
 {
     /**
      * @param  array<int, array{name: string, values: array<int, string>}>  $options
-     * @param  array<int, array{combination_key: string, sku: string|null, stock_quantity: int, selections: array<int, string>}>  $variants
+     * @param  array<int, array{combination_key: string, sku: string|null, selling_price: mixed, market_price: mixed, stock_quantity: int, is_active: bool, selections: array<int, string>}>  $variants
      * @return Collection<int, ListingVariant>
      */
     public function replaceForListing(Listing $listing, array $options, array $variants): Collection;

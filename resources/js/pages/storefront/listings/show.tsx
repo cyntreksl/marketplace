@@ -224,6 +224,22 @@ export default function ListingShow({
             ),
         [listing.variants, selections],
     );
+    const displayedSellingPrice =
+        selectedVariant?.sellingPrice ?? listing.effectivePrice;
+    const displayedMarketPrice = selectedVariant
+        ? selectedVariant.marketPrice
+        : listing.salePrice
+          ? listing.price
+          : null;
+    const displayedDiscountPercentage =
+        displayedMarketPrice && displayedSellingPrice
+            ? Math.round(
+                  ((Number(displayedMarketPrice) -
+                      Number(displayedSellingPrice)) /
+                      Number(displayedMarketPrice)) *
+                      100,
+              )
+            : null;
     const canPurchase =
         listing.productType === 'simple' ||
         Boolean(selectedVariant && selectedVariant.stockQuantity >= quantity);
@@ -610,15 +626,15 @@ export default function ListingShow({
                         )}
                         <div className="p-5">
                             <div className="text-2xl font-black text-[#ff5a00]">
-                                {formatPrice(listing.effectivePrice)}
+                                {formatPrice(displayedSellingPrice)}
                             </div>
-                            {listing.salePrice && (
+                            {displayedMarketPrice && (
                                 <div className="mt-1 flex items-center gap-2 text-xs">
                                     <span className="text-slate-400 line-through">
-                                        {formatPrice(listing.price)}
+                                        {formatPrice(displayedMarketPrice)}
                                     </span>
                                     <strong className="text-[#ff5a00]">
-                                        {listing.discountPercentage}% OFF
+                                        {displayedDiscountPercentage}% OFF
                                     </strong>
                                 </div>
                             )}

@@ -101,6 +101,8 @@ export type StorefrontListing = {
     variants: {
         id: number;
         sku: string;
+        sellingPrice: string | null;
+        marketPrice: string | null;
         selectionKey: string;
         selections: Record<string, string>;
         stockQuantity: number;

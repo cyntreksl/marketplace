@@ -44,7 +44,10 @@ type VariantOption = { name: string; values: string[] };
 type VariantRow = {
     selections: string[];
     sku: string;
+    selling_price: string;
+    market_price: string;
     stock_quantity: number | '';
+    is_active: boolean;
     image: File | null;
     image_crop: ListingImageCrop | null;
     image_size: ListingImageSize | null;
@@ -71,7 +74,10 @@ type StoredVariantOption = {
 
 type StoredVariant = {
     sku: string | null;
+    selling_price: string | null;
+    market_price: string | null;
     stock_quantity: number;
+    is_active: boolean;
     position: number;
     option_values: {
         value: string;
@@ -200,7 +206,10 @@ export function SellerProductForm({
                         )
                         .map((value) => value.value),
                     sku: variant.sku ?? '',
+                    selling_price: variant.selling_price ?? '',
+                    market_price: variant.market_price ?? '',
                     stock_quantity: variant.stock_quantity,
+                    is_active: variant.is_active,
                     image: null,
                     image_crop: null,
                     image_size: null,
@@ -286,6 +295,7 @@ export function SellerProductForm({
     const variantRows = form.data.variants;
     const productType = form.data.product_type;
     const baseSku = form.data.sku;
+    const baseSellingPrice = form.data.selling_price;
     const baseStockQuantity = form.data.stock_quantity;
     const setFormData = form.setData;
 
@@ -315,6 +325,9 @@ export function SellerProductForm({
                         ? existing.sku
                         : suggestedSku(baseSku, selections),
                 stock_quantity: existing?.stock_quantity ?? 0,
+                selling_price: existing?.selling_price ?? baseSellingPrice,
+                market_price: existing?.market_price ?? '',
+                is_active: existing?.is_active ?? true,
                 image: existing?.image ?? null,
                 image_crop: existing?.image_crop ?? null,
                 image_size: existing?.image_size ?? null,
@@ -339,6 +352,7 @@ export function SellerProductForm({
         }
     }, [
         baseSku,
+        baseSellingPrice,
         baseStockQuantity,
         combinations,
         productType,
@@ -418,6 +432,24 @@ export function SellerProductForm({
         );
     }
 
+    function addPresetOption(name: string): void {
+        if (
+            form.data.variant_options.length >= 3 ||
+            form.data.variant_options.some(
+                (option) =>
+                    option.name.toLocaleLowerCase() ===
+                    name.toLocaleLowerCase(),
+            )
+        ) {
+            return;
+        }
+
+        setField('variant_options', [
+            ...form.data.variant_options,
+            { name, values: [] },
+        ]);
+    }
+
     function updateVariant(index: number, changes: Partial<VariantRow>): void {
         setField(
             'variants',
@@ -464,6 +496,21 @@ export function SellerProductForm({
             variants,
         });
         form.clearErrors('stock_quantity', `variants.${index}.stock_quantity`);
+    }
+
+    function updateVariantStatus(index: number, isActive: boolean): void {
+        const variants = form.data.variants.map((variant, variantIndex) =>
+            variantIndex === index
+                ? { ...variant, is_active: isActive }
+                : variant,
+        );
+
+        form.setData({
+            ...form.data,
+            stock_quantity: totalVariantStock(variants),
+            variants,
+        });
+        form.clearErrors(`variants.${index}.is_active`);
     }
 
     function openProductCrop(
@@ -749,7 +796,10 @@ export function SellerProductForm({
             variants: data.variants.map((variant) => ({
                 selections: variant.selections,
                 sku: variant.sku,
+                selling_price: variant.selling_price,
+                market_price: variant.market_price,
                 stock_quantity: variant.stock_quantity,
+                is_active: variant.is_active,
                 image: variant.image,
                 image_crop: variant.image_crop,
                 remove_image: variant.remove_image,
@@ -904,25 +954,73 @@ export function SellerProductForm({
                                     label="Category *"
                                 />
                             </div>
-                            <Field label="Product Type" required>
-                                <select
-                                    value={form.data.product_type}
-                                    onChange={(event) =>
-                                        setField(
-                                            'product_type',
-                                            event.target.value as
-                                                'simple' | 'variant',
-                                        )
-                                    }
-                                    className={inputClass()}
-                                >
-                                    <option value="simple">
-                                        Simple Product
-                                    </option>
-                                    <option value="variant">
-                                        Variant Product
-                                    </option>
-                                </select>
+                            <Field
+                                label="Product Type"
+                                required
+                                className="md:col-span-3"
+                            >
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    {(
+                                        [
+                                            {
+                                                value: 'simple',
+                                                title: 'Simple product',
+                                                description:
+                                                    'One price, one SKU, and one stock quantity.',
+                                                icon: PackageCheck,
+                                            },
+                                            {
+                                                value: 'variant',
+                                                title: 'Variant product',
+                                                description:
+                                                    'Multiple options such as color, size, or capacity.',
+                                                icon: Boxes,
+                                            },
+                                        ] as const
+                                    ).map((productType) => {
+                                        const Icon = productType.icon;
+                                        const selected =
+                                            form.data.product_type ===
+                                            productType.value;
+
+                                        return (
+                                            <label
+                                                key={productType.value}
+                                                className={cn(
+                                                    'flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition',
+                                                    selected
+                                                        ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
+                                                        : 'border-slate-200 hover:border-primary/40 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-950',
+                                                )}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="product_type_choice"
+                                                    value={productType.value}
+                                                    checked={selected}
+                                                    onChange={() =>
+                                                        setField(
+                                                            'product_type',
+                                                            productType.value,
+                                                        )
+                                                    }
+                                                    className="mt-1 size-4 accent-primary"
+                                                />
+                                                <span className="grid min-w-0 gap-1">
+                                                    <span className="flex items-center gap-2 font-bold">
+                                                        <Icon className="size-4 text-primary" />
+                                                        {productType.title}
+                                                    </span>
+                                                    <span className="text-xs leading-5 text-slate-500">
+                                                        {
+                                                            productType.description
+                                                        }
+                                                    </span>
+                                                </span>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
                             </Field>
                             <Field
                                 label="Condition"
@@ -1027,77 +1125,84 @@ export function SellerProductForm({
                         icon={<Tags className="size-5" />}
                     >
                         <div className="grid gap-5 md:grid-cols-3">
-                            <Field
-                                label="Selling Price (LKR)"
-                                error={errorFor('selling_price')}
-                                required
-                            >
-                                <MoneyInput
-                                    value={form.data.selling_price}
-                                    onChange={(value) =>
-                                        setField('selling_price', value)
-                                    }
-                                    error={errorFor('selling_price')}
-                                />
-                            </Field>
-                            <Field
-                                label="Compare Price (LKR)"
-                                error={errorFor('compare_price')}
-                            >
-                                <MoneyInput
-                                    value={form.data.compare_price}
-                                    onChange={(value) =>
-                                        setField('compare_price', value)
-                                    }
-                                    error={errorFor('compare_price')}
-                                />
-                            </Field>
-                            <Field
-                                label="Cost Price (LKR)"
-                                error={errorFor('cost_price')}
-                            >
-                                <MoneyInput
-                                    value={form.data.cost_price}
-                                    onChange={(value) =>
-                                        setField('cost_price', value)
-                                    }
-                                    error={errorFor('cost_price')}
-                                />
-                            </Field>
-                            <Field
-                                label="Stock Quantity"
-                                error={errorFor('stock_quantity')}
-                                required
-                            >
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={
-                                        form.data.product_type === 'variant'
-                                            ? form.data.stock_quantity === ''
-                                                ? ''
-                                                : aggregateStock
-                                            : form.data.stock_quantity
-                                    }
-                                    onChange={(event) =>
-                                        updateStockQuantity(
-                                            event.target.value === ''
-                                                ? ''
-                                                : Number(event.target.value),
-                                        )
-                                    }
-                                    className={inputClass(
-                                        errorFor('stock_quantity'),
-                                    )}
-                                />
-                                {form.data.product_type === 'variant' && (
-                                    <p className="mt-1.5 text-xs text-slate-500">
-                                        {form.data.variants.length > 0
-                                            ? 'Editing this total distributes stock evenly across combinations. Fine-tune each row below.'
-                                            : 'Enter total stock now; it will be distributed when combinations are generated.'}
+                            {form.data.product_type === 'simple' ? (
+                                <>
+                                    <Field
+                                        label="Selling Price (LKR)"
+                                        error={errorFor('selling_price')}
+                                        required
+                                    >
+                                        <MoneyInput
+                                            value={form.data.selling_price}
+                                            onChange={(value) =>
+                                                setField('selling_price', value)
+                                            }
+                                            error={errorFor('selling_price')}
+                                        />
+                                    </Field>
+                                    <Field
+                                        label="Market Price (LKR)"
+                                        error={errorFor('compare_price')}
+                                    >
+                                        <MoneyInput
+                                            value={form.data.compare_price}
+                                            onChange={(value) =>
+                                                setField('compare_price', value)
+                                            }
+                                            error={errorFor('compare_price')}
+                                        />
+                                    </Field>
+                                    <Field
+                                        label="Cost Price (LKR)"
+                                        error={errorFor('cost_price')}
+                                    >
+                                        <MoneyInput
+                                            value={form.data.cost_price}
+                                            onChange={(value) =>
+                                                setField('cost_price', value)
+                                            }
+                                            error={errorFor('cost_price')}
+                                        />
+                                    </Field>
+                                    <Field
+                                        label="Stock Quantity"
+                                        error={errorFor('stock_quantity')}
+                                        required
+                                    >
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={form.data.stock_quantity}
+                                            onChange={(event) =>
+                                                updateStockQuantity(
+                                                    event.target.value === ''
+                                                        ? ''
+                                                        : Number(
+                                                              event.target
+                                                                  .value,
+                                                          ),
+                                                )
+                                            }
+                                            className={inputClass(
+                                                errorFor('stock_quantity'),
+                                            )}
+                                        />
+                                    </Field>
+                                </>
+                            ) : (
+                                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 md:col-span-3">
+                                    <p className="font-bold text-primary">
+                                        Pricing and inventory are managed per
+                                        combination
                                     </p>
-                                )}
-                            </Field>
+                                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                                        Add options below, then enter each
+                                        variant&apos;s SKU, market price,
+                                        selling price, stock, image, and status.
+                                        Active stock total: {aggregateStock}.
+                                    </p>
+                                </div>
+                            )}
                             <Field
                                 label="Low Stock Alert"
                                 error={errorFor('low_stock_threshold')}
@@ -1137,22 +1242,11 @@ export function SellerProductForm({
                         </div>
                     </FormCard>
 
-                    <FormCard
-                        title="Product Variants"
-                        icon={<Boxes className="size-5" />}
-                    >
-                        {form.data.product_type === 'simple' ? (
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setField('product_type', 'variant')
-                                }
-                                className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/5 px-4 py-8 text-sm font-bold text-primary transition hover:bg-primary/10"
-                            >
-                                <Plus className="size-4" />
-                                Add variants to this product
-                            </button>
-                        ) : (
+                    {form.data.product_type === 'variant' && (
+                        <FormCard
+                            title="Product Variants"
+                            icon={<Boxes className="size-5" />}
+                        >
                             <div className="grid gap-5">
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div>
@@ -1180,6 +1274,35 @@ export function SellerProductForm({
                                     >
                                         <Plus className="size-4" /> Add option
                                     </button>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-xs font-semibold text-slate-500">
+                                        Quick add:
+                                    </span>
+                                    {['Color', 'Size', 'Capacity'].map(
+                                        (name) => (
+                                            <button
+                                                key={name}
+                                                type="button"
+                                                onClick={() =>
+                                                    addPresetOption(name)
+                                                }
+                                                disabled={
+                                                    form.data.variant_options
+                                                        .length >= 3 ||
+                                                    form.data.variant_options.some(
+                                                        (option) =>
+                                                            option.name.toLocaleLowerCase() ===
+                                                            name.toLocaleLowerCase(),
+                                                    )
+                                                }
+                                                className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-bold transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700"
+                                            >
+                                                + {name}
+                                            </button>
+                                        ),
+                                    )}
                                 </div>
 
                                 {form.data.variant_options.length === 0 && (
@@ -1267,7 +1390,7 @@ export function SellerProductForm({
 
                                 {form.data.variants.length > 0 && (
                                     <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
-                                        <table className="w-full min-w-[48rem] text-left text-sm">
+                                        <table className="w-full min-w-[78rem] text-left text-sm">
                                             <thead className="bg-slate-50 text-xs tracking-wide text-slate-500 uppercase dark:bg-slate-950">
                                                 <tr>
                                                     <th className="px-4 py-3">
@@ -1282,8 +1405,17 @@ export function SellerProductForm({
                                                     <th className="px-4 py-3">
                                                         SKU
                                                     </th>
+                                                    <th className="w-40 px-4 py-3">
+                                                        Market price
+                                                    </th>
+                                                    <th className="w-40 px-4 py-3">
+                                                        Selling price
+                                                    </th>
                                                     <th className="w-36 px-4 py-3">
                                                         Stock
+                                                    </th>
+                                                    <th className="w-36 px-4 py-3">
+                                                        Status
                                                     </th>
                                                 </tr>
                                             </thead>
@@ -1407,6 +1539,48 @@ export function SellerProductForm({
                                                                     />
                                                                 </td>
                                                                 <td className="px-4 py-3">
+                                                                    <MoneyInput
+                                                                        value={
+                                                                            variant.market_price
+                                                                        }
+                                                                        onChange={(
+                                                                            value,
+                                                                        ) =>
+                                                                            updateVariant(
+                                                                                index,
+                                                                                {
+                                                                                    market_price:
+                                                                                        value,
+                                                                                },
+                                                                            )
+                                                                        }
+                                                                        error={errorFor(
+                                                                            `variants.${index}.market_price`,
+                                                                        )}
+                                                                    />
+                                                                </td>
+                                                                <td className="px-4 py-3">
+                                                                    <MoneyInput
+                                                                        value={
+                                                                            variant.selling_price
+                                                                        }
+                                                                        onChange={(
+                                                                            value,
+                                                                        ) =>
+                                                                            updateVariant(
+                                                                                index,
+                                                                                {
+                                                                                    selling_price:
+                                                                                        value,
+                                                                                },
+                                                                            )
+                                                                        }
+                                                                        error={errorFor(
+                                                                            `variants.${index}.selling_price`,
+                                                                        )}
+                                                                    />
+                                                                </td>
+                                                                <td className="px-4 py-3">
                                                                     <input
                                                                         type="number"
                                                                         min="0"
@@ -1438,6 +1612,39 @@ export function SellerProductForm({
                                                                         )}
                                                                     />
                                                                 </td>
+                                                                <td className="px-4 py-3">
+                                                                    <select
+                                                                        value={
+                                                                            variant.is_active
+                                                                                ? 'active'
+                                                                                : 'inactive'
+                                                                        }
+                                                                        onChange={(
+                                                                            event,
+                                                                        ) =>
+                                                                            updateVariantStatus(
+                                                                                index,
+                                                                                event
+                                                                                    .target
+                                                                                    .value ===
+                                                                                    'active',
+                                                                            )
+                                                                        }
+                                                                        className={inputClass(
+                                                                            errorFor(
+                                                                                `variants.${index}.is_active`,
+                                                                            ),
+                                                                            'h-10',
+                                                                        )}
+                                                                    >
+                                                                        <option value="active">
+                                                                            Active
+                                                                        </option>
+                                                                        <option value="inactive">
+                                                                            Inactive
+                                                                        </option>
+                                                                    </select>
+                                                                </td>
                                                             </tr>
                                                         );
                                                     },
@@ -1447,8 +1654,8 @@ export function SellerProductForm({
                                     </div>
                                 )}
                             </div>
-                        )}
-                    </FormCard>
+                        </FormCard>
+                    )}
                 </div>
 
                 <aside className="grid content-start gap-5 xl:sticky xl:top-24">
@@ -2175,7 +2382,9 @@ function distributeStockEvenly(
 
 function totalVariantStock(variants: VariantRow[]): number {
     return variants.reduce(
-        (total, variant) => total + Number(variant.stock_quantity || 0),
+        (total, variant) =>
+            total +
+            (variant.is_active ? Number(variant.stock_quantity || 0) : 0),
         0,
     );
 }

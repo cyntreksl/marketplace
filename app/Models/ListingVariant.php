@@ -10,14 +10,32 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['listing_id', 'seller_profile_id', 'combination_key', 'sku', 'stock_quantity', 'reserved_quantity', 'position'])]
+#[Fillable(['listing_id', 'seller_profile_id', 'combination_key', 'sku', 'selling_price', 'market_price', 'stock_quantity', 'reserved_quantity', 'is_active', 'position'])]
 class ListingVariant extends Model
 {
     /** @use HasFactory<ListingVariantFactory> */
     use HasFactory;
 
+    protected function casts(): array
+    {
+        return [
+            'selling_price' => 'decimal:2',
+            'market_price' => 'decimal:2',
+            'is_active' => 'boolean',
+        ];
+    }
+
+    public function buyNowPrice(): ?string
+    {
+        return $this->selling_price === null ? null : (string) $this->selling_price;
+    }
+
     public function availableQuantity(): int
     {
+        if (! $this->is_active) {
+            return 0;
+        }
+
         return max(0, $this->stock_quantity - $this->reserved_quantity);
     }
 

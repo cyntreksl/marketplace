@@ -56,7 +56,7 @@ class ListingService
             ]);
             $this->listings->save($listing);
             $this->variants->synchronize($listing, $attributes);
-            $this->synchronizeAggregateStock($listing);
+            $this->synchronizeVariantSummary($listing);
             $this->storeImages($listing, $attributes['images'] ?? [], $attributes['image_crops'] ?? []);
             $listing->auction()->delete();
 
@@ -93,7 +93,7 @@ class ListingService
             $listing->auction()->delete();
             $this->images->remove($listing, array_map('intval', $attributes['removed_media_ids'] ?? []));
             $this->variants->synchronize($listing, $attributes);
-            $this->synchronizeAggregateStock($listing);
+            $this->synchronizeVariantSummary($listing);
 
             if ($attributes['images'] ?? []) {
                 $this->storeImages($listing, $attributes['images'], $attributes['image_crops']);
@@ -203,6 +203,7 @@ class ListingService
         $title = filled($attributes['title'] ?? null) ? (string) $attributes['title'] : null;
         $sellingPrice = filled($attributes['selling_price'] ?? null) ? $attributes['selling_price'] : null;
         $comparePrice = filled($attributes['compare_price'] ?? null) ? $attributes['compare_price'] : null;
+        $isVariantProduct = ($attributes['product_type'] ?? 'simple') === 'variant';
 
         return [
             'category_id' => $category?->id,
@@ -219,15 +220,15 @@ class ListingService
             'product_type' => $attributes['product_type'] ?? 'simple',
             'location' => $attributes['location'] ?? null,
             'warranty' => $attributes['warranty'] ?? null,
-            'stock_quantity' => ($attributes['product_type'] ?? 'simple') === 'simple' ? (int) ($attributes['stock_quantity'] ?? 0) : 0,
+            'stock_quantity' => $isVariantProduct ? 0 : (int) ($attributes['stock_quantity'] ?? 0),
             'low_stock_threshold' => (int) ($attributes['low_stock_threshold'] ?? 0),
             'allow_backorders' => (bool) ($attributes['allow_backorders'] ?? false),
             'is_active' => (bool) ($attributes['is_active'] ?? true),
             'is_featured' => (bool) ($attributes['is_featured'] ?? false),
             'is_best_seller' => (bool) ($attributes['is_best_seller'] ?? false),
             'is_new_arrival' => (bool) ($attributes['is_new_arrival'] ?? false),
-            'price' => $comparePrice ?? $sellingPrice,
-            'sale_price' => $comparePrice === null ? null : $sellingPrice,
+            'price' => $isVariantProduct ? null : ($comparePrice ?? $sellingPrice),
+            'sale_price' => $isVariantProduct || $comparePrice === null ? null : $sellingPrice,
             'cost_price' => filled($attributes['cost_price'] ?? null) ? $attributes['cost_price'] : null,
             'commission_percentage' => $category?->commission_percentage,
             'meta_title' => $attributes['meta_title'] ?? null,
@@ -235,13 +236,25 @@ class ListingService
         ];
     }
 
-    private function synchronizeAggregateStock(Listing $listing): void
+    private function synchronizeVariantSummary(Listing $listing): void
     {
         if ($listing->product_type !== 'variant') {
             return;
         }
 
-        $listing->forceFill(['stock_quantity' => $listing->variants()->sum('stock_quantity')]);
+        $activeVariants = $listing->variants()->where('is_active', true);
+        $lowestPricedVariant = (clone $activeVariants)
+            ->whereNotNull('selling_price')
+            ->orderBy('selling_price')
+            ->first();
+        $sellingPrice = $lowestPricedVariant?->selling_price;
+        $marketPrice = $lowestPricedVariant?->market_price;
+
+        $listing->forceFill([
+            'stock_quantity' => (clone $activeVariants)->sum('stock_quantity'),
+            'price' => $marketPrice ?? $sellingPrice,
+            'sale_price' => $marketPrice === null ? null : $sellingPrice,
+        ]);
         $this->listings->save($listing);
     }
 

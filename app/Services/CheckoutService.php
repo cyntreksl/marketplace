@@ -78,7 +78,7 @@ class CheckoutService
                     ? null
                     : ListingVariant::query()->with('optionValues.option')->lockForUpdate()->find($cartItem->listing_variant_id);
 
-                if ($listing->product_type === 'variant' && ($variant === null || $variant->listing_id !== $listing->id)) {
+                if ($listing->product_type === 'variant' && ($variant === null || $variant->listing_id !== $listing->id || ! $variant->is_active)) {
                     throw ValidationException::withMessages(['cart' => "Choose an available option for {$listing->title}."]);
                 }
 
@@ -96,7 +96,8 @@ class CheckoutService
             $subtotal = BigDecimal::zero();
             foreach ($cartItems as $cartItem) {
                 $listing = $lockedListings[$cartItem->listing_id];
-                $subtotal = $subtotal->plus(BigDecimal::of((string) $listing->buyNowPrice())->multipliedBy($cartItem->quantity));
+                $variant = $lockedVariants[$cartItem->id] ?? null;
+                $subtotal = $subtotal->plus(BigDecimal::of($this->buyNowPrice($listing, $variant))->multipliedBy($cartItem->quantity));
             }
 
             if ($paymentMethod === 'cod' && $subtotal->isGreaterThan($this->settings->integer('checkout.cod_maximum_amount', 50000))) {
@@ -116,7 +117,8 @@ class CheckoutService
                 $sellerSubtotal = BigDecimal::zero();
                 foreach ($items as $item) {
                     $listing = $lockedListings[$item->listing_id];
-                    $sellerSubtotal = $sellerSubtotal->plus(BigDecimal::of((string) $listing->buyNowPrice())->multipliedBy($item->quantity));
+                    $variant = $lockedVariants[$item->id] ?? null;
+                    $sellerSubtotal = $sellerSubtotal->plus(BigDecimal::of($this->buyNowPrice($listing, $variant))->multipliedBy($item->quantity));
                 }
 
                 $sellerOrder = SellerOrder::query()->create([
@@ -131,7 +133,7 @@ class CheckoutService
                 foreach ($items as $item) {
                     $listing = $lockedListings[$item->listing_id];
                     $variant = $lockedVariants[$item->id] ?? null;
-                    $effectivePrice = (string) $listing->buyNowPrice();
+                    $effectivePrice = $this->buyNowPrice($listing, $variant);
                     $lineTotal = BigDecimal::of($effectivePrice)->multipliedBy($item->quantity);
                     $commission = $lineTotal->multipliedBy((string) $listing->commission_percentage)->dividedBy(100, 2, RoundingMode::Down);
                     $sellerOrder->items()->create([
@@ -186,11 +188,22 @@ class CheckoutService
 
         $variant = ListingVariant::query()->whereBelongsTo($listing)->with('optionValues.option')->find($listingVariantId);
 
-        if ($variant === null) {
+        if ($variant === null || ! $variant->is_active) {
             throw ValidationException::withMessages(['listing_variant_id' => 'The selected product option is unavailable.']);
         }
 
         return $variant;
+    }
+
+    private function buyNowPrice(Listing $listing, ?ListingVariant $variant): string
+    {
+        $price = $variant?->buyNowPrice() ?? $listing->buyNowPrice();
+
+        if ($price === null) {
+            throw ValidationException::withMessages(['cart' => "{$listing->title} does not have an available price."]);
+        }
+
+        return $price;
     }
 
     /** @return array<string, string> */

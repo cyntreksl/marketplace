@@ -216,6 +216,10 @@ class StorefrontService
     /** @return array<string, mixed> */
     private function listingData(Listing $listing, bool $detailed = false): array
     {
+        $activeVariants = $detailed
+            ? $listing->variants->where('is_active', true)
+            : collect();
+
         return [
             'id' => $listing->id,
             'title' => $listing->title,
@@ -261,13 +265,20 @@ class StorefrontService
                 ? $listing->variantOptions->map(fn ($option): array => [
                     'id' => $option->id,
                     'name' => $option->name,
-                    'values' => $option->values->pluck('value')->values(),
+                    'values' => $option->values
+                        ->filter(fn ($value): bool => $activeVariants->contains(
+                            fn ($variant): bool => $variant->optionValues->contains('id', $value->id),
+                        ))
+                        ->pluck('value')
+                        ->values(),
                 ])->values()
                 : [],
             'variants' => $detailed
-                ? $listing->variants->map(fn ($variant): array => [
+                ? $activeVariants->map(fn ($variant): array => [
                     'id' => $variant->id,
                     'sku' => $variant->sku,
+                    'sellingPrice' => $variant->selling_price,
+                    'marketPrice' => $variant->market_price,
                     'selectionKey' => $variant->combination_key,
                     'selections' => $variant->optionValues->sortBy(fn ($value) => $value->option->position)->mapWithKeys(fn ($value): array => [$value->option->name => $value->value]),
                     'stockQuantity' => $variant->availableQuantity(),

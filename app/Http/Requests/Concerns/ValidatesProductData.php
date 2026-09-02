@@ -46,8 +46,8 @@ trait ValidatesProductData
             'location' => [$requiredForPublishing, 'nullable', 'string', 'max:120'],
             'warranty' => ['nullable', 'string', 'max:500'],
             'stock_quantity' => [Rule::requiredIf($publishing && $this->input('product_type') === 'simple'), 'nullable', 'integer', 'min:0', 'max:100000'],
-            'selling_price' => [$requiredForPublishing, 'nullable', 'decimal:0,2', 'min:1'],
-            'compare_price' => ['nullable', 'decimal:0,2', 'gt:selling_price'],
+            'selling_price' => [Rule::excludeIf($this->input('product_type') === 'variant'), Rule::requiredIf($publishing), 'nullable', 'decimal:0,2', 'min:1'],
+            'compare_price' => [Rule::excludeIf($this->input('product_type') === 'variant'), 'nullable', 'decimal:0,2', 'gt:selling_price'],
             'cost_price' => ['nullable', 'decimal:0,2', 'min:0'],
             'low_stock_threshold' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'allow_backorders' => ['required', 'boolean'],
@@ -64,7 +64,10 @@ trait ValidatesProductData
             'variants' => ['nullable', 'array', 'max:100'],
             'variants.*.selections' => ['required', 'array', 'max:3'],
             'variants.*.sku' => ['nullable', 'string', 'max:100'],
+            'variants.*.selling_price' => ['nullable', 'decimal:0,2', 'min:1'],
+            'variants.*.market_price' => ['nullable', 'decimal:0,2', 'min:1'],
             'variants.*.stock_quantity' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'variants.*.is_active' => ['required', 'boolean'],
             'variants.*.image' => [
                 'nullable',
                 'image',
@@ -92,7 +95,13 @@ trait ValidatesProductData
 
         if (is_array($variants)) {
             $variants = array_map(function (mixed $variant): mixed {
-                if (! is_array($variant) || ! is_array($variant['image_crop'] ?? null)) {
+                if (! is_array($variant)) {
+                    return $variant;
+                }
+
+                $variant['is_active'] = filter_var($variant['is_active'] ?? true, FILTER_VALIDATE_BOOL);
+
+                if (! is_array($variant['image_crop'] ?? null)) {
                     return $variant;
                 }
 
@@ -309,6 +318,29 @@ trait ValidatesProductData
 
             if ($submittedVariants->contains(fn (mixed $variant): bool => ! filled(Arr::get((array) $variant, 'sku')))) {
                 $validator->errors()->add('variants', 'Every variant needs a SKU before submitting for review.');
+            }
+
+            $activeVariants = $submittedVariants->filter(
+                fn (mixed $variant): bool => filter_var(Arr::get((array) $variant, 'is_active', true), FILTER_VALIDATE_BOOL),
+            );
+
+            if ($activeVariants->isEmpty()) {
+                $validator->errors()->add('variants', 'At least one variant must be active before submitting for review.');
+            }
+
+            foreach ($activeVariants as $index => $variant) {
+                if (! filled(Arr::get((array) $variant, 'selling_price'))) {
+                    $validator->errors()->add("variants.{$index}.selling_price", 'Enter a selling price for each active variant.');
+                }
+            }
+        }
+
+        foreach ($submittedVariants as $index => $variant) {
+            $sellingPrice = Arr::get((array) $variant, 'selling_price');
+            $marketPrice = Arr::get((array) $variant, 'market_price');
+
+            if (filled($sellingPrice) && filled($marketPrice) && (float) $marketPrice <= (float) $sellingPrice) {
+                $validator->errors()->add("variants.{$index}.market_price", 'The market price must be greater than the selling price.');
             }
         }
 

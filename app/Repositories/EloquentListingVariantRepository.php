@@ -45,7 +45,10 @@ class EloquentListingVariantRepository implements ListingVariantRepository
             $variant->forceFill([
                 'combination_key' => $variantData['combination_key'],
                 'sku' => $variantData['sku'],
+                'selling_price' => $variantData['selling_price'],
+                'market_price' => $variantData['market_price'],
                 'stock_quantity' => $variantData['stock_quantity'],
+                'is_active' => $variantData['is_active'],
                 'position' => $position,
             ])->save();
 

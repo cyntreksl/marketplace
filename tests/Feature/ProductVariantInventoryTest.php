@@ -36,10 +36,10 @@ function variantProductPayload(Category $category, array $overrides = []): array
             ['name' => 'Size', 'values' => ['Small', 'Large']],
         ],
         'variants' => [
-            ['selections' => ['Red', 'Small'], 'sku' => 'SHIRT-RED-S', 'stock_quantity' => 1],
-            ['selections' => ['Red', 'Large'], 'sku' => 'SHIRT-RED-L', 'stock_quantity' => 2],
-            ['selections' => ['Blue', 'Small'], 'sku' => 'SHIRT-BLUE-S', 'stock_quantity' => 3],
-            ['selections' => ['Blue', 'Large'], 'sku' => 'SHIRT-BLUE-L', 'stock_quantity' => 4],
+            ['selections' => ['Red', 'Small'], 'sku' => 'SHIRT-RED-S', 'selling_price' => '4500.00', 'market_price' => '5000.00', 'stock_quantity' => 1, 'is_active' => true],
+            ['selections' => ['Red', 'Large'], 'sku' => 'SHIRT-RED-L', 'selling_price' => '4500.00', 'market_price' => '5000.00', 'stock_quantity' => 2, 'is_active' => true],
+            ['selections' => ['Blue', 'Small'], 'sku' => 'SHIRT-BLUE-S', 'selling_price' => '4500.00', 'market_price' => '5000.00', 'stock_quantity' => 3, 'is_active' => true],
+            ['selections' => ['Blue', 'Large'], 'sku' => 'SHIRT-BLUE-L', 'selling_price' => '4500.00', 'market_price' => '5000.00', 'stock_quantity' => 4, 'is_active' => true],
         ],
         ...$overrides,
     ];
@@ -132,6 +132,9 @@ test('a complete variant product generates the exact matrix and aggregate invent
         ->is_new_arrival->toBeTrue()
         ->and($listing->variantOptions()->count())->toBe(2)
         ->and($listing->variants()->count())->toBe(4)
+        ->and($listing->variants()->where('is_active', true)->count())->toBe(4)
+        ->and($listing->variants()->firstOrFail()->selling_price)->toBe('4500.00')
+        ->and($listing->variants()->firstOrFail()->market_price)->toBe('5000.00')
         ->and($listing->variants()->pluck('sku')->all())->toBe([
             'SHIRT-RED-S',
             'SHIRT-RED-L',
@@ -148,7 +151,90 @@ test('a complete variant product generates the exact matrix and aggregate invent
             ->where('listing.meta_title', 'Everyday Cotton Shirt')
             ->where('listing.variant_options.0.name', 'Color')
             ->where('listing.variant_options.1.name', 'Size')
+            ->where('listing.variants.0.selling_price', '4500.00')
+            ->where('listing.variants.0.market_price', '5000.00')
+            ->where('listing.variants.0.is_active', true)
             ->has('listing.variants', 4));
+});
+
+test('variant pricing and status determine the product summary', function () {
+    $seller = SellerProfile::factory()->create();
+    $category = Category::factory()->create();
+
+    $this->actingAs($seller->user)
+        ->post(route('seller.listings.store'), variantProductPayload($category, [
+            'variant_options' => [['name' => 'Capacity', 'values' => ['128 GB', '256 GB']]],
+            'variants' => [
+                [
+                    'selections' => ['128 GB'],
+                    'sku' => 'PHONE-128',
+                    'selling_price' => '120000.00',
+                    'market_price' => '135000.00',
+                    'stock_quantity' => 5,
+                    'is_active' => true,
+                ],
+                [
+                    'selections' => ['256 GB'],
+                    'sku' => 'PHONE-256',
+                    'selling_price' => '110000.00',
+                    'market_price' => '140000.00',
+                    'stock_quantity' => 20,
+                    'is_active' => false,
+                ],
+            ],
+        ]))
+        ->assertSessionHasNoErrors();
+
+    $listing = Listing::query()->sole();
+
+    expect($listing)
+        ->stock_quantity->toBe(5)
+        ->price->toBe('135000.00')
+        ->sale_price->toBe('120000.00')
+        ->and($listing->variants()->where('is_active', false)->sole()->stock_quantity)->toBe(20);
+});
+
+test('active variants require valid selling and market prices when publishing', function () {
+    Storage::fake('public');
+    $seller = SellerProfile::factory()->create();
+    $category = Category::factory()->create();
+    $basePayload = variantProductPayload($category, [
+        'variant_options' => [['name' => 'Color', 'values' => ['Red']]],
+        'images' => [UploadedFile::fake()->image('shirt.jpg', 1600, 1200)],
+        'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1200]],
+        'submit_for_review' => true,
+    ]);
+
+    $this->actingAs($seller->user)
+        ->post(route('seller.listings.store'), [
+            ...$basePayload,
+            'variants' => [[
+                'selections' => ['Red'],
+                'sku' => 'SHIRT-RED',
+                'selling_price' => '',
+                'market_price' => '5000.00',
+                'stock_quantity' => 2,
+                'is_active' => true,
+            ]],
+        ])
+        ->assertSessionHasErrors('variants.0.selling_price');
+
+    $this->actingAs($seller->user)
+        ->post(route('seller.listings.store'), [
+            ...$basePayload,
+            'images' => [UploadedFile::fake()->image('shirt-again.jpg', 1600, 1200)],
+            'variants' => [[
+                'selections' => ['Red'],
+                'sku' => 'SHIRT-RED',
+                'selling_price' => '5000.00',
+                'market_price' => '4500.00',
+                'stock_quantity' => 2,
+                'is_active' => true,
+            ]],
+        ])
+        ->assertSessionHasErrors('variants.0.market_price');
+
+    expect(Listing::query()->count())->toBe(0);
 });
 
 test('variant validation rejects duplicates overflow and an inexact cartesian matrix', function () {

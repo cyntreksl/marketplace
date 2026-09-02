@@ -147,6 +147,7 @@ test('multiple variants of one listing coexist in a cart and are snapshotted at 
         'seller_profile_id' => $listing->seller_profile_id,
         'combination_key' => 'colour:black',
         'sku' => 'PHONE-BLACK',
+        'selling_price' => '9000.00',
         'stock_quantity' => 3,
     ]);
     $silverVariant = ListingVariant::factory()->create([
@@ -154,11 +155,19 @@ test('multiple variants of one listing coexist in a cart and are snapshotted at 
         'seller_profile_id' => $listing->seller_profile_id,
         'combination_key' => 'colour:silver',
         'sku' => 'PHONE-SILVER',
+        'selling_price' => '11000.00',
         'stock_quantity' => 4,
         'position' => 1,
     ]);
     $blackVariant->optionValues()->attach($blackValue);
     $silverVariant->optionValues()->attach($silverValue);
+
+    $this->get(route('listings.show', $listing->slug))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('listing.variants.0.sellingPrice', '9000.00')
+            ->where('listing.variants.1.sellingPrice', '11000.00')
+            ->where('listing.variantOptions.0.values', ['Black', 'Silver']));
 
     $this->actingAs($buyer)->post(route('cart.items.store'), [
         'listing_id' => $listing->id,
@@ -186,7 +195,9 @@ test('multiple variants of one listing coexist in a cart and are snapshotted at 
     expect($items)->toHaveCount(2)
         ->and($items[0]->variant_sku)->toBe('PHONE-BLACK')
         ->and($items[0]->variant_options)->toBe(['Colour' => 'Black'])
+        ->and($items[0]->unit_price)->toBe('9000.00')
         ->and($items[1]->variant_sku)->toBe('PHONE-SILVER')
+        ->and($items[1]->unit_price)->toBe('11000.00')
         ->and($blackVariant->refresh()->reserved_quantity)->toBe(2)
         ->and($silverVariant->refresh()->reserved_quantity)->toBe(1)
         ->and($listing->refresh()->reserved_quantity)->toBe(3);
@@ -201,6 +212,13 @@ test('variant products require an in-stock selection', function () {
         'stock_quantity' => 1,
         'reserved_quantity' => 1,
     ]);
+    $inactiveVariant = ListingVariant::factory()->create([
+        'listing_id' => $listing->id,
+        'seller_profile_id' => $listing->seller_profile_id,
+        'stock_quantity' => 10,
+        'is_active' => false,
+        'position' => 1,
+    ]);
 
     $this->actingAs($buyer)->post(route('cart.items.store'), [
         'listing_id' => $listing->id,
@@ -212,6 +230,12 @@ test('variant products require an in-stock selection', function () {
         'listing_variant_id' => $variant->id,
         'quantity' => 1,
     ])->assertSessionHasErrors('quantity');
+
+    $this->actingAs($buyer)->post(route('cart.items.store'), [
+        'listing_id' => $listing->id,
+        'listing_variant_id' => $inactiveVariant->id,
+        'quantity' => 1,
+    ])->assertSessionHasErrors('listing_variant_id');
 });
 
 test('shared storefront props expose authenticated cart quantity and wishlist count', function () {
