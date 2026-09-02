@@ -70,15 +70,12 @@ trait ValidatesProductData
             'variants.*.image' => [
                 'nullable',
                 'image',
-                'mimes:jpg,jpeg,png,webp',
-                'max:5120',
-                Rule::dimensions()->minWidth(800)->minHeight(600)->maxWidth(6000)->maxHeight(6000),
             ],
             'variants.*.image_crop' => ['nullable', 'array'],
-            'variants.*.image_crop.x' => ['nullable', 'integer', 'min:0', 'max:6000'],
-            'variants.*.image_crop.y' => ['nullable', 'integer', 'min:0', 'max:6000'],
-            'variants.*.image_crop.width' => ['nullable', 'integer', 'min:800', 'max:6000'],
-            'variants.*.image_crop.height' => ['nullable', 'integer', 'min:600', 'max:6000'],
+            'variants.*.image_crop.x' => ['nullable', 'integer', 'min:0'],
+            'variants.*.image_crop.y' => ['nullable', 'integer', 'min:0'],
+            'variants.*.image_crop.width' => ['nullable', 'integer', 'min:1'],
+            'variants.*.image_crop.height' => ['nullable', 'integer', 'min:1'],
             'variants.*.remove_image' => ['sometimes', 'boolean'],
             'removed_media_ids' => ['nullable', 'array', 'max:5'],
             'removed_media_ids.*' => ['integer', 'distinct'],
@@ -208,13 +205,13 @@ trait ValidatesProductData
             $isFourByThree = abs(($width * 3) - ($height * 4)) <= 4;
             $isInsideImage = $x >= 0
                 && $y >= 0
-                && $width >= 800
-                && $height >= 600
+                && $width > 0
+                && $height > 0
                 && $x + $width <= $dimensions[0]
                 && $y + $height <= $dimensions[1];
 
             if (! $isFourByThree || ! $isInsideImage) {
-                $validator->errors()->add("variants.{$index}.image_crop", 'Variant image crops must be a valid 4:3 area of at least 800 × 600 pixels.');
+                $validator->errors()->add("variants.{$index}.image_crop", 'Variant image crops must be a valid 4:3 area inside the uploaded image.');
             }
         }
     }

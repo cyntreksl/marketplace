@@ -25,10 +25,6 @@ class ListingImageService
 {
     private const CACHE_CONTROL = 'public, max-age=31536000, immutable';
 
-    private const MINIMUM_HEIGHT = 600;
-
-    private const MINIMUM_WIDTH = 800;
-
     public function __construct(
         private readonly ImageManagerInterface $images,
         private readonly ListingRepository $listings,
@@ -230,14 +226,14 @@ class ListingImageService
         $isFourByThree = abs(($crop['width'] * 3) - ($crop['height'] * 4)) <= 4;
         $isInsideImage = $crop['x'] >= 0
             && $crop['y'] >= 0
-            && $crop['width'] >= self::MINIMUM_WIDTH
-            && $crop['height'] >= self::MINIMUM_HEIGHT
+            && $crop['width'] > 0
+            && $crop['height'] > 0
             && $image->width() >= $crop['x'] + $crop['width']
             && $image->height() >= $crop['y'] + $crop['height'];
 
         if (! $isFourByThree || ! $isInsideImage) {
             throw ValidationException::withMessages([
-                'image_crops' => 'Each photo must have a valid 4:3 crop with at least 800 × 600 source pixels.',
+                'image_crops' => 'Each photo must have a valid 4:3 crop inside the uploaded image.',
             ]);
         }
     }

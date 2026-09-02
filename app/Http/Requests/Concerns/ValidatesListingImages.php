@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Concerns;
 
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 trait ValidatesListingImages
@@ -12,17 +11,12 @@ trait ValidatesListingImages
     {
         return [
             'images' => [$required ? 'required' : 'nullable', 'array', $required ? 'min:1' : 'min:0', 'max:5'],
-            'images.*' => [
-                'image',
-                'mimes:jpg,jpeg,png,webp',
-                'max:5120',
-                Rule::dimensions()->minWidth(800)->minHeight(600)->maxWidth(6000)->maxHeight(6000),
-            ],
+            'images.*' => ['image'],
             'image_crops' => [$required ? 'required' : 'required_with:images', 'array', $required ? 'min:1' : 'min:0', 'max:5'],
-            'image_crops.*.x' => ['required', 'integer', 'min:0', 'max:6000'],
-            'image_crops.*.y' => ['required', 'integer', 'min:0', 'max:6000'],
-            'image_crops.*.width' => ['required', 'integer', 'min:800', 'max:6000'],
-            'image_crops.*.height' => ['required', 'integer', 'min:600', 'max:6000'],
+            'image_crops.*.x' => ['required', 'integer', 'min:0'],
+            'image_crops.*.y' => ['required', 'integer', 'min:0'],
+            'image_crops.*.width' => ['required', 'integer', 'min:1'],
+            'image_crops.*.height' => ['required', 'integer', 'min:1'],
         ];
     }
 

@@ -534,30 +534,12 @@ export function SellerProductForm({
             form.data.variant_options,
         );
 
-        if (
-            !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
-            file.size > 5 * 1024 * 1024
-        ) {
-            setVariantImageErrors((errors) => ({
-                ...errors,
-                [key]: 'Use a JPG, PNG, or WebP image no larger than 5 MB.',
-            }));
-
-            return;
-        }
-
         const size = knownSize ?? (await readImageSize(file).catch(() => null));
 
-        if (
-            size === null ||
-            size.width < 800 ||
-            size.height < 600 ||
-            size.width > 6000 ||
-            size.height > 6000
-        ) {
+        if (size === null) {
             setVariantImageErrors((errors) => ({
                 ...errors,
-                [key]: 'Use an image from 800 × 600 to 6000 × 6000 pixels.',
+                [key]: 'Choose a valid image file.',
             }));
 
             return;
@@ -569,6 +551,18 @@ export function SellerProductForm({
 
             return nextErrors;
         });
+
+        if (hasFourByThreeRatio(size)) {
+            updateVariant(index, {
+                image: file,
+                image_crop: centeredFourByThreeCrop(size),
+                image_size: size,
+                remove_image: false,
+            });
+
+            return;
+        }
+
         setCropTarget({
             kind: 'variant',
             index,
@@ -593,28 +587,18 @@ export function SellerProductForm({
         const prepared = (
             await Promise.all(
                 incoming.map(async (file) => {
-                    if (
-                        !['image/jpeg', 'image/png', 'image/webp'].includes(
-                            file.type,
-                        ) ||
-                        file.size > 5 * 1024 * 1024
-                    ) {
-                        return null;
-                    }
-
                     const size = await readImageSize(file).catch(() => null);
 
-                    if (
-                        size === null ||
-                        size.width < 800 ||
-                        size.height < 600 ||
-                        size.width > 6000 ||
-                        size.height > 6000
-                    ) {
+                    if (size === null) {
                         return null;
                     }
 
-                    return { file, size, crop: centeredFourByThreeCrop(size) };
+                    return {
+                        file,
+                        size,
+                        crop: centeredFourByThreeCrop(size),
+                        requiresCrop: !hasFourByThreeRatio(size),
+                    };
                 }),
             )
         ).filter((image) => image !== null);
@@ -632,19 +616,25 @@ export function SellerProductForm({
             ...prepared.map(({ size }) => size),
         ]);
         const firstNewIndex = form.data.images.length;
-        const newIndexes = prepared.map(
-            (_, preparedIndex) => firstNewIndex + preparedIndex,
+        const cropIndexes = prepared.flatMap(
+            ({ requiresCrop }, preparedIndex) =>
+                requiresCrop ? [firstNewIndex + preparedIndex] : [],
         );
-        setPendingProductCropIndexes(newIndexes);
+        setPendingProductCropIndexes(cropIndexes);
 
-        if (newIndexes.length > 0) {
-            openProductCrop(newIndexes[0], true, prepared[0].crop);
+        if (cropIndexes.length > 0) {
+            const firstCropIndex = cropIndexes[0];
+            openProductCrop(
+                firstCropIndex,
+                true,
+                prepared[firstCropIndex - firstNewIndex].crop,
+            );
         }
 
         setImageError(
             prepared.length === incoming.length
                 ? null
-                : 'Some images were skipped. Use JPG, PNG, or WebP files from 800 × 600 to 6000 × 6000 pixels and no larger than 5 MB.',
+                : 'Some files were skipped. Choose valid image files.',
         );
     }
 
@@ -713,27 +703,6 @@ export function SellerProductForm({
 
     function applyCrop(): void {
         if (cropTarget === null || draftCrop === null) {
-            return;
-        }
-
-        if (draftCrop.width < 800 || draftCrop.height < 600) {
-            const message =
-                'Keep at least 800 × 600 source pixels inside the crop.';
-            setCropError(message);
-
-            if (cropTarget.kind === 'product') {
-                setImageError(message);
-            } else {
-                const key = combinationKey(
-                    form.data.variants[cropTarget.index]?.selections ?? [],
-                    form.data.variant_options,
-                );
-                setVariantImageErrors((errors) => ({
-                    ...errors,
-                    [key]: message,
-                }));
-            }
-
             return;
         }
 
@@ -1669,7 +1638,7 @@ export function SellerProductForm({
                             <input
                                 type="file"
                                 multiple
-                                accept="image/jpeg,image/png,image/webp"
+                                accept="image/*"
                                 className="sr-only"
                                 onChange={(event) => {
                                     void addImages(event.target.files);
@@ -1689,8 +1658,9 @@ export function SellerProductForm({
                                 Choose Files
                             </span>
                             <span className="mt-4 text-xs leading-5 text-slate-500">
-                                800×600 minimum, JPG/PNG/WebP
-                                <br />5 MB per image · maximum 5
+                                Any image format and dimensions
+                                <br />
+                                Maximum 5 images
                             </span>
                         </label>
 
@@ -2139,7 +2109,7 @@ function VariantImageInput({
             >
                 <input
                     type="file"
-                    accept="image/jpeg,image/png,image/webp"
+                    accept="image/*"
                     aria-label={`Upload image for ${combination}`}
                     className="sr-only"
                     onChange={(event) => {
@@ -2420,6 +2390,10 @@ function centeredFourByThreeCrop(size: ListingImageSize): ListingImageCrop {
         width: size.width,
         height,
     };
+}
+
+function hasFourByThreeRatio(size: ListingImageSize): boolean {
+    return Math.abs(size.width * 3 - size.height * 4) <= 4;
 }
 
 function normalizeCrop(crop: Area): ListingImageCrop {

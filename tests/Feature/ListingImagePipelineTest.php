@@ -74,34 +74,27 @@ test('new listing photos are synchronously cropped to a canonical webp image', f
         ->and($sourceSize['mime'])->toBe('image/webp');
 });
 
-test('listing photos accept the reduced eight hundred by six hundred minimum', function () {
+test('listing photos accept any image format and source dimensions', function () {
     Storage::fake('public');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
 
     $this->actingAs($seller->user)
         ->post(route('seller.listings.store'), validListingImagePayload($category, [
-            'images' => [UploadedFile::fake()->image('minimum.jpg', 800, 600)],
-            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 800, 'height' => 600]],
+            'images' => [UploadedFile::fake()->image('small.gif', 40, 30)],
+            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 40, 'height' => 30]],
         ]))
         ->assertRedirect(route('seller.listings.index', absolute: false))
         ->assertSessionHasNoErrors();
 
-    expect(Listing::query()->sole()->media()->sole()->crop_width)->toBe(800)
-        ->and(Listing::query()->sole()->media()->sole()->crop_height)->toBe(600);
+    expect(Listing::query()->sole()->media()->sole()->crop_width)->toBe(40)
+        ->and(Listing::query()->sole()->media()->sole()->crop_height)->toBe(30);
 });
 
-test('listing image validation rejects invalid dimensions and crop bounds', function () {
+test('listing image validation rejects crop bounds outside the uploaded image', function () {
     Storage::fake('public');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
-
-    $this->actingAs($seller->user)
-        ->post(route('seller.listings.store'), validListingImagePayload($category, [
-            'images' => [UploadedFile::fake()->image('small.jpg', 799, 599)],
-            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 800, 'height' => 600]],
-        ]))
-        ->assertSessionHasErrors('images.0');
 
     $this->actingAs($seller->user)
         ->post(route('seller.listings.store'), validListingImagePayload($category, [
