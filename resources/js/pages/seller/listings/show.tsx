@@ -34,6 +34,8 @@ type VariantOption = {
 type ListingVariant = {
     id: number;
     sku: string | null;
+    gtin: string | null;
+    mpn: string | null;
     selling_price: string | null;
     market_price: string | null;
     stock_quantity: number;
@@ -55,6 +57,8 @@ type Listing = {
     moderation_reason: string | null;
     sku: string | null;
     barcode: string | null;
+    gtin: string | null;
+    mpn: string | null;
     model: string | null;
     short_description: string | null;
     description: string | null;
@@ -369,6 +373,18 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
                                     label="Barcode"
                                     value={listing.barcode ?? 'Not set'}
                                 />
+                                {listing.product_type === 'simple' && (
+                                    <>
+                                        <DetailRow
+                                            label="GTIN"
+                                            value={listing.gtin ?? 'Not set'}
+                                        />
+                                        <DetailRow
+                                            label="MPN"
+                                            value={listing.mpn ?? 'Not set'}
+                                        />
+                                    </>
+                                )}
                                 <DetailRow
                                     label="Model"
                                     value={listing.model ?? 'Not set'}
@@ -460,6 +476,12 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
                                                     SKU
                                                 </th>
                                                 <th className="px-4 py-3">
+                                                    GTIN
+                                                </th>
+                                                <th className="px-4 py-3">
+                                                    MPN
+                                                </th>
+                                                <th className="px-4 py-3">
                                                     Price
                                                 </th>
                                                 <th className="px-4 py-3">
@@ -484,6 +506,12 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         {variant.sku ?? '—'}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {variant.gtin ?? '—'}
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        {variant.mpn ?? '—'}
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         {formatPrice(

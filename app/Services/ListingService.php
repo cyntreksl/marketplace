@@ -219,6 +219,8 @@ class ListingService
             'brand_name' => $attributes['brand_name'] ?? null,
             'sku' => $attributes['sku'] ?? null,
             'barcode' => $attributes['barcode'] ?? null,
+            'gtin' => $isVariantProduct ? null : ($attributes['gtin'] ?? null),
+            'mpn' => $isVariantProduct ? null : ($attributes['mpn'] ?? null),
             'model' => $attributes['model'] ?? null,
             'title' => $title,
             'slug' => $listing?->title === $title ? $listing?->slug : $this->uniqueSlug($title, $listing?->id),

@@ -1,5 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { StorefrontLayout } from '@/components/storefront-layout';
+import { show as brandShow } from '@/routes/brands';
 import type { StorefrontCategory } from '@/types';
 
 type Brand = {
@@ -27,7 +28,7 @@ export default function Brands({
                     {brands.map((brand) => (
                         <Link
                             key={brand.id}
-                            href={`/listings?brand=${encodeURIComponent(brand.slug)}`}
+                            href={brandShow(brand.slug)}
                             className="flex min-h-32 flex-col items-center justify-center rounded-xl border p-5 text-center hover:border-orange-200 hover:shadow"
                         >
                             <>

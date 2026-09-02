@@ -12,6 +12,8 @@ import { ListingCard } from '@/components/listing-card';
 import { StorefrontCategoryArtwork } from '@/components/storefront-category-artwork';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import type { StorefrontCategory } from '@/components/storefront-layout';
+import { show as brandShow } from '@/routes/brands';
+import { show as categoryShow } from '@/routes/categories';
 import {
     index as listingsIndex,
     recent as recentListings,
@@ -341,9 +343,7 @@ export default function StorefrontHome({
                     {popularCategories.slice(0, 8).map((category) => (
                         <Link
                             key={category.id}
-                            href={listingsIndex({
-                                query: { category: category.slug },
-                            })}
+                            href={categoryShow(category.slug)}
                             className="group flex h-30 w-28 shrink-0 snap-start flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF6D00]/40 hover:shadow-md motion-reduce:transform-none sm:h-32 sm:w-[8.6rem]"
                         >
                             <StorefrontCategoryArtwork
@@ -386,9 +386,7 @@ export default function StorefrontHome({
                             {topBrands.map((brand) => (
                                 <Link
                                     key={brand.id}
-                                    href={listingsIndex({
-                                        query: { brand: brand.slug },
-                                    })}
+                                    href={brandShow(brand.slug)}
                                     className="flex h-14 min-w-36 items-center justify-center rounded-lg border px-5 hover:border-orange-200"
                                 >
                                     {brand.logoUrl ? (

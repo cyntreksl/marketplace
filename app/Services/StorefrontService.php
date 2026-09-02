@@ -139,14 +139,72 @@ class StorefrontService
         ];
     }
 
+    /** @param array<string, mixed> $filters
+     * @return array<string, mixed>
+     */
+    public function categoryData(string $slug, array $filters): array
+    {
+        $category = $this->catalog->activeCategoryBySlug($slug);
+        $data = $this->browseData([...$filters, 'category' => $slug]);
+        $page = max(1, (int) request()->query('page', 1));
+        $hasFilters = collect(request()->query())->except('page')->filter(fn (mixed $value): bool => filled($value))->isNotEmpty();
+        $canonical = route('categories.show', $slug).(! $hasFilters && $page > 1 ? '?page='.$page : '');
+        $seo = $this->seo->catalogPayload(
+            title: $category->name.' in Sri Lanka - '.config('app.name'),
+            description: 'Shop '.$category->name.' from trusted Sri Lankan sellers on '.config('app.name').'.',
+            canonical: $canonical,
+            breadcrumbs: [
+                ['name' => 'Home', 'url' => route('home')],
+                ['name' => $category->name, 'url' => route('categories.show', $slug)],
+            ],
+            indexable: ! $hasFilters,
+        );
+
+        return [...$data, 'seo' => $seo, 'head' => $this->seo->tags($seo)];
+    }
+
+    /** @param array<string, mixed> $filters
+     * @return array<string, mixed>
+     */
+    public function brandData(string $slug, array $filters): array
+    {
+        $brand = $this->catalog->activeBrandBySlug($slug);
+        $data = $this->browseData([...$filters, 'brand' => $slug]);
+        $page = max(1, (int) request()->query('page', 1));
+        $hasFilters = collect(request()->query())->except('page')->filter(fn (mixed $value): bool => filled($value))->isNotEmpty();
+        $canonical = route('brands.show', $slug).(! $hasFilters && $page > 1 ? '?page='.$page : '');
+        $seo = $this->seo->catalogPayload(
+            title: $brand->name.' Products in Sri Lanka - '.config('app.name'),
+            description: 'Shop '.$brand->name.' products from trusted Sri Lankan sellers on '.config('app.name').'.',
+            canonical: $canonical,
+            breadcrumbs: [
+                ['name' => 'Home', 'url' => route('home')],
+                ['name' => 'Brands', 'url' => route('brands.index')],
+                ['name' => $brand->name, 'url' => route('brands.show', $slug)],
+            ],
+            indexable: ! $hasFilters,
+        );
+
+        return [...$data, 'seo' => $seo, 'head' => $this->seo->tags($seo)];
+    }
+
     /** @return array<string, mixed> */
-    public function listingDetailsData(string $slug, ?User $viewer = null): array
+    public function listingDetailsData(string $slug, ?User $viewer = null, ?int $requestedVariantId = null): array
     {
         $listing = $this->listings->findPublicBySlug($slug);
+        $categoryTrail = $listing->category === null
+            ? []
+            : $this->catalog->activeCategoryTrailBySlug($listing->category->slug);
+        $seo = $this->seo->listingPayload($listing, $categoryTrail);
+        $selectedVariantId = $listing->variants
+            ->where('is_active', true)
+            ->firstWhere('id', $requestedVariantId)?->id;
 
         return [
-            'head' => $this->seo->listing($listing),
+            'head' => $this->seo->tags($seo),
+            'seo' => $seo,
             'listing' => $this->listingData($listing, detailed: true),
+            'selectedVariantId' => $selectedVariantId,
             'reviews' => $this->reviews->forListing((int) $listing->id, 20)->map(fn ($review): array => [
                 'id' => $review->id,
                 'rating' => $review->rating,
@@ -155,9 +213,7 @@ class StorefrontService
                 'createdAt' => $review->created_at->toDateString(),
             ])->values(),
             'categories' => $this->storefrontCategories(),
-            'categoryTrail' => $listing->category === null
-                ? []
-                : $this->catalog->activeCategoryTrailBySlug($listing->category->slug),
+            'categoryTrail' => $categoryTrail,
             'questions' => $this->questions->answeredFor($listing)->map(fn ($question): array => $this->questionData($question))->values(),
             'pendingQuestions' => $this->questions->pendingForViewer($listing, $viewer)->map(fn ($question): array => $this->questionData($question))->values(),
             'isWishlisted' => $viewer === null ? false : $this->watchlists->contains($viewer, $listing),
@@ -237,6 +293,8 @@ class StorefrontService
             'metaTitle' => $detailed ? $listing->meta_title : null,
             'metaDescription' => $detailed ? $listing->meta_description : null,
             'model' => $detailed ? $listing->model : null,
+            'gtin' => $detailed ? $listing->gtin : null,
+            'mpn' => $detailed ? $listing->mpn : null,
             'condition' => $listing->condition,
             'listingType' => $listing->listing_type,
             'price' => $listing->price,
@@ -286,6 +344,8 @@ class StorefrontService
                 ? $activeVariants->map(fn ($variant): array => [
                     'id' => $variant->id,
                     'sku' => $variant->sku,
+                    'gtin' => $variant->gtin,
+                    'mpn' => $variant->mpn,
                     'sellingPrice' => $variant->selling_price,
                     'marketPrice' => $variant->market_price,
                     'selectionKey' => $variant->combination_key,

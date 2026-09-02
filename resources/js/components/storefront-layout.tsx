@@ -1,4 +1,4 @@
-import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { Form, Link, usePage } from '@inertiajs/react';
 import {
     ChevronDown,
     CircleHelp,
@@ -40,8 +40,6 @@ function CountBadge({ count }: { count: number }) {
 
 export function StorefrontLayout({
     children,
-    title,
-    description,
     categories = [],
 }: {
     children: React.ReactNode;
@@ -79,11 +77,6 @@ export function StorefrontLayout({
 
     return (
         <div className="min-h-screen bg-white text-slate-950">
-            <Head title={title}>
-                {description && (
-                    <meta name="description" content={description} />
-                )}
-            </Head>
             <header className="relative z-40 border-b border-slate-100 bg-white">
                 <div className="bg-[#FF6D00] text-white">
                     <div className="mx-auto flex min-h-10 max-w-[82rem] items-center justify-between gap-4 px-4 text-[11px] sm:px-6">

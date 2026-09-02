@@ -29,6 +29,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FocusEvent, KeyboardEvent } from 'react';
+import { show as categoryShow } from '@/routes/categories';
 import { index as listingsIndex } from '@/routes/listings';
 import type { StorefrontCategory } from '@/types';
 
@@ -58,7 +59,7 @@ const categoryIcons: Record<string, LucideIcon> = {
 };
 
 function categoryHref(slug: string) {
-    return listingsIndex({ query: { category: slug } });
+    return categoryShow(slug);
 }
 
 export function categoryContainsSlug(

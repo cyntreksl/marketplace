@@ -5,6 +5,7 @@ namespace App\Http\Requests\Concerns;
 use App\Models\Category;
 use App\Models\Listing;
 use App\Models\ListingVariant;
+use App\Rules\ValidGtin;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -36,8 +37,10 @@ trait ValidatesProductData
                 ->whereNull('deleted_at'))],
             'brand_id' => ['nullable', 'integer', 'exists:brands,id', 'prohibits:brand_name'],
             'brand_name' => ['nullable', 'string', 'max:160', 'prohibits:brand_id'],
-            'sku' => [$requiredForPublishing, 'nullable', 'string', 'max:100', $uniqueSku],
+            'sku' => [$requiredForPublishing, 'nullable', 'string', 'max:100', 'regex:/\A[\x21-\x7E]+\z/', $uniqueSku],
             'barcode' => ['nullable', 'string', 'max:100', $uniqueBarcode],
+            'gtin' => [Rule::excludeIf($this->input('product_type') === 'variant'), 'nullable', new ValidGtin],
+            'mpn' => [Rule::excludeIf($this->input('product_type') === 'variant'), 'nullable', 'string', 'max:100'],
             'model' => ['nullable', 'string', 'max:160'],
             'title' => [$requiredForPublishing, 'nullable', 'string', 'max:160'],
             'short_description' => ['nullable', 'string', 'max:160'],
@@ -64,7 +67,9 @@ trait ValidatesProductData
             'variant_options.*.values.*' => ['nullable', 'string', 'max:100'],
             'variants' => ['nullable', 'array', 'max:100'],
             'variants.*.selections' => ['required', 'array', 'max:3'],
-            'variants.*.sku' => ['nullable', 'string', 'max:100'],
+            'variants.*.sku' => ['nullable', 'string', 'max:100', 'regex:/\A[\x21-\x7E]+\z/'],
+            'variants.*.gtin' => [Rule::excludeIf($this->input('product_type') !== 'variant'), 'nullable', new ValidGtin],
+            'variants.*.mpn' => [Rule::excludeIf($this->input('product_type') !== 'variant'), 'nullable', 'string', 'max:100'],
             'variants.*.selling_price' => ['nullable', 'decimal:0,2', 'min:1'],
             'variants.*.market_price' => ['nullable', 'decimal:0,2', 'min:1'],
             'variants.*.stock_quantity' => ['nullable', 'integer', 'min:0', 'max:100000'],
@@ -100,6 +105,9 @@ trait ValidatesProductData
                 }
 
                 $variant['is_active'] = filter_var($variant['is_active'] ?? true, FILTER_VALIDATE_BOOL);
+                $variant['sku'] = $this->normalizedVariantValue($variant['sku'] ?? null);
+                $variant['gtin'] = $this->trimmedVariantValue($variant['gtin'] ?? null);
+                $variant['mpn'] = $this->normalizedVariantValue($variant['mpn'] ?? null);
 
                 if (! is_array($variant['image_crop'] ?? null)) {
                     return $variant;
@@ -128,6 +136,8 @@ trait ValidatesProductData
             'brand_name' => $this->squishedOrNull('brand_name'),
             'sku' => $this->squishedOrNull('sku'),
             'barcode' => $this->squishedOrNull('barcode'),
+            'gtin' => $this->trimmedOrNull('gtin'),
+            'mpn' => $this->squishedOrNull('mpn'),
             'model' => $this->squishedOrNull('model'),
             'short_description' => $this->squishedOrNull('short_description'),
             'specifications_text' => $this->trimmedOrNull('specifications_text'),
@@ -313,6 +323,11 @@ trait ValidatesProductData
             $validator->errors()->add('variants', 'Variant SKUs must be different from the base product SKU.');
         }
 
+        $variantGtins = $submittedVariants->pluck('gtin')->filter();
+        if ($variantGtins->duplicates()->isNotEmpty()) {
+            $validator->errors()->add('variants', 'Variant GTINs must be unique within a product.');
+        }
+
         if ($this->boolean('submit_for_review')) {
             if ($options->isEmpty() || $options->contains(fn (array $option): bool => $option['values']->isEmpty())) {
                 $validator->errors()->add('variant_options', 'Variant products need at least one complete option group.');
@@ -390,6 +405,16 @@ trait ValidatesProductData
     {
         $value = $this->input($key);
 
+        return is_string($value) && filled($value) ? trim($value) : null;
+    }
+
+    private function normalizedVariantValue(mixed $value): ?string
+    {
+        return is_string($value) && filled($value) ? Str::squish($value) : null;
+    }
+
+    private function trimmedVariantValue(mixed $value): ?string
+    {
         return is_string($value) && filled($value) ? trim($value) : null;
     }
 }

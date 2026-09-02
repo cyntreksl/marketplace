@@ -6,6 +6,7 @@ use App\Contracts\Repositories\CatalogRepository;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\GoogleProductTaxonomyNode;
+use App\Models\Listing;
 use App\Models\MarketplaceSetting;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -370,6 +371,34 @@ class EloquentCatalogRepository implements CatalogRepository
 
                 return $brand;
             });
+    }
+
+    public function activeCategoryBySlug(string $slug): Category
+    {
+        return Category::query()->storefrontAvailable()->where('slug', $slug)->firstOrFail();
+    }
+
+    public function activeBrandBySlug(string $slug): Brand
+    {
+        return Brand::query()->where('slug', $slug)->firstOrFail();
+    }
+
+    public function sitemapCategories(): Collection
+    {
+        return Category::query()
+            ->select(['id', 'slug', 'updated_at'])
+            ->storefrontAvailable()
+            ->orderBy('id')
+            ->get();
+    }
+
+    public function sitemapBrands(): Collection
+    {
+        return Brand::query()
+            ->select(['id', 'slug', 'updated_at'])
+            ->whereIn('id', Listing::query()->select('brand_id')->directlyVisible())
+            ->orderBy('id')
+            ->get();
     }
 
     public function topBrands(int $limit = 8): Collection

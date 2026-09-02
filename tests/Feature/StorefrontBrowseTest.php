@@ -15,7 +15,7 @@ test('category pages receive their full ancestry and active immediate children',
     Category::factory()->create(['parent_id' => $activeChild->id, 'name' => 'Rain Coats', 'slug' => 'fashion-clothing-outerwear-coats-rain']);
     Category::factory()->create(['parent_id' => $current->id, 'name' => 'Inactive Jackets', 'slug' => 'inactive-jackets', 'is_active' => false]);
 
-    $this->get(route('listings.index', ['category' => $current->slug]))
+    $this->get(route('categories.show', $current->slug))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('storefront/listings/index')
@@ -93,7 +93,7 @@ test('storefront browsing filters and sorts by the displayed effective price', f
     expect($ascendingIds)->toBe([$saleListing->id, $auctionListing->id, $regularListing->id])
         ->and($descendingIds)->toBe([$regularListing->id, $auctionListing->id, $saleListing->id]);
 
-    $brandIds = collect($this->get(route('listings.index', ['brand' => 'alpha']))->inertiaProps('listings.data'))->pluck('id')->all();
+    $brandIds = collect($this->get(route('brands.show', 'alpha'))->inertiaProps('listings.data'))->pluck('id')->all();
     $locationIds = collect($this->get(route('listings.index', [
         'location' => 'Colombo',
         'condition' => 'new',

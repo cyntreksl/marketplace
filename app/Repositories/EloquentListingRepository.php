@@ -50,7 +50,7 @@ class EloquentListingRepository implements ListingRepository
 
     public function findPublicBySlug(string $slug): Listing
     {
-        return $this->publicQuery()
+        return $this->directPublicQuery()
             ->with([
                 'sellerProfile.user:id,name',
                 'auction.bids.buyer:id,name',
@@ -60,6 +60,21 @@ class EloquentListingRepository implements ListingRepository
             ])
             ->where('slug', $slug)
             ->firstOrFail();
+    }
+
+    public function sitemapProductCount(): int
+    {
+        return Listing::query()->directlyVisible()->count();
+    }
+
+    public function sitemapProducts(int $page, int $perPage): Collection
+    {
+        return Listing::query()
+            ->select(['id', 'slug', 'updated_at'])
+            ->directlyVisible()
+            ->orderBy('id')
+            ->forPage($page, $perPage)
+            ->get();
     }
 
     public function homepageBestOffers(int $limit = 8): Collection
@@ -266,13 +281,30 @@ class EloquentListingRepository implements ListingRepository
             ->publiclyVisible()
             ->withAvg('reviews as rating_average', 'rating')
             ->withCount('reviews')
-            ->with([
-                'brand:id,name,slug',
-                'category:id,name,slug,return_window_days,cod_enabled',
-                'media:id,listing_id,disk,path,type,sort_order,variant_version,variants,processing_status',
-                'sellerProfile:id,store_name,slug',
-                'auction:id,listing_id,status,current_price,ends_at',
-            ]);
+            ->with($this->publicRelations());
+    }
+
+    /** @return Builder<Listing> */
+    private function directPublicQuery(): Builder
+    {
+        return Listing::query()
+            ->select('listings.*')
+            ->directlyVisible()
+            ->withAvg('reviews as rating_average', 'rating')
+            ->withCount('reviews')
+            ->with($this->publicRelations());
+    }
+
+    /** @return array<int, string> */
+    private function publicRelations(): array
+    {
+        return [
+            'brand:id,name,slug',
+            'category:id,name,slug,google_product_category_id,return_window_days,cod_enabled',
+            'media:id,listing_id,disk,path,type,sort_order,variant_version,variants,processing_status',
+            'sellerProfile:id,store_name,slug',
+            'auction:id,listing_id,status,current_price,ends_at',
+        ];
     }
 
     /** @param Builder<Listing> $query */

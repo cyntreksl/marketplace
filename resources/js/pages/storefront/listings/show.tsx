@@ -34,7 +34,10 @@ import {
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { useProductComparison } from '@/hooks/use-product-comparison';
 import { home, login } from '@/routes';
+import { show as brandShow } from '@/routes/brands';
+import { show as categoryShow } from '@/routes/categories';
 import { index as listingsIndex } from '@/routes/listings';
+import { show as listingShow } from '@/routes/listings';
 import type {
     StorefrontCategory,
     StorefrontCategoryNode,
@@ -58,28 +61,47 @@ function formatPrice(value: string | null): string {
     return `Rs. ${Number(value ?? 0).toLocaleString('en-LK')}`;
 }
 
-function Gallery({ listing }: { listing: StorefrontListing }) {
+function Gallery({
+    listing,
+    featuredImageUrl,
+}: {
+    listing: StorefrontListing;
+    featuredImageUrl?: string;
+}) {
     const [index, setIndex] = useState(0);
     const [fullscreen, setFullscreen] = useState(false);
-    const selected = listing.media[index];
+    const media = featuredImageUrl
+        ? [
+              {
+                  path: `variant-${featuredImageUrl}`,
+                  type: 'image',
+                  url: featuredImageUrl,
+                  thumbnailUrl: featuredImageUrl,
+                  cardUrl: featuredImageUrl,
+                  card2xUrl: featuredImageUrl,
+              },
+              ...listing.media.filter(
+                  (item) => item.cardUrl !== featuredImageUrl,
+              ),
+          ]
+        : listing.media;
+    const selected = media[index];
     const move = (direction: number) =>
-        setIndex(
-            (index + direction + listing.media.length) % listing.media.length,
-        );
+        setIndex((index + direction + media.length) % media.length);
 
     return (
         <div className="grid gap-3 sm:grid-cols-[4.5rem_1fr]">
             <div className="order-2 flex gap-2 overflow-x-auto sm:order-1 sm:flex-col">
-                {listing.media.slice(0, 5).map((media, mediaIndex) => (
+                {media.slice(0, 5).map((mediaItem, mediaIndex) => (
                     <button
-                        key={media.path}
+                        key={mediaItem.path}
                         onClick={() => setIndex(mediaIndex)}
                         aria-label={`View image ${mediaIndex + 1}`}
                         aria-pressed={index === mediaIndex}
                         className={`size-16 shrink-0 overflow-hidden rounded-lg border bg-white p-1 ${index === mediaIndex ? 'border-[#ff5a00] ring-1 ring-orange-200' : 'border-slate-200'}`}
                     >
                         <img
-                            src={media.thumbnailUrl}
+                            src={mediaItem.thumbnailUrl}
                             alt=""
                             className="size-full object-contain"
                         />
@@ -128,7 +150,7 @@ function Gallery({ listing }: { listing: StorefrontListing }) {
                     >
                         <X className="size-5" />
                     </button>
-                    {listing.media.length > 1 && (
+                    {media.length > 1 && (
                         <>
                             <button
                                 onClick={() => move(-1)}
@@ -201,6 +223,7 @@ export default function ListingShow({
     activeCampaign,
     categoryPolicies,
     relatedListings,
+    selectedVariantId,
 }: {
     listing: StorefrontListing;
     categories: StorefrontCategory[];
@@ -212,11 +235,17 @@ export default function ListingShow({
     activeCampaign: Campaign | null;
     categoryPolicies: Policies;
     relatedListings: StorefrontListing[];
+    selectedVariantId: number | null;
 }) {
     const { auth } = usePage().props;
     const comparison = useProductComparison();
     const [quantity, setQuantity] = useState(1);
-    const [selections, setSelections] = useState<Record<string, string>>({});
+    const initialVariant = listing.variants.find(
+        (variant) => variant.id === selectedVariantId,
+    );
+    const [selections, setSelections] = useState<Record<string, string>>(
+        initialVariant?.selections ?? {},
+    );
     const [activeTab, setActiveTab] = useState('overview');
     const selectedVariant = useMemo(
         () =>
@@ -244,8 +273,22 @@ export default function ListingShow({
               )
             : null;
     const canPurchase =
-        listing.productType === 'simple' ||
-        Boolean(selectedVariant && selectedVariant.stockQuantity >= quantity);
+        listing.productType === 'simple'
+            ? listing.stockStatus !== 'out_of_stock' &&
+              (listing.stockStatus === 'backorder' ||
+                  listing.stockQuantity >= quantity)
+            : Boolean(
+                  selectedVariant && selectedVariant.stockQuantity >= quantity,
+              );
+
+    useEffect(() => {
+        const url = listingShow.url(listing.slug, {
+            query: selectedVariant
+                ? { variant: selectedVariant.id }
+                : undefined,
+        });
+        window.history.replaceState(window.history.state, '', url);
+    }, [listing.slug, selectedVariant]);
 
     useEffect(() => {
         try {
@@ -328,11 +371,7 @@ export default function ListingShow({
                     {categoryTrail.map((item) => (
                         <span key={item.id}>
                             ›{' '}
-                            <Link
-                                href={listingsIndex({
-                                    query: { category: item.slug },
-                                })}
-                            >
+                            <Link href={categoryShow(item.slug)}>
                                 {item.name}
                             </Link>
                         </span>
@@ -341,13 +380,15 @@ export default function ListingShow({
                 </nav>
 
                 <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.75fr)_18rem]">
-                    <Gallery listing={listing} />
+                    <Gallery
+                        key={selectedVariant?.image?.cardUrl ?? 'base-gallery'}
+                        listing={listing}
+                        featuredImageUrl={selectedVariant?.image?.cardUrl}
+                    />
                     <section>
                         {listing.brand && (
                             <Link
-                                href={listingsIndex({
-                                    query: { brand: listing.brand.slug },
-                                })}
+                                href={brandShow(listing.brand.slug)}
                                 className="text-xs font-black tracking-wider text-blue-700 uppercase"
                             >
                                 {listing.brand.name}

@@ -23,6 +23,7 @@ import {
     SheetTrigger,
 } from '@/components/ui/sheet';
 import { home } from '@/routes';
+import { show as categoryShow } from '@/routes/categories';
 import { index as listingsIndex } from '@/routes/listings';
 import type {
     StorefrontBrand,
@@ -85,9 +86,7 @@ function breadcrumbItems(
             href:
                 index === trail.length - 1
                     ? undefined
-                    : listingsIndex.url({
-                          query: { category: category.slug },
-                      }),
+                    : categoryShow.url(category.slug),
         })),
     ];
 }

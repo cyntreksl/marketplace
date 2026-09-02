@@ -140,4 +140,14 @@ interface CatalogRepository
 
     /** @return array<int, array{id: int, name: string, slug: string, image_url: string|null}> */
     public function activeCategoryTrailBySlug(string $slug): array;
+
+    public function activeCategoryBySlug(string $slug): Category;
+
+    public function activeBrandBySlug(string $slug): Brand;
+
+    /** @return Collection<int, Category> */
+    public function sitemapCategories(): Collection;
+
+    /** @return Collection<int, Brand> */
+    public function sitemapBrands(): Collection;
 }

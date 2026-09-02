@@ -39,9 +39,12 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $seo = $this->seo->defaultPayload($request);
+
         return [
             ...parent::share($request),
-            'head' => $this->seo->default($request),
+            'head' => $this->seo->tags($seo),
+            'seo' => $seo,
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user(),

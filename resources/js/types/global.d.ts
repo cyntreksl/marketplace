@@ -1,3 +1,4 @@
+import type { SeoPayload } from '@/components/seo-head';
 import type { Auth } from '@/types/auth';
 import type { MarketplaceDetails } from '@/types/marketplace';
 
@@ -15,6 +16,7 @@ declare module '@inertiajs/core' {
             auth: Auth;
             commerce: { cart_quantity: number; wishlist_count: number };
             marketplace: MarketplaceDetails;
+            seo: SeoPayload;
             sidebarOpen: boolean;
             [key: string]: unknown;
         };

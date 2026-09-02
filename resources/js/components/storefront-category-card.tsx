@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { ArrowUpRight } from 'lucide-react';
 import { StorefrontCategoryArtwork } from '@/components/storefront-category-artwork';
-import { index as listingsIndex } from '@/routes/listings';
+import { show as categoryShow } from '@/routes/categories';
 import type { StorefrontCategoryNode } from '@/types';
 
 export function StorefrontCategoryCard({
@@ -13,7 +13,7 @@ export function StorefrontCategoryCard({
 }) {
     return (
         <Link
-            href={listingsIndex({ query: { category: category.slug } })}
+            href={categoryShow(category.slug)}
             prefetch
             className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm shadow-slate-200/60 transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/10 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none dark:border-slate-800 dark:bg-slate-900 dark:shadow-none dark:focus-visible:ring-offset-slate-950"
         >

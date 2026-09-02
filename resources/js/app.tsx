@@ -1,4 +1,5 @@
 import { createInertiaApp } from '@inertiajs/react';
+import { SeoHead } from '@/components/seo-head';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
@@ -9,7 +10,12 @@ const appName = import.meta.env.VITE_APP_NAME || 'ProDeals.lk';
 
 createInertiaApp({
     serverHead: true,
-    title: (title) => (title ? `${title} - ${appName}` : appName),
+    title: (title) =>
+        title
+            ? title.includes(appName)
+                ? title
+                : `${title} - ${appName}`
+            : appName,
     layout: (name) => {
         switch (true) {
             case name === 'welcome':
@@ -30,6 +36,7 @@ createInertiaApp({
     withApp(app) {
         return (
             <TooltipProvider delayDuration={0}>
+                <SeoHead />
                 {app}
                 <Toaster />
             </TooltipProvider>

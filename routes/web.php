@@ -29,12 +29,19 @@ use App\Http\Controllers\SellerOrderController;
 use App\Http\Controllers\SellerRegistrationController;
 use App\Http\Controllers\SellerReturnRequestController;
 use App\Http\Controllers\SellerWalletController;
+use App\Http\Controllers\SeoDiscoveryController;
 use App\Http\Controllers\SiteManifestController;
 use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\WatchlistController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StorefrontController::class, 'home'])->name('home');
+Route::get('/sitemap.xml', [SeoDiscoveryController::class, 'sitemap'])->name('sitemap.index');
+Route::get('/sitemaps/static.xml', [SeoDiscoveryController::class, 'staticPages'])->name('sitemap.static');
+Route::get('/sitemaps/categories.xml', [SeoDiscoveryController::class, 'categories'])->name('sitemap.categories');
+Route::get('/sitemaps/brands.xml', [SeoDiscoveryController::class, 'brands'])->name('sitemap.brands');
+Route::get('/sitemaps/products-{page}.xml', [SeoDiscoveryController::class, 'products'])->whereNumber('page')->name('sitemap.products');
+Route::get('/robots.txt', [SeoDiscoveryController::class, 'robots'])->name('robots');
 Route::get('/manifest.webmanifest', SiteManifestController::class)->name('site.manifest');
 Route::inertia('/about', 'storefront/content/show', ['document' => 'about'])->name('about');
 Route::inertia('/contact', 'storefront/content/show', ['document' => 'contact'])->name('contact');
@@ -54,6 +61,7 @@ Route::get('/collections/{collection}', [StorefrontController::class, 'collectio
     ->whereIn('collection', ['featured', 'deals', 'best-sellers', 'new-arrivals', 'clearance'])
     ->name('collections.show');
 Route::get('/brands', BrandDirectoryController::class)->name('brands.index');
+Route::get('/brands/{brand}', [StorefrontController::class, 'brand'])->name('brands.show');
 Route::get('/listings/recent', [StorefrontController::class, 'recent'])->name('listings.recent');
 Route::get('/listings/{listing}', [StorefrontController::class, 'show'])->name('listings.show');
 Route::get('/compare', [ComparisonController::class, 'index'])->name('compare.index');
@@ -63,6 +71,7 @@ Route::post('/order-tracking', [OrderTrackingController::class, 'store'])->middl
 Route::get('/categories/search', CategoryLookupController::class)
     ->middleware('throttle:category-lookups')
     ->name('categories.search');
+Route::get('/categories/{category}', [StorefrontController::class, 'category'])->name('categories.show');
 Route::get('/seller/register', [SellerRegistrationController::class, 'create'])->middleware('guest')->name('seller.register');
 
 Route::post('/auctions/{auction}/bids', [AuctionBidController::class, 'store'])

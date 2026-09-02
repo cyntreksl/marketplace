@@ -203,7 +203,7 @@ test('listings require selectable leaves and parent storefront filters include d
         ->post(route('seller.listings.submit'), ['listing_id' => $invalidated->id])
         ->assertSessionHasErrors('category_id');
 
-    $this->get(route('listings.index', ['category' => $parent->slug]))
+    $this->get(route('categories.show', $parent->slug))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->has('listings.data', 1)

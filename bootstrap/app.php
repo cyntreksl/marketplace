@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AddSearchRobotHeaders;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,
+            AddSearchRobotHeaders::class,
             AddLinkHeadersForPreloadedAssets::using(5),
         ]);
     })

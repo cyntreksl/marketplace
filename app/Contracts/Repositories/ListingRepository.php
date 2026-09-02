@@ -20,6 +20,11 @@ interface ListingRepository
 
     public function findPublicBySlug(string $slug): Listing;
 
+    public function sitemapProductCount(): int;
+
+    /** @return Collection<int, Listing> */
+    public function sitemapProducts(int $page, int $perPage): Collection;
+
     /** @return Collection<int, Listing> */
     public function homepageBestOffers(int $limit = 8): Collection;
 

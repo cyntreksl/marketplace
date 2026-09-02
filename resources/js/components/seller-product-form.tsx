@@ -23,6 +23,7 @@ import { CategoryPicker } from '@/components/category-picker';
 import type { CategoryOption } from '@/components/category-picker';
 import {
     RichTextEditor,
+    richTextPlainText,
     sanitizeRichText,
 } from '@/components/rich-text-editor';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -45,6 +46,8 @@ type VariantOption = { name: string; values: string[] };
 type VariantRow = {
     selections: string[];
     sku: string;
+    gtin: string;
+    mpn: string;
     selling_price: string;
     market_price: string;
     stock_quantity: number | '';
@@ -75,6 +78,8 @@ type StoredVariantOption = {
 
 type StoredVariant = {
     sku: string | null;
+    gtin: string | null;
+    mpn: string | null;
     selling_price: string | null;
     market_price: string | null;
     stock_quantity: number;
@@ -94,6 +99,8 @@ export type SellerProductFormListing = {
     title: string | null;
     sku: string | null;
     barcode: string | null;
+    gtin: string | null;
+    mpn: string | null;
     model: string | null;
     category_id: number | null;
     brand_id: number | null;
@@ -129,6 +136,8 @@ type ProductFormData = {
     brand_name: string;
     sku: string;
     barcode: string;
+    gtin: string;
+    mpn: string;
     title: string;
     short_description: string;
     description: string;
@@ -241,6 +250,8 @@ export function SellerProductForm({
                         )
                         .map((value) => value.value),
                     sku: variant.sku ?? '',
+                    gtin: variant.gtin ?? '',
+                    mpn: variant.mpn ?? '',
                     selling_price: variant.selling_price ?? '',
                     market_price: variant.market_price ?? '',
                     stock_quantity: variant.stock_quantity,
@@ -266,6 +277,8 @@ export function SellerProductForm({
         brand_name: listing?.brand_name ?? '',
         sku: listing?.sku ?? '',
         barcode: listing?.barcode ?? '',
+        gtin: listing?.gtin ?? '',
+        mpn: listing?.mpn ?? '',
         model: listing?.model ?? '',
         title: listing?.title ?? '',
         short_description: listing?.short_description ?? '',
@@ -359,6 +372,8 @@ export function SellerProductForm({
                     existing && manuallyEditedSkus.current.has(key)
                         ? existing.sku
                         : suggestedSku(baseSku, selections),
+                gtin: existing?.gtin ?? '',
+                mpn: existing?.mpn ?? '',
                 stock_quantity: existing?.stock_quantity ?? 0,
                 selling_price: existing?.selling_price ?? baseSellingPrice,
                 market_price: existing?.market_price ?? '',
@@ -823,6 +838,8 @@ export function SellerProductForm({
             variants: data.variants.map((variant) => ({
                 selections: variant.selections,
                 sku: variant.sku,
+                gtin: variant.gtin,
+                mpn: variant.mpn,
                 selling_price: variant.selling_price,
                 market_price: variant.market_price,
                 stock_quantity: variant.stock_quantity,
@@ -909,6 +926,10 @@ export function SellerProductForm({
                                     placeholder="Enter barcode (optional)"
                                     error={errorFor('barcode')}
                                 />
+                                <p className="text-xs text-slate-500">
+                                    Keep internal or non-standard codes here;
+                                    they are never treated as a GTIN.
+                                </p>
                             </Field>
                             <Field label="Model" error={errorFor('model')}>
                                 <TextInput
@@ -920,6 +941,38 @@ export function SellerProductForm({
                                     error={errorFor('model')}
                                 />
                             </Field>
+                            {form.data.product_type === 'simple' && (
+                                <>
+                                    <Field
+                                        label="GTIN / UPC / EAN"
+                                        error={errorFor('gtin')}
+                                    >
+                                        <TextInput
+                                            value={form.data.gtin}
+                                            onChange={(value) =>
+                                                setField('gtin', value)
+                                            }
+                                            placeholder="Valid 8, 12, 13, or 14 digit code"
+                                            error={errorFor('gtin')}
+                                        />
+                                        <p className="text-xs text-slate-500">
+                                            Use the genuine UPC, EAN,
+                                            ISBN-style, or GTIN printed by the
+                                            manufacturer.
+                                        </p>
+                                    </Field>
+                                    <Field label="MPN" error={errorFor('mpn')}>
+                                        <TextInput
+                                            value={form.data.mpn}
+                                            onChange={(value) =>
+                                                setField('mpn', value)
+                                            }
+                                            placeholder="Manufacturer part number"
+                                            error={errorFor('mpn')}
+                                        />
+                                    </Field>
+                                </>
+                            )}
                             <Field label="Brand" error={brandError} required>
                                 <div className="relative">
                                     <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
@@ -1407,7 +1460,7 @@ export function SellerProductForm({
 
                                 {form.data.variants.length > 0 && (
                                     <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
-                                        <table className="w-full min-w-[78rem] text-left text-sm">
+                                        <table className="w-full min-w-[100rem] text-left text-sm">
                                             <thead className="bg-slate-50 text-xs tracking-wide text-slate-500 uppercase dark:bg-slate-950">
                                                 <tr>
                                                     <th className="px-4 py-3">
@@ -1421,6 +1474,12 @@ export function SellerProductForm({
                                                     </th>
                                                     <th className="px-4 py-3">
                                                         SKU
+                                                    </th>
+                                                    <th className="w-44 px-4 py-3">
+                                                        GTIN
+                                                    </th>
+                                                    <th className="w-44 px-4 py-3">
+                                                        MPN
                                                     </th>
                                                     <th className="w-40 px-4 py-3">
                                                         Market price
@@ -1552,6 +1611,61 @@ export function SellerProductForm({
                                                                         className={inputClass(
                                                                             errorFor(
                                                                                 `variants.${index}.sku`,
+                                                                            ),
+                                                                            'h-10',
+                                                                        )}
+                                                                    />
+                                                                </td>
+                                                                <td className="px-4 py-3">
+                                                                    <input
+                                                                        aria-label={`${variant.selections.join(' / ')} GTIN`}
+                                                                        value={
+                                                                            variant.gtin
+                                                                        }
+                                                                        placeholder="UPC / EAN / GTIN"
+                                                                        inputMode="numeric"
+                                                                        onChange={(
+                                                                            event,
+                                                                        ) =>
+                                                                            updateVariant(
+                                                                                index,
+                                                                                {
+                                                                                    gtin: event
+                                                                                        .target
+                                                                                        .value,
+                                                                                },
+                                                                            )
+                                                                        }
+                                                                        className={inputClass(
+                                                                            errorFor(
+                                                                                `variants.${index}.gtin`,
+                                                                            ),
+                                                                            'h-10',
+                                                                        )}
+                                                                    />
+                                                                </td>
+                                                                <td className="px-4 py-3">
+                                                                    <input
+                                                                        aria-label={`${variant.selections.join(' / ')} MPN`}
+                                                                        value={
+                                                                            variant.mpn
+                                                                        }
+                                                                        placeholder="Manufacturer part no."
+                                                                        onChange={(
+                                                                            event,
+                                                                        ) =>
+                                                                            updateVariant(
+                                                                                index,
+                                                                                {
+                                                                                    mpn: event
+                                                                                        .target
+                                                                                        .value,
+                                                                                },
+                                                                            )
+                                                                        }
+                                                                        className={inputClass(
+                                                                            errorFor(
+                                                                                `variants.${index}.mpn`,
                                                                             ),
                                                                             'h-10',
                                                                         )}
@@ -1878,6 +1992,34 @@ export function SellerProductForm({
                                     maximum={160}
                                 />
                             </Field>
+                            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-950">
+                                <p className="text-xs font-bold tracking-wide text-slate-500 uppercase">
+                                    Search result preview
+                                </p>
+                                <p className="mt-3 truncate text-sm text-emerald-700">
+                                    prodeals.lk › listings › product
+                                </p>
+                                <p className="mt-1 text-lg font-semibold text-blue-700">
+                                    {form.data.meta_title.trim() ||
+                                        (form.data.title.trim()
+                                            ? `${form.data.title.trim()} - ProDeals.lk`
+                                            : 'Your product title - ProDeals.lk')}
+                                </p>
+                                <p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-600 dark:text-slate-300">
+                                    {form.data.meta_description.trim() ||
+                                        form.data.short_description.trim() ||
+                                        richTextPlainText(
+                                            form.data.description,
+                                        ) ||
+                                        'Add a clear product description for shoppers.'}
+                                </p>
+                                <p className="mt-3 text-xs text-slate-500">
+                                    These optional fields can improve how the
+                                    page appears in search. They do not
+                                    guarantee rankings or the exact snippet
+                                    Google shows.
+                                </p>
+                            </div>
                         </div>
                     </FormCard>
                 </aside>

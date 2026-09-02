@@ -295,9 +295,7 @@ test('inactive category listings disappear from every public storefront entry po
     expect(collect($browse->inertiaProps('listings.data'))->pluck('id'))->not->toContain($listing->id)
         ->and($browse->inertiaProps('categories'))->toBeEmpty();
 
-    $this->get(route('listings.index', ['category' => $root->slug]))
-        ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('categoryContext', null)->where('listings.total', 0));
+    $this->get(route('categories.show', $root->slug))->assertNotFound();
     $this->get(route('listings.show', $listing->slug))->assertNotFound();
     $this->getJson(route('listings.recent', ['ids' => [$listing->id]]))->assertJsonCount(0, 'listings');
 
@@ -337,7 +335,7 @@ test('storefront category payloads expose optional artwork on home and category 
     $home = $this->get(route('home'))->assertOk();
     expect($home->inertiaProps('popularCategories.0.image_url'))->toBe(Storage::disk('public')->url($root->image_path));
 
-    $browse = $this->get(route('listings.index', ['category' => $root->slug]))->assertOk();
+    $browse = $this->get(route('categories.show', $root->slug))->assertOk();
     expect($browse->inertiaProps('categoryContext.current.image_url'))->toBe(Storage::disk('public')->url($root->image_path))
         ->and($browse->inertiaProps('categoryContext.children.0.id'))->toBe($child->id)
         ->and($browse->inertiaProps('categoryContext.children.0.image_url'))->toBe(Storage::disk('public')->url($child->image_path));

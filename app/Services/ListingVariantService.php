@@ -49,6 +49,8 @@ class ListingVariantService
                 'sku' => filled($submitted['sku'] ?? null)
                     ? Str::squish((string) $submitted['sku'])
                     : $this->suggestedSku((string) ($attributes['sku'] ?? ''), $selections),
+                'gtin' => filled($submitted['gtin'] ?? null) ? trim((string) $submitted['gtin']) : null,
+                'mpn' => filled($submitted['mpn'] ?? null) ? Str::squish((string) $submitted['mpn']) : null,
                 'selling_price' => filled($submitted['selling_price'] ?? null) ? $submitted['selling_price'] : null,
                 'market_price' => filled($submitted['market_price'] ?? null) ? $submitted['market_price'] : null,
                 'stock_quantity' => max(0, (int) ($submitted['stock_quantity'] ?? 0)),

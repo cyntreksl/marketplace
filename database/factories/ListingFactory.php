@@ -25,6 +25,8 @@ class ListingFactory extends Factory
             'category_id' => Category::factory(),
             'brand_id' => Brand::factory(),
             'sku' => fake()->unique()->bothify('SKU-####-????'),
+            'gtin' => null,
+            'mpn' => null,
             'title' => fake()->sentence(4),
             'slug' => fake()->unique()->slug(),
             'description' => fake()->paragraph(),

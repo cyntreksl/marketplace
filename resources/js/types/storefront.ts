@@ -75,6 +75,8 @@ export type StorefrontListing = {
     metaTitle: string | null;
     metaDescription: string | null;
     model: string | null;
+    gtin: string | null;
+    mpn: string | null;
     condition: 'new' | 'used' | 'refurbished';
     listingType: 'buy_now' | 'auction';
     productType: 'simple' | 'variant';
@@ -102,6 +104,8 @@ export type StorefrontListing = {
     variants: {
         id: number;
         sku: string;
+        gtin: string | null;
+        mpn: string | null;
         sellingPrice: string | null;
         marketPrice: string | null;
         selectionKey: string;

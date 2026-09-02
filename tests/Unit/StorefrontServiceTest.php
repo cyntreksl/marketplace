@@ -83,7 +83,13 @@ test('listing details include an empty media collection and category trail', fun
         $mock->shouldReceive('forListing')->once()->with(0, 20)->andReturn(collect());
     });
     $seo = Mockery::mock(SeoHeadService::class, function (MockInterface $mock) use ($listing): void {
-        $mock->shouldReceive('listing')->once()->with($listing)->andReturn(['<title>Modern laptop</title>']);
+        $categoryTrail = [
+            ['id' => 1, 'name' => 'Electronics', 'slug' => 'electronics'],
+            ['id' => 2, 'name' => 'Laptops', 'slug' => 'laptops'],
+        ];
+        $payload = ['title' => 'Modern laptop'];
+        $mock->shouldReceive('listingPayload')->once()->with($listing, $categoryTrail)->andReturn($payload);
+        $mock->shouldReceive('tags')->once()->with($payload)->andReturn(['<title>Modern laptop</title>']);
     });
     $questionRepository = Mockery::mock(ProductQuestionRepository::class, function (MockInterface $mock) use ($listing): void {
         $mock->shouldReceive('answeredFor')->once()->with($listing)->andReturn(collect());

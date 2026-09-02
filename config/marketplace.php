@@ -41,4 +41,19 @@ return [
         'installments_url' => null,
         'business_deals_url' => null,
     ],
+
+    'seo' => [
+        'country' => 'LK',
+        'currency' => 'LKR',
+        'language' => 'en-LK',
+        'open_graph_locale' => 'en_LK',
+        'shipping' => [
+            'rate' => null,
+            'handling_days_min' => null,
+            'handling_days_max' => null,
+            'transit_days_min' => null,
+            'transit_days_max' => null,
+        ],
+        'sitemap_product_chunk_size' => 10000,
+    ],
 ];

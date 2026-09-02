@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /** @property array<string, mixed>|null $specifications */
-#[Fillable(['seller_profile_id', 'category_id', 'brand_id', 'brand_name', 'sku', 'barcode', 'model', 'title', 'slug', 'short_description', 'description', 'condition', 'listing_type', 'product_type', 'status', 'location', 'specifications', 'warranty', 'stock_quantity', 'reserved_quantity', 'low_stock_threshold', 'allow_backorders', 'is_active', 'is_featured', 'is_best_seller', 'price', 'sale_price', 'cost_price', 'commission_percentage', 'moderation_reason', 'submitted_at', 'approved_at', 'is_best_offer', 'is_new_arrival', 'is_clearance', 'meta_title', 'meta_description'])]
+#[Fillable(['seller_profile_id', 'category_id', 'brand_id', 'brand_name', 'sku', 'barcode', 'gtin', 'mpn', 'model', 'title', 'slug', 'short_description', 'description', 'condition', 'listing_type', 'product_type', 'status', 'location', 'specifications', 'warranty', 'stock_quantity', 'reserved_quantity', 'low_stock_threshold', 'allow_backorders', 'is_active', 'is_featured', 'is_best_seller', 'price', 'sale_price', 'cost_price', 'commission_percentage', 'moderation_reason', 'submitted_at', 'approved_at', 'is_best_offer', 'is_new_arrival', 'is_clearance', 'meta_title', 'meta_description'])]
 class Listing extends Model
 {
     /** @use HasFactory<ListingFactory> */
@@ -135,12 +135,20 @@ class Listing extends Model
     }
 
     /** @param Builder<Listing> $query */
-    public function scopePubliclyVisible(Builder $query): void
+    public function scopeDirectlyVisible(Builder $query): void
     {
         $query->where('listings.status', 'approved')
             ->where('listings.is_active', true)
-            ->whereHas('sellerProfile', fn (Builder $query) => $query->whereIn('status', ['approved', 'active']))
-            ->whereHas('category', fn ($query) => Category::constrainStorefrontAvailability($query))
+            ->whereHas('sellerProfile', fn (Builder $query) => $query
+                ->whereNull('seller_profiles.deleted_at')
+                ->whereIn('status', ['approved', 'active']))
+            ->whereHas('category', fn ($query) => Category::constrainStorefrontAvailability($query));
+    }
+
+    /** @param Builder<Listing> $query */
+    public function scopePubliclyVisible(Builder $query): void
+    {
+        $query->directlyVisible()
             ->where(function (Builder $query): void {
                 $query->where('listings.listing_type', 'auction')
                     ->orWhere('listings.allow_backorders', true)

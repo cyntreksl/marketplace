@@ -26,6 +26,8 @@ class ListingVariantFactory extends Factory
                 ->seller_profile_id,
             'combination_key' => hash('sha256', fake()->unique()->uuid()),
             'sku' => Str::upper(fake()->unique()->bothify('SKU-####-??')),
+            'gtin' => null,
+            'mpn' => null,
             'selling_price' => fn (array $attributes): string => Listing::query()
                 ->findOrFail((int) $attributes['listing_id'])
                 ->buyNowPrice() ?? '1000.00',
