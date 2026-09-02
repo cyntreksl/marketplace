@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 test('production deployment is gated and uses atomic releases', function () {
     $workflow = file_get_contents(base_path('.github/workflows/tests.yml'));
     $releaseScript = file_get_contents(base_path('.github/deploy/remote-release.sh'));
+    $buildEnvironment = file_get_contents(base_path('.env.example'));
 
     expect($workflow)
         ->toContain('needs: ci')
@@ -12,6 +13,9 @@ test('production deployment is gated and uses atomic releases', function () {
         ->toContain('environment:')
         ->toContain('group: prodeals-production')
         ->toContain('curl --fail')
+        ->toContain('VITE_TINYMCE_API_KEY: ${{ secrets.TINYMCE_API_KEY }}')
+        ->and($buildEnvironment)
+        ->toContain('VITE_TINYMCE_API_KEY=')
         ->and($releaseScript)
         ->toContain('mv -Tf "$next_link" "$current_link"')
         ->toContain('rollback_release')

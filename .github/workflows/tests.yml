@@ -61,6 +61,8 @@ jobs:
           node-version: '22'
 
       - name: Build production release
+        env:
+          VITE_TINYMCE_API_KEY: ${{ secrets.TINYMCE_API_KEY }}
         run: |
           cp .env.example .env
           composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
