@@ -85,7 +85,7 @@ class ListingImageService
             $storedPaths[] = $sourcePath;
             $canonical = (clone $sourceImage)
                 ->crop($crop['width'], $crop['height'], $crop['x'], $crop['y'])
-                ->resize(1200, 900);
+                ->resize(1600, 1600);
 
             if (! $this->putImage($disk, $canonicalPath, $canonical, new WebpEncoder(quality: 85, strip: true))) {
                 throw new RuntimeException('The listing image could not be stored.');
@@ -133,9 +133,9 @@ class ListingImageService
         $disk = $media->disk;
         $directory = dirname($media->path);
         $variants = [
-            'thumbnail' => $directory.'/thumbnail-240x180.webp',
-            'card' => $directory.'/card-480x360.webp',
-            'card_2x' => $directory.'/card-960x720.webp',
+            'thumbnail' => $directory.'/thumbnail-320x320.webp',
+            'card' => $directory.'/card-640x640.webp',
+            'card_2x' => $directory.'/card-1280x1280.webp',
         ];
 
         if ($includeOpenGraph) {
@@ -148,9 +148,9 @@ class ListingImageService
 
         try {
             $canonical = Storage::disk($disk)->get($media->path);
-            $this->putWebpVariant($disk, $variants['thumbnail'], $canonical, 240, 180);
-            $this->putWebpVariant($disk, $variants['card'], $canonical, 480, 360);
-            $this->putWebpVariant($disk, $variants['card_2x'], $canonical, 960, 720);
+            $this->putWebpVariant($disk, $variants['thumbnail'], $canonical, 320, 320);
+            $this->putWebpVariant($disk, $variants['card'], $canonical, 640, 640);
+            $this->putWebpVariant($disk, $variants['card_2x'], $canonical, 1280, 1280);
 
             if ($includeOpenGraph) {
                 $this->putOpenGraphVariant($disk, $variants['open_graph'], $canonical);
@@ -223,7 +223,7 @@ class ListingImageService
      */
     private function validateCrop(ImageInterface $image, array $crop): void
     {
-        $isFourByThree = abs(($crop['width'] * 3) - ($crop['height'] * 4)) <= 4;
+        $isSquare = abs($crop['width'] - $crop['height']) <= 2;
         $isInsideImage = $crop['x'] >= 0
             && $crop['y'] >= 0
             && $crop['width'] > 0
@@ -231,9 +231,9 @@ class ListingImageService
             && $image->width() >= $crop['x'] + $crop['width']
             && $image->height() >= $crop['y'] + $crop['height'];
 
-        if (! $isFourByThree || ! $isInsideImage) {
+        if (! $isSquare || ! $isInsideImage) {
             throw ValidationException::withMessages([
-                'image_crops' => 'Each photo must have a valid 4:3 crop inside the uploaded image.',
+                'image_crops' => 'Each photo must have a valid square crop inside the uploaded image.',
             ]);
         }
     }

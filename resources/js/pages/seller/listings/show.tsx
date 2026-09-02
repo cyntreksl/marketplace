@@ -210,7 +210,7 @@ function ProductGallery({ listing }: { listing: Listing }) {
                     ))}
                 </div>
             )}
-            <div className="order-1 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white sm:order-2 dark:border-slate-800 dark:bg-slate-950">
+            <div className="order-1 flex aspect-square items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white sm:order-2 dark:border-slate-800 dark:bg-slate-950">
                 {selected ? (
                     <img
                         src={selected.url}

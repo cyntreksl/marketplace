@@ -72,6 +72,8 @@ trait ValidatesProductData
             'variants.*.image' => [
                 'nullable',
                 'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:5120',
             ],
             'variants.*.image_crop' => ['nullable', 'array'],
             'variants.*.image_crop.x' => ['nullable', 'integer', 'min:0'],
@@ -206,7 +208,7 @@ trait ValidatesProductData
             $y = (int) Arr::get($crop, 'y', -1);
             $width = (int) Arr::get($crop, 'width', 0);
             $height = (int) Arr::get($crop, 'height', 0);
-            $isFourByThree = abs(($width * 3) - ($height * 4)) <= 4;
+            $isSquare = abs($width - $height) <= 2;
             $isInsideImage = $x >= 0
                 && $y >= 0
                 && $width > 0
@@ -214,8 +216,8 @@ trait ValidatesProductData
                 && $x + $width <= $dimensions[0]
                 && $y + $height <= $dimensions[1];
 
-            if (! $isFourByThree || ! $isInsideImage) {
-                $validator->errors()->add("variants.{$index}.image_crop", 'Variant image crops must be a valid 4:3 area inside the uploaded image.');
+            if (! $isSquare || ! $isInsideImage) {
+                $validator->errors()->add("variants.{$index}.image_crop", 'Variant image crops must be a valid square area inside the uploaded image.');
             }
         }
     }

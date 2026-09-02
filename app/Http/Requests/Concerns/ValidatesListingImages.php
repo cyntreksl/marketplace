@@ -11,7 +11,7 @@ trait ValidatesListingImages
     {
         return [
             'images' => [$required ? 'required' : 'nullable', 'array', $required ? 'min:1' : 'min:0', 'max:5'],
-            'images.*' => ['image'],
+            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'image_crops' => [$required ? 'required' : 'required_with:images', 'array', $required ? 'min:1' : 'min:0', 'max:5'],
             'image_crops.*.x' => ['required', 'integer', 'min:0'],
             'image_crops.*.y' => ['required', 'integer', 'min:0'],
@@ -61,8 +61,8 @@ trait ValidatesListingImages
             $width = (int) ($crop['width'] ?? 0);
             $height = (int) ($crop['height'] ?? 0);
 
-            if ($width > 0 && $height > 0 && abs(($width * 3) - ($height * 4)) > 4) {
-                $validator->errors()->add("image_crops.{$index}.width", 'Photo crops must use a 4:3 aspect ratio.');
+            if ($width > 0 && $height > 0 && abs($width - $height) > 2) {
+                $validator->errors()->add("image_crops.{$index}.width", 'Photo crops must use a square 1:1 aspect ratio.');
             }
         }
     }

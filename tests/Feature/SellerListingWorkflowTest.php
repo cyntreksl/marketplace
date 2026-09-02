@@ -30,8 +30,8 @@ test('an approved seller can create a draft listing and submit it for moderation
             'location' => 'Colombo',
             'stock_quantity' => 2,
             'price' => '325000.00',
-            'images' => [UploadedFile::fake()->image('camera.jpg', 1600, 1200)],
-            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1200]],
+            'images' => [UploadedFile::fake()->image('camera.jpg', 1600, 1600)],
+            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1600]],
         ])
         ->assertRedirect(route('seller.listings.index', absolute: false));
 
@@ -76,8 +76,8 @@ test('listing uploads use the configured media disk', function () {
             'location' => 'Singapore',
             'stock_quantity' => 1,
             'price' => '25000.00',
-            'images' => [UploadedFile::fake()->image('camera.jpg', 1600, 1200)],
-            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1200]],
+            'images' => [UploadedFile::fake()->image('camera.jpg', 1600, 1600)],
+            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1600]],
         ])
         ->assertRedirect(route('seller.listings.index', absolute: false));
 
@@ -107,8 +107,8 @@ test('an approved seller can save a typed brand draft or submit it directly for 
             'location' => 'Kandy',
             'stock_quantity' => 1,
             'price' => '18500.00',
-            'images' => [UploadedFile::fake()->image('binoculars.jpg', 1600, 1200)],
-            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1200]],
+            'images' => [UploadedFile::fake()->image('binoculars.jpg', 1600, 1600)],
+            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1600]],
         ])
         ->assertRedirect(route('seller.listings.index', absolute: false));
 
@@ -130,8 +130,8 @@ test('an approved seller can save a typed brand draft or submit it directly for 
             'location' => 'Kandy',
             'stock_quantity' => 1,
             'price' => '24500.00',
-            'images' => [UploadedFile::fake()->image('telescope.jpg', 1600, 1200)],
-            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1200]],
+            'images' => [UploadedFile::fake()->image('telescope.jpg', 1600, 1600)],
+            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1600]],
             'submit_for_review' => 1,
         ])
         ->assertRedirect(route('seller.listings.index', absolute: false));
@@ -246,8 +246,8 @@ test('an unapproved seller cannot submit a new listing directly for review', fun
             'location' => 'Galle',
             'stock_quantity' => 1,
             'price' => '15000.00',
-            'images' => [UploadedFile::fake()->image('camera.jpg', 1600, 1200)],
-            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1200]],
+            'images' => [UploadedFile::fake()->image('camera.jpg', 1600, 1600)],
+            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1600]],
             'submit_for_review' => 1,
         ])
         ->assertForbidden();
@@ -302,8 +302,8 @@ test('an unverified seller can create a private listing draft', function () {
             'location' => 'Colombo',
             'stock_quantity' => 2,
             'price' => '325000.00',
-            'images' => [UploadedFile::fake()->image('camera.jpg', 1600, 1200)],
-            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1200]],
+            'images' => [UploadedFile::fake()->image('camera.jpg', 1600, 1600)],
+            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1600]],
         ])
         ->assertRedirect(route('seller.listings.index', absolute: false));
 

@@ -117,8 +117,8 @@ test('a complete variant product generates the exact matrix and aggregate invent
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
     $payload = variantProductPayload($category, [
-        'images' => [UploadedFile::fake()->image('shirt.jpg', 1600, 1200)],
-        'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1200]],
+        'images' => [UploadedFile::fake()->image('shirt.jpg', 1600, 1600)],
+        'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1600]],
         'submit_for_review' => true,
     ]);
 
@@ -208,8 +208,8 @@ test('active variants require valid selling and market prices when publishing', 
     $category = Category::factory()->create();
     $basePayload = variantProductPayload($category, [
         'variant_options' => [['name' => 'Color', 'values' => ['Red']]],
-        'images' => [UploadedFile::fake()->image('shirt.jpg', 1600, 1200)],
-        'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1200]],
+        'images' => [UploadedFile::fake()->image('shirt.jpg', 1600, 1600)],
+        'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1600]],
         'submit_for_review' => true,
     ]);
 
@@ -230,7 +230,7 @@ test('active variants require valid selling and market prices when publishing', 
     $this->actingAs($seller->user)
         ->post(route('seller.listings.store'), [
             ...$basePayload,
-            'images' => [UploadedFile::fake()->image('shirt-again.jpg', 1600, 1200)],
+            'images' => [UploadedFile::fake()->image('shirt-again.jpg', 1600, 1600)],
             'variants' => [[
                 'selections' => ['Red'],
                 'sku' => 'SHIRT-RED',
@@ -381,8 +381,8 @@ test('variant combination images are optional and persist with an unchanged comb
             'selections' => ['Red'],
             'sku' => 'SHIRT-RED',
             'stock_quantity' => 3,
-            'image' => UploadedFile::fake()->image('red-shirt.jpg', 1200, 900),
-            'image_crop' => ['x' => 200, 'y' => 150, 'width' => 800, 'height' => 600],
+            'image' => UploadedFile::fake()->image('red-shirt.jpg', 1200, 1200),
+            'image_crop' => ['x' => 100, 'y' => 100, 'width' => 1000, 'height' => 1000],
         ]],
     ]);
 
@@ -399,10 +399,10 @@ test('variant combination images are optional and persist with an unchanged comb
         ->and($image)->not->toBeNull()
         ->and($image->type)->toBe('variant_image')
         ->and($image->listing_id)->toBe($listing->id)
-        ->and($image->crop_x)->toBe(200)
-        ->and($image->crop_y)->toBe(150)
-        ->and($image->crop_width)->toBe(800)
-        ->and($image->crop_height)->toBe(600)
+        ->and($image->crop_x)->toBe(100)
+        ->and($image->crop_y)->toBe(100)
+        ->and($image->crop_width)->toBe(1000)
+        ->and($image->crop_height)->toBe(1000)
         ->and(Storage::disk('public')->exists($image->path))->toBeTrue();
 
     $this->actingAs($seller->user)
@@ -450,7 +450,7 @@ test('variant image uploads require a saved valid crop', function () {
         'selections' => ['Red'],
         'sku' => 'SHIRT-RED',
         'stock_quantity' => 3,
-        'image' => UploadedFile::fake()->image('red-shirt.jpg', 1200, 900),
+        'image' => UploadedFile::fake()->image('red-shirt.jpg', 1200, 1200),
     ];
     $payload = variantProductPayload($category, [
         'variant_options' => [['name' => 'Color', 'values' => ['Red']]],
@@ -466,13 +466,50 @@ test('variant image uploads require a saved valid crop', function () {
             ...$payload,
             'variants' => [[
                 ...$variant,
-                'image' => UploadedFile::fake()->image('red-shirt.jpg', 1200, 900),
-                'image_crop' => ['x' => 500, 'y' => 400, 'width' => 800, 'height' => 600],
+                'image' => UploadedFile::fake()->image('red-shirt.jpg', 1200, 1200),
+                'image_crop' => ['x' => 500, 'y' => 400, 'width' => 1000, 'height' => 1000],
+            ]],
+        ])
+        ->assertSessionHasErrors('variants.0.image_crop');
+
+    $this->actingAs($seller->user)
+        ->post(route('seller.listings.store'), [
+            ...$payload,
+            'variants' => [[
+                ...$variant,
+                'image' => UploadedFile::fake()->image('red-shirt.jpg', 1200, 1200),
+                'image_crop' => ['x' => 0, 'y' => 0, 'width' => 1000, 'height' => 1100],
             ]],
         ])
         ->assertSessionHasErrors('variants.0.image_crop');
 
     expect(Listing::query()->count())->toBe(0);
+});
+
+test('variant image uploads accept smaller square source crops', function () {
+    Storage::fake('public');
+    $seller = SellerProfile::factory()->create();
+    $category = Category::factory()->create();
+
+    $this->actingAs($seller->user)
+        ->post(route('seller.listings.store'), variantProductPayload($category, [
+            'variant_options' => [['name' => 'Color', 'values' => ['Red']]],
+            'variants' => [[
+                'selections' => ['Red'],
+                'sku' => 'SHIRT-RED',
+                'stock_quantity' => 3,
+                'image' => UploadedFile::fake()->image('red-shirt.jpg', 900, 900),
+                'image_crop' => ['x' => 0, 'y' => 0, 'width' => 900, 'height' => 900],
+            ]],
+        ]))
+        ->assertRedirect(route('seller.listings.index', absolute: false))
+        ->assertSessionHasNoErrors();
+
+    $image = Listing::query()->sole()->variants()->with('image')->sole()->image;
+
+    expect($image)->not->toBeNull()
+        ->and($image->crop_width)->toBe(900)
+        ->and($image->crop_height)->toBe(900);
 });
 
 test('active availability backorders and stock status control public purchasing', function () {

@@ -87,6 +87,8 @@ type StoredVariant = {
 };
 type Specifications = Record<string, string | number | boolean>;
 
+const PRODUCT_IMAGE_MAXIMUM_CROP_ZOOM = 3;
+
 export type SellerProductFormListing = {
     title: string | null;
     sku: string | null;
@@ -395,17 +397,9 @@ export function SellerProductForm({
               : {
                     url: cropTarget.url,
                     size: cropTarget.size,
-                    crop: draftCrop ?? centeredFourByThreeCrop(cropTarget.size),
+                    crop: draftCrop ?? centeredSquareCrop(cropTarget.size),
                 };
-    const maximumCropZoom = cropImage?.size
-        ? Math.max(
-              1,
-              Math.min(
-                  centeredFourByThreeCrop(cropImage.size).width / 800,
-                  centeredFourByThreeCrop(cropImage.size).height / 600,
-              ),
-          )
-        : 1;
+    const maximumCropZoom = cropImage ? PRODUCT_IMAGE_MAXIMUM_CROP_ZOOM : 1;
 
     function setField<Key extends keyof ProductFormData>(
         key: Key,
@@ -542,11 +536,12 @@ export function SellerProductForm({
         );
 
         const size = knownSize ?? (await readImageSize(file).catch(() => null));
+        const crop = size === null ? null : centeredSquareCrop(size);
 
-        if (size === null) {
+        if (size === null || crop === null) {
             setVariantImageErrors((errors) => ({
                 ...errors,
-                [key]: 'Choose a valid image file.',
+                [key]: 'The selected file could not be opened as an image.',
             }));
 
             return;
@@ -559,10 +554,10 @@ export function SellerProductForm({
             return nextErrors;
         });
 
-        if (hasFourByThreeRatio(size)) {
+        if (hasSquareRatio(size)) {
             updateVariant(index, {
                 image: file,
-                image_crop: centeredFourByThreeCrop(size),
+                image_crop: crop,
                 image_size: size,
                 remove_image: false,
             });
@@ -578,7 +573,7 @@ export function SellerProductForm({
             size,
             url: URL.createObjectURL(file),
         });
-        setDraftCrop(initialCrop ?? centeredFourByThreeCrop(size));
+        setDraftCrop(initialCrop ?? crop);
         setCropError(null);
         setCropPosition({ x: 0, y: 0 });
         setCropZoom(1);
@@ -595,16 +590,18 @@ export function SellerProductForm({
             await Promise.all(
                 incoming.map(async (file) => {
                     const size = await readImageSize(file).catch(() => null);
+                    const crop =
+                        size === null ? null : centeredSquareCrop(size);
 
-                    if (size === null) {
+                    if (size === null || crop === null) {
                         return null;
                     }
 
                     return {
                         file,
                         size,
-                        crop: centeredFourByThreeCrop(size),
-                        requiresCrop: !hasFourByThreeRatio(size),
+                        crop,
+                        requiresCrop: !hasSquareRatio(size),
                     };
                 }),
             )
@@ -641,7 +638,7 @@ export function SellerProductForm({
         setImageError(
             prepared.length === incoming.length
                 ? null
-                : 'Some files were skipped. Choose valid image files.',
+                : 'Some files could not be opened as images.',
         );
     }
 
@@ -713,6 +710,8 @@ export function SellerProductForm({
             return;
         }
 
+        const normalizedCrop = normalizeCrop(draftCrop);
+
         if (cropTarget.kind === 'variant') {
             const key = combinationKey(
                 form.data.variants[cropTarget.index]?.selections ?? [],
@@ -720,7 +719,7 @@ export function SellerProductForm({
             );
             updateVariant(cropTarget.index, {
                 image: cropTarget.file,
-                image_crop: draftCrop,
+                image_crop: normalizedCrop,
                 image_size: cropTarget.size,
                 remove_image: false,
             });
@@ -736,7 +735,7 @@ export function SellerProductForm({
         }
 
         const updatedCrops = form.data.image_crops.map((crop, index) =>
-            index === cropTarget.index ? draftCrop : crop,
+            index === cropTarget.index ? normalizedCrop : crop,
         );
         form.setData({ ...form.data, image_crops: updatedCrops });
         setImageError(null);
@@ -1701,9 +1700,9 @@ export function SellerProductForm({
                                 Choose Files
                             </span>
                             <span className="mt-4 text-xs leading-5 text-slate-500">
-                                Any image format and dimensions
+                                Square crops work best.
                                 <br />
-                                Maximum 5 images
+                                Maximum 5 images.
                             </span>
                         </label>
 
@@ -1911,19 +1910,19 @@ export function SellerProductForm({
                                 : 'Crop product image'}
                         </DialogTitle>
                         <DialogDescription>
-                            Keep the important part of the image inside the 4:3
-                            frame, then save the crop to continue.
+                            Keep the product centered inside the square frame,
+                            then save the crop to continue.
                         </DialogDescription>
                     </DialogHeader>
                     {cropImage && (
                         <>
-                            <div className="relative h-[28rem] overflow-hidden rounded-xl bg-slate-950">
+                            <div className="relative mx-auto aspect-square w-full max-w-[32rem] overflow-hidden rounded-xl bg-slate-950">
                                 <Cropper
                                     key={cropImage.url}
                                     image={cropImage.url}
                                     crop={cropPosition}
                                     zoom={cropZoom}
-                                    aspect={4 / 3}
+                                    aspect={1}
                                     minZoom={1}
                                     maxZoom={maximumCropZoom}
                                     initialCroppedAreaPixels={cropImage.crop}
@@ -2144,7 +2143,7 @@ function VariantImageInput({
         <div className="grid w-24 gap-1.5">
             <label
                 className={cn(
-                    'group relative grid aspect-4/3 cursor-pointer place-items-center overflow-hidden rounded-lg border border-dashed bg-slate-50 text-slate-400 transition hover:border-primary hover:text-primary dark:bg-slate-950',
+                    'group relative grid aspect-square cursor-pointer place-items-center overflow-hidden rounded-lg border border-dashed bg-white text-slate-400 transition hover:border-primary hover:text-primary dark:bg-slate-950',
                     error
                         ? 'border-red-500'
                         : 'border-slate-300 dark:border-slate-700',
@@ -2177,7 +2176,7 @@ function VariantImageInput({
                         <img
                             src={displayedUrl}
                             alt={`${combination} variant`}
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-contain p-1"
                         />
                     )
                 ) : (
@@ -2232,7 +2231,7 @@ function ImageThumbnail({
     src: string;
 }) {
     return (
-        <div className="group relative aspect-4/3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950">
+        <div className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950">
             <button
                 type="button"
                 onClick={onEdit}
@@ -2250,7 +2249,7 @@ function ImageThumbnail({
                     <img
                         src={src}
                         alt={alt}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-contain p-1"
                     />
                 )}
             </button>
@@ -2413,24 +2412,24 @@ function suggestedSku(baseSku: string, selections: string[]): string {
     return parts.join('-').slice(0, 100);
 }
 
-function centeredFourByThreeCrop(size: ListingImageSize): ListingImageCrop {
-    if (size.width / size.height > 4 / 3) {
-        const width = Math.round((size.height * 4) / 3);
+function centeredSquareCrop(size: ListingImageSize): ListingImageCrop {
+    if (size.width > size.height) {
+        const width = size.height;
 
         return {
             x: Math.round((size.width - width) / 2),
             y: 0,
             width,
-            height: size.height,
+            height: width,
         };
     }
 
-    const height = Math.round((size.width * 3) / 4);
+    const height = size.width;
 
     return {
         x: 0,
         y: Math.round((size.height - height) / 2),
-        width: size.width,
+        width: height,
         height,
     };
 }
@@ -2449,8 +2448,8 @@ function specificationsText(specifications?: Specifications | null): string {
         .join('\n');
 }
 
-function hasFourByThreeRatio(size: ListingImageSize): boolean {
-    return Math.abs(size.width * 3 - size.height * 4) <= 4;
+function hasSquareRatio(size: ListingImageSize): boolean {
+    return Math.abs(size.width - size.height) <= 2;
 }
 
 function normalizeCrop(crop: Area): ListingImageCrop {

@@ -24,16 +24,16 @@ export function ListingCard({
         <article className="group flex h-full min-w-0 flex-col rounded-xl border border-slate-200 bg-white p-2.5 transition hover:border-orange-200 hover:shadow-lg hover:shadow-orange-100/60 sm:p-3">
             <Link
                 href={detailUrl}
-                className={`relative block overflow-hidden rounded-lg bg-slate-50 ${compact ? 'aspect-square' : 'aspect-[4/3]'}`}
+                className="relative block aspect-square overflow-hidden rounded-lg bg-white"
             >
                 {listing.media[0] ? (
                     <img
                         src={listing.media[0].cardUrl}
-                        srcSet={`${listing.media[0].cardUrl} 480w, ${listing.media[0].card2xUrl} 960w`}
+                        srcSet={`${listing.media[0].cardUrl} 640w, ${listing.media[0].card2xUrl} 1280w`}
                         sizes="(min-width: 1280px) 18vw, (min-width: 640px) 30vw, 70vw"
                         alt={listing.title}
                         loading="lazy"
-                        className="size-full object-contain p-2 transition duration-300 group-hover:scale-105"
+                        className={`size-full object-contain transition duration-300 group-hover:scale-105 ${compact ? 'p-1.5' : 'p-2'}`}
                     />
                 ) : (
                     <span className="grid size-full place-items-center px-4 text-center text-xs font-semibold text-slate-400">

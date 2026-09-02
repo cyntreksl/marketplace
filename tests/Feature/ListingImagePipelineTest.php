@@ -20,8 +20,8 @@ function validListingImagePayload(Category $category, array $overrides = []): ar
         'location' => 'Colombo',
         'stock_quantity' => 1,
         'price' => '125000.00',
-        'images' => [UploadedFile::fake()->image('camera.jpg', 1600, 1200)],
-        'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1200]],
+        'images' => [UploadedFile::fake()->image('camera.jpg', 1600, 1600)],
+        'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1600]],
         ...$overrides,
     ];
 }
@@ -63,32 +63,64 @@ test('new listing photos are synchronously cropped to a canonical webp image', f
         ->and($media->crop_x)->toBe(0)
         ->and($media->crop_y)->toBe(0)
         ->and($media->crop_width)->toBe(1600)
-        ->and($media->crop_height)->toBe(1200)
+        ->and($media->crop_height)->toBe(1600)
         ->and($media->variant_version)->not->toBeNull()
         ->and($media->processing_status)->toBe('ready')
         ->and($canonicalSize)->not->toBeFalse()
-        ->and($canonicalSize[0])->toBe(1200)
-        ->and($canonicalSize[1])->toBe(900)
+        ->and($canonicalSize[0])->toBe(1600)
+        ->and($canonicalSize[1])->toBe(1600)
         ->and($canonicalSize['mime'])->toBe('image/webp')
         ->and($sourceSize)->not->toBeFalse()
         ->and($sourceSize['mime'])->toBe('image/webp');
 });
 
-test('listing photos accept any image format and source dimensions', function () {
+test('listing photos accept ecommerce image formats and square source crops', function () {
     Storage::fake('public');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
 
     $this->actingAs($seller->user)
         ->post(route('seller.listings.store'), validListingImagePayload($category, [
-            'images' => [UploadedFile::fake()->image('small.gif', 40, 30)],
-            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 40, 'height' => 30]],
+            'images' => [UploadedFile::fake()->image('camera.png', 1400, 1400)],
+            'image_crops' => [['x' => 100, 'y' => 100, 'width' => 1200, 'height' => 1200]],
         ]))
         ->assertRedirect(route('seller.listings.index', absolute: false))
         ->assertSessionHasNoErrors();
 
-    expect(Listing::query()->sole()->media()->sole()->crop_width)->toBe(40)
-        ->and(Listing::query()->sole()->media()->sole()->crop_height)->toBe(30);
+    expect(Listing::query()->sole()->media()->sole()->crop_width)->toBe(1200)
+        ->and(Listing::query()->sole()->media()->sole()->crop_height)->toBe(1200);
+});
+
+test('listing image validation rejects non square crops', function () {
+    Storage::fake('public');
+    $seller = SellerProfile::factory()->create();
+    $category = Category::factory()->create();
+
+    $this->actingAs($seller->user)
+        ->post(route('seller.listings.store'), validListingImagePayload($category, [
+            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1200]],
+        ]))
+        ->assertSessionHasErrors('image_crops.0.width');
+
+    expect(Listing::query()->count())->toBe(0)
+        ->and(Storage::disk('public')->allFiles())->toBeEmpty();
+});
+
+test('listing photos accept smaller square source crops', function () {
+    Storage::fake('public');
+    $seller = SellerProfile::factory()->create();
+    $category = Category::factory()->create();
+
+    $this->actingAs($seller->user)
+        ->post(route('seller.listings.store'), validListingImagePayload($category, [
+            'images' => [UploadedFile::fake()->image('small.jpg', 900, 900)],
+            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 900, 'height' => 900]],
+        ]))
+        ->assertRedirect(route('seller.listings.index', absolute: false))
+        ->assertSessionHasNoErrors();
+
+    expect(Listing::query()->sole()->media()->sole()->crop_width)->toBe(900)
+        ->and(Listing::query()->sole()->media()->sole()->crop_height)->toBe(900);
 });
 
 test('listing image validation rejects crop bounds outside the uploaded image', function () {
@@ -98,7 +130,7 @@ test('listing image validation rejects crop bounds outside the uploaded image', 
 
     $this->actingAs($seller->user)
         ->post(route('seller.listings.store'), validListingImagePayload($category, [
-            'image_crops' => [['x' => 100, 'y' => 0, 'width' => 1600, 'height' => 1200]],
+            'image_crops' => [['x' => 100, 'y' => 0, 'width' => 1600, 'height' => 1600]],
         ]))
         ->assertSessionHasErrors('image_crops');
 
@@ -114,7 +146,7 @@ test('exif orientation is applied before crop bounds are validated', function ()
     $this->actingAs($seller->user)
         ->post(route('seller.listings.store'), validListingImagePayload($category, [
             'images' => [exifOrientedListingImage()],
-            'image_crops' => [['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1200]],
+            'image_crops' => [['x' => 200, 'y' => 0, 'width' => 1200, 'height' => 1200]],
         ]))
         ->assertRedirect(route('seller.listings.index', absolute: false));
 
@@ -122,8 +154,8 @@ test('exif orientation is applied before crop bounds are validated', function ()
     $dimensions = getimagesizefromstring(Storage::disk('public')->get($media->path));
 
     expect($dimensions)->not->toBeFalse()
-        ->and($dimensions[0])->toBe(1200)
-        ->and($dimensions[1])->toBe(900);
+        ->and($dimensions[0])->toBe(1600)
+        ->and($dimensions[1])->toBe(1600);
 });
 
 test('new image files are removed when the surrounding transaction rolls back', function () {
@@ -133,8 +165,8 @@ test('new image files are removed when the surrounding transaction rolls back', 
     expect(fn () => DB::transaction(function () use ($listing): void {
         app(ListingImageService::class)->store(
             $listing,
-            UploadedFile::fake()->image('rollback.jpg', 1600, 1200),
-            ['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1200],
+            UploadedFile::fake()->image('rollback.jpg', 1600, 1600),
+            ['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1600],
             0,
             true,
         );
@@ -193,12 +225,12 @@ test('variant generation is dimensionally exact idempotent and creates og only f
     $category = Category::factory()->create();
     $payload = validListingImagePayload($category, [
         'images' => [
-            UploadedFile::fake()->image('cover.jpg', 1600, 1200),
-            UploadedFile::fake()->image('detail.png', 1600, 1200),
+            UploadedFile::fake()->image('cover.jpg', 1600, 1600),
+            UploadedFile::fake()->image('detail.png', 1600, 1600),
         ],
         'image_crops' => [
-            ['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1200],
-            ['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1200],
+            ['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1600],
+            ['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 1600],
         ],
     ]);
 
@@ -222,9 +254,9 @@ test('variant generation is dimensionally exact idempotent and creates og only f
         ->and($detail->variants)->not->toHaveKey('open_graph');
 
     foreach ([
-        'thumbnail' => [240, 180, 'image/webp'],
-        'card' => [480, 360, 'image/webp'],
-        'card_2x' => [960, 720, 'image/webp'],
+        'thumbnail' => [320, 320, 'image/webp'],
+        'card' => [640, 640, 'image/webp'],
+        'card_2x' => [1280, 1280, 'image/webp'],
         'open_graph' => [1200, 630, 'image/jpeg'],
     ] as $variant => [$width, $height, $mime]) {
         $dimensions = getimagesizefromstring(Storage::disk('public')->get($cover->variants[$variant]));

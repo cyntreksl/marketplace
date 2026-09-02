@@ -83,7 +83,7 @@ function Gallery({ listing }: { listing: StorefrontListing }) {
                     </button>
                 ))}
             </div>
-            <div className="relative order-1 flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl border bg-white sm:order-2">
+            <div className="relative order-1 flex aspect-square items-center justify-center overflow-hidden rounded-xl border bg-white sm:order-2">
                 {selected ? (
                     <button
                         onClick={() => setFullscreen(true)}
@@ -721,7 +721,7 @@ export default function ListingShow({
                                                     key={media.path}
                                                     src={media.url}
                                                     alt={`${listing.title} detail ${index + 1}`}
-                                                    className={`size-full object-cover ${index === 0 ? 'row-span-2 min-h-64' : 'min-h-32'}`}
+                                                    className={`size-full bg-white object-contain p-2 ${index === 0 ? 'row-span-2 min-h-64' : 'min-h-32'}`}
                                                 />
                                             ))}
                                     </div>
