@@ -84,6 +84,21 @@ test('portal controls use semantic colors and consistent corner radii', function
         ->not->toContain('rounded-full bg-amber-400');
 });
 
+test('seller product form keeps listing inputs conditional and chip based', function () {
+    $sellerProductForm = file_get_contents(resource_path('js/components/seller-product-form.tsx'));
+
+    expect($sellerProductForm)
+        ->toContain('const PRODUCT_TYPE_OPTIONS')
+        ->toContain('const CONDITION_OPTIONS')
+        ->toContain('function SegmentedChoice')
+        ->toContain('function ChipValueInput')
+        ->toContain('New brand request')
+        ->toContain('{!isVariantProduct ? (')
+        ->toContain('{isVariantProduct && (')
+        ->toContain('Aggregate Low Stock Alert')
+        ->not->toContain('Values separated by commas');
+});
+
 test('the refreshed logo components point to the new asset variants', function () {
     $brandLogo = file_get_contents(resource_path('js/components/brand-logo.tsx'));
     $appHeader = file_get_contents(resource_path('js/components/app-header.tsx'));

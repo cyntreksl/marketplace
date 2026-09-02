@@ -1,6 +1,7 @@
 import { Link, useForm } from '@inertiajs/react';
 import {
     Boxes,
+    Check,
     ImagePlus,
     Info,
     PackageCheck,
@@ -15,7 +16,7 @@ import {
     X,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { ClipboardEvent, KeyboardEvent, ReactNode } from 'react';
 import Cropper from 'react-easy-crop';
 import type { Area, Point } from 'react-easy-crop';
 import { CategoryPicker } from '@/components/category-picker';
@@ -154,6 +155,36 @@ type ProductFormData = {
     removed_media_ids: number[];
     submit_for_review: boolean;
 };
+
+type SegmentedChoiceOption<Value extends string | boolean> = {
+    description?: string;
+    icon?: ReactNode;
+    label: string;
+    value: Value;
+};
+
+const PRODUCT_TYPE_OPTIONS: SegmentedChoiceOption<
+    ProductFormData['product_type']
+>[] = [
+    {
+        description: 'One price, one SKU, one stock quantity',
+        icon: <PackageCheck className="size-4" />,
+        label: 'Simple',
+        value: 'simple',
+    },
+    {
+        description: 'Options like color, size, storage, or capacity',
+        icon: <Boxes className="size-4" />,
+        label: 'Variants',
+        value: 'variant',
+    },
+];
+
+const CONDITION_OPTIONS: SegmentedChoiceOption<string>[] = [
+    { label: 'New', value: 'new' },
+    { label: 'Used', value: 'used' },
+    { label: 'Refurbished', value: 'refurbished' },
+];
 
 export function SellerProductForm({
     form: formDefinition,
@@ -398,6 +429,17 @@ export function SellerProductForm({
                     crop: draftCrop ?? centeredSquareCrop(cropTarget.size),
                 };
     const maximumCropZoom = cropImage ? PRODUCT_IMAGE_MAXIMUM_CROP_ZOOM : 1;
+    const selectedBrand =
+        brands.find((brand) => brand.id === form.data.brand_id) ?? null;
+    const brandInputValue = selectedBrand?.name ?? form.data.brand_name;
+    const brandError = errorFor('brand_id') ?? errorFor('brand_name');
+    const brandStatus =
+        selectedBrand !== null
+            ? 'Using catalog brand'
+            : form.data.brand_name.trim() !== ''
+              ? 'New brand request'
+              : 'Choose an existing brand or type a new brand.';
+    const isVariantProduct = form.data.product_type === 'variant';
 
     function setField<Key extends keyof ProductFormData>(
         key: Key,
@@ -405,6 +447,20 @@ export function SellerProductForm({
     ): void {
         form.setData({ ...form.data, [key]: value });
         form.clearErrors(key);
+    }
+
+    function updateBrand(value: string): void {
+        const exactBrand = brands.find(
+            (brand) =>
+                brand.name.toLocaleLowerCase() === value.toLocaleLowerCase(),
+        );
+
+        form.setData({
+            ...form.data,
+            brand_id: exactBrand?.id ?? null,
+            brand_name: exactBrand ? '' : value,
+        });
+        form.clearErrors('brand_id', 'brand_name');
     }
 
     function updateOption(
@@ -864,50 +920,21 @@ export function SellerProductForm({
                                     error={errorFor('model')}
                                 />
                             </Field>
-                            <Field
-                                label="Brand"
-                                error={errorFor('brand_id')}
-                                required
-                            >
+                            <Field label="Brand" error={brandError} required>
                                 <div className="relative">
                                     <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-slate-400" />
                                     <input
                                         list="product-brand-options"
-                                        value={
-                                            brands.find(
-                                                (brand) =>
-                                                    brand.id ===
-                                                    form.data.brand_id,
-                                            )?.name ?? form.data.brand_name
+                                        value={brandInputValue}
+                                        onChange={(event) =>
+                                            updateBrand(event.target.value)
                                         }
-                                        onChange={(event) => {
-                                            const value = event.target.value;
-                                            const exactBrand = brands.find(
-                                                (brand) =>
-                                                    brand.name.toLocaleLowerCase() ===
-                                                    value.toLocaleLowerCase(),
-                                            );
-                                            form.setData({
-                                                ...form.data,
-                                                brand_id:
-                                                    exactBrand?.id ?? null,
-                                                brand_name: exactBrand
-                                                    ? ''
-                                                    : value,
-                                            });
-                                            form.clearErrors(
-                                                'brand_id',
-                                                'brand_name',
-                                            );
-                                        }}
-                                        placeholder="Select or enter brand"
+                                        placeholder="Search catalog brands or type a new one"
                                         aria-invalid={
-                                            errorFor('brand_id')
-                                                ? true
-                                                : undefined
+                                            brandError ? true : undefined
                                         }
                                         className={inputClass(
-                                            errorFor('brand_id'),
+                                            brandError,
                                             'pl-10',
                                         )}
                                     />
@@ -920,6 +947,18 @@ export function SellerProductForm({
                                         ))}
                                     </datalist>
                                 </div>
+                                <p
+                                    className={cn(
+                                        'mt-1.5 text-xs font-semibold',
+                                        selectedBrand
+                                            ? 'text-emerald-600 dark:text-emerald-400'
+                                            : form.data.brand_name.trim() !== ''
+                                              ? 'text-primary'
+                                              : 'text-slate-500',
+                                    )}
+                                >
+                                    {brandStatus}
+                                </p>
                             </Field>
                             <div className="md:col-span-2">
                                 <CategoryPicker
@@ -935,98 +974,38 @@ export function SellerProductForm({
                                     label="Category *"
                                 />
                             </div>
-                            <Field
-                                label="Product Type"
-                                required
-                                className="md:col-span-3"
-                            >
-                                <div className="grid gap-3 sm:grid-cols-2">
-                                    {(
-                                        [
-                                            {
-                                                value: 'simple',
-                                                title: 'Simple product',
-                                                description:
-                                                    'One price, one SKU, and one stock quantity.',
-                                                icon: PackageCheck,
-                                            },
-                                            {
-                                                value: 'variant',
-                                                title: 'Variant product',
-                                                description:
-                                                    'Multiple options such as color, size, or capacity.',
-                                                icon: Boxes,
-                                            },
-                                        ] as const
-                                    ).map((productType) => {
-                                        const Icon = productType.icon;
-                                        const selected =
-                                            form.data.product_type ===
-                                            productType.value;
-
-                                        return (
-                                            <label
-                                                key={productType.value}
-                                                className={cn(
-                                                    'flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition',
-                                                    selected
-                                                        ? 'border-primary bg-primary/5 ring-2 ring-primary/15'
-                                                        : 'border-slate-200 hover:border-primary/40 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-950',
-                                                )}
-                                            >
-                                                <input
-                                                    type="radio"
-                                                    name="product_type_choice"
-                                                    value={productType.value}
-                                                    checked={selected}
-                                                    onChange={() =>
-                                                        setField(
-                                                            'product_type',
-                                                            productType.value,
-                                                        )
-                                                    }
-                                                    className="mt-1 size-4 accent-primary"
-                                                />
-                                                <span className="grid min-w-0 gap-1">
-                                                    <span className="flex items-center gap-2 font-bold">
-                                                        <Icon className="size-4 text-primary" />
-                                                        {productType.title}
-                                                    </span>
-                                                    <span className="text-xs leading-5 text-slate-500">
-                                                        {
-                                                            productType.description
-                                                        }
-                                                    </span>
-                                                </span>
-                                            </label>
-                                        );
-                                    })}
-                                </div>
-                            </Field>
-                            <Field
-                                label="Condition"
-                                error={errorFor('condition')}
-                                required
-                            >
-                                <select
-                                    value={form.data.condition}
-                                    onChange={(event) =>
-                                        setField(
-                                            'condition',
-                                            event.target.value,
-                                        )
+                            <div className="md:col-span-3">
+                                <span className="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                    Product Type{' '}
+                                    <span className="text-red-500">*</span>
+                                </span>
+                                <SegmentedChoice
+                                    value={form.data.product_type}
+                                    options={PRODUCT_TYPE_OPTIONS}
+                                    onChange={(value) =>
+                                        setField('product_type', value)
                                     }
-                                    className={inputClass(
-                                        errorFor('condition'),
-                                    )}
-                                >
-                                    <option value="new">New</option>
-                                    <option value="used">Used</option>
-                                    <option value="refurbished">
-                                        Refurbished
-                                    </option>
-                                </select>
-                            </Field>
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <span className="mb-2 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+                                    Condition{' '}
+                                    <span className="text-red-500">*</span>
+                                </span>
+                                <SegmentedChoice
+                                    value={form.data.condition}
+                                    options={CONDITION_OPTIONS}
+                                    error={errorFor('condition')}
+                                    onChange={(value) =>
+                                        setField('condition', value)
+                                    }
+                                />
+                                {errorFor('condition') && (
+                                    <ErrorText>
+                                        {errorFor('condition')}
+                                    </ErrorText>
+                                )}
+                            </div>
                             <Field
                                 label="Warranty"
                                 error={errorFor('warranty')}
@@ -1107,20 +1086,8 @@ export function SellerProductForm({
                         icon={<Tags className="size-5" />}
                     >
                         <div className="grid gap-5 md:grid-cols-3">
-                            {form.data.product_type === 'simple' ? (
+                            {!isVariantProduct ? (
                                 <>
-                                    <Field
-                                        label="Market Price (LKR)"
-                                        error={errorFor('compare_price')}
-                                    >
-                                        <MoneyInput
-                                            value={form.data.compare_price}
-                                            onChange={(value) =>
-                                                setField('compare_price', value)
-                                            }
-                                            error={errorFor('compare_price')}
-                                        />
-                                    </Field>
                                     <Field
                                         label="Selling Price (LKR)"
                                         error={errorFor('selling_price')}
@@ -1132,7 +1099,26 @@ export function SellerProductForm({
                                                 setField('selling_price', value)
                                             }
                                             error={errorFor('selling_price')}
+                                            ariaLabel="Selling price in LKR"
                                         />
+                                    </Field>
+                                    <Field
+                                        label="Market Price (LKR)"
+                                        error={errorFor('compare_price')}
+                                    >
+                                        <MoneyInput
+                                            value={form.data.compare_price}
+                                            onChange={(value) =>
+                                                setField('compare_price', value)
+                                            }
+                                            error={errorFor('compare_price')}
+                                            ariaLabel="Optional market price in LKR"
+                                        />
+                                        <p className="mt-1.5 text-xs text-slate-500">
+                                            Optional. Use when showing a
+                                            discount against the normal market
+                                            price.
+                                        </p>
                                     </Field>
                                     <Field
                                         label="Stock Quantity"
@@ -1143,6 +1129,7 @@ export function SellerProductForm({
                                             type="number"
                                             min="0"
                                             value={form.data.stock_quantity}
+                                            placeholder="Available units"
                                             onChange={(event) =>
                                                 updateStockQuantity(
                                                     event.target.value === ''
@@ -1158,61 +1145,117 @@ export function SellerProductForm({
                                             )}
                                         />
                                     </Field>
+                                    <Field
+                                        label="Low Stock Alert"
+                                        error={errorFor('low_stock_threshold')}
+                                    >
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={
+                                                form.data.low_stock_threshold
+                                            }
+                                            placeholder="Alert threshold"
+                                            onChange={(event) =>
+                                                setField(
+                                                    'low_stock_threshold',
+                                                    event.target.value === ''
+                                                        ? ''
+                                                        : Number(
+                                                              event.target
+                                                                  .value,
+                                                          ),
+                                                )
+                                            }
+                                            className={inputClass(
+                                                errorFor('low_stock_threshold'),
+                                            )}
+                                        />
+                                    </Field>
+                                    <Field label="Stock Status">
+                                        <div className="flex h-12 items-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-emerald-700 dark:border-slate-700 dark:bg-slate-950 dark:text-emerald-400">
+                                            {stockStatus}
+                                        </div>
+                                    </Field>
+                                    <div className="md:col-span-3">
+                                        <ToggleRow
+                                            label="Allow Backorders"
+                                            description="Let customers order after stock reaches zero."
+                                            checked={form.data.allow_backorders}
+                                            onChange={(checked) =>
+                                                setField(
+                                                    'allow_backorders',
+                                                    checked,
+                                                )
+                                            }
+                                        />
+                                    </div>
                                 </>
                             ) : (
-                                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 md:col-span-3">
-                                    <p className="font-bold text-primary">
-                                        Pricing and inventory are managed per
-                                        combination
-                                    </p>
-                                    <p className="mt-1 text-sm leading-6 text-slate-500">
-                                        Add options below, then enter each
-                                        variant&apos;s SKU, market price,
-                                        selling price, stock, image, and status.
-                                        Active stock total: {aggregateStock}.
-                                    </p>
-                                </div>
+                                <>
+                                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 md:col-span-3">
+                                        <p className="font-bold text-primary">
+                                            Pricing and inventory are managed
+                                            per variant.
+                                        </p>
+                                        <p className="mt-1 text-sm leading-6 text-slate-500">
+                                            Add option values below, then set
+                                            each variant&apos;s SKU, price,
+                                            stock, image, and status. Active
+                                            stock total: {aggregateStock}.
+                                        </p>
+                                    </div>
+                                    <Field
+                                        label="Aggregate Low Stock Alert"
+                                        error={errorFor('low_stock_threshold')}
+                                    >
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={
+                                                form.data.low_stock_threshold
+                                            }
+                                            placeholder="Alert threshold"
+                                            onChange={(event) =>
+                                                setField(
+                                                    'low_stock_threshold',
+                                                    event.target.value === ''
+                                                        ? ''
+                                                        : Number(
+                                                              event.target
+                                                                  .value,
+                                                          ),
+                                                )
+                                            }
+                                            className={inputClass(
+                                                errorFor('low_stock_threshold'),
+                                            )}
+                                        />
+                                    </Field>
+                                    <Field label="Aggregate Stock Status">
+                                        <div className="flex h-12 items-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-emerald-700 dark:border-slate-700 dark:bg-slate-950 dark:text-emerald-400">
+                                            {stockStatus}
+                                        </div>
+                                    </Field>
+                                    <div className="md:col-span-3">
+                                        <ToggleRow
+                                            label="Allow Backorders"
+                                            description="Let customers order after aggregate variant stock reaches zero."
+                                            checked={form.data.allow_backorders}
+                                            onChange={(checked) =>
+                                                setField(
+                                                    'allow_backorders',
+                                                    checked,
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                </>
                             )}
-                            <Field
-                                label="Low Stock Alert"
-                                error={errorFor('low_stock_threshold')}
-                            >
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={form.data.low_stock_threshold}
-                                    onChange={(event) =>
-                                        setField(
-                                            'low_stock_threshold',
-                                            event.target.value === ''
-                                                ? ''
-                                                : Number(event.target.value),
-                                        )
-                                    }
-                                    className={inputClass(
-                                        errorFor('low_stock_threshold'),
-                                    )}
-                                />
-                            </Field>
-                            <Field label="Stock Status">
-                                <div className="flex h-12 items-center rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm font-bold text-emerald-700 dark:border-slate-700 dark:bg-slate-950 dark:text-emerald-400">
-                                    {stockStatus}
-                                </div>
-                            </Field>
-                            <div className="md:col-span-3">
-                                <ToggleRow
-                                    label="Allow Backorders"
-                                    description="Allow customers to order when aggregate stock is exhausted."
-                                    checked={form.data.allow_backorders}
-                                    onChange={(checked) =>
-                                        setField('allow_backorders', checked)
-                                    }
-                                />
-                            </div>
                         </div>
                     </FormCard>
 
-                    {form.data.product_type === 'variant' && (
+                    {isVariantProduct && (
                         <FormCard
                             title="Product Variants"
                             icon={<Boxes className="size-5" />}
@@ -1288,34 +1331,40 @@ export function SellerProductForm({
                                             key={index}
                                             className="grid gap-3 rounded-xl border border-slate-200 p-4 md:grid-cols-[12rem_1fr_auto] dark:border-slate-700"
                                         >
-                                            <TextInput
-                                                value={option.name}
-                                                onChange={(value) =>
-                                                    updateOption(index, {
-                                                        name: value,
-                                                    })
-                                                }
-                                                placeholder="Option name"
-                                                error={errorFor(
-                                                    `variant_options.${index}.name`,
-                                                )}
-                                            />
-                                            <TextInput
-                                                value={option.values.join(', ')}
-                                                onChange={(value) =>
-                                                    updateOption(index, {
-                                                        values: value
-                                                            .split(',')
-                                                            .map((item) =>
-                                                                item.trim(),
-                                                            ),
-                                                    })
-                                                }
-                                                placeholder="Values separated by commas"
-                                                error={errorFor(
-                                                    `variant_options.${index}.values`,
-                                                )}
-                                            />
+                                            <div>
+                                                <span className="mb-1.5 block text-xs font-bold text-slate-500">
+                                                    Option name
+                                                </span>
+                                                <TextInput
+                                                    value={option.name}
+                                                    onChange={(value) =>
+                                                        updateOption(index, {
+                                                            name: value,
+                                                        })
+                                                    }
+                                                    placeholder="Color, size, capacity"
+                                                    error={errorFor(
+                                                        `variant_options.${index}.name`,
+                                                    )}
+                                                />
+                                            </div>
+                                            <div>
+                                                <span className="mb-1.5 block text-xs font-bold text-slate-500">
+                                                    Values
+                                                </span>
+                                                <ChipValueInput
+                                                    values={option.values}
+                                                    onChange={(values) =>
+                                                        updateOption(index, {
+                                                            values,
+                                                        })
+                                                    }
+                                                    placeholder="Type a value, then press Enter"
+                                                    error={errorFor(
+                                                        `variant_options.${index}.values`,
+                                                    )}
+                                                />
+                                            </div>
                                             <button
                                                 type="button"
                                                 onClick={() =>
@@ -1482,9 +1531,11 @@ export function SellerProductForm({
                                                                 </td>
                                                                 <td className="px-4 py-3">
                                                                     <input
+                                                                        aria-label={`${variant.selections.join(' / ')} SKU`}
                                                                         value={
                                                                             variant.sku
                                                                         }
+                                                                        placeholder="Variant SKU"
                                                                         onChange={(
                                                                             event,
                                                                         ) => {
@@ -1510,6 +1561,7 @@ export function SellerProductForm({
                                                                 </td>
                                                                 <td className="px-4 py-3">
                                                                     <MoneyInput
+                                                                        ariaLabel={`${variant.selections.join(' / ')} market price`}
                                                                         value={
                                                                             variant.market_price
                                                                         }
@@ -1531,6 +1583,7 @@ export function SellerProductForm({
                                                                 </td>
                                                                 <td className="px-4 py-3">
                                                                     <MoneyInput
+                                                                        ariaLabel={`${variant.selections.join(' / ')} selling price`}
                                                                         value={
                                                                             variant.selling_price
                                                                         }
@@ -1552,11 +1605,13 @@ export function SellerProductForm({
                                                                 </td>
                                                                 <td className="px-4 py-3">
                                                                     <input
+                                                                        aria-label={`${variant.selections.join(' / ')} stock quantity`}
                                                                         type="number"
                                                                         min="0"
                                                                         value={
                                                                             variant.stock_quantity
                                                                         }
+                                                                        placeholder="0"
                                                                         onChange={(
                                                                             event,
                                                                         ) =>
@@ -1584,6 +1639,7 @@ export function SellerProductForm({
                                                                 </td>
                                                                 <td className="px-4 py-3">
                                                                     <select
+                                                                        aria-label={`${variant.selections.join(' / ')} status`}
                                                                         value={
                                                                             variant.is_active
                                                                                 ? 'active'
@@ -1995,6 +2051,69 @@ function Field({
     );
 }
 
+function SegmentedChoice<Value extends string | boolean>({
+    className,
+    error,
+    onChange,
+    options,
+    value,
+}: {
+    className?: string;
+    error?: string;
+    onChange: (value: Value) => void;
+    options: SegmentedChoiceOption<Value>[];
+    value: Value;
+}) {
+    return (
+        <div
+            aria-invalid={error ? true : undefined}
+            className={cn(
+                'grid gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-950',
+                error && 'border-red-500',
+                options.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2',
+                className,
+            )}
+        >
+            {options.map((option) => {
+                const selected = option.value === value;
+
+                return (
+                    <button
+                        key={String(option.value)}
+                        type="button"
+                        onClick={() => onChange(option.value)}
+                        className={cn(
+                            'flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 py-2 text-center text-sm font-bold transition',
+                            selected
+                                ? 'bg-primary text-primary-foreground shadow-sm'
+                                : 'text-slate-600 hover:bg-white dark:text-slate-300 dark:hover:bg-slate-900',
+                            option.description && 'min-h-16 flex-col gap-1',
+                        )}
+                    >
+                        <span className="flex items-center justify-center gap-2">
+                            {option.icon}
+                            {option.label}
+                            {selected && <Check className="size-3.5" />}
+                        </span>
+                        {option.description && (
+                            <span
+                                className={cn(
+                                    'text-xs leading-4 font-medium',
+                                    selected
+                                        ? 'text-primary-foreground/80'
+                                        : 'text-slate-500',
+                                )}
+                            >
+                                {option.description}
+                            </span>
+                        )}
+                    </button>
+                );
+            })}
+        </div>
+    );
+}
+
 function TextInput({
     error,
     onChange,
@@ -2017,11 +2136,125 @@ function TextInput({
     );
 }
 
+function ChipValueInput({
+    error,
+    onChange,
+    placeholder,
+    values,
+}: {
+    error?: string;
+    onChange: (values: string[]) => void;
+    placeholder: string;
+    values: string[];
+}) {
+    const [draftValue, setDraftValue] = useState('');
+    const normalizedValues = values
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+    function addValues(incomingValues: string[]): void {
+        const existingValues = new Set(
+            normalizedValues.map((value) => value.toLocaleLowerCase()),
+        );
+        const nextValues = [...normalizedValues];
+
+        incomingValues
+            .map((value) => value.trim())
+            .filter(Boolean)
+            .forEach((value) => {
+                const normalizedValue = value.toLocaleLowerCase();
+
+                if (!existingValues.has(normalizedValue)) {
+                    existingValues.add(normalizedValue);
+                    nextValues.push(value);
+                }
+            });
+
+        if (nextValues.length !== values.length) {
+            onChange(nextValues);
+        }
+
+        setDraftValue('');
+    }
+
+    function removeValue(index: number): void {
+        onChange(
+            normalizedValues.filter((_, valueIndex) => valueIndex !== index),
+        );
+    }
+
+    function handleKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
+        if (event.key !== 'Enter' && event.key !== ',') {
+            return;
+        }
+
+        event.preventDefault();
+        addValues([draftValue]);
+    }
+
+    function handlePaste(event: ClipboardEvent<HTMLInputElement>): void {
+        const pastedText = event.clipboardData.getData('text');
+
+        if (!pastedText.includes(',') && !pastedText.includes('\n')) {
+            return;
+        }
+
+        event.preventDefault();
+        addValues([...pastedText.split(/[,\n]/), draftValue]);
+    }
+
+    return (
+        <div
+            className={cn(
+                'min-h-12 rounded-xl border px-2 py-2 transition focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 dark:bg-slate-950',
+                error
+                    ? 'border-red-500'
+                    : 'border-slate-300 dark:border-slate-700',
+            )}
+            aria-invalid={error ? true : undefined}
+        >
+            <div className="flex flex-wrap items-center gap-2">
+                {normalizedValues.map((value, index) => (
+                    <span
+                        key={`${value}-${index}`}
+                        className="inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 text-xs font-bold text-primary"
+                    >
+                        {value}
+                        <button
+                            type="button"
+                            onClick={() => removeValue(index)}
+                            aria-label={`Remove ${value}`}
+                            className="grid size-4 place-items-center rounded-full transition hover:bg-primary/15"
+                        >
+                            <X className="size-3" />
+                        </button>
+                    </span>
+                ))}
+                <input
+                    value={draftValue}
+                    onBlur={() => addValues([draftValue])}
+                    onChange={(event) => setDraftValue(event.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onPaste={handlePaste}
+                    placeholder={
+                        normalizedValues.length === 0
+                            ? placeholder
+                            : 'Add another'
+                    }
+                    className="h-8 min-w-36 flex-1 bg-transparent px-1 text-sm outline-none placeholder:text-slate-400"
+                />
+            </div>
+        </div>
+    );
+}
+
 function MoneyInput({
+    ariaLabel,
     error,
     onChange,
     value,
 }: {
+    ariaLabel?: string;
     error?: string;
     onChange: (value: string) => void;
     value: string;
@@ -2032,6 +2265,7 @@ function MoneyInput({
                 Rs.
             </span>
             <input
+                aria-label={ariaLabel}
                 type="number"
                 min="0"
                 step="0.01"
