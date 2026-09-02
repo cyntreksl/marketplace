@@ -55,6 +55,7 @@ type Listing = {
     moderation_reason: string | null;
     sku: string | null;
     barcode: string | null;
+    model: string | null;
     short_description: string | null;
     description: string | null;
     condition: string | null;
@@ -359,6 +360,10 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
                                 <DetailRow
                                     label="Barcode"
                                     value={listing.barcode ?? 'Not set'}
+                                />
+                                <DetailRow
+                                    label="Model"
+                                    value={listing.model ?? 'Not set'}
                                 />
                                 <DetailRow label="Brand" value={brandName} />
                                 <DetailRow

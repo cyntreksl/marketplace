@@ -301,6 +301,13 @@ export default function ListingShow({
                 : 'COD unavailable',
         ],
     ] as const;
+    const specificationRows = [
+        ['Brand', listing.brand?.name ?? null],
+        ['Model', listing.model],
+        ['Category', listing.category?.name ?? null],
+        ['Condition', listing.condition],
+        ...Object.entries(listing.specifications),
+    ].filter(([, value]) => value !== null && value !== '');
 
     return (
         <StorefrontLayout
@@ -372,9 +379,9 @@ export default function ListingShow({
                                 {listing.shortDescription}
                             </p>
                         )}
-                        {Object.keys(listing.specifications).length > 0 && (
+                        {specificationRows.length > 0 && (
                             <ul className="mt-5 grid gap-3 text-xs text-slate-600">
-                                {Object.entries(listing.specifications)
+                                {specificationRows
                                     .slice(0, 4)
                                     .map(([name, value]) => (
                                         <li key={name} className="flex gap-2">
@@ -723,21 +730,17 @@ export default function ListingShow({
                         )}
                         {activeTab === 'specs' && (
                             <dl className="grid max-w-3xl sm:grid-cols-2">
-                                {Object.entries(listing.specifications).map(
-                                    ([name, value]) => (
-                                        <div
-                                            key={name}
-                                            className="grid grid-cols-2 border-b p-3 text-xs"
-                                        >
-                                            <dt className="font-bold">
-                                                {name}
-                                            </dt>
-                                            <dd className="text-slate-500">
-                                                {String(value)}
-                                            </dd>
-                                        </div>
-                                    ),
-                                )}
+                                {specificationRows.map(([name, value]) => (
+                                    <div
+                                        key={name}
+                                        className="grid grid-cols-2 border-b p-3 text-xs"
+                                    >
+                                        <dt className="font-bold">{name}</dt>
+                                        <dd className="text-slate-500">
+                                            {String(value)}
+                                        </dd>
+                                    </div>
+                                ))}
                             </dl>
                         )}
                         {activeTab === 'reviews' && (

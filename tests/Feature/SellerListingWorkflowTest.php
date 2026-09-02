@@ -20,6 +20,7 @@ test('an approved seller can create a draft listing and submit it for moderation
             'category_id' => $category->id,
             'brand_name' => 'Canon',
             'sku' => 'CANON-R6-001',
+            'model' => 'EOS R6 Mark II',
             'title' => 'Canon EOS R6',
             'description' => $description,
             'condition' => 'used',
@@ -36,6 +37,7 @@ test('an approved seller can create a draft listing and submit it for moderation
 
     expect($listing->status)->toBe('draft')
         ->and($listing->commission_percentage)->toBe('8.00')
+        ->and($listing->model)->toBe('EOS R6 Mark II')
         ->and($listing->description)->toBe($description)
         ->and($listing->media)->toHaveCount(1);
 
@@ -177,6 +179,7 @@ test('a seller can view their product details', function () {
         'seller_profile_id' => $seller->id,
         'status' => 'draft',
         'title' => 'Draft mirrorless camera',
+        'model' => 'X-T5',
     ]);
 
     $this->actingAs($seller->user)
@@ -186,6 +189,7 @@ test('a seller can view their product details', function () {
             ->component('seller/listings/show')
             ->where('listing.id', $listing->id)
             ->where('listing.title', 'Draft mirrorless camera')
+            ->where('listing.model', 'X-T5')
             ->where('listing.category.id', $listing->category_id)
             ->where('listing.brand.id', $listing->brand_id));
 });
@@ -345,6 +349,7 @@ test('the seller listing page identifies listings that must be archived', functi
     $removableListing = Listing::factory()->create([
         'seller_profile_id' => $seller->id,
         'product_type' => 'variant',
+        'model' => 'Config-100',
     ]);
     $archivableListing = Listing::factory()->create(['seller_profile_id' => $seller->id]);
     OrderItem::factory()->create(['listing_id' => $archivableListing->id]);
@@ -356,6 +361,7 @@ test('the seller listing page identifies listings that must be archived', functi
 
     expect($listings[$removableListing->id]['has_orders'])->toBeFalse()
         ->and($listings[$removableListing->id]['product_type'])->toBe('variant')
+        ->and($listings[$removableListing->id]['model'])->toBe('Config-100')
         ->and($listings[$removableListing->id]['brand']['name'])->toBe($removableListing->brand->name)
         ->and($listings[$archivableListing->id]['has_orders'])->toBeTrue();
 });

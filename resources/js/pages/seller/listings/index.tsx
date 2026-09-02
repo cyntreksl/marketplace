@@ -20,6 +20,7 @@ type Listing = {
     id: number;
     title: string | null;
     sku: string | null;
+    model: string | null;
     status: string;
     moderation_reason: string | null;
     listing_type: string;
@@ -82,7 +83,7 @@ export default function SellerListings({
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
-                            <table className="w-full min-w-[64rem] text-left text-sm">
+                            <table className="w-full min-w-[70rem] text-left text-sm">
                                 <thead className="border-b border-stone-200 bg-stone-50 text-xs tracking-wider text-stone-500 uppercase dark:border-stone-800 dark:bg-stone-950 dark:text-stone-400">
                                     <tr>
                                         <th className="px-5 py-4 font-bold">
@@ -90,6 +91,9 @@ export default function SellerListings({
                                         </th>
                                         <th className="px-4 py-4 font-bold">
                                             SKU
+                                        </th>
+                                        <th className="px-4 py-4 font-bold">
+                                            Model
                                         </th>
                                         <th className="px-4 py-4 font-bold">
                                             Category
@@ -138,6 +142,9 @@ export default function SellerListings({
                                                 </td>
                                                 <td className="px-4 py-4 align-top font-medium text-stone-600 dark:text-stone-300">
                                                     {listing.sku ?? '—'}
+                                                </td>
+                                                <td className="px-4 py-4 align-top text-stone-600 dark:text-stone-300">
+                                                    {listing.model ?? '—'}
                                                 </td>
                                                 <td className="px-4 py-4 align-top text-stone-600 dark:text-stone-300">
                                                     {listing.category?.name ??

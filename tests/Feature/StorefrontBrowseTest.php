@@ -33,13 +33,17 @@ test('product pages receive a full root to leaf category trail', function () {
     $root = Category::factory()->create(['name' => 'Electronics', 'slug' => 'electronics']);
     $parent = Category::factory()->create(['parent_id' => $root->id, 'name' => 'Computers', 'slug' => 'electronics-computers']);
     $leaf = Category::factory()->create(['parent_id' => $parent->id, 'name' => 'Laptops', 'slug' => 'electronics-computers-laptops']);
-    $listing = Listing::factory()->create(['category_id' => $leaf->id]);
+    $listing = Listing::factory()->create([
+        'category_id' => $leaf->id,
+        'model' => 'ThinkPad T14',
+    ]);
 
     $this->get(route('listings.show', $listing->slug))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('storefront/listings/show')
             ->has('categoryTrail', 3)
+            ->where('listing.model', 'ThinkPad T14')
             ->where('categoryTrail.0.id', $root->id)
             ->where('categoryTrail.1.id', $parent->id)
             ->where('categoryTrail.2.id', $leaf->id));

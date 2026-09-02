@@ -236,6 +236,7 @@ class StorefrontService
             'shortDescription' => $detailed ? $listing->short_description : null,
             'metaTitle' => $detailed ? $listing->meta_title : null,
             'metaDescription' => $detailed ? $listing->meta_description : null,
+            'model' => $detailed ? $listing->model : null,
             'condition' => $listing->condition,
             'listingType' => $listing->listing_type,
             'price' => $listing->price,

@@ -74,6 +74,7 @@ export type StorefrontListing = {
     shortDescription: string | null;
     metaTitle: string | null;
     metaDescription: string | null;
+    model: string | null;
     condition: 'new' | 'used' | 'refurbished';
     listingType: 'buy_now' | 'auction';
     productType: 'simple' | 'variant';

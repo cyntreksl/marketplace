@@ -90,6 +90,7 @@ export type SellerProductFormListing = {
     title: string | null;
     sku: string | null;
     barcode: string | null;
+    model: string | null;
     category_id: number | null;
     brand_id: number | null;
     brand_name: string | null;
@@ -127,6 +128,7 @@ type ProductFormData = {
     short_description: string;
     description: string;
     condition: string;
+    model: string;
     product_type: 'simple' | 'variant';
     location: string;
     warranty: string;
@@ -229,6 +231,7 @@ export function SellerProductForm({
         brand_name: listing?.brand_name ?? '',
         sku: listing?.sku ?? '',
         barcode: listing?.barcode ?? '',
+        model: listing?.model ?? '',
         title: listing?.title ?? '',
         short_description: listing?.short_description ?? '',
         description: listing?.description ?? '',
@@ -847,6 +850,16 @@ export function SellerProductForm({
                                     }
                                     placeholder="Enter barcode (optional)"
                                     error={errorFor('barcode')}
+                                />
+                            </Field>
+                            <Field label="Model" error={errorFor('model')}>
+                                <TextInput
+                                    value={form.data.model}
+                                    onChange={(value) =>
+                                        setField('model', value)
+                                    }
+                                    placeholder="Enter model (optional)"
+                                    error={errorFor('model')}
                                 />
                             </Field>
                             <Field
