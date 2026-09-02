@@ -135,7 +135,6 @@ type ProductFormData = {
     condition: string;
     model: string;
     product_type: 'simple' | 'variant';
-    location: string;
     warranty: string;
     stock_quantity: number | '';
     selling_price: string;
@@ -243,7 +242,6 @@ export function SellerProductForm({
         specifications_text: specificationsText(listing?.specifications),
         condition: listing?.condition ?? 'new',
         product_type: listing?.product_type ?? 'simple',
-        location: listing?.location ?? '',
         warranty: listing?.warranty ?? '',
         stock_quantity: listing?.stock_quantity ?? '',
         selling_price: listing?.sale_price ?? listing?.price ?? '',
@@ -765,6 +763,7 @@ export function SellerProductForm({
         form.transform((data) => ({
             ...data,
             description: sanitizeRichText(data.description),
+            specifications_text: sanitizeRichText(data.specifications_text),
             variants: data.variants.map((variant) => ({
                 selections: variant.selections,
                 sku: variant.sku,
@@ -1029,20 +1028,6 @@ export function SellerProductForm({
                                 </select>
                             </Field>
                             <Field
-                                label="Location"
-                                error={errorFor('location')}
-                                required
-                            >
-                                <TextInput
-                                    value={form.data.location}
-                                    onChange={(value) =>
-                                        setField('location', value)
-                                    }
-                                    placeholder="e.g. Colombo"
-                                    error={errorFor('location')}
-                                />
-                            </Field>
-                            <Field
                                 label="Warranty"
                                 error={errorFor('warranty')}
                             >
@@ -1104,25 +1089,14 @@ export function SellerProductForm({
                                 error={errorFor('specifications_text')}
                                 className="md:col-span-3"
                             >
-                                <textarea
+                                <RichTextEditor
+                                    id="product-specifications"
                                     value={form.data.specifications_text}
-                                    onChange={(event) =>
-                                        setField(
-                                            'specifications_text',
-                                            event.target.value,
-                                        )
+                                    onChange={(value) =>
+                                        setField('specifications_text', value)
                                     }
-                                    rows={6}
                                     placeholder="Enter product specifications (optional)"
-                                    aria-invalid={
-                                        errorFor('specifications_text')
-                                            ? true
-                                            : undefined
-                                    }
-                                    className={inputClass(
-                                        errorFor('specifications_text'),
-                                        'h-auto resize-y py-3',
-                                    )}
+                                    error={errorFor('specifications_text')}
                                 />
                             </Field>
                         </div>

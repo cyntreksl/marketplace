@@ -97,7 +97,6 @@ test('submission requires a complete product while drafts still enforce pricing 
             'title',
             'description',
             'condition',
-            'location',
             'selling_price',
             'images',
         ]);

@@ -1,6 +1,7 @@
 import { Link, useHttp } from '@inertiajs/react';
 import { X } from 'lucide-react';
 import { useEffect } from 'react';
+import { richTextPlainText } from '@/components/rich-text-editor';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { useProductComparison } from '@/hooks/use-product-comparison';
 import {
@@ -147,11 +148,21 @@ export default function Compare({
                                             [
                                                 name,
                                                 (item: StorefrontListing) =>
-                                                    String(
-                                                        item.specifications[
-                                                            name
-                                                        ] ?? '—',
-                                                    ),
+                                                    name === 'Details'
+                                                        ? richTextPlainText(
+                                                              String(
+                                                                  item
+                                                                      .specifications[
+                                                                      name
+                                                                  ] ?? '—',
+                                                              ),
+                                                          )
+                                                        : String(
+                                                              item
+                                                                  .specifications[
+                                                                  name
+                                                              ] ?? '—',
+                                                          ),
                                             ] as const,
                                     ),
                                 ].map(([label, read]) => (

@@ -15,6 +15,7 @@ test('an approved seller can create a draft listing and submit it for moderation
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create(['commission_percentage' => 8]);
     $description = '<p>A well cared for <strong>full-frame</strong> camera body.</p><ul><li>Low shutter count</li><li>Original box included</li></ul>';
+    $specifications = '<p><strong>Sensor:</strong> 24MP full-frame</p><ul><li>Dual card slots</li></ul>';
 
     $this->actingAs($seller->user)
         ->post(route('seller.listings.store'), [
@@ -24,10 +25,9 @@ test('an approved seller can create a draft listing and submit it for moderation
             'model' => 'EOS R6 Mark II',
             'title' => 'Canon EOS R6',
             'description' => $description,
-            'specifications_text' => "24MP full-frame sensor\nDual card slots",
+            'specifications_text' => $specifications,
             'condition' => 'used',
             'listing_type' => 'buy_now',
-            'location' => 'Colombo',
             'stock_quantity' => 2,
             'price' => '325000.00',
             'images' => [UploadedFile::fake()->image('camera.jpg', 1600, 1600)],
@@ -40,7 +40,8 @@ test('an approved seller can create a draft listing and submit it for moderation
     expect($listing->status)->toBe('draft')
         ->and($listing->commission_percentage)->toBe('8.00')
         ->and($listing->model)->toBe('EOS R6 Mark II')
-        ->and($listing->specifications)->toBe(['Details' => "24MP full-frame sensor\nDual card slots"])
+        ->and($listing->specifications)->toBe(['Details' => $specifications])
+        ->and($listing->location)->toBeNull()
         ->and($listing->description)->toBe($description)
         ->and($listing->media)->toHaveCount(1);
 
@@ -104,7 +105,6 @@ test('an approved seller can save a typed brand draft or submit it directly for 
             'description' => 'Compact binoculars in excellent condition.',
             'condition' => 'used',
             'listing_type' => 'buy_now',
-            'location' => 'Kandy',
             'stock_quantity' => 1,
             'price' => '18500.00',
             'images' => [UploadedFile::fake()->image('binoculars.jpg', 1600, 1600)],
@@ -127,7 +127,6 @@ test('an approved seller can save a typed brand draft or submit it directly for 
             'description' => 'A compact telescope ready for stargazing.',
             'condition' => 'new',
             'listing_type' => 'buy_now',
-            'location' => 'Kandy',
             'stock_quantity' => 1,
             'price' => '24500.00',
             'images' => [UploadedFile::fake()->image('telescope.jpg', 1600, 1600)],

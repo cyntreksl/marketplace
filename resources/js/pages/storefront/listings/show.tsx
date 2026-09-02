@@ -27,7 +27,10 @@ import {
     store as addWish,
 } from '@/actions/App/Http/Controllers/WatchlistController';
 import { ListingCard } from '@/components/listing-card';
-import { RichTextContent } from '@/components/rich-text-editor';
+import {
+    RichTextContent,
+    richTextPlainText,
+} from '@/components/rich-text-editor';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { useProductComparison } from '@/hooks/use-product-comparison';
 import { home, login } from '@/routes';
@@ -387,7 +390,11 @@ export default function ListingShow({
                                         <li key={name} className="flex gap-2">
                                             <Check className="size-4 text-slate-400" />
                                             <strong>{name}:</strong>{' '}
-                                            {String(value)}
+                                            {name === 'Details'
+                                                ? richTextPlainText(
+                                                      String(value),
+                                                  )
+                                                : String(value)}
                                         </li>
                                     ))}
                             </ul>
@@ -737,9 +744,15 @@ export default function ListingShow({
                                     >
                                         <dt className="font-bold">{name}</dt>
                                         <dd className="text-slate-500">
-                                            <span className="whitespace-pre-line">
-                                                {String(value)}
-                                            </span>
+                                            {name === 'Details' ? (
+                                                <RichTextContent
+                                                    value={String(value)}
+                                                />
+                                            ) : (
+                                                <span className="whitespace-pre-line">
+                                                    {String(value)}
+                                                </span>
+                                            )}
                                         </dd>
                                     </div>
                                 ))}

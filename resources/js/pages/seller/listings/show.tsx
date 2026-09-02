@@ -410,9 +410,18 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
                                                     key={name}
                                                     label={name}
                                                     value={
-                                                        <span className="whitespace-pre-line">
-                                                            {String(value)}
-                                                        </span>
+                                                        name === 'Details' ? (
+                                                            <RichTextContent
+                                                                value={String(
+                                                                    value,
+                                                                )}
+                                                                className="text-sm text-slate-600 dark:text-slate-300"
+                                                            />
+                                                        ) : (
+                                                            <span className="whitespace-pre-line">
+                                                                {String(value)}
+                                                            </span>
+                                                        )
                                                     }
                                                 />
                                             ),
@@ -612,7 +621,7 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
                                     MapPin,
                                     listing.location
                                         ? 'Location set'
-                                        : 'No location',
+                                        : 'Location optional',
                                 ],
                                 [
                                     ShieldCheck,

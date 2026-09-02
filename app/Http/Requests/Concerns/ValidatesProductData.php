@@ -45,7 +45,7 @@ trait ValidatesProductData
             'specifications_text' => ['nullable', 'string', 'max:10000'],
             'condition' => [$requiredForPublishing, 'nullable', Rule::in(['new', 'used', 'refurbished'])],
             'product_type' => ['required', Rule::in(['simple', 'variant'])],
-            'location' => [$requiredForPublishing, 'nullable', 'string', 'max:120'],
+            'location' => ['nullable', 'string', 'max:120'],
             'warranty' => ['nullable', 'string', 'max:500'],
             'stock_quantity' => [Rule::requiredIf($publishing && $this->input('product_type') === 'simple'), 'nullable', 'integer', 'min:0', 'max:100000'],
             'selling_price' => [Rule::excludeIf($this->input('product_type') === 'variant'), Rule::requiredIf($publishing), 'nullable', 'decimal:0,2', 'min:1'],
