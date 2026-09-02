@@ -155,6 +155,7 @@ jobs:
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl stop prodeals-worker || true'
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" "${remote_script} migrate ${RELEASE_ID}"
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" "${remote_script} activate ${RELEASE_ID}"
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" "${remote_script} migrate-media ${RELEASE_ID}"
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" "${remote_script} activate ${RELEASE_ID}"
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" 'sudo systemctl restart php8.4-fpm && sudo systemctl reload nginx'
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl reread && sudo supervisorctl update && sudo supervisorctl restart prodeals-worker'

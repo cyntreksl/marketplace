@@ -67,6 +67,13 @@ migrate_release() {
     )
 }
 
+migrate_media_release() {
+    (
+        cd "$release_dir"
+        php8.4 artisan media:migrate-to-r2 --source=public --destination=r2
+    )
+}
+
 activate_release() {
     local previous_release
     local next_link="${app_root}/.current-${release_id}"
@@ -132,6 +139,9 @@ case "$command_name" in
     migrate)
         migrate_release
         ;;
+    migrate-media)
+        migrate_media_release
+        ;;
     activate)
         activate_release
         ;;
@@ -142,7 +152,7 @@ case "$command_name" in
         cleanup_releases
         ;;
     *)
-        echo "Usage: $0 {prepare|migrate|activate|rollback|cleanup} RELEASE_ID [ARTIFACT]" >&2
+        echo "Usage: $0 {prepare|migrate|migrate-media|activate|rollback|cleanup} RELEASE_ID [ARTIFACT]" >&2
         exit 1
         ;;
 esac
