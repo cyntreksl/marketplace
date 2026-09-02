@@ -87,10 +87,19 @@ test('homepage output filters curated listings and uses the reference-first coll
         ->missing('socialProof'));
 
     $homeComponent = file_get_contents(resource_path('js/pages/storefront/home.tsx'));
+    $storefrontLayout = file_get_contents(resource_path('js/components/storefront-layout.tsx'));
 
     expect($homeComponent)
         ->toContain('Featured Deals')
-        ->toContain('New Arrivals');
+        ->toContain('New Arrivals')
+        ->toContain('Popular categories')
+        ->toContain('popularCategories.slice(0, 8)')
+        ->toContain('Big tech. Bigger savings.')
+        ->and($storefrontLayout)
+        ->toContain('bg-[#FF6D00]')
+        ->toContain('LKR · Sri Lankan Rupee')
+        ->toContain('All Categories')
+        ->toContain('Call to Order');
 });
 
 test('recently viewed listings preserve requested order and exclude unavailable products', function () {

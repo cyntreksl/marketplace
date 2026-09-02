@@ -1,9 +1,11 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
 import {
+    ChevronDown,
     CircleHelp,
     Heart,
     MapPin,
     PackageSearch,
+    Phone,
     Search,
     ShoppingCart,
     UserRound,
@@ -28,7 +30,7 @@ function CountBadge({ count }: { count: number }) {
     }
 
     return (
-        <span className="absolute -top-1 -right-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#ff5a00] px-1 text-[9px] font-bold text-white">
+        <span className="absolute -top-1 -right-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-[#FF6D00] px-1 text-[9px] font-bold text-white">
             {count > 99 ? '99+' : count}
         </span>
     );
@@ -81,33 +83,38 @@ export function StorefrontLayout({
                 )}
             </Head>
             <header className="relative z-40 border-b border-slate-100 bg-white">
-                <div className="bg-[#c2410c] text-white">
-                    <div className="mx-auto flex max-w-[96rem] items-center justify-between gap-4 px-4 py-2 text-[11px] sm:px-6">
-                        <label className="flex items-center gap-1.5 font-semibold">
-                            <MapPin className="size-3.5" />
-                            <span className="hidden sm:inline">Deliver to</span>
-                            <select
-                                value={location}
-                                onChange={(event) =>
-                                    setDeliveryLocation(event.target.value)
-                                }
-                                className="max-w-32 bg-transparent font-bold outline-none"
-                                aria-label="Delivery location"
-                            >
-                                {locations.map((item) => (
-                                    <option
-                                        key={item}
-                                        value={item}
-                                        className="text-slate-900"
-                                    >
-                                        {item}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                        <span className="hidden font-semibold sm:block">
-                            LKR · Sri Lankan Rupee
-                        </span>
+                <div className="bg-[#FF6D00] text-white">
+                    <div className="mx-auto flex min-h-10 max-w-[82rem] items-center justify-between gap-4 px-4 text-[11px] sm:px-6">
+                        <div className="flex min-w-0 items-center gap-3 sm:gap-8">
+                            <label className="flex min-w-0 items-center gap-1.5 font-semibold">
+                                <MapPin className="size-4 shrink-0" />
+                                <span className="hidden sm:inline">
+                                    Deliver to
+                                </span>
+                                <select
+                                    value={location}
+                                    onChange={(event) =>
+                                        setDeliveryLocation(event.target.value)
+                                    }
+                                    className="max-w-28 truncate bg-transparent font-bold outline-none sm:max-w-36"
+                                    aria-label="Delivery location"
+                                >
+                                    {locations.map((item) => (
+                                        <option
+                                            key={item}
+                                            value={item}
+                                            className="text-slate-900"
+                                        >
+                                            {item}
+                                        </option>
+                                    ))}
+                                </select>
+                            </label>
+                            <span className="hidden items-center gap-1.5 border-l border-white/25 pl-8 font-semibold md:flex">
+                                LKR · Sri Lankan Rupee
+                                <ChevronDown className="size-3" />
+                            </span>
+                        </div>
                         <div className="flex items-center gap-4 font-semibold">
                             <Link
                                 href="/help"
@@ -126,24 +133,26 @@ export function StorefrontLayout({
                     </div>
                 </div>
 
-                <div className="mx-auto flex max-w-[96rem] items-center gap-3 px-4 py-3 sm:px-6 lg:gap-6">
-                    <MobileStorefrontCategoryMenu
-                        categories={categories}
-                        selectedCategorySlug={null}
-                        isAllProductsSelected={false}
-                    />
+                <div className="mx-auto flex max-w-[82rem] items-center gap-3 px-4 py-3 sm:px-6 lg:gap-5 lg:py-4">
+                    <div className="lg:hidden">
+                        <MobileStorefrontCategoryMenu
+                            categories={categories}
+                            selectedCategorySlug={null}
+                            isAllProductsSelected={false}
+                        />
+                    </div>
                     <Link
                         href={home()}
                         className="shrink-0"
                         aria-label="ProDeals.lk home"
                     >
-                        <BrandLogo className="text-xl sm:text-2xl" />
+                        <BrandLogo className="scale-90 sm:scale-100" />
                     </Link>
                     <Form
                         {...listingsIndex.form()}
                         className="hidden min-w-0 flex-1 md:block"
                     >
-                        <label className="flex h-11 overflow-hidden rounded-lg border border-slate-200 bg-white focus-within:border-[#ff5a00] focus-within:ring-2 focus-within:ring-orange-100">
+                        <label className="flex h-11 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm focus-within:border-[#FF6D00] focus-within:ring-2 focus-within:ring-orange-100">
                             <span className="sr-only">Search products</span>
                             <input
                                 name="search"
@@ -166,7 +175,7 @@ export function StorefrontLayout({
                                 ))}
                             </select>
                             <button
-                                className="m-1 grid w-10 place-items-center rounded-md bg-[#ff5a00] text-white"
+                                className="m-1 grid w-10 place-items-center rounded-md bg-[#FF6D00] text-white transition hover:bg-[#e86100]"
                                 aria-label="Search"
                             >
                                 <Search className="size-4" />
@@ -212,9 +221,19 @@ export function StorefrontLayout({
                         {marketplace.support.phone ? (
                             <a
                                 href={`tel:${marketplace.support.phone}`}
-                                className="hidden rounded-full border px-4 py-2 text-xs font-bold xl:block"
+                                className="hidden items-center gap-2 rounded-full border border-slate-200 py-1.5 pr-4 pl-1.5 text-xs font-bold shadow-sm xl:flex"
                             >
-                                {marketplace.support.phone}
+                                <span className="grid size-8 place-items-center rounded-full bg-[#FF6D00] text-white">
+                                    <Phone className="size-4" />
+                                </span>
+                                <span>
+                                    <span className="block">
+                                        {marketplace.support.phone}
+                                    </span>
+                                    <span className="block text-[9px] font-medium text-slate-500">
+                                        Call to Order
+                                    </span>
+                                </span>
                             </a>
                         ) : (
                             <button
@@ -228,21 +247,31 @@ export function StorefrontLayout({
                     </div>
                 </div>
 
-                <div className="mx-auto max-w-[96rem] px-4 pb-3 sm:px-6">
-                    <div className="flex [scrollbar-width:none] items-center gap-5 overflow-x-auto text-xs font-bold whitespace-nowrap">
+                <div className="mx-auto max-w-[82rem] px-4 pb-3 sm:px-6">
+                    <div className="flex [scrollbar-width:none] items-center gap-5 overflow-x-auto text-xs font-bold whitespace-nowrap lg:justify-between lg:gap-3">
                         <Link
                             href={listingsIndex()}
-                            className="rounded-lg border px-4 py-2 hover:border-[#ff5a00] hover:text-[#ff5a00]"
+                            className="rounded-lg border border-slate-200 px-4 py-2.5 shadow-sm hover:border-[#FF6D00] hover:text-[#FF6D00]"
                         >
                             ☰ &nbsp; All Categories
                         </Link>
-                        {navigation.map(([label, href]) => (
+                        {navigation.map(([label, href], index) => (
                             <Link
                                 key={href}
                                 href={href}
-                                className="py-2 hover:text-[#ff5a00]"
+                                className="flex items-center gap-1.5 py-2 hover:text-[#FF6D00]"
                             >
                                 {label}
+                                {index === 0 && (
+                                    <span className="rounded-full bg-[#FF6D00] px-1.5 py-0.5 text-[8px] font-black text-white uppercase">
+                                        Hot
+                                    </span>
+                                )}
+                                {index === 4 && (
+                                    <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[8px] font-black text-white uppercase">
+                                        Sale
+                                    </span>
+                                )}
                             </Link>
                         ))}
                         <button
@@ -269,7 +298,7 @@ export function StorefrontLayout({
                                 className="min-w-0 flex-1 px-3 text-sm outline-none"
                             />
                             <button
-                                className="grid w-10 place-items-center text-[#ff5a00]"
+                                className="grid w-10 place-items-center text-[#FF6D00]"
                                 aria-label="Search"
                             >
                                 <Search className="size-4" />

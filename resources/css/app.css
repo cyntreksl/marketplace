@@ -68,7 +68,7 @@
     --card-foreground: #000000;
     --popover: #ffffff;
     --popover-foreground: #000000;
-    --primary: #ff6000;
+    --primary: #ff6d00;
     --primary-foreground: #ffffff;
     --secondary: #e8eef9;
     --secondary-foreground: #171717;
@@ -80,21 +80,21 @@
     --destructive-foreground: oklch(0.577 0.245 27.325);
     --border: #dbe3ef;
     --input: #dbe3ef;
-    --ring: #ff6000;
-    --chart-1: #ff6000;
+    --ring: #ff6d00;
+    --chart-1: #ff6d00;
     --chart-2: #2764a8;
     --chart-3: #000000;
-    --chart-4: #ff6000;
+    --chart-4: #ff6d00;
     --chart-5: #c96b45;
     --radius: 0.625rem;
     --sidebar: #f4f7fc;
     --sidebar-foreground: #000000;
-    --sidebar-primary: #ff6000;
+    --sidebar-primary: #ff6d00;
     --sidebar-primary-foreground: #ffffff;
     --sidebar-accent: #dcecf0;
     --sidebar-accent-foreground: #171717;
     --sidebar-border: #dbe3ef;
-    --sidebar-ring: #ff6000;
+    --sidebar-ring: #ff6d00;
 }
 
 .dark {
@@ -119,7 +119,7 @@
     --ring: #ff7518;
     --chart-1: #ff7518;
     --chart-2: #71aaf1;
-    --chart-3: #ff6000;
+    --chart-3: #ff6d00;
     --chart-4: #b89cff;
     --chart-5: #f08a5d;
     --sidebar: #0f2040;
@@ -133,17 +133,17 @@
 }
 
 .portal-theme-buyer {
-    --primary: #ff6000;
+    --primary: #ff6d00;
     --primary-foreground: #ffffff;
     --accent: #dcecf0;
     --accent-foreground: #171717;
-    --ring: #ff6000;
-    --chart-1: #ff6000;
-    --sidebar-primary: #ff6000;
+    --ring: #ff6d00;
+    --chart-1: #ff6d00;
+    --sidebar-primary: #ff6d00;
     --sidebar-primary-foreground: #ffffff;
     --sidebar-accent: #dcecf0;
     --sidebar-accent-foreground: #171717;
-    --sidebar-ring: #ff6000;
+    --sidebar-ring: #ff6d00;
 }
 
 .portal-theme-seller {
@@ -189,17 +189,17 @@
 }
 
 .dark .portal-theme-seller {
-    --primary: #ff6000;
+    --primary: #ff6d00;
     --primary-foreground: #3b2600;
     --accent: #4a3212;
     --accent-foreground: #fef3c7;
-    --ring: #ff6000;
-    --chart-1: #ff6000;
-    --sidebar-primary: #ff6000;
+    --ring: #ff6d00;
+    --chart-1: #ff6d00;
+    --sidebar-primary: #ff6d00;
     --sidebar-primary-foreground: #3b2600;
     --sidebar-accent: #4a3212;
     --sidebar-accent-foreground: #fef3c7;
-    --sidebar-ring: #ff6000;
+    --sidebar-ring: #ff6d00;
 }
 
 .dark .portal-theme-admin {

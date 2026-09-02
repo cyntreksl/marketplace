@@ -63,11 +63,11 @@ test('authenticated portals use distinct ProDeals theme colors', function () {
     $portalLayout = file_get_contents(resource_path('js/components/portal-layout.tsx'));
 
     expect($stylesheet)
-        ->toContain('.portal-theme-buyer {', '--primary: #ff6000;')
+        ->toContain('.portal-theme-buyer {', '--primary: #ff6d00;')
         ->toContain('.portal-theme-seller {', '--primary: #b45309;')
         ->toContain('.portal-theme-admin {', '--primary: #171717;')
         ->toContain('.dark .portal-theme-buyer {')
-        ->toContain('.dark .portal-theme-seller {', '--primary: #ff6000;')
+        ->toContain('.dark .portal-theme-seller {', '--primary: #ff6d00;')
         ->toContain('.dark .portal-theme-admin {')
         ->and($portalLayout)
         ->toContain('className={`portal-theme-${portal}');

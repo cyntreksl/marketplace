@@ -77,7 +77,7 @@ function HeroCarousel({ slides }: { slides: StorefrontPromotion[] }) {
 
     return (
         <section
-            className="relative min-h-[17rem] overflow-hidden rounded-xl bg-orange-100 sm:min-h-[22rem]"
+            className="relative isolate min-h-[19rem] overflow-hidden rounded-2xl bg-[#fff1e5] shadow-sm ring-1 ring-orange-100 sm:min-h-[21rem] lg:min-h-[22rem]"
             aria-roledescription="carousel"
             aria-label="Featured offers"
             onMouseEnter={() => setPaused(true)}
@@ -88,23 +88,24 @@ function HeroCarousel({ slides }: { slides: StorefrontPromotion[] }) {
             <img
                 src={slide.imageUrl}
                 alt={slide.artworkAlt ?? ''}
-                className="absolute inset-0 size-full object-cover"
+                className="absolute inset-0 size-full object-cover object-center sm:object-right"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-50/95 via-orange-50/65 to-transparent" />
-            <div className="relative z-10 flex min-h-[17rem] max-w-xl flex-col justify-center p-7 sm:min-h-[22rem] sm:p-12">
-                <p className="text-[10px] font-extrabold tracking-wide text-[#ff5a00] uppercase">
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,#fff8f1_0%,rgba(255,248,241,0.96)_35%,rgba(255,240,225,0.67)_58%,rgba(255,109,0,0.2)_100%)]" />
+            <div className="absolute inset-y-0 right-0 w-1/3 bg-gradient-to-l from-[#FF6D00]/35 to-transparent" />
+            <div className="relative z-10 flex min-h-[19rem] max-w-[38rem] flex-col justify-center px-8 py-10 sm:min-h-[21rem] sm:px-14 lg:min-h-[22rem] lg:px-16">
+                <p className="text-[10px] font-extrabold tracking-[0.14em] text-[#FF6D00] uppercase sm:text-xs">
                     Big tech. Bigger savings.
                 </p>
-                <h1 className="mt-2 text-3xl leading-none font-black tracking-tight sm:text-5xl">
+                <h1 className="mt-2 max-w-lg text-3xl leading-[0.98] font-black tracking-tight text-slate-950 sm:text-5xl lg:text-[3.4rem]">
                     {slide.title}
                 </h1>
-                <p className="mt-3 max-w-sm text-sm text-slate-700">
+                <p className="mt-4 max-w-sm text-sm leading-5 text-slate-700 sm:text-base">
                     {slide.subtitle ??
                         'Top brands. Unbeatable prices. Only at prodeals.lk.'}
                 </p>
                 <Link
                     href={slide.linkUrl ?? listingsIndex()}
-                    className="mt-5 inline-flex w-max items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-xs font-bold text-white"
+                    className="mt-6 inline-flex w-max items-center gap-2 rounded-full bg-slate-950 px-5 py-3 text-xs font-bold text-white shadow-lg shadow-slate-950/15 transition hover:-translate-y-0.5 hover:bg-[#FF6D00] motion-reduce:transform-none"
                 >
                     {slide.ctaLabel ?? 'Shop All Deals'}{' '}
                     <ChevronRight className="size-4" />
@@ -114,14 +115,14 @@ function HeroCarousel({ slides }: { slides: StorefrontPromotion[] }) {
                 <>
                     <button
                         onClick={() => move(-1)}
-                        className="absolute top-1/2 left-3 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-white/90 shadow"
+                        className="absolute top-1/2 left-3 z-20 grid size-9 -translate-y-1/2 place-items-center rounded-full border border-white bg-white/90 shadow transition hover:bg-white"
                         aria-label="Previous slide"
                     >
                         <ChevronLeft className="size-4" />
                     </button>
                     <button
                         onClick={() => move(1)}
-                        className="absolute top-1/2 right-3 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-white/90 shadow"
+                        className="absolute top-1/2 right-3 z-20 grid size-9 -translate-y-1/2 place-items-center rounded-full border border-white bg-white/90 shadow transition hover:bg-white"
                         aria-label="Next slide"
                     >
                         <ChevronRight className="size-4" />
@@ -133,7 +134,7 @@ function HeroCarousel({ slides }: { slides: StorefrontPromotion[] }) {
                                 onClick={() => setActive(index)}
                                 aria-label={`Show slide ${index + 1}`}
                                 aria-current={index === active}
-                                className={`h-2 rounded-full transition-all ${index === active ? 'w-5 bg-[#ff5a00]' : 'w-2 bg-white'}`}
+                                className={`h-2 rounded-full shadow-sm transition-all ${index === active ? 'w-5 bg-[#FF6D00]' : 'w-2 bg-white'}`}
                             />
                         ))}
                         <button
@@ -167,13 +168,13 @@ function SectionTitle({
 }) {
     return (
         <div className="mb-3 flex items-center gap-2 border-b border-slate-100 pb-2">
-            <span className="h-0.5 w-6 bg-[#ff5a00]" />
+            <span className="h-0.5 w-6 bg-[#FF6D00]" />
             {icon}
             <h2 className="text-sm font-extrabold">{title}</h2>
             {href && (
                 <Link
                     href={href}
-                    className="ml-auto text-[10px] font-semibold text-slate-500 hover:text-[#ff5a00]"
+                    className="ml-auto text-[10px] font-semibold text-slate-500 hover:text-[#FF6D00]"
                 >
                     View All
                 </Link>
@@ -265,7 +266,7 @@ function Countdown({ endsAt }: { endsAt: string }) {
             {values.map((value, index) => (
                 <span
                     key={index}
-                    className="rounded border border-orange-200 bg-orange-50 px-2 py-1 text-[10px] font-extrabold text-[#ff5a00]"
+                    className="rounded border border-orange-200 bg-orange-50 px-2 py-1 text-[10px] font-extrabold text-[#FF6D00]"
                 >
                     {String(value).padStart(2, '0')}
                 </span>
@@ -330,36 +331,35 @@ export default function StorefrontHome({
             title="Sri Lanka’s marketplace for better deals"
             categories={categories}
         >
-            <main className="mx-auto max-w-[96rem] px-4 py-4 sm:px-6">
+            <main className="mx-auto max-w-[82rem] px-4 py-4 sm:px-6">
                 <HeroCarousel slides={promotions.hero} />
 
                 <section
-                    className="mt-4 flex snap-x [scrollbar-width:none] gap-3 overflow-x-auto pb-2"
+                    className="mt-4 flex snap-x snap-mandatory [scrollbar-width:none] gap-3 overflow-x-auto pb-2"
                     aria-label="Popular categories"
                 >
-                    {popularCategories.map((category) => (
+                    {popularCategories.slice(0, 8).map((category) => (
                         <Link
                             key={category.id}
                             href={listingsIndex({
                                 query: { category: category.slug },
                             })}
-                            className="flex w-28 shrink-0 snap-start flex-col items-center rounded-lg border border-slate-200 p-2 text-center hover:border-orange-200 sm:w-36"
+                            className="group flex h-30 w-28 shrink-0 snap-start flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF6D00]/40 hover:shadow-md motion-reduce:transform-none sm:h-32 sm:w-[8.6rem]"
                         >
                             <StorefrontCategoryArtwork
                                 category={category}
-                                fallback="initial"
-                                className="aspect-[4/3] w-full rounded-md bg-slate-50"
+                                className="size-16 rounded-lg bg-slate-50 text-[#FF6D00] ring-0 sm:size-20"
                             />
-                            <span className="mt-2 line-clamp-1 text-[10px] font-bold">
+                            <span className="mt-2 line-clamp-1 text-[10px] font-bold sm:text-[11px]">
                                 {category.name}
                             </span>
                         </Link>
                     ))}
                     <Link
                         href={listingsIndex()}
-                        className="grid w-24 shrink-0 place-items-center rounded-lg border text-[10px] font-bold hover:text-[#ff5a00]"
+                        className="grid h-30 w-24 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-[10px] font-bold shadow-sm transition hover:border-[#FF6D00]/40 hover:text-[#FF6D00] sm:h-32"
                     >
-                        <Grid2X2 className="size-6 text-[#ff5a00]" />
+                        <Grid2X2 className="size-6 text-[#FF6D00]" />
                         View All
                     </Link>
                 </section>
@@ -411,7 +411,7 @@ export default function StorefrontHome({
                 {flashSale && (
                     <section className="mt-6">
                         <div className="flex items-center border-b pb-2">
-                            <Zap className="size-4 fill-[#ff5a00] text-[#ff5a00]" />
+                            <Zap className="size-4 fill-[#FF6D00] text-[#FF6D00]" />
                             <h2 className="ml-2 text-sm font-extrabold">
                                 {flashSale.title}
                             </h2>
