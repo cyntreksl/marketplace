@@ -1371,7 +1371,7 @@ export function SellerProductForm({
                                                     removeOption(index)
                                                 }
                                                 aria-label={`Remove option ${index + 1}`}
-                                                className="grid size-12 place-items-center rounded-xl border border-red-200 text-red-600 transition hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30"
+                                                className="grid size-12 place-items-center rounded-xl border border-red-200 text-red-600 transition hover:bg-red-50 md:self-end dark:border-red-900 dark:hover:bg-red-950/30"
                                             >
                                                 <Trash2 className="size-4" />
                                             </button>
