@@ -342,7 +342,10 @@ test('a seller cannot remove or archive another sellers listing', function () {
 
 test('the seller listing page identifies listings that must be archived', function () {
     $seller = SellerProfile::factory()->create();
-    $removableListing = Listing::factory()->create(['seller_profile_id' => $seller->id]);
+    $removableListing = Listing::factory()->create([
+        'seller_profile_id' => $seller->id,
+        'product_type' => 'variant',
+    ]);
     $archivableListing = Listing::factory()->create(['seller_profile_id' => $seller->id]);
     OrderItem::factory()->create(['listing_id' => $archivableListing->id]);
 
@@ -352,5 +355,7 @@ test('the seller listing page identifies listings that must be archived', functi
         ->keyBy('id');
 
     expect($listings[$removableListing->id]['has_orders'])->toBeFalse()
+        ->and($listings[$removableListing->id]['product_type'])->toBe('variant')
+        ->and($listings[$removableListing->id]['brand']['name'])->toBe($removableListing->brand->name)
         ->and($listings[$archivableListing->id]['has_orders'])->toBeTrue();
 });

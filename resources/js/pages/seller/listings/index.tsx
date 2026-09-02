@@ -19,15 +19,21 @@ import {
 type Listing = {
     id: number;
     title: string | null;
+    sku: string | null;
     status: string;
     moderation_reason: string | null;
     listing_type: string;
+    product_type: 'simple' | 'variant';
     price: string | null;
     has_orders: boolean;
     created_at: string;
+    brand: { name: string } | null;
+    brand_name: string | null;
     category: { name: string } | null;
     auction: { status: string; ends_at: string } | null;
 };
+
+const editableStatuses = ['draft', 'changes_requested', 'rejected'];
 
 export default function SellerListings({
     sellerStatus,
@@ -68,117 +74,195 @@ export default function SellerListings({
                     </p>
                 )}
 
-                <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
+                <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm dark:border-stone-800 dark:bg-stone-900">
                     {listings.data.length === 0 ? (
                         <div className="p-12 text-center text-stone-500">
                             No products yet. Add your first item when you are
                             ready.
                         </div>
                     ) : (
-                        <ul className="divide-y divide-stone-200 dark:divide-stone-800">
-                            {listings.data.map((listing) => (
-                                <li
-                                    key={listing.id}
-                                    className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
-                                >
-                                    <div>
-                                        <p className="font-bold">
-                                            {listing.title ??
-                                                'Untitled product'}
-                                        </p>
-                                        <p className="mt-1 text-sm text-stone-500">
-                                            {listing.category?.name ??
-                                                'No category'}{' '}
-                                            ·{' '}
-                                            {listing.listing_type === 'auction'
-                                                ? 'Auction'
-                                                : `LKR ${listing.price}`}
-                                        </p>
-                                        {listing.moderation_reason && (
-                                            <p className="mt-2 text-sm text-amber-800 dark:text-amber-200">
-                                                Review note:{' '}
-                                                {listing.moderation_reason}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold capitalize dark:bg-stone-800">
-                                            {listing.status.replace('_', ' ')}
-                                        </span>
-                                        <Link
-                                            href={show(listing.id)}
-                                            className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-bold dark:border-stone-700"
-                                        >
-                                            View
-                                        </Link>
-                                        {[
-                                            'draft',
-                                            'changes_requested',
-                                            'rejected',
-                                        ].includes(listing.status) && (
-                                            <Link
-                                                href={edit(listing.id)}
-                                                className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-bold dark:border-stone-700"
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[64rem] text-left text-sm">
+                                <thead className="border-b border-stone-200 bg-stone-50 text-xs tracking-wider text-stone-500 uppercase dark:border-stone-800 dark:bg-stone-950 dark:text-stone-400">
+                                    <tr>
+                                        <th className="px-5 py-4 font-bold">
+                                            Name
+                                        </th>
+                                        <th className="px-4 py-4 font-bold">
+                                            SKU
+                                        </th>
+                                        <th className="px-4 py-4 font-bold">
+                                            Category
+                                        </th>
+                                        <th className="px-4 py-4 font-bold">
+                                            Brand
+                                        </th>
+                                        <th className="px-4 py-4 font-bold">
+                                            Type
+                                        </th>
+                                        <th className="px-4 py-4 font-bold">
+                                            Status
+                                        </th>
+                                        <th className="px-5 py-4 text-right font-bold">
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-stone-200 dark:divide-stone-800">
+                                    {listings.data.map((listing) => {
+                                        const canEdit =
+                                            editableStatuses.includes(
+                                                listing.status,
+                                            );
+                                        const canRemove =
+                                            listing.status !== 'archived';
+
+                                        return (
+                                            <tr
+                                                key={listing.id}
+                                                className="transition-colors hover:bg-stone-50/80 dark:hover:bg-stone-800/40"
                                             >
-                                                Edit
-                                            </Link>
-                                        )}
-                                        {listing.status !== 'archived' && (
-                                            <Dialog>
-                                                <DialogTrigger asChild>
-                                                    <button className="rounded-xl border border-red-300 px-4 py-2 text-sm font-bold text-red-700 dark:border-red-800 dark:text-red-300">
-                                                        {listing.has_orders
-                                                            ? 'Archive'
-                                                            : 'Remove'}
-                                                    </button>
-                                                </DialogTrigger>
-                                                <DialogContent>
-                                                    <DialogTitle>
-                                                        {listing.has_orders
-                                                            ? 'Archive listing'
-                                                            : 'Remove listing'}
-                                                    </DialogTitle>
-                                                    <DialogDescription>
-                                                        {listing.has_orders
-                                                            ? 'This listing has orders, so it will be archived and hidden from the public marketplace. Its order history will remain available.'
-                                                            : 'This listing has no orders. Removing it will hide it from the public marketplace and remove it from your listings.'}
-                                                    </DialogDescription>
-                                                    <DialogFooter className="gap-2">
-                                                        <DialogClose asChild>
-                                                            <button className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-bold dark:border-stone-700">
-                                                                Cancel
+                                                <td className="max-w-72 px-5 py-4 align-top">
+                                                    <p className="font-bold text-stone-950 dark:text-stone-50">
+                                                        {listing.title ??
+                                                            'Untitled product'}
+                                                    </p>
+                                                    {listing.moderation_reason && (
+                                                        <p className="mt-1 line-clamp-2 text-xs text-amber-700 dark:text-amber-300">
+                                                            Review note:{' '}
+                                                            {
+                                                                listing.moderation_reason
+                                                            }
+                                                        </p>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-4 align-top font-medium text-stone-600 dark:text-stone-300">
+                                                    {listing.sku ?? '—'}
+                                                </td>
+                                                <td className="px-4 py-4 align-top text-stone-600 dark:text-stone-300">
+                                                    {listing.category?.name ??
+                                                        'Uncategorised'}
+                                                </td>
+                                                <td className="px-4 py-4 align-top text-stone-600 dark:text-stone-300">
+                                                    {listing.brand?.name ??
+                                                        listing.brand_name ??
+                                                        '—'}
+                                                </td>
+                                                <td className="px-4 py-4 align-top">
+                                                    <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold dark:bg-stone-800">
+                                                        {listing.product_type ===
+                                                        'variant'
+                                                            ? 'Config'
+                                                            : 'Simple'}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-4 align-top">
+                                                    <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary capitalize">
+                                                        {listing.status.replace(
+                                                            '_',
+                                                            ' ',
+                                                        )}
+                                                    </span>
+                                                </td>
+                                                <td className="px-5 py-4 align-top">
+                                                    <div className="flex justify-end gap-2">
+                                                        {canEdit ? (
+                                                            <Link
+                                                                href={edit(
+                                                                    listing.id,
+                                                                )}
+                                                                className="rounded-lg border border-stone-300 px-3 py-2 text-xs font-bold transition hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800"
+                                                            >
+                                                                Edit
+                                                            </Link>
+                                                        ) : (
+                                                            <button
+                                                                disabled
+                                                                title="Only draft or returned products can be edited"
+                                                                className="cursor-not-allowed rounded-lg border border-stone-200 px-3 py-2 text-xs font-bold text-stone-400 dark:border-stone-800 dark:text-stone-600"
+                                                            >
+                                                                Edit
                                                             </button>
-                                                        </DialogClose>
-                                                        <Form
-                                                            {...destroy.form(
+                                                        )}
+                                                        <Link
+                                                            href={show(
                                                                 listing.id,
                                                             )}
+                                                            className="rounded-lg border border-stone-300 px-3 py-2 text-xs font-bold transition hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800"
                                                         >
-                                                            {({
-                                                                processing,
-                                                            }) => (
-                                                                <button
-                                                                    disabled={
-                                                                        processing
-                                                                    }
-                                                                    className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                                                            View
+                                                        </Link>
+                                                        {canRemove ? (
+                                                            <Dialog>
+                                                                <DialogTrigger
+                                                                    asChild
                                                                 >
-                                                                    {processing
-                                                                        ? 'Working...'
-                                                                        : listing.has_orders
-                                                                          ? 'Archive listing'
-                                                                          : 'Remove listing'}
-                                                                </button>
-                                                            )}
-                                                        </Form>
-                                                    </DialogFooter>
-                                                </DialogContent>
-                                            </Dialog>
-                                        )}
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
+                                                                    <button className="rounded-lg border border-red-300 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40">
+                                                                        {listing.has_orders
+                                                                            ? 'Archive'
+                                                                            : 'Remove'}
+                                                                    </button>
+                                                                </DialogTrigger>
+                                                                <DialogContent>
+                                                                    <DialogTitle>
+                                                                        {listing.has_orders
+                                                                            ? 'Archive listing'
+                                                                            : 'Remove listing'}
+                                                                    </DialogTitle>
+                                                                    <DialogDescription>
+                                                                        {listing.has_orders
+                                                                            ? 'This listing has orders, so it will be archived and hidden from the public marketplace. Its order history will remain available.'
+                                                                            : 'This listing has no orders. Removing it will hide it from the public marketplace and remove it from your listings.'}
+                                                                    </DialogDescription>
+                                                                    <DialogFooter className="gap-2">
+                                                                        <DialogClose
+                                                                            asChild
+                                                                        >
+                                                                            <button className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-bold dark:border-stone-700">
+                                                                                Cancel
+                                                                            </button>
+                                                                        </DialogClose>
+                                                                        <Form
+                                                                            {...destroy.form(
+                                                                                listing.id,
+                                                                            )}
+                                                                        >
+                                                                            {({
+                                                                                processing,
+                                                                            }) => (
+                                                                                <button
+                                                                                    disabled={
+                                                                                        processing
+                                                                                    }
+                                                                                    className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                                                                                >
+                                                                                    {processing
+                                                                                        ? 'Working...'
+                                                                                        : listing.has_orders
+                                                                                          ? 'Archive listing'
+                                                                                          : 'Remove listing'}
+                                                                                </button>
+                                                                            )}
+                                                                        </Form>
+                                                                    </DialogFooter>
+                                                                </DialogContent>
+                                                            </Dialog>
+                                                        ) : (
+                                                            <button
+                                                                disabled
+                                                                className="cursor-not-allowed rounded-lg border border-stone-200 px-3 py-2 text-xs font-bold text-stone-400 dark:border-stone-800 dark:text-stone-600"
+                                                            >
+                                                                Remove
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     )}
                 </div>
             </main>

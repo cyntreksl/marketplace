@@ -162,7 +162,11 @@ class EloquentListingRepository implements ListingRepository
     public function paginateForSeller(SellerProfile $seller, int $perPage = 15): LengthAwarePaginator
     {
         return $seller->listings()
-            ->with(['category:id,name', 'auction:id,listing_id,status,starts_at,ends_at'])
+            ->with([
+                'auction:id,listing_id,status,starts_at,ends_at',
+                'brand:id,name',
+                'category:id,name',
+            ])
             ->withExists(['orderItems as has_orders'])
             ->latest()
             ->paginate($perPage)
