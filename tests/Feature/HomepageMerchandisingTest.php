@@ -115,6 +115,25 @@ test('homepage default slider starts with the home appliances campaign', functio
         ->toBeFile();
 });
 
+test('homepage exposes the seller portal state for seller accounts', function () {
+    $seller = User::factory()->create();
+    $seller->roles()->attach(Role::factory()->create([
+        'name' => Role::IndividualSeller,
+        'label' => 'Individual Seller',
+    ]));
+
+    $this->actingAs($seller)->get(route('home'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('auth.is_seller', true),
+        );
+
+    expect(file_get_contents(resource_path('js/components/storefront-layout.tsx')))
+        ->toContain('sellerListingsIndex()')
+        ->toContain('sellerRegister()')
+        ->toContain("'Seller Portal'")
+        ->toContain("'Become a Seller'");
+});
+
 test('recently viewed listings preserve requested order and exclude unavailable products', function () {
     $first = Listing::factory()->create();
     $second = Listing::factory()->create();

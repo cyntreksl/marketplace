@@ -19,6 +19,8 @@ import { home, login } from '@/routes';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
 import { show as cartShow } from '@/routes/cart';
 import { index as listingsIndex } from '@/routes/listings';
+import { register as sellerRegister } from '@/routes/seller';
+import { index as sellerListingsIndex } from '@/routes/seller/listings';
 
 export type { StorefrontCategory } from '@/components/storefront-category-menu';
 
@@ -288,6 +290,18 @@ export function StorefrontLayout({
                         >
                             Business Deals
                         </button>
+                        <Link
+                            href={
+                                auth.is_seller
+                                    ? sellerListingsIndex()
+                                    : sellerRegister()
+                            }
+                            className="rounded-full bg-[#FF6D00] px-4 py-2 text-white transition hover:bg-[#e86100]"
+                        >
+                            {auth.is_seller
+                                ? 'Seller Portal'
+                                : 'Become a Seller'}
+                        </Link>
                     </div>
                     <Form {...listingsIndex.form()} className="mt-3 md:hidden">
                         <label className="flex h-10 rounded-lg border border-slate-200">
