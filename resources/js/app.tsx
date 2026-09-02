@@ -1,4 +1,5 @@
 import { createInertiaApp } from '@inertiajs/react';
+import type { ReactNode } from 'react';
 import { SeoHead } from '@/components/seo-head';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -7,6 +8,15 @@ import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
 const appName = import.meta.env.VITE_APP_NAME || 'ProDeals.lk';
+
+function SeoLayout({ children }: { children: ReactNode }) {
+    return (
+        <>
+            <SeoHead />
+            {children}
+        </>
+    );
+}
 
 createInertiaApp({
     serverHead: true,
@@ -23,20 +33,19 @@ createInertiaApp({
             case name.startsWith('admin/'):
             case name.startsWith('buyer/'):
             case name.startsWith('seller/'):
-                return null;
+                return SeoLayout;
             case name.startsWith('auth/'):
-                return AuthLayout;
+                return [SeoLayout, AuthLayout];
             case name.startsWith('settings/'):
-                return [AppLayout, SettingsLayout];
+                return [SeoLayout, AppLayout, SettingsLayout];
             default:
-                return AppLayout;
+                return [SeoLayout, AppLayout];
         }
     },
     strictMode: true,
     withApp(app) {
         return (
             <TooltipProvider delayDuration={0}>
-                <SeoHead />
                 {app}
                 <Toaster />
             </TooltipProvider>
