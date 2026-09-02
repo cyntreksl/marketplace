@@ -1114,10 +1114,8 @@ export function SellerProductForm({
                                             error={errorFor('compare_price')}
                                             ariaLabel="Optional market price in LKR"
                                         />
-                                        <p className="mt-1.5 text-xs text-slate-500">
-                                            Optional. Use when showing a
-                                            discount against the normal market
-                                            price.
+                                        <p className="mt-1 truncate text-xs leading-4 text-slate-500">
+                                            Optional discount reference price.
                                         </p>
                                     </Field>
                                     <Field
