@@ -86,5 +86,7 @@ interface ListingRepository
 
     public function findForSellerOrFail(SellerProfile $seller, int $listingId, bool $lockForUpdate = false): Listing;
 
+    public function findDetailedForSellerOrFail(SellerProfile $seller, int $listingId): Listing;
+
     public function delete(Listing $listing): void;
 }

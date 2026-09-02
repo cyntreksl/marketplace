@@ -234,6 +234,21 @@ class EloquentListingRepository implements ListingRepository
             ->findOrFail($listingId);
     }
 
+    public function findDetailedForSellerOrFail(SellerProfile $seller, int $listingId): Listing
+    {
+        return $seller->listings()
+            ->with([
+                'auction',
+                'brand:id,name,slug',
+                'category',
+                'media',
+                'variantOptions.values',
+                'variants.image',
+                'variants.optionValues.option',
+            ])
+            ->findOrFail($listingId);
+    }
+
     public function delete(Listing $listing): void
     {
         $listing->delete();

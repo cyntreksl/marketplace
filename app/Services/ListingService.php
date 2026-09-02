@@ -38,6 +38,14 @@ class ListingService
         ];
     }
 
+    public function sellerProduct(User $seller, int $listingId): Listing
+    {
+        return $this->listings->findDetailedForSellerOrFail(
+            $this->sellerProfileFor($seller),
+            $listingId,
+        );
+    }
+
     /** @param array<string, mixed> $attributes */
     public function createDraft(User $seller, array $attributes): Listing
     {

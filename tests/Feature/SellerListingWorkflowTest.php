@@ -171,6 +171,34 @@ test('a seller can revise a returned listing before submitting it again', functi
         ->commission_percentage->toBe('10.00');
 });
 
+test('a seller can view their product details', function () {
+    $seller = SellerProfile::factory()->create();
+    $listing = Listing::factory()->create([
+        'seller_profile_id' => $seller->id,
+        'status' => 'draft',
+        'title' => 'Draft mirrorless camera',
+    ]);
+
+    $this->actingAs($seller->user)
+        ->get(route('seller.listings.show', $listing))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('seller/listings/show')
+            ->where('listing.id', $listing->id)
+            ->where('listing.title', 'Draft mirrorless camera')
+            ->where('listing.category.id', $listing->category_id)
+            ->where('listing.brand.id', $listing->brand_id));
+});
+
+test('a seller cannot view another sellers product details', function () {
+    $seller = SellerProfile::factory()->create();
+    $listing = Listing::factory()->create();
+
+    $this->actingAs($seller->user)
+        ->get(route('seller.listings.show', $listing))
+        ->assertForbidden();
+});
+
 test('an unapproved seller cannot submit a listing for moderation', function () {
     $seller = SellerProfile::factory()->create(['status' => 'pending_review']);
     $listing = Listing::factory()->create(['seller_profile_id' => $seller->id, 'status' => 'draft']);

@@ -36,20 +36,23 @@ class SellerListingController extends Controller
         ]);
     }
 
+    public function show(Request $request, Listing $listing): Response
+    {
+        abort_unless($request->user()->can('view', $listing), 403);
+
+        return Inertia::render('seller/listings/show', [
+            'listing' => $this->listings->sellerProduct($request->user(), $listing->id),
+        ]);
+    }
+
     public function edit(Request $request, Listing $listing): Response
     {
         abort_unless($request->user()->can('update', $listing), 403);
         $seller = $request->user()->sellerProfile()->firstOrFail();
+        $listing = $this->listings->sellerProduct($request->user(), $listing->id);
 
         return Inertia::render('seller/listings/edit', [
-            'listing' => $listing->load([
-                'auction',
-                'media',
-                'category',
-                'variantOptions.values',
-                'variants.image',
-                'variants.optionValues.option',
-            ]),
+            'listing' => $listing,
             'sellerStatus' => $seller->status,
             'selectedCategory' => $listing->category === null ? null : $this->catalog->categoryOption($listing->category),
             'brands' => Brand::query()->orderBy('name')->get(['id', 'name']),

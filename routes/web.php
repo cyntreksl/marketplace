@@ -75,6 +75,7 @@ Route::middleware('auth')->prefix('seller')->name('seller.')->group(function ():
     Route::get('/listings', [SellerListingController::class, 'index'])->name('listings.index');
     Route::get('/listings/create', [SellerListingController::class, 'create'])->name('listings.create');
     Route::post('/listings', [SellerListingController::class, 'store'])->name('listings.store');
+    Route::get('/listings/{listing}', [SellerListingController::class, 'show'])->name('listings.show');
     Route::get('/listings/{listing}/edit', [SellerListingController::class, 'edit'])->name('listings.edit');
     Route::put('/listings/{listing}', [SellerListingController::class, 'update'])->name('listings.update');
     Route::delete('/listings/{listing}', [SellerListingController::class, 'destroy'])->name('listings.destroy');

@@ -3,6 +3,7 @@ import {
     create,
     destroy,
     edit,
+    show,
 } from '@/actions/App/Http/Controllers/SellerListingController';
 import { PortalLayout } from '@/components/portal-layout';
 import {
@@ -104,6 +105,12 @@ export default function SellerListings({
                                         <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold capitalize dark:bg-stone-800">
                                             {listing.status.replace('_', ' ')}
                                         </span>
+                                        <Link
+                                            href={show(listing.id)}
+                                            className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-bold dark:border-stone-700"
+                                        >
+                                            View
+                                        </Link>
                                         {[
                                             'draft',
                                             'changes_requested',
