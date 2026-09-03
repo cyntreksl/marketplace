@@ -39,7 +39,8 @@ return [
             'candidate_limit' => (int) env('CATEGORY_SUGGESTION_CANDIDATE_LIMIT', 80),
         ],
         'product_content' => [
-            'model' => env('PRODUCT_CONTENT_SUGGESTION_MODEL', env('CATEGORY_SUGGESTION_MODEL', 'gpt-4o-mini')),
+            'seo_model' => env('PRODUCT_SEO_SUGGESTION_MODEL', 'gpt-5.6-terra'),
+            'content_model' => env('PRODUCT_CONTENT_SUGGESTION_MODEL', env('CATEGORY_SUGGESTION_MODEL', 'gpt-4o-mini')),
             'timeout' => (int) env('PRODUCT_CONTENT_SUGGESTION_TIMEOUT', env('CATEGORY_SUGGESTION_TIMEOUT', 6)),
         ],
     ],

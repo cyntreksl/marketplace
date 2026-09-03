@@ -114,12 +114,20 @@ type ContentSuggestionPayload = {
     description: string;
     target: ContentSuggestionTarget;
 };
-type ContentSuggestionResponse = {
-    meta_title: string;
-    meta_description: string;
-    short_description: string;
-    specifications_text: string;
-};
+type ContentSuggestionResponse =
+    | {
+          target: 'seo';
+          meta_title: string;
+          meta_description: string;
+      }
+    | {
+          target: 'short_description';
+          short_description: string;
+      }
+    | {
+          target: 'specifications';
+          specifications_html: string;
+      };
 
 const PRODUCT_IMAGE_MAXIMUM_CROP_ZOOM = 3;
 const CATEGORY_SUGGESTION_MINIMUM_TITLE_LENGTH = 4;
@@ -270,6 +278,9 @@ export function SellerProductForm({
     >(null);
     const [contentSuggestionTarget, setContentSuggestionTarget] =
         useState<ContentSuggestionTarget | null>(null);
+    const [contentSuggestionError, setContentSuggestionError] = useState<
+        string | null
+    >(null);
     const categorySelectionSource = useRef<
         'initial' | 'manual' | 'suggestion' | null
     >(initialCategory ? 'initial' : null);
@@ -280,6 +291,7 @@ export function SellerProductForm({
         metaTitle: '',
         metaDescription: '',
     });
+    const lastSeoSourceFingerprint = useRef('');
     const existingOptions = useMemo(
         () =>
             [...(listing?.variant_options ?? [])]
@@ -633,10 +645,9 @@ export function SellerProductForm({
     }
 
     function applyContentSuggestion(
-        target: ContentSuggestionTarget,
         suggestion: ContentSuggestionResponse,
     ): void {
-        if (target === 'seo') {
+        if (suggestion.target === 'seo') {
             applySeoMetadata(
                 suggestion.meta_title,
                 suggestion.meta_description,
@@ -646,7 +657,7 @@ export function SellerProductForm({
         }
 
         if (
-            target === 'short_description' &&
+            suggestion.target === 'short_description' &&
             suggestion.short_description !== ''
         ) {
             setField('short_description', suggestion.short_description);
@@ -655,61 +666,68 @@ export function SellerProductForm({
         }
 
         if (
-            target === 'specifications' &&
-            suggestion.specifications_text !== ''
+            suggestion.target === 'specifications' &&
+            suggestion.specifications_html !== ''
         ) {
-            setField('specifications_text', suggestion.specifications_text);
+            setField(
+                'specifications_text',
+                sanitizeRichText(suggestion.specifications_html),
+            );
         }
-    }
-
-    function fallbackContentSuggestion(
-        target: ContentSuggestionTarget,
-        title: string,
-        description: string,
-    ): ContentSuggestionResponse {
-        return {
-            meta_title: target === 'seo' ? seoMetaTitle(title) : '',
-            meta_description:
-                target === 'seo' ? seoMetaDescription(title, description) : '',
-            short_description:
-                target === 'short_description'
-                    ? shortDescriptionFromProductDetails(title, description)
-                    : '',
-            specifications_text:
-                target === 'specifications'
-                    ? specificationsFromProductDetails(title, description)
-                    : '',
-        };
     }
 
     function requestContentSuggestion(target: ContentSuggestionTarget): void {
         const title = form.data.title.trim();
-        const description = richTextPlainText(form.data.description);
-        const requestId = ++contentSuggestionRequestId.current;
+        const descriptionHtml = sanitizeRichText(form.data.description);
+        const descriptionText = richTextPlainText(descriptionHtml);
+        const sourceFingerprint = JSON.stringify([title, descriptionHtml]);
+
+        if (
+            target === 'seo' &&
+            sourceFingerprint === lastSeoSourceFingerprint.current
+        ) {
+            return;
+        }
 
         cancelContentSuggestions();
 
-        if (title.length < 4 || description.length < 20) {
+        if (title.length < 4 || descriptionText.length < 20) {
+            contentSuggestionRequestId.current += 1;
             setContentSuggestionTarget(null);
-            applyContentSuggestion(
-                target,
-                fallbackContentSuggestion(target, title, description),
+            setContentSuggestionError(
+                'Add a product title and a fuller description before generating content.',
             );
 
             return;
         }
 
+        const requestId = ++contentSuggestionRequestId.current;
         setContentSuggestionTarget(target);
+        setContentSuggestionError(null);
         transformContentSuggestions(() => ({
             title,
-            description,
+            description: descriptionHtml,
             target,
         }));
 
         void postContentSuggestions(contentSuggestions.url())
             .then((response) => {
-                if (requestId === contentSuggestionRequestId.current) {
-                    applyContentSuggestion(target, response);
+                if (requestId !== contentSuggestionRequestId.current) {
+                    return;
+                }
+
+                if (response.target !== target) {
+                    setContentSuggestionError(
+                        'Generated content could not be applied. Please try again.',
+                    );
+
+                    return;
+                }
+
+                applyContentSuggestion(response);
+
+                if (target === 'seo') {
+                    lastSeoSourceFingerprint.current = sourceFingerprint;
                 }
             })
             .catch((caught: unknown) => {
@@ -717,9 +735,8 @@ export function SellerProductForm({
                     requestId === contentSuggestionRequestId.current &&
                     !requestWasCancelled(caught)
                 ) {
-                    applyContentSuggestion(
-                        target,
-                        fallbackContentSuggestion(target, title, description),
+                    setContentSuggestionError(
+                        'Content could not be generated. Please try again.',
                     );
                 }
             })
@@ -1355,6 +1372,14 @@ export function SellerProductForm({
                                     placeholder="Enter product full description..."
                                     error={errorFor('description')}
                                 />
+                                {contentSuggestionError && (
+                                    <p
+                                        role="alert"
+                                        className="mt-2 text-sm font-medium text-red-600 dark:text-red-400"
+                                    >
+                                        {contentSuggestionError}
+                                    </p>
+                                )}
                             </Field>
                             <Field
                                 label="Short Description"
@@ -2244,6 +2269,13 @@ export function SellerProductForm({
                         icon={<Settings2 className="size-5" />}
                     >
                         <div className="grid gap-4">
+                            {contentSuggestionRequest.processing &&
+                                contentSuggestionTarget === 'seo' && (
+                                    <p className="inline-flex items-center gap-2 text-sm font-medium text-sky-700 dark:text-sky-300">
+                                        <LoaderCircle className="size-4 animate-spin" />
+                                        Generating SEO metadata…
+                                    </p>
+                                )}
                             <Field
                                 label="Meta Title"
                                 error={errorFor('meta_title')}
@@ -3275,118 +3307,6 @@ function specificationsText(specifications?: Specifications | null): string {
     return Object.entries(specifications)
         .map(([name, value]) => `${name}: ${String(value)}`)
         .join('\n');
-}
-
-function seoMetaTitle(productTitle: string): string {
-    const title = normalizedSeoText(productTitle);
-
-    if (title === '') {
-        return '';
-    }
-
-    return firstFittingSeoText(
-        [
-            `${title} in Sri Lanka | ProDeals.lk`,
-            `${title} | ProDeals.lk`,
-            title,
-        ],
-        SEO_META_TITLE_MAXIMUM_LENGTH,
-    );
-}
-
-function seoMetaDescription(
-    productTitle: string,
-    fullDescription: string,
-): string {
-    const title = normalizedSeoText(productTitle);
-    const description = trimSeoText(normalizedSeoText(fullDescription), 120);
-
-    if (title === '' && description === '') {
-        return '';
-    }
-
-    const lead = description || title;
-    const candidates = [
-        title
-            ? `${title}. ${lead} Shop online in Sri Lanka on ProDeals.lk.`
-            : `${lead} Shop online in Sri Lanka on ProDeals.lk.`,
-        `${lead} Available online in Sri Lanka from trusted sellers on ProDeals.lk.`,
-        title
-            ? `Buy ${title} online in Sri Lanka from trusted sellers on ProDeals.lk.`
-            : `${lead} Shop online in Sri Lanka on ProDeals.lk.`,
-        lead,
-    ];
-
-    return firstFittingSeoText(candidates, SEO_META_DESCRIPTION_MAXIMUM_LENGTH);
-}
-
-function shortDescriptionFromProductDetails(
-    productTitle: string,
-    fullDescription: string,
-): string {
-    const title = normalizedSeoText(productTitle);
-    const description = normalizedSeoText(fullDescription);
-
-    return firstFittingSeoText(
-        [description, title ? `${title}. ${description}` : description, title],
-        160,
-    );
-}
-
-function specificationsFromProductDetails(
-    productTitle: string,
-    fullDescription: string,
-): string {
-    const title = normalizedSeoText(productTitle);
-    const details = normalizedSeoText(fullDescription)
-        .split(/(?<=[.!?])\s+/)
-        .map((sentence) => trimSeoText(sentence, 120))
-        .filter(Boolean)
-        .slice(0, 4);
-
-    return trimSeoText(
-        [
-            title ? `Product: ${title}` : '',
-            ...details.map((detail) => `Detail: ${detail}`),
-        ]
-            .filter(Boolean)
-            .join('\n'),
-        700,
-    );
-}
-
-function firstFittingSeoText(
-    candidates: string[],
-    maximumLength: number,
-): string {
-    const normalizedCandidates = candidates
-        .map((candidate) => normalizedSeoText(candidate))
-        .filter(Boolean);
-    const fittingCandidate = normalizedCandidates.find(
-        (candidate) => candidate.length <= maximumLength,
-    );
-
-    return (
-        fittingCandidate ??
-        trimSeoText(normalizedCandidates[0] ?? '', maximumLength)
-    );
-}
-
-function normalizedSeoText(value: string): string {
-    return value.replace(/\s+/g, ' ').trim();
-}
-
-function trimSeoText(value: string, maximumLength: number): string {
-    if (value.length <= maximumLength) {
-        return value;
-    }
-
-    const shortened = value
-        .slice(0, maximumLength)
-        .replace(/\s+\S*$/, '')
-        .trim();
-
-    return shortened === '' ? value.slice(0, maximumLength).trim() : shortened;
 }
 
 function hasSquareRatio(size: ListingImageSize): boolean {
