@@ -815,11 +815,11 @@ function CategoryDetails({
 
             {category.deleted_at ? (
                 <div className="mt-6">
-                        <CategoryArchiveControls
-                            category={category}
-                            canDelete={category.capabilities.can_delete}
-                            canRestore={category.capabilities.can_restore}
-                        />
+                    <CategoryArchiveControls
+                        category={category}
+                        canDelete={category.capabilities.can_delete}
+                        canRestore={category.capabilities.can_restore}
+                    />
                 </div>
             ) : (
                 <div className="mt-6 grid gap-6">
