@@ -6,6 +6,11 @@ use App\Models\Listing;
 use App\Models\ListingMedia;
 use App\Models\User;
 
+function expectCanonicalLink(string $html, string $url): void
+{
+    expect($html)->toMatch('/<link\b(?=[^>]*rel="canonical")(?=[^>]*href="'.preg_quote($url, '/').'")[^>]*>/');
+}
+
 test('approved sold-out products remain indexable details but are absent from browse and purchase', function () {
     $soldOut = Listing::factory()->create([
         'title' => 'Sold out camera',
@@ -46,27 +51,34 @@ test('clean catalog landings replace legacy single-dimension URLs and preserve p
         ->assertRedirect(route('brands.show', $brand->slug))
         ->assertStatus(301);
 
-    $this->get(route('categories.show', $category->slug))
-        ->assertOk()
-        ->assertSee('rel="canonical" href="'.route('categories.show', $category->slug).'"', false);
+    $response = $this->get(route('categories.show', $category->slug));
+
+    $response->assertOk();
+    expectCanonicalLink($response->getContent(), route('categories.show', $category->slug));
 });
 
-test('search filters and private pages are noindex while paginated clean landings self-canonicalize', function () {
+test('search filters and private pages are noindex', function () {
     $category = Category::factory()->create(['slug' => 'phones']);
     $user = User::factory()->create();
 
-    $this->get(route('categories.show', ['category' => $category->slug, 'search' => 'pixel']))
-        ->assertOk()
-        ->assertSee('name="robots" content="noindex,follow,max-image-preview:large"', false)
-        ->assertSee('rel="canonical" href="'.route('categories.show', $category->slug).'"', false);
+    $filteredResponse = $this->get(route('categories.show', ['category' => $category->slug, 'search' => 'pixel']));
 
-    $this->get(route('categories.show', ['category' => $category->slug, 'page' => 2]))
-        ->assertOk()
-        ->assertSee('rel="canonical" href="'.route('categories.show', ['category' => $category->slug, 'page' => 2]).'"', false);
+    $filteredResponse->assertOk()
+        ->assertSee('name="robots" content="noindex,follow,max-image-preview:large"', false);
+    expectCanonicalLink($filteredResponse->getContent(), route('categories.show', $category->slug));
 
     $this->actingAs($user)->get(route('cart.show'))
         ->assertOk()
         ->assertSee('name="robots" content="noindex,follow,max-image-preview:large"', false);
+});
+
+test('paginated clean catalog landings self-canonicalize', function () {
+    $category = Category::factory()->create(['slug' => 'phones']);
+
+    $paginatedResponse = $this->get(route('categories.show', ['category' => $category->slug, 'page' => 2]));
+
+    $paginatedResponse->assertOk();
+    expectCanonicalLink($paginatedResponse->getContent(), route('categories.show', ['category' => $category->slug, 'page' => 2]));
 });
 
 test('sitemap index is chunked and excludes non-public products and variant URLs', function () {

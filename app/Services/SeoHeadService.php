@@ -79,7 +79,9 @@ class SeoHeadService
     public function listingPayload(Listing $listing, array $categoryTrail): array
     {
         $name = (string) config('app.name', 'ProDeals.lk');
-        $title = filled($listing->meta_title) ? (string) $listing->meta_title : "{$listing->title} - {$name}";
+        $title = filled($listing->meta_title)
+            ? $this->plainText((string) $listing->meta_title)
+            : $this->plainText("{$listing->title} - {$name}");
         [$image, $width, $height] = $this->listingImage($listing->media->first());
         $availability = match ($listing->stockStatus()) {
             'backorder' => 'backorder',
@@ -204,16 +206,21 @@ class SeoHeadService
     private function listingDescription(Listing $listing): string
     {
         if (filled($listing->meta_description)) {
-            return (string) $listing->meta_description;
+            return $this->plainText((string) $listing->meta_description);
         }
 
         if (filled($listing->short_description)) {
             return (string) $listing->short_description;
         }
 
-        $plainText = html_entity_decode(trim((string) preg_replace('/\s+/', ' ', strip_tags((string) $listing->description))), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $plainText = $this->plainText((string) $listing->description);
 
         return Str::limit($plainText !== '' ? $plainText : $listing->title, 160);
+    }
+
+    private function plainText(string $value): string
+    {
+        return html_entity_decode(trim((string) preg_replace('/\s+/', ' ', strip_tags($value))), ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 
     /** @return array{string, int|null, int|null} */

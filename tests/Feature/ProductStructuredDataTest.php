@@ -12,7 +12,7 @@ use App\Models\Review;
 /** @return array<int, array<string, mixed>> */
 function productSeoGraphs(string $html): array
 {
-    preg_match_all('/<script data-inertia="json-ld-\d+" type="application\/ld\+json">(.*?)<\/script>/s', $html, $matches);
+    preg_match_all('/<script\b(?=[^>]*data-inertia="json-ld-\d+")(?=[^>]*type="application\/ld\+json")[^>]*>(.*?)<\/script>/s', $html, $matches);
 
     return collect($matches[1] ?? [])->map(fn (string $json): array => json_decode($json, true, flags: JSON_THROW_ON_ERROR))->all();
 }
