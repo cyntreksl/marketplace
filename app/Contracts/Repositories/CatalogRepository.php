@@ -118,7 +118,7 @@ interface CatalogRepository
     public function availableBrands(): Collection;
 
     /** @return Collection<int, Category> */
-    public function lookupCategories(?string $search, ?int $parentId): Collection;
+    public function lookupCategories(?string $search, ?int $parentId, bool $leafOnly = false): Collection;
 
     /** @return array{id: int, name: string, path: string, slug: string, is_selectable: bool, has_children: bool, commission_percentage: string} */
     public function categoryOption(Category $category): array;

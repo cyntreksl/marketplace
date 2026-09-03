@@ -108,7 +108,7 @@ export default function AuthSimpleLayout({
                         </h2>
                         <p className="mt-5 max-w-md text-base leading-7 text-slate-300">
                             Find everyday essentials, tech, style, and unique
-                            local finds—all in one place.
+                            local finds-all in one place.
                         </p>
 
                         <div className="mt-10 grid max-w-md grid-cols-2 gap-4">

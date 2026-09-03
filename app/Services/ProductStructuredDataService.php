@@ -186,7 +186,7 @@ class ProductStructuredDataService
             '@id' => $url.'#product',
             'isVariantOf' => ['@id' => route('listings.show', $listing->slug).'#product-group'],
             'url' => $url,
-            'name' => $variantName === '' ? $listing->title : $listing->title.' — '.$variantName,
+            'name' => $variantName === '' ? $listing->title : $listing->title.' - '.$variantName,
             'image' => $image,
             'sku' => $variant->sku,
             ...$this->identifier($variant->gtin, $variant->mpn),

@@ -505,13 +505,13 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
                                                             'Default'}
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        {variant.sku ?? '—'}
+                                                        {variant.sku ?? '-'}
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        {variant.gtin ?? '—'}
+                                                        {variant.gtin ?? '-'}
                                                     </td>
                                                     <td className="px-4 py-3">
-                                                        {variant.mpn ?? '—'}
+                                                        {variant.mpn ?? '-'}
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         {formatPrice(

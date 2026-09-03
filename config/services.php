@@ -28,6 +28,22 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+        'base_url' => env('OPENAI_API_BASE', 'https://api.openai.com/v1'),
+        'organization' => env('OPENAI_ORGANIZATION'),
+        'category_suggestions' => [
+            'model' => env('CATEGORY_SUGGESTION_MODEL', 'gpt-4o-mini'),
+            'timeout' => (int) env('CATEGORY_SUGGESTION_TIMEOUT', 6),
+            'max_results' => (int) env('CATEGORY_SUGGESTION_MAX_RESULTS', 5),
+            'candidate_limit' => (int) env('CATEGORY_SUGGESTION_CANDIDATE_LIMIT', 80),
+        ],
+        'product_content' => [
+            'model' => env('PRODUCT_CONTENT_SUGGESTION_MODEL', env('CATEGORY_SUGGESTION_MODEL', 'gpt-4o-mini')),
+            'timeout' => (int) env('PRODUCT_CONTENT_SUGGESTION_TIMEOUT', env('CATEGORY_SUGGESTION_TIMEOUT', 6)),
+        ],
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

@@ -133,7 +133,7 @@ export default function AdminReturns({
                                                 disabled={processing}
                                                 className="rounded-xl bg-primary px-5 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
                                             >
-                                                Physical return received —
+                                                Physical return received -
                                                 prepare refund
                                             </button>
                                         </>

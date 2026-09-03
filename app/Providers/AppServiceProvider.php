@@ -104,6 +104,8 @@ class AppServiceProvider extends ServiceProvider
     {
         RateLimiter::for('auction-bids', fn ($request) => Limit::perMinute(12)->by($request->user()?->id.'|'.$request->ip()));
         RateLimiter::for('category-lookups', fn ($request) => Limit::perMinute(120)->by($request->user()?->id.'|'.$request->ip()));
+        RateLimiter::for('category-suggestions', fn ($request) => Limit::perMinute(30)->by($request->user()?->id.'|'.$request->ip()));
+        RateLimiter::for('listing-content-suggestions', fn ($request) => Limit::perMinute(20)->by($request->user()?->id.'|'.$request->ip()));
         RateLimiter::for('order-tracking', fn ($request) => Limit::perMinute(8)->by($request->ip()));
     }
 

@@ -71,6 +71,9 @@ Route::post('/order-tracking', [OrderTrackingController::class, 'store'])->middl
 Route::get('/categories/search', CategoryLookupController::class)
     ->middleware('throttle:category-lookups')
     ->name('categories.search');
+Route::match(['get', 'post'], '/categories/suggest', [CategoryLookupController::class, 'suggest'])
+    ->middleware('throttle:category-suggestions')
+    ->name('categories.suggest');
 Route::get('/categories/{category}', [StorefrontController::class, 'category'])->name('categories.show');
 Route::get('/seller/register', [SellerRegistrationController::class, 'create'])->middleware('guest')->name('seller.register');
 
@@ -84,6 +87,9 @@ Route::middleware('auth')->prefix('seller')->name('seller.')->group(function ():
     Route::get('/listings', [SellerListingController::class, 'index'])->name('listings.index');
     Route::get('/listings/create', [SellerListingController::class, 'create'])->name('listings.create');
     Route::post('/listings', [SellerListingController::class, 'store'])->name('listings.store');
+    Route::post('/listings/content-suggestions', [SellerListingController::class, 'contentSuggestions'])
+        ->middleware('throttle:listing-content-suggestions')
+        ->name('listings.content-suggestions');
     Route::get('/listings/{listing}', [SellerListingController::class, 'show'])->name('listings.show');
     Route::get('/listings/{listing}/edit', [SellerListingController::class, 'edit'])->name('listings.edit');
     Route::put('/listings/{listing}', [SellerListingController::class, 'update'])->name('listings.update');

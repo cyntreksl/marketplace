@@ -1,16 +1,18 @@
-import { Link, useForm } from '@inertiajs/react';
+import { Link, useForm, useHttp } from '@inertiajs/react';
 import {
     Boxes,
     Check,
     CircleHelp,
     ImagePlus,
     Info,
+    LoaderCircle,
     PackageCheck,
     Plus,
     Save,
     Search,
     Send,
     Settings2,
+    Sparkles,
     Tags,
     Trash2,
     UploadCloud,
@@ -42,7 +44,11 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { index as productsIndex } from '@/routes/seller/listings';
+import { suggest as suggestCategories } from '@/routes/categories';
+import {
+    contentSuggestions,
+    index as productsIndex,
+} from '@/routes/seller/listings';
 
 type Brand = { id: number; name: string };
 type ListingMedia = { id: number; path: string; url: string };
@@ -98,8 +104,34 @@ type StoredVariant = {
     image: ListingMedia | null;
 };
 type Specifications = Record<string, string | number | boolean>;
+type CategorySuggestion = CategoryOption & {
+    score: number;
+    reason: string;
+};
+type ContentSuggestionTarget = 'seo' | 'short_description' | 'specifications';
+type ContentSuggestionPayload = {
+    title: string;
+    description: string;
+    target: ContentSuggestionTarget;
+};
+type ContentSuggestionResponse = {
+    meta_title: string;
+    meta_description: string;
+    short_description: string;
+    specifications_text: string;
+};
 
 const PRODUCT_IMAGE_MAXIMUM_CROP_ZOOM = 3;
+const CATEGORY_SUGGESTION_MINIMUM_TITLE_LENGTH = 4;
+const SEO_META_TITLE_MAXIMUM_LENGTH = 60;
+const SEO_META_DESCRIPTION_MAXIMUM_LENGTH = 160;
+
+function requestWasCancelled(caught: unknown): boolean {
+    return (
+        caught instanceof Error &&
+        (caught.name === 'AbortError' || caught.name === 'HttpCancelledError')
+    );
+}
 
 export type SellerProductFormListing = {
     title: string | null;
@@ -230,6 +262,24 @@ export function SellerProductForm({
     const [cropZoom, setCropZoom] = useState(1);
     const [draftCrop, setDraftCrop] = useState<ListingImageCrop | null>(null);
     const [cropError, setCropError] = useState<string | null>(null);
+    const [categorySuggestions, setCategorySuggestions] = useState<
+        CategorySuggestion[]
+    >([]);
+    const [categorySuggestionError, setCategorySuggestionError] = useState<
+        string | null
+    >(null);
+    const [contentSuggestionTarget, setContentSuggestionTarget] =
+        useState<ContentSuggestionTarget | null>(null);
+    const categorySelectionSource = useRef<
+        'initial' | 'manual' | 'suggestion' | null
+    >(initialCategory ? 'initial' : null);
+    const categorySuggestionRequestId = useRef(0);
+    const contentSuggestionRequestId = useRef(0);
+    const latestFormData = useRef<ProductFormData | null>(null);
+    const lastGeneratedSeo = useRef({
+        metaTitle: '',
+        metaDescription: '',
+    });
     const existingOptions = useMemo(
         () =>
             [...(listing?.variant_options ?? [])]
@@ -311,6 +361,25 @@ export function SellerProductForm({
         removed_media_ids: [],
         submit_for_review: false,
     });
+    const categorySuggestionRequest = useHttp<
+        Record<string, never>,
+        { data: CategorySuggestion[] }
+    >({});
+    const contentSuggestionRequest = useHttp<
+        ContentSuggestionPayload,
+        ContentSuggestionResponse
+    >({
+        title: '',
+        description: '',
+        target: 'seo',
+    });
+    const { cancel: cancelCategorySuggestions, get: getCategorySuggestions } =
+        categorySuggestionRequest;
+    const {
+        cancel: cancelContentSuggestions,
+        post: postContentSuggestions,
+        transform: transformContentSuggestions,
+    } = contentSuggestionRequest;
     const imagePreviewUrls = useMemo(
         () => form.data.images.map((file) => URL.createObjectURL(file)),
         [form.data.images],
@@ -320,6 +389,10 @@ export function SellerProductForm({
         () => () => imagePreviewUrls.forEach(URL.revokeObjectURL),
         [imagePreviewUrls],
     );
+
+    useEffect(() => {
+        latestFormData.current = form.data;
+    }, [form.data]);
 
     useEffect(
         () => () => {
@@ -482,6 +555,179 @@ export function SellerProductForm({
             brand_name: exactBrand ? '' : value,
         });
         form.clearErrors('brand_id', 'brand_name');
+    }
+
+    function applyCategorySuggestion(category: CategorySuggestion): void {
+        categorySelectionSource.current = 'suggestion';
+        setSelectedCategory(category);
+        setField('category_id', category.id);
+    }
+
+    function loadCategorySuggestions(): void {
+        const title = form.data.title.trim();
+        const requestId = ++categorySuggestionRequestId.current;
+
+        if (title.length < CATEGORY_SUGGESTION_MINIMUM_TITLE_LENGTH) {
+            cancelCategorySuggestions();
+            setCategorySuggestions([]);
+            setCategorySuggestionError(null);
+
+            return;
+        }
+
+        cancelCategorySuggestions();
+        setCategorySuggestionError(null);
+
+        void getCategorySuggestions(
+            suggestCategories.url({
+                query: {
+                    title,
+                    limit: 3,
+                },
+            }),
+        )
+            .then((response) => {
+                if (requestId === categorySuggestionRequestId.current) {
+                    setCategorySuggestions(response.data);
+                }
+            })
+            .catch((caught: unknown) => {
+                if (
+                    requestId === categorySuggestionRequestId.current &&
+                    !requestWasCancelled(caught)
+                ) {
+                    setCategorySuggestionError(
+                        'Category suggestions could not be loaded.',
+                    );
+                }
+            });
+    }
+
+    function applySeoMetadata(
+        metaTitle: string,
+        metaDescription: string,
+    ): void {
+        const currentFormData = latestFormData.current ?? form.data;
+        const shouldUpdateTitle =
+            currentFormData.meta_title.trim() === '' ||
+            currentFormData.meta_title === lastGeneratedSeo.current.metaTitle;
+        const shouldUpdateDescription =
+            currentFormData.meta_description.trim() === '' ||
+            currentFormData.meta_description ===
+                lastGeneratedSeo.current.metaDescription;
+
+        lastGeneratedSeo.current = {
+            metaTitle,
+            metaDescription,
+        };
+
+        if (shouldUpdateTitle && metaTitle !== '') {
+            form.setData('meta_title', metaTitle);
+            form.clearErrors('meta_title');
+        }
+
+        if (shouldUpdateDescription && metaDescription !== '') {
+            form.setData('meta_description', metaDescription);
+            form.clearErrors('meta_description');
+        }
+    }
+
+    function applyContentSuggestion(
+        target: ContentSuggestionTarget,
+        suggestion: ContentSuggestionResponse,
+    ): void {
+        if (target === 'seo') {
+            applySeoMetadata(
+                suggestion.meta_title,
+                suggestion.meta_description,
+            );
+
+            return;
+        }
+
+        if (
+            target === 'short_description' &&
+            suggestion.short_description !== ''
+        ) {
+            setField('short_description', suggestion.short_description);
+
+            return;
+        }
+
+        if (
+            target === 'specifications' &&
+            suggestion.specifications_text !== ''
+        ) {
+            setField('specifications_text', suggestion.specifications_text);
+        }
+    }
+
+    function fallbackContentSuggestion(
+        target: ContentSuggestionTarget,
+        title: string,
+        description: string,
+    ): ContentSuggestionResponse {
+        return {
+            meta_title: target === 'seo' ? seoMetaTitle(title) : '',
+            meta_description:
+                target === 'seo' ? seoMetaDescription(title, description) : '',
+            short_description:
+                target === 'short_description'
+                    ? shortDescriptionFromProductDetails(title, description)
+                    : '',
+            specifications_text:
+                target === 'specifications'
+                    ? specificationsFromProductDetails(title, description)
+                    : '',
+        };
+    }
+
+    function requestContentSuggestion(target: ContentSuggestionTarget): void {
+        const title = form.data.title.trim();
+        const description = richTextPlainText(form.data.description);
+        const requestId = ++contentSuggestionRequestId.current;
+
+        cancelContentSuggestions();
+
+        if (title.length < 4 || description.length < 20) {
+            setContentSuggestionTarget(null);
+            applyContentSuggestion(
+                target,
+                fallbackContentSuggestion(target, title, description),
+            );
+
+            return;
+        }
+
+        setContentSuggestionTarget(target);
+        transformContentSuggestions(() => ({
+            title,
+            description,
+            target,
+        }));
+
+        void postContentSuggestions(contentSuggestions.url())
+            .then((response) => {
+                if (requestId === contentSuggestionRequestId.current) {
+                    applyContentSuggestion(target, response);
+                }
+            })
+            .catch((caught: unknown) => {
+                if (
+                    requestId === contentSuggestionRequestId.current &&
+                    !requestWasCancelled(caught)
+                ) {
+                    applyContentSuggestion(
+                        target,
+                        fallbackContentSuggestion(target, title, description),
+                    );
+                }
+            })
+            .finally(() => {
+                if (requestId === contentSuggestionRequestId.current) {
+                    setContentSuggestionTarget(null);
+                }
+            });
     }
 
     function updateOption(
@@ -911,6 +1157,10 @@ export function SellerProductForm({
                                     onChange={(value) =>
                                         setField('title', value)
                                     }
+                                    onBlur={() => {
+                                        loadCategorySuggestions();
+                                        requestContentSuggestion('seo');
+                                    }}
                                     placeholder="Enter product name"
                                     error={errorFor('title')}
                                 />
@@ -1015,10 +1265,23 @@ export function SellerProductForm({
                                     {brandStatus}
                                 </p>
                             </Field>
-                            <div className="md:col-span-2">
+                            <div className="grid gap-3 md:col-span-3">
+                                <CategorySuggestionPanel
+                                    suggestions={categorySuggestions}
+                                    processing={
+                                        categorySuggestionRequest.processing
+                                    }
+                                    error={categorySuggestionError}
+                                    selectedCategoryId={
+                                        selectedCategory?.id ?? null
+                                    }
+                                    onApply={applyCategorySuggestion}
+                                />
                                 <CategoryPicker
                                     selected={selectedCategory}
                                     onSelect={(category) => {
+                                        categorySelectionSource.current =
+                                            'manual';
                                         setSelectedCategory(category);
                                         setField(
                                             'category_id',
@@ -1075,9 +1338,43 @@ export function SellerProductForm({
                                 />
                             </Field>
                             <Field
+                                label="Full Description"
+                                error={errorFor('description')}
+                                required
+                                className="md:col-span-3"
+                            >
+                                <RichTextEditor
+                                    id="product-description"
+                                    value={form.data.description}
+                                    onChange={(value) =>
+                                        setField('description', value)
+                                    }
+                                    onBlur={() =>
+                                        requestContentSuggestion('seo')
+                                    }
+                                    placeholder="Enter product full description..."
+                                    error={errorFor('description')}
+                                />
+                            </Field>
+                            <Field
                                 label="Short Description"
                                 error={errorFor('short_description')}
                                 className="md:col-span-3"
+                                action={
+                                    <AiGenerateButton
+                                        label="Generate short description"
+                                        loading={
+                                            contentSuggestionRequest.processing &&
+                                            contentSuggestionTarget ===
+                                                'short_description'
+                                        }
+                                        onClick={() =>
+                                            requestContentSuggestion(
+                                                'short_description',
+                                            )
+                                        }
+                                    />
+                                }
                             >
                                 <div className="relative">
                                     <input
@@ -1103,25 +1400,24 @@ export function SellerProductForm({
                                 </div>
                             </Field>
                             <Field
-                                label="Full Description"
-                                error={errorFor('description')}
-                                required
-                                className="md:col-span-3"
-                            >
-                                <RichTextEditor
-                                    id="product-description"
-                                    value={form.data.description}
-                                    onChange={(value) =>
-                                        setField('description', value)
-                                    }
-                                    placeholder="Enter product full description..."
-                                    error={errorFor('description')}
-                                />
-                            </Field>
-                            <Field
                                 label="Specifications"
                                 error={errorFor('specifications_text')}
                                 className="md:col-span-3"
+                                action={
+                                    <AiGenerateButton
+                                        label="Generate specifications"
+                                        loading={
+                                            contentSuggestionRequest.processing &&
+                                            contentSuggestionTarget ===
+                                                'specifications'
+                                        }
+                                        onClick={() =>
+                                            requestContentSuggestion(
+                                                'specifications',
+                                            )
+                                        }
+                                    />
+                                }
                             >
                                 <RichTextEditor
                                     id="product-specifications"
@@ -1957,7 +2253,10 @@ export function SellerProductForm({
                                     onChange={(value) =>
                                         setField(
                                             'meta_title',
-                                            value.slice(0, 60),
+                                            value.slice(
+                                                0,
+                                                SEO_META_TITLE_MAXIMUM_LENGTH,
+                                            ),
                                         )
                                     }
                                     placeholder="Enter meta title"
@@ -1965,7 +2264,7 @@ export function SellerProductForm({
                                 />
                                 <CharacterCount
                                     value={form.data.meta_title.length}
-                                    maximum={60}
+                                    maximum={SEO_META_TITLE_MAXIMUM_LENGTH}
                                 />
                             </Field>
                             <Field
@@ -1977,7 +2276,10 @@ export function SellerProductForm({
                                     onChange={(event) =>
                                         setField(
                                             'meta_description',
-                                            event.target.value.slice(0, 160),
+                                            event.target.value.slice(
+                                                0,
+                                                SEO_META_DESCRIPTION_MAXIMUM_LENGTH,
+                                            ),
                                         )
                                     }
                                     rows={5}
@@ -1989,7 +2291,9 @@ export function SellerProductForm({
                                 />
                                 <CharacterCount
                                     value={form.data.meta_description.length}
-                                    maximum={160}
+                                    maximum={
+                                        SEO_META_DESCRIPTION_MAXIMUM_LENGTH
+                                    }
                                 />
                             </Field>
                             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-950">
@@ -2145,6 +2449,86 @@ export function SellerProductForm({
     );
 }
 
+function CategorySuggestionPanel({
+    error,
+    onApply,
+    processing,
+    selectedCategoryId,
+    suggestions,
+}: {
+    error: string | null;
+    onApply: (category: CategorySuggestion) => void;
+    processing: boolean;
+    selectedCategoryId: number | null;
+    suggestions: CategorySuggestion[];
+}) {
+    if (!processing && !error && suggestions.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="md:col-span-3">
+            <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-4 dark:border-sky-900/60 dark:bg-sky-950/20">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 text-sm font-black text-sky-900 dark:text-sky-100">
+                        <Sparkles className="size-4 text-sky-600 dark:text-sky-300" />
+                        AI category suggestions
+                    </div>
+                    {processing && (
+                        <LoaderCircle className="size-4 animate-spin text-sky-600 dark:text-sky-300" />
+                    )}
+                </div>
+
+                {error && (
+                    <p className="text-sm font-semibold text-red-600">
+                        {error}
+                    </p>
+                )}
+
+                {!error && suggestions.length > 0 && (
+                    <div className="grid gap-2">
+                        {suggestions.map((suggestion) => {
+                            const selected =
+                                selectedCategoryId === suggestion.id;
+
+                            return (
+                                <button
+                                    key={suggestion.id}
+                                    type="button"
+                                    onClick={() => onApply(suggestion)}
+                                    className={cn(
+                                        'grid gap-1 rounded-lg border bg-white p-3 text-left text-sm transition hover:border-sky-400 hover:shadow-sm dark:bg-slate-950',
+                                        selected
+                                            ? 'border-sky-500 ring-2 ring-sky-200 dark:ring-sky-900'
+                                            : 'border-sky-100 dark:border-sky-900/60',
+                                    )}
+                                >
+                                    <span className="flex items-center justify-between gap-3">
+                                        <span className="font-black text-slate-900 dark:text-slate-100">
+                                            {suggestion.name}
+                                        </span>
+                                        {selected && (
+                                            <Check className="size-4 shrink-0 text-sky-600 dark:text-sky-300" />
+                                        )}
+                                    </span>
+                                    <span className="text-xs font-semibold text-slate-500">
+                                        {suggestion.path}
+                                    </span>
+                                    {suggestion.reason && (
+                                        <span className="text-xs leading-5 text-slate-600 dark:text-slate-300">
+                                            {suggestion.reason}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 function FormCard({
     children,
     icon,
@@ -2168,6 +2552,7 @@ function FormCard({
 }
 
 function Field({
+    action,
     children,
     className,
     error,
@@ -2175,6 +2560,7 @@ function Field({
     label,
     required = false,
 }: {
+    action?: ReactNode;
     children: ReactNode;
     className?: string;
     error?: string;
@@ -2184,18 +2570,54 @@ function Field({
 }) {
     return (
         <label className={cn('block', className)}>
-            <span className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                <span>
-                    {label}{' '}
-                    {required && <span className="text-red-500">*</span>}
+            <span className="mb-2 flex items-center justify-between gap-3 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                <span className="flex items-center gap-1.5">
+                    <span>
+                        {label}{' '}
+                        {required && <span className="text-red-500">*</span>}
+                    </span>
+                    {helpText && (
+                        <FormHelpTooltip label={label}>
+                            {helpText}
+                        </FormHelpTooltip>
+                    )}
                 </span>
-                {helpText && (
-                    <FormHelpTooltip label={label}>{helpText}</FormHelpTooltip>
-                )}
+                {action && <span className="shrink-0">{action}</span>}
             </span>
             {children}
             {error && <ErrorText>{error}</ErrorText>}
         </label>
+    );
+}
+
+function AiGenerateButton({
+    label,
+    loading,
+    onClick,
+}: {
+    label: string;
+    loading: boolean;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            type="button"
+            aria-label={label}
+            title={label}
+            disabled={loading}
+            onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onClick();
+            }}
+            className="inline-flex size-8 items-center justify-center rounded-full border border-sky-200 bg-sky-50 text-sky-700 transition hover:border-sky-400 hover:bg-sky-100 disabled:cursor-wait disabled:opacity-70 dark:border-sky-900/60 dark:bg-sky-950/30 dark:text-sky-200"
+        >
+            {loading ? (
+                <LoaderCircle className="size-4 animate-spin" />
+            ) : (
+                <Sparkles className="size-4" />
+            )}
+        </button>
     );
 }
 
@@ -2310,11 +2732,13 @@ function SegmentedChoice<Value extends string | boolean>({
 
 function TextInput({
     error,
+    onBlur,
     onChange,
     placeholder,
     value,
 }: {
     error?: string;
+    onBlur?: () => void;
     onChange: (value: string) => void;
     placeholder: string;
     value: string;
@@ -2323,6 +2747,7 @@ function TextInput({
         <input
             value={value}
             onChange={(event) => onChange(event.target.value)}
+            onBlur={onBlur}
             placeholder={placeholder}
             aria-invalid={error ? true : undefined}
             className={inputClass(error)}
@@ -2850,6 +3275,118 @@ function specificationsText(specifications?: Specifications | null): string {
     return Object.entries(specifications)
         .map(([name, value]) => `${name}: ${String(value)}`)
         .join('\n');
+}
+
+function seoMetaTitle(productTitle: string): string {
+    const title = normalizedSeoText(productTitle);
+
+    if (title === '') {
+        return '';
+    }
+
+    return firstFittingSeoText(
+        [
+            `${title} in Sri Lanka | ProDeals.lk`,
+            `${title} | ProDeals.lk`,
+            title,
+        ],
+        SEO_META_TITLE_MAXIMUM_LENGTH,
+    );
+}
+
+function seoMetaDescription(
+    productTitle: string,
+    fullDescription: string,
+): string {
+    const title = normalizedSeoText(productTitle);
+    const description = trimSeoText(normalizedSeoText(fullDescription), 120);
+
+    if (title === '' && description === '') {
+        return '';
+    }
+
+    const lead = description || title;
+    const candidates = [
+        title
+            ? `${title}. ${lead} Shop online in Sri Lanka on ProDeals.lk.`
+            : `${lead} Shop online in Sri Lanka on ProDeals.lk.`,
+        `${lead} Available online in Sri Lanka from trusted sellers on ProDeals.lk.`,
+        title
+            ? `Buy ${title} online in Sri Lanka from trusted sellers on ProDeals.lk.`
+            : `${lead} Shop online in Sri Lanka on ProDeals.lk.`,
+        lead,
+    ];
+
+    return firstFittingSeoText(candidates, SEO_META_DESCRIPTION_MAXIMUM_LENGTH);
+}
+
+function shortDescriptionFromProductDetails(
+    productTitle: string,
+    fullDescription: string,
+): string {
+    const title = normalizedSeoText(productTitle);
+    const description = normalizedSeoText(fullDescription);
+
+    return firstFittingSeoText(
+        [description, title ? `${title}. ${description}` : description, title],
+        160,
+    );
+}
+
+function specificationsFromProductDetails(
+    productTitle: string,
+    fullDescription: string,
+): string {
+    const title = normalizedSeoText(productTitle);
+    const details = normalizedSeoText(fullDescription)
+        .split(/(?<=[.!?])\s+/)
+        .map((sentence) => trimSeoText(sentence, 120))
+        .filter(Boolean)
+        .slice(0, 4);
+
+    return trimSeoText(
+        [
+            title ? `Product: ${title}` : '',
+            ...details.map((detail) => `Detail: ${detail}`),
+        ]
+            .filter(Boolean)
+            .join('\n'),
+        700,
+    );
+}
+
+function firstFittingSeoText(
+    candidates: string[],
+    maximumLength: number,
+): string {
+    const normalizedCandidates = candidates
+        .map((candidate) => normalizedSeoText(candidate))
+        .filter(Boolean);
+    const fittingCandidate = normalizedCandidates.find(
+        (candidate) => candidate.length <= maximumLength,
+    );
+
+    return (
+        fittingCandidate ??
+        trimSeoText(normalizedCandidates[0] ?? '', maximumLength)
+    );
+}
+
+function normalizedSeoText(value: string): string {
+    return value.replace(/\s+/g, ' ').trim();
+}
+
+function trimSeoText(value: string, maximumLength: number): string {
+    if (value.length <= maximumLength) {
+        return value;
+    }
+
+    const shortened = value
+        .slice(0, maximumLength)
+        .replace(/\s+\S*$/, '')
+        .trim();
+
+    return shortened === '' ? value.slice(0, maximumLength).trim() : shortened;
 }
 
 function hasSquareRatio(size: ListingImageSize): boolean {

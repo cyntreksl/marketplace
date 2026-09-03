@@ -1,2 +1,2 @@
-ProDeals.lk — Better deals. Closer to home.
+ProDeals.lk - Better deals. Closer to home.
 {{ $url }}

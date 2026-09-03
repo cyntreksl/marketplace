@@ -141,10 +141,10 @@ export default function SellerListings({
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-4 align-top font-medium text-stone-600 dark:text-stone-300">
-                                                    {listing.sku ?? '—'}
+                                                    {listing.sku ?? '-'}
                                                 </td>
                                                 <td className="px-4 py-4 align-top text-stone-600 dark:text-stone-300">
-                                                    {listing.model ?? '—'}
+                                                    {listing.model ?? '-'}
                                                 </td>
                                                 <td className="px-4 py-4 align-top text-stone-600 dark:text-stone-300">
                                                     {listing.category?.name ??
@@ -153,7 +153,7 @@ export default function SellerListings({
                                                 <td className="px-4 py-4 align-top text-stone-600 dark:text-stone-300">
                                                     {listing.brand?.name ??
                                                         listing.brand_name ??
-                                                        '—'}
+                                                        '-'}
                                                 </td>
                                                 <td className="px-4 py-4 align-top">
                                                     <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold dark:bg-stone-800">

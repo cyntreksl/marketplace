@@ -56,7 +56,7 @@ test('every transactional notification has consistent branded content', function
         ->toContain('The ProDeals.lk team')
         ->not->toContain('laravel.com/img/notification-logo')
         ->and($text)
-        ->toContain('ProDeals.lk — Better deals. Closer to home.')
+        ->toContain('ProDeals.lk - Better deals. Closer to home.')
         ->toContain('support@prodeals.lk')
         ->toContain('The ProDeals.lk team')
         ->toContain($mailMessage->actionUrl);

@@ -120,7 +120,7 @@ export default function Compare({
                                     [
                                         'Brand',
                                         (item: StorefrontListing) =>
-                                            item.brand?.name ?? '—',
+                                            item.brand?.name ?? '-',
                                     ],
                                     [
                                         'Condition',
@@ -154,14 +154,14 @@ export default function Compare({
                                                                   item
                                                                       .specifications[
                                                                       name
-                                                                  ] ?? '—',
+                                                                  ] ?? '-',
                                                               ),
                                                           )
                                                         : String(
                                                               item
                                                                   .specifications[
                                                                   name
-                                                              ] ?? '—',
+                                                              ] ?? '-',
                                                           ),
                                             ] as const,
                                     ),

@@ -489,7 +489,7 @@ class EloquentCatalogRepository implements CatalogRepository
             ->get();
     }
 
-    public function lookupCategories(?string $search, ?int $parentId): Collection
+    public function lookupCategories(?string $search, ?int $parentId, bool $leafOnly = false): Collection
     {
         $query = Category::query()
             ->storefrontAvailable()
@@ -499,6 +499,10 @@ class EloquentCatalogRepository implements CatalogRepository
                 ->where(fn (Builder $query): Builder => $query
                     ->whereNull('is_taxonomy_available')
                     ->orWhere('is_taxonomy_available', true))]);
+
+        if ($leafOnly) {
+            $query->where('is_selectable', true);
+        }
 
         if ($search !== null && $search !== '') {
             $matchingGoogleIds = GoogleProductTaxonomyNode::query()
@@ -511,7 +515,11 @@ class EloquentCatalogRepository implements CatalogRepository
                 ->orWhereIn('google_product_category_id', $matchingGoogleIds))
                 ->limit(30);
         } else {
-            $query->where('parent_id', $parentId)->limit(100);
+            if (! $leafOnly || $parentId !== null) {
+                $query->where('parent_id', $parentId);
+            }
+
+            $query->limit(100);
         }
 
         $categories = $query->orderBy('sort_order')->orderBy('name')->get();

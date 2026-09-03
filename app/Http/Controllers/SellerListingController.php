@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\Repositories\CatalogRepository;
+use App\Http\Requests\ListingContentSuggestionRequest;
 use App\Http\Requests\StoreListingRequest;
 use App\Http\Requests\SubmitListingRequest;
 use App\Http\Requests\UpdateListingRequest;
 use App\Models\Brand;
 use App\Models\Listing;
+use App\Services\ListingContentSuggestionService;
 use App\Services\ListingService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -18,6 +21,7 @@ class SellerListingController extends Controller
 {
     public function __construct(
         private readonly CatalogRepository $catalog,
+        private readonly ListingContentSuggestionService $contentSuggestions,
         private readonly ListingService $listings,
     ) {}
 
@@ -84,6 +88,17 @@ class SellerListingController extends Controller
         $listing = $this->listings->submit($request->user(), (int) $request->validated('listing_id'));
 
         return to_route('seller.listings.index')->with('status', "{$listing->title} was submitted for review.");
+    }
+
+    public function contentSuggestions(ListingContentSuggestionRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        return response()->json($this->contentSuggestions->suggest(
+            title: (string) $validated['title'],
+            description: (string) $validated['description'],
+            target: (string) $validated['target'],
+        ));
     }
 
     public function destroy(Request $request, Listing $listing): RedirectResponse

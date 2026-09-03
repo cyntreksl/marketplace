@@ -18,7 +18,7 @@ class SeoHeadService
     public function defaultPayload(Request $request): array
     {
         $name = (string) config('app.name', 'ProDeals.lk');
-        $title = $name.' — Better deals. Closer to home.';
+        $title = $name.' - Better deals. Closer to home.';
         $description = "Discover more with {$name}, Sri Lanka's marketplace for everyday finds and better deals.";
         $routeName = (string) optional($request->route())->getName();
         $pageLabel = match ($routeName) {

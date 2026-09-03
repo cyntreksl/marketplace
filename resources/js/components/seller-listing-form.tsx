@@ -1103,7 +1103,7 @@ export function SellerListingForm({
                             </span>
                             <span className="mt-1 max-w-sm text-sm leading-6 text-stone-500">
                                 Add up to {Math.max(0, 5 - totalPhotoCount)}{' '}
-                                more. Put your strongest photo first—it becomes
+                                more. Put your strongest photo first-it becomes
                                 the listing cover.
                             </span>
                             <span className="mt-4 rounded-full bg-stone-950 px-5 py-2.5 text-sm font-bold text-white dark:bg-stone-50 dark:text-stone-950">

@@ -59,12 +59,14 @@ export function richTextPlainText(value: string): string {
 export function RichTextEditor({
     error,
     id,
+    onBlur,
     onChange,
     placeholder,
     value,
 }: {
     error?: string;
     id: string;
+    onBlur?: () => void;
     onChange: (value: string) => void;
     placeholder: string;
     value: string;
@@ -89,6 +91,7 @@ export function RichTextEditor({
                 cloudChannel="8"
                 value={value}
                 rollback={false}
+                onBlur={onBlur}
                 onEditorChange={(content) => {
                     const sanitizedValue = sanitizeRichText(content);
                     onChange(

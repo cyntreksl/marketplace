@@ -842,7 +842,7 @@ export default function ListingShow({
                                                 ) : (
                                                     <p className="mt-2 text-xs text-amber-600">
                                                         Awaiting seller response
-                                                        — visible only to you.
+                                                        - visible only to you.
                                                     </p>
                                                 )}
                                             </article>

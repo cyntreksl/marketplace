@@ -483,7 +483,7 @@ export const marketplaceDocuments: Record<string, MarketplaceDocument> = {
                 title: 'Who receives data',
                 paragraphs: [
                     'We share only what is reasonably required with the seller fulfilling an order, couriers, payment and banking providers, hosting and email providers, professional advisers, fraud and security services, and public authorities where lawfully required.',
-                    'Sellers may use buyer delivery information only for fulfilment, returns, support, and legal obligations—not unrelated marketing.',
+                    'Sellers may use buyer delivery information only for fulfilment, returns, support, and legal obligations-not unrelated marketing.',
                 ],
             },
             {
@@ -528,7 +528,7 @@ export const marketplaceDocuments: Record<string, MarketplaceDocument> = {
         eyebrow: 'Legal',
         title: 'Cookie policy',
         summary:
-            'ProDeals.lk currently uses cookies and similar browser storage for security, sessions, and user-requested appearance preferences—not advertising or analytics.',
+            'ProDeals.lk currently uses cookies and similar browser storage for security, sessions, and user-requested appearance preferences-not advertising or analytics.',
         sections: [
             {
                 id: 'what-they-are',
