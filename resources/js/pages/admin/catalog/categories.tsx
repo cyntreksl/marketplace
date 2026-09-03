@@ -56,6 +56,7 @@ type Category = {
         can_manage_artwork: boolean;
         can_update_activation: boolean;
         can_archive: boolean;
+        can_delete: boolean;
         can_restore: boolean;
     };
 };
@@ -668,9 +669,11 @@ function CategoryAvailability({ category }: { category: Category }) {
 
 function CategoryArchiveControls({
     category,
+    canDelete,
     canRestore,
 }: {
     category: Category;
+    canDelete: boolean;
     canRestore: boolean;
 }) {
     if (category.deleted_at) {
@@ -725,52 +728,58 @@ function CategoryArchiveControls({
     return (
         <section className="rounded-2xl border border-red-200 p-4 dark:border-red-900">
             <h4 className="text-sm font-black text-red-800 dark:text-red-200">
-                Archive category
+                Delete category
             </h4>
             <p className="mt-1 text-xs leading-5 text-slate-500">
                 The record and artwork are preserved, but this category is
                 removed from active administration and the storefront.
             </p>
-            <Form
-                {...destroy.form(category.id, {
-                    query: { category: category.id },
-                })}
-                resetOnSuccess
-                onSubmit={(event) => {
-                    if (
-                        !window.confirm(
-                            'Are you sure you want to archive this category?',
-                        )
-                    ) {
-                        event.preventDefault();
-                    }
-                }}
-                className="mt-3 grid gap-3"
-            >
-                {({ errors, processing }) => (
-                    <>
-                        <input
-                            required
-                            minLength={5}
-                            name="reason"
-                            placeholder="Reason for archiving this category"
-                            className={inputClassName}
-                        />
-                        {errors.reason && (
-                            <p className="text-sm text-red-600">
-                                {errors.reason}
-                            </p>
-                        )}
-                        <button
-                            disabled={processing}
-                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50"
-                        >
-                            <Archive className="size-4" />
-                            Archive category
-                        </button>
-                    </>
-                )}
-            </Form>
+            {canDelete ? (
+                <Form
+                    {...destroy.form(category.id, {
+                        query: { category: category.id },
+                    })}
+                    resetOnSuccess
+                    onSubmit={(event) => {
+                        if (
+                            !window.confirm(
+                                'Are you sure you want to delete this category?',
+                            )
+                        ) {
+                            event.preventDefault();
+                        }
+                    }}
+                    className="mt-3 grid gap-3"
+                >
+                    {({ errors, processing }) => (
+                        <>
+                            <input
+                                required
+                                minLength={5}
+                                name="reason"
+                                placeholder="Reason for deleting this category"
+                                className={inputClassName}
+                            />
+                            {errors.reason && (
+                                <p className="text-sm text-red-600">
+                                    {errors.reason}
+                                </p>
+                            )}
+                            <button
+                                disabled={processing}
+                                className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50"
+                            >
+                                <Archive className="size-4" />
+                                Delete category
+                            </button>
+                        </>
+                    )}
+                </Form>
+            ) : (
+                <p className="mt-3 text-sm font-semibold text-muted-foreground">
+                    You do not have permission to delete this category.
+                </p>
+            )}
         </section>
     );
 }
@@ -806,10 +815,11 @@ function CategoryDetails({
 
             {category.deleted_at ? (
                 <div className="mt-6">
-                    <CategoryArchiveControls
-                        category={category}
-                        canRestore={category.capabilities.can_restore}
-                    />
+                        <CategoryArchiveControls
+                            category={category}
+                            canDelete={category.capabilities.can_delete}
+                            canRestore={category.capabilities.can_restore}
+                        />
                 </div>
             ) : (
                 <div className="mt-6 grid gap-6">
@@ -833,6 +843,7 @@ function CategoryDetails({
                     </div>
                     <CategoryArchiveControls
                         category={category}
+                        canDelete={category.capabilities.can_delete}
                         canRestore={category.capabilities.can_restore}
                     />
                 </div>

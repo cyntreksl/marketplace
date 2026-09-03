@@ -15,6 +15,7 @@ class AdminCategoryResource extends JsonResource
     public function toArray(Request $request): array
     {
         $isArchived = $this->resource->deleted_at !== null;
+        $canManage = fn (string $ability): bool => (bool) ($request->user()?->can($ability, $this->resource) ?? false);
 
         return [
             'id' => (int) $this->resource->getKey(),
@@ -38,10 +39,11 @@ class AdminCategoryResource extends JsonResource
             'updated_at' => $this->resource->updated_at?->toISOString(),
             'has_children' => (int) $this->resource->getAttribute('all_children_count') > 0,
             'capabilities' => [
-                'can_update' => ! $isArchived,
-                'can_manage_artwork' => ! $isArchived,
-                'can_update_activation' => ! $isArchived,
-                'can_archive' => ! $isArchived,
+                'can_update' => ! $isArchived && $canManage('update'),
+                'can_manage_artwork' => ! $isArchived && $canManage('update'),
+                'can_update_activation' => ! $isArchived && $canManage('update'),
+                'can_archive' => ! $isArchived && $canManage('delete'),
+                'can_delete' => ! $isArchived && $canManage('delete'),
                 'can_restore' => $isArchived && ($request->user()?->hasRole('super_admin') ?? false),
             ],
         ];
