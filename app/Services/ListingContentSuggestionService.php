@@ -165,7 +165,10 @@ class ListingContentSuggestionService
         ];
     }
 
-    /** @return array{meta_title: string, meta_description: string, short_description: string, specifications_text: string} */
+    /**
+     * @param  array{meta_title: string, meta_description: string, short_description: string, specifications_text: string}  $suggestion
+     * @return array{meta_title: string, meta_description: string, short_description: string, specifications_text: string}
+     */
     private function targetOnly(array $suggestion, string $target): array
     {
         $empty = [

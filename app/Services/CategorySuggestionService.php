@@ -194,10 +194,17 @@ class CategorySuggestionService
 
         $decoded = json_decode($content, true, flags: JSON_THROW_ON_ERROR);
         $candidateMap = $candidates->keyBy('id');
+        $matches = Arr::get($decoded, 'matches', []);
 
-        return collect(Arr::get($decoded, 'matches', []))
+        if (! is_array($matches)) {
+            return collect();
+        }
+
+        /** @var Collection<int, array{id: int, name: string, path: string, slug: string, is_selectable: bool, has_children: bool, commission_percentage: string, score: float, reason: string}> $rankedSuggestions */
+        $rankedSuggestions = collect($matches)
             ->filter(fn (mixed $match): bool => is_array($match) && $candidateMap->has((int) Arr::get($match, 'category_id')))
             ->map(function (array $match) use ($candidateMap): array {
+                /** @var array{id: int, name: string, path: string, slug: string, is_selectable: bool, has_children: bool, commission_percentage: string} $candidate */
                 $candidate = $candidateMap->get((int) $match['category_id']);
 
                 return [
@@ -210,6 +217,8 @@ class CategorySuggestionService
             ->sortByDesc('score')
             ->take($limit)
             ->values();
+
+        return $rankedSuggestions;
     }
 
     /** @param array<string, mixed> $response */
