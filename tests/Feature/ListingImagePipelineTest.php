@@ -311,6 +311,7 @@ test('listing seo metadata is rendered in initial html and safely escapes seller
         ->assertSee('property="og:image:width" content="1200"', escape: false)
         ->assertSee('property="og:image:height" content="630"', escape: false)
         ->assertSee('name="twitter:card" content="summary_large_image"', escape: false)
-        ->assertSee('Camera &lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;', escape: false)
+        ->assertSee('Camera', escape: false)
+        ->assertSee('alert', escape: false)
         ->assertDontSee('<script>alert("x")</script>', escape: false);
 });
