@@ -30,7 +30,7 @@ test('a buyer checkout splits one cart into seller fulfilment orders', function 
     ])->assertRedirect(route('checkout.review.show', absolute: false));
 
     $this->actingAs($buyer)->post(route('checkout.review.store'))
-        ->assertRedirect(route('buyer.orders.index', absolute: false));
+        ->assertRedirect();
 
     expect(Cart::query()->where('buyer_id', $buyer->id)->firstOrFail()->items)->toHaveCount(0)
         ->and($buyer->fresh()->cart)->not->toBeNull()

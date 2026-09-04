@@ -143,21 +143,43 @@ test('buyer reviews and places an order before the checkout session and cart are
 
     $response = $this->actingAs($user)->post(route('checkout.review.store'));
 
-    $response->assertRedirect(route('buyer.orders.index'));
+    $order = CustomerOrder::query()->whereBelongsTo($user, 'buyer')->sole();
+
+    $response->assertRedirect(route('checkout.thank_you.show', ['customerOrder' => $order->number]));
     $response->assertSessionMissing('checkout');
 
-    expect($cart->fresh()?->items()->count())->toBe(0);
+    expect($cart->fresh()?->items()->count())->toBe(0)
+        ->and($order->number)->toMatch('/^PRO\d{6}$/');
     $this->assertDatabaseHas('customer_orders', [
         'buyer_id' => $user->id,
         'status' => 'confirmed',
     ]);
+
+    $this->actingAs($user)
+        ->get(route('checkout.thank_you.show', ['customerOrder' => $order->number]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('buyer/thank-you')
+            ->where('order.number', $order->number)
+            ->where('order.status', 'confirmed')
+            ->where('order.total', '22000.00')
+            ->where('order.payment.method', 'cod')
+            ->where('order.payment.status', 'pending_collection')
+            ->where('order.shippingAddress.recipient_name', 'Saman Perera')
+            ->where('order.shippingAddress.address_line_one', '123, Galle Road')
+            ->where('order.billingAddress.recipient_name', 'Saman Perera')
+            ->where('order.billingAddress.city', 'Colombo')
+            ->has('order.items', 1)
+            ->where('order.items.0.title', $listing->title)
+            ->where('order.items.0.quantity', 1));
 
     Notification::assertSentTo(
         $user,
         OrderAcknowledgmentNotification::class,
         fn (OrderAcknowledgmentNotification $notification): bool => $notification->paymentMethod === 'cod'
             && $notification->itemCount === 1
-            && $notification->orderTotal === '22000.00',
+            && $notification->orderTotal === '22000.00'
+            && $notification->orderNumber === $order->number,
     );
 });
 
@@ -192,17 +214,27 @@ test('buyer can create a pending order with an online payment method', function 
         ])
         ->assertRedirect(route('checkout.review.show'));
 
-    $this->actingAs($user)
-        ->post(route('checkout.review.store'))
-        ->assertRedirect(route('buyer.orders.index'));
+    $response = $this->actingAs($user)->post(route('checkout.review.store'));
 
     $order = CustomerOrder::query()->whereBelongsTo($user, 'buyer')->sole();
     $payment = $order->payments()->sole();
+
+    $response->assertRedirect(route('checkout.thank_you.show', ['customerOrder' => $order->number]));
 
     expect($order->status)->toBe('pending_payment')
         ->and($payment->method)->toBe($paymentMethod)
         ->and($payment->status)->toBe('pending');
 })->with(['stripe', 'bank_transfer']);
+
+test('a buyer cannot view another buyers order confirmation', function (): void {
+    $buyer = User::factory()->create();
+    $otherBuyer = User::factory()->create();
+    $order = CustomerOrder::factory()->for($buyer, 'buyer')->create();
+
+    $this->actingAs($otherBuyer)
+        ->get(route('checkout.thank_you.show', ['customerOrder' => $order->number]))
+        ->assertForbidden();
+});
 
 test('payment methods that are not available are rejected', function (): void {
     $user = User::factory()->create();

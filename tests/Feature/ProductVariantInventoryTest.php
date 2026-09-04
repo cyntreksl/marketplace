@@ -558,7 +558,7 @@ test('active availability backorders and stock status control public purchasing'
 
     $this->actingAs($buyer)
         ->post(route('checkout.review.store'))
-        ->assertRedirect(route('buyer.orders.index', absolute: false))
+        ->assertRedirect()
         ->assertSessionHasNoErrors();
 
     expect($backorder->refresh()->reserved_quantity)->toBe(2);

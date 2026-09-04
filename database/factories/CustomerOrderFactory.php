@@ -5,7 +5,6 @@ namespace Database\Factories;
 use App\Models\CustomerOrder;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
 /**
  * @extends Factory<CustomerOrder>
@@ -20,7 +19,7 @@ class CustomerOrderFactory extends Factory
     public function definition(): array
     {
         return [
-            'number' => 'ORD-'.Str::upper(fake()->unique()->bothify('########')),
+            'number' => 'PRO'.fake()->unique()->numerify('######'),
             'buyer_id' => User::factory(),
             'status' => 'confirmed',
             'subtotal' => '1000.00',

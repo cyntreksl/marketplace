@@ -194,7 +194,7 @@ test('multiple variants of one listing coexist in a cart and are snapshotted at 
     ])->assertRedirect(route('checkout.review.show', absolute: false));
 
     $this->actingAs($buyer)->post(route('checkout.review.store'))
-        ->assertRedirect(route('buyer.orders.index', absolute: false));
+        ->assertRedirect();
 
     $items = CustomerOrder::query()->whereBelongsTo($buyer, 'buyer')->sole()->sellerOrders()->firstOrFail()->items()->orderBy('variant_sku')->get();
 

@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Contracts\Repositories\CartRepository;
 use App\Http\Requests\CheckoutPaymentRequest;
 use App\Http\Requests\CheckoutRequest;
+use App\Models\CustomerOrder;
 use App\Services\CheckoutService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -109,11 +111,16 @@ class CheckoutController extends Controller
         $order = $this->checkout->checkout($request->user(), $paymentMethod, $shippingAddress);
         $request->session()->forget('checkout');
 
-        $status = $paymentMethod === 'cod'
-            ? "Order {$order->number} was confirmed for cash on delivery."
-            : "Order {$order->number} was created. Complete payment to release it to the seller.";
+        return to_route('checkout.thank_you.show', ['customerOrder' => $order->number]);
+    }
 
-        return to_route('buyer.orders.index')->with('status', $status);
+    public function thankYou(CustomerOrder $customerOrder): Response
+    {
+        Gate::authorize('view', $customerOrder);
+
+        return Inertia::render('buyer/thank-you', [
+            'order' => $this->checkout->confirmationSummary($customerOrder),
+        ]);
     }
 
     private function paymentMethod(Request $request): ?string

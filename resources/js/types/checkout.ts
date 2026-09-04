@@ -33,3 +33,31 @@ export type ShippingAddress = {
     postal_code: string | null;
     phone: string;
 };
+
+export type CheckoutConfirmationItem = {
+    id: number;
+    title: string;
+    seller: string;
+    variantSku: string | null;
+    variantOptions: Record<string, string> | null;
+    quantity: number;
+    unitPrice: string;
+    total: string;
+};
+
+export type CheckoutConfirmationOrder = {
+    number: string;
+    status: string;
+    placedAt: string | null;
+    subtotal: string;
+    shippingTotal: string;
+    total: string;
+    shippingAddress: ShippingAddress;
+    billingAddress: ShippingAddress;
+    payment: {
+        method: CheckoutPaymentMethod;
+        status: string;
+        amount: string;
+    } | null;
+    items: CheckoutConfirmationItem[];
+};

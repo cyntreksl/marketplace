@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Contracts\Repositories\CustomerOrderRepository;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\CustomerOrder;
@@ -22,6 +23,7 @@ class CheckoutService
     public function __construct(
         private readonly MarketplaceSettingsService $settings,
         private readonly AuditLogService $auditLogs,
+        private readonly CustomerOrderRepository $customerOrders,
     ) {}
 
     public function addItem(User $buyer, int $listingId, int $quantity, ?int $listingVariantId = null): Cart
@@ -106,13 +108,14 @@ class CheckoutService
             }
 
             $order = CustomerOrder::query()->create([
-                'number' => $this->orderNumber('CM'),
+                'number' => (string) Str::uuid(),
                 'buyer_id' => $buyer->id,
                 'status' => $paymentMethod === 'cod' ? 'confirmed' : 'pending_payment',
                 'subtotal' => (string) $subtotal,
                 'total' => (string) $subtotal,
                 'shipping_address' => $shippingAddress,
             ]);
+            $order->update(['number' => $this->customerOrderNumber($order)]);
 
             foreach ($cartItems->groupBy(fn (CartItem $item): int => $item->listing->seller_profile_id) as $sellerProfileId => $items) {
                 $sellerSubtotal = BigDecimal::zero();
@@ -175,6 +178,52 @@ class CheckoutService
         ));
 
         return $order;
+    }
+
+    /** @return array<string, mixed> */
+    public function confirmationSummary(CustomerOrder $customerOrder): array
+    {
+        $customerOrder = $this->customerOrders->withConfirmationDetails($customerOrder);
+        $shippingAddress = $customerOrder->shipping_address;
+        $payment = $customerOrder->payments->first();
+        $items = [];
+
+        foreach ($customerOrder->sellerOrders as $sellerOrder) {
+            foreach ($sellerOrder->items as $item) {
+                $items[] = [
+                    'id' => $item->id,
+                    'title' => $item->title,
+                    'seller' => $sellerOrder->sellerProfile->store_name ?? 'Marketplace seller',
+                    'variantSku' => $item->variant_sku,
+                    'variantOptions' => $item->variant_options,
+                    'quantity' => $item->quantity,
+                    'unitPrice' => $item->unit_price,
+                    'total' => $item->total,
+                ];
+            }
+        }
+
+        return [
+            'number' => $customerOrder->number,
+            'status' => $customerOrder->status,
+            'placedAt' => $customerOrder->created_at?->toIso8601String(),
+            'subtotal' => $customerOrder->subtotal,
+            'shippingTotal' => $customerOrder->shipping_total,
+            'total' => $customerOrder->total,
+            'shippingAddress' => $shippingAddress,
+            'billingAddress' => $shippingAddress,
+            'payment' => $payment === null ? null : [
+                'method' => $payment->method,
+                'status' => $payment->status,
+                'amount' => $payment->amount,
+            ],
+            'items' => $items,
+        ];
+    }
+
+    private function customerOrderNumber(CustomerOrder $customerOrder): string
+    {
+        return 'PRO'.Str::padLeft((string) $customerOrder->getKey(), 6, '0');
     }
 
     private function orderNumber(string $prefix): string

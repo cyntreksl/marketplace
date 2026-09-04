@@ -11,6 +11,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property array<string, string>|null $variant_options
+ * @property numeric-string $unit_price
+ * @property numeric-string $total
+ */
 #[Fillable(['seller_order_id', 'listing_id', 'listing_variant_id', 'title', 'variant_sku', 'variant_options', 'quantity', 'unit_price', 'commission_percentage', 'commission_amount', 'total'])]
 class OrderItem extends Model
 {

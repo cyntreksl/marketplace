@@ -47,7 +47,7 @@ class OrderAcknowledgmentNotification extends Notification implements ShouldQueu
             ->line('Order total: LKR '.Number::format((float) $this->orderTotal, precision: 2, locale: 'en'))
             ->line('Payment method: '.$this->paymentMethodLabel())
             ->line($this->paymentStatusMessage())
-            ->action('View your order', route('buyer.orders.index'))
+            ->action('View order confirmation', route('checkout.thank_you.show', ['customerOrder' => $this->orderNumber]))
             ->line('We will email you again when there is an update to your order.');
     }
 

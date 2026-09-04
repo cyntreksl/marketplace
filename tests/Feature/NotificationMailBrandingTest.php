@@ -84,11 +84,11 @@ test('every transactional notification has consistent branded content', function
         'Amal Silva requested to return 2 × Travel Backpack.',
     ],
     'order acknowledgment' => [
-        fn (): OrderAcknowledgmentNotification => new OrderAcknowledgmentNotification('CM-260904-ABCDEFGH', '22500.00', 'cod', 2),
-        'Order received: CM-260904-ABCDEFGH',
-        'View your order',
-        '/buyer/orders',
-        "Thank you for your order. We've received 2 items under order CM-260904-ABCDEFGH.",
+        fn (): OrderAcknowledgmentNotification => new OrderAcknowledgmentNotification('PRO000234', '22500.00', 'cod', 2),
+        'Order received: PRO000234',
+        'View order confirmation',
+        '/checkout/thank-you/PRO000234',
+        "Thank you for your order. We've received 2 items under order PRO000234.",
     ],
     'return decision' => [
         fn (): ReturnDecisionNotification => new ReturnDecisionNotification(42, 'Travel Backpack', 'rejected', 'The item is outside the return window.'),

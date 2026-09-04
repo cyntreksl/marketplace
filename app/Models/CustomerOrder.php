@@ -9,7 +9,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property numeric-string $subtotal
+ * @property numeric-string $shipping_total
+ * @property numeric-string $total
+ * @property array<string, string|null> $shipping_address
+ * @property Carbon|null $created_at
+ */
 #[Fillable(['number', 'buyer_id', 'status', 'subtotal', 'shipping_total', 'total', 'shipping_address'])]
 class CustomerOrder extends Model
 {
