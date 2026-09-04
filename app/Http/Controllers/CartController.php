@@ -31,7 +31,7 @@ class CartController extends Controller
         );
 
         if ($request->boolean('buy_now')) {
-            return to_route('cart.show')->with('toast', ['type' => 'success', 'message' => 'Ready for checkout.']);
+            return to_route('checkout.show')->with('toast', ['type' => 'success', 'message' => 'Ready for checkout.']);
         }
 
         return back()

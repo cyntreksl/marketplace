@@ -5,6 +5,29 @@ use App\Models\CartItem;
 use App\Models\Listing;
 use App\Models\User;
 
+test('buy now saves the item and redirects directly to checkout', function (): void {
+    $user = User::factory()->create();
+    $listing = Listing::factory()->create([
+        'listing_type' => 'buy_now',
+        'status' => 'approved',
+        'is_active' => true,
+        'stock_quantity' => 5,
+    ]);
+
+    $response = $this->actingAs($user)->post(route('cart.items.store'), [
+        'listing_id' => $listing->id,
+        'quantity' => 1,
+        'buy_now' => true,
+    ]);
+
+    $response->assertRedirect(route('checkout.show'));
+
+    $cart = Cart::query()->whereBelongsTo($user, 'buyer')->sole();
+
+    expect($cart->items)->toHaveCount(1)
+        ->and($cart->items->first()->listing_id)->toBe($listing->id);
+});
+
 test('buyer checkout page renders the saved cart summary', function (): void {
     $user = User::factory()->create();
     $cart = Cart::factory()->for($user, 'buyer')->create();
