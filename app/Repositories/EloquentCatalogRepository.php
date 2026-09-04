@@ -464,7 +464,12 @@ class EloquentCatalogRepository implements CatalogRepository
             ->orderByRaw('homepage_order is null')
             ->orderBy('homepage_order')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->map(function (Category $category): Category {
+                $category->setAttribute('image_url', $category->imageUrl());
+
+                return $category;
+            });
     }
 
     public function replaceHomepageCategories(array $popularCategoryIds, array $featuredCategoryIds): void

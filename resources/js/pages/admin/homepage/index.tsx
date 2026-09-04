@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, Link } from '@inertiajs/react';
 import { GripVertical, Image, Sparkles, Tag, X } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -13,13 +13,18 @@ import {
 import { CategoryPicker } from '@/components/category-picker';
 import type { CategoryOption } from '@/components/category-picker';
 import { PortalLayout } from '@/components/portal-layout';
+import { index as adminCategoriesIndex } from '@/routes/admin/categories';
 
 type SelectedCategory = {
     id: number;
     name: string;
     slug: string;
+    image_url: string | null;
     is_popular: boolean;
     homepage_order: number | null;
+};
+type HomepageCategoryOption = CategoryOption & {
+    image_url: string | null;
 };
 type Listing = {
     id: number;
@@ -52,7 +57,7 @@ type Promotion = {
     listings: { id: number; title: string }[];
 };
 
-function asOption(category: SelectedCategory): CategoryOption {
+function asOption(category: SelectedCategory): HomepageCategoryOption {
     return {
         id: category.id,
         name: category.name,
@@ -61,6 +66,7 @@ function asOption(category: SelectedCategory): CategoryOption {
         is_selectable: true,
         has_children: false,
         commission_percentage: '0.00',
+        image_url: category.image_url,
     };
 }
 
@@ -71,7 +77,7 @@ function SelectedList({
     limit,
 }: {
     label: string;
-    items: CategoryOption[];
+    items: HomepageCategoryOption[];
     onRemove: (id: number) => void;
     limit: number;
 }) {
@@ -98,9 +104,28 @@ function SelectedList({
                         <span className="grid size-7 place-items-center rounded-lg bg-primary/10 text-xs font-black text-primary">
                             {index + 1}
                         </span>
+                        <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-lg bg-primary/10 text-xs font-black text-primary">
+                            {item.image_url ? (
+                                <img
+                                    src={item.image_url}
+                                    alt=""
+                                    className="size-full object-cover"
+                                />
+                            ) : (
+                                <Image className="size-4" />
+                            )}
+                        </span>
                         <span className="min-w-0 flex-1 truncate text-sm font-bold">
                             {item.name}
                         </span>
+                        <Link
+                            href={adminCategoriesIndex({
+                                query: { category: item.id },
+                            })}
+                            className="shrink-0 rounded-lg px-2 py-1 text-xs font-bold text-primary hover:bg-primary/10"
+                        >
+                            Edit image
+                        </Link>
                         <button
                             type="button"
                             onClick={() => onRemove(item.id)}
@@ -125,12 +150,12 @@ export default function AdminHomepage({
     listings: { data: Listing[] };
     promotions: { data: Promotion[] };
 }) {
-    const [popular, setPopular] = useState<CategoryOption[]>(() =>
+    const [popular, setPopular] = useState<HomepageCategoryOption[]>(() =>
         selectedCategories
             .filter((category) => category.is_popular)
             .map(asOption),
     );
-    const [featured, setFeatured] = useState<CategoryOption[]>(() =>
+    const [featured, setFeatured] = useState<HomepageCategoryOption[]>(() =>
         selectedCategories
             .filter((category) => category.homepage_order !== null)
             .sort((a, b) => Number(a.homepage_order) - Number(b.homepage_order))
@@ -144,10 +169,10 @@ export default function AdminHomepage({
     );
 
     function addUnique(
-        items: CategoryOption[],
+        items: HomepageCategoryOption[],
         option: CategoryOption | null,
         limit: number,
-    ): CategoryOption[] {
+    ): HomepageCategoryOption[] {
         if (
             !option ||
             items.some((item) => item.id === option.id) ||
@@ -156,7 +181,7 @@ export default function AdminHomepage({
             return items;
         }
 
-        return [...items, option];
+        return [...items, { ...option, image_url: null }];
     }
 
     return (

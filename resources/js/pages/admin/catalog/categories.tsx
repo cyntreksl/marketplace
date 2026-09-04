@@ -509,8 +509,8 @@ function CategoryArtworkForm({
                             label={label}
                             description={
                                 isBanner
-                                    ? 'Portrait artwork for the featured homepage panel. Saved as a 900 × 1200 WebP.'
-                                    : 'Square artwork for category cards and navigation. Saved as an 800 × 800 WebP.'
+                                    ? 'Recommended upload: 900 × 1200 px. JPG, PNG, or WebP up to 5 MB; saved as a 900 × 1200 WebP.'
+                                    : 'Recommended upload: 800 × 800 px. JPG, PNG, or WebP up to 5 MB; saved as an 800 × 800 WebP.'
                             }
                             aspect={isBanner ? 3 / 4 : 1}
                             minimumWidth={isBanner ? 900 : 800}
@@ -958,7 +958,7 @@ function CreateCategory({
                                 name="image"
                                 cropName="image_crop"
                                 label="Category image (optional)"
-                                description="Square artwork for category cards and navigation. Saved as an 800 × 800 WebP."
+                                description="Recommended upload: 800 × 800 px. JPG, PNG, or WebP up to 5 MB; saved as an 800 × 800 WebP."
                                 aspect={1}
                                 minimumWidth={800}
                                 minimumHeight={800}
@@ -970,7 +970,7 @@ function CreateCategory({
                                 name="banner_image"
                                 cropName="banner_image_crop"
                                 label="Category banner image (optional)"
-                                description="Portrait artwork for featured homepage panels. Saved as a 900 × 1200 WebP."
+                                description="Recommended upload: 900 × 1200 px. JPG, PNG, or WebP up to 5 MB; saved as a 900 × 1200 WebP."
                                 aspect={3 / 4}
                                 minimumWidth={900}
                                 minimumHeight={1200}

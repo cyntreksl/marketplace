@@ -33,6 +33,26 @@ test('an operations admin can assign popular and ordered homepage categories', f
     $this->assertDatabaseHas('audit_logs', ['actor_id' => $admin->id, 'action' => 'homepage.category_merchandising_updated']);
 });
 
+test('homepage merchandising exposes selected category artwork controls', function () {
+    $admin = homepageAdmin();
+    $category = Category::factory()->create([
+        'is_popular' => true,
+        'image_path' => 'categories/1/image.webp',
+        'image_disk' => 'public',
+    ]);
+
+    $this->actingAs($admin)->get(route('admin.homepage.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('selectedCategories.0.id', $category->id)
+            ->where('selectedCategories.0.image_url', fn (string $url): bool => str_ends_with($url, '/storage/categories/1/image.webp')));
+
+    $homepageComponent = file_get_contents(resource_path('js/pages/admin/homepage/index.tsx'));
+
+    expect($homepageComponent)
+        ->toContain('Edit image')
+        ->toContain('image_url');
+});
+
 test('homepage category limits and authorization are enforced', function () {
     $categories = Category::factory()->count(11)->create();
 
