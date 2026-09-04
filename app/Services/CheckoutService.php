@@ -10,6 +10,7 @@ use App\Models\ListingVariant;
 use App\Models\Payment;
 use App\Models\SellerOrder;
 use App\Models\User;
+use App\Notifications\OrderAcknowledgmentNotification;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Illuminate\Support\Facades\DB;
@@ -57,7 +58,7 @@ class CheckoutService
     /** @param array<string, string|null> $shippingAddress */
     public function checkout(User $buyer, string $paymentMethod, array $shippingAddress): CustomerOrder
     {
-        return DB::transaction(function () use ($buyer, $paymentMethod, $shippingAddress): CustomerOrder {
+        $order = DB::transaction(function () use ($buyer, $paymentMethod, $shippingAddress): CustomerOrder {
             $cart = Cart::query()->where('buyer_id', $buyer->id)->lockForUpdate()->firstOrFail();
             $cartItems = $cart->items()->with(['listing.sellerProfile', 'variant.optionValues.option'])->lockForUpdate()->get();
 
@@ -165,6 +166,15 @@ class CheckoutService
 
             return $order->load(['sellerOrders.items', 'payments']);
         }, attempts: 3);
+
+        $buyer->notify(new OrderAcknowledgmentNotification(
+            orderNumber: $order->number,
+            orderTotal: $order->total,
+            paymentMethod: $paymentMethod,
+            itemCount: (int) $order->sellerOrders->sum(fn (SellerOrder $sellerOrder): int => (int) $sellerOrder->items->sum('quantity')),
+        ));
+
+        return $order;
     }
 
     private function orderNumber(string $prefix): string

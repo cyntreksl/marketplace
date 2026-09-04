@@ -553,6 +553,11 @@ test('active availability backorders and stock status control public purchasing'
         ->post(route('checkout.payment.store'), [
             'payment_method' => 'cod',
         ])
+        ->assertRedirect(route('checkout.review.show', absolute: false))
+        ->assertSessionHasNoErrors();
+
+    $this->actingAs($buyer)
+        ->post(route('checkout.review.store'))
         ->assertRedirect(route('buyer.orders.index', absolute: false))
         ->assertSessionHasNoErrors();
 

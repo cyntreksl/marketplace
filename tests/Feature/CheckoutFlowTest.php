@@ -5,6 +5,8 @@ use App\Models\CartItem;
 use App\Models\CustomerOrder;
 use App\Models\Listing;
 use App\Models\User;
+use App\Notifications\OrderAcknowledgmentNotification;
+use Illuminate\Support\Facades\Notification;
 
 test('buy now saves the item and redirects directly to checkout', function (): void {
     $user = User::factory()->create();
@@ -93,7 +95,9 @@ test('buyer shipping details continue to the payment page', function (): void {
             ->where('shippingAddress.city', 'Colombo'));
 });
 
-test('buyer payment creates an order and clears the checkout session and cart', function (): void {
+test('buyer reviews and places an order before the checkout session and cart are cleared', function (): void {
+    Notification::fake();
+
     $user = User::factory()->create();
     $cart = Cart::factory()->for($user, 'buyer')->create();
     $listing = Listing::factory()->create([
@@ -118,18 +122,43 @@ test('buyer payment creates an order and clears the checkout session and cart', 
         'phone' => '0771234567',
     ])->assertRedirect(route('checkout.payment.show'));
 
-    $response = $this->actingAs($user)->post(route('checkout.payment.store'), [
+    $paymentResponse = $this->actingAs($user)->post(route('checkout.payment.store'), [
         'payment_method' => 'cod',
     ]);
 
+    $paymentResponse->assertRedirect(route('checkout.review.show'));
+    $paymentResponse->assertSessionHas('checkout.payment_method', 'cod');
+
+    expect(CustomerOrder::query()->count())->toBe(0)
+        ->and($cart->fresh()?->items)->toHaveCount(1);
+
+    $this->actingAs($user)
+        ->get(route('checkout.review.show'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('buyer/review')
+            ->has('cart.items', 1)
+            ->where('shippingAddress.recipient_name', 'Saman Perera')
+            ->where('paymentMethod', 'cod'));
+
+    $response = $this->actingAs($user)->post(route('checkout.review.store'));
+
     $response->assertRedirect(route('buyer.orders.index'));
-    $response->assertSessionMissing('checkout.shipping_address');
+    $response->assertSessionMissing('checkout');
 
     expect($cart->fresh()?->items()->count())->toBe(0);
     $this->assertDatabaseHas('customer_orders', [
         'buyer_id' => $user->id,
         'status' => 'confirmed',
     ]);
+
+    Notification::assertSentTo(
+        $user,
+        OrderAcknowledgmentNotification::class,
+        fn (OrderAcknowledgmentNotification $notification): bool => $notification->paymentMethod === 'cod'
+            && $notification->itemCount === 1
+            && $notification->orderTotal === '22000.00',
+    );
 });
 
 test('buyer can create a pending order with an online payment method', function (string $paymentMethod): void {
@@ -161,6 +190,10 @@ test('buyer can create a pending order with an online payment method', function 
         ->post(route('checkout.payment.store'), [
             'payment_method' => $paymentMethod,
         ])
+        ->assertRedirect(route('checkout.review.show'));
+
+    $this->actingAs($user)
+        ->post(route('checkout.review.store'))
         ->assertRedirect(route('buyer.orders.index'));
 
     $order = CustomerOrder::query()->whereBelongsTo($user, 'buyer')->sole();
@@ -203,4 +236,28 @@ test('payment page requires completed shipping details', function (): void {
         ->post(route('checkout.payment.store'), ['payment_method' => 'cod'])
         ->assertRedirect(route('checkout.show'))
         ->assertSessionHasErrors('checkout');
+});
+
+test('review page requires completed shipping and payment details', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->get(route('checkout.review.show'))
+        ->assertRedirect(route('checkout.show'))
+        ->assertSessionHasErrors('checkout');
+
+    $this->actingAs($user)
+        ->withSession([
+            'checkout.shipping_address' => [
+                'recipient_name' => 'Saman Perera',
+                'address_line_one' => '123, Galle Road',
+                'address_line_two' => null,
+                'city' => 'Colombo',
+                'postal_code' => null,
+                'phone' => '0771234567',
+            ],
+        ])
+        ->get(route('checkout.review.show'))
+        ->assertRedirect(route('checkout.payment.show'))
+        ->assertSessionHasErrors('payment_method');
 });

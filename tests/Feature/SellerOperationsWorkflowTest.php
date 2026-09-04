@@ -25,6 +25,8 @@ function createPaidSellerOrder(SellerProfile $seller): SellerOrder
         'payment_method' => 'cod',
     ])->assertRedirect();
 
+    test()->actingAs($buyer)->post(route('checkout.review.store'))->assertRedirect();
+
     return $seller->sellerOrders()->sole();
 }
 

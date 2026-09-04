@@ -23,6 +23,8 @@ export type CheckoutCart = {
     items: CheckoutCartItem[];
 };
 
+export type CheckoutPaymentMethod = 'stripe' | 'bank_transfer' | 'cod';
+
 export type ShippingAddress = {
     recipient_name: string;
     address_line_one: string;

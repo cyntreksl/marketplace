@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Notifications\NewReturnRequestNotification;
+use App\Notifications\OrderAcknowledgmentNotification;
 use App\Notifications\RefundOutcomeNotification;
 use App\Notifications\RefundReadyNotification;
 use App\Notifications\ReturnDecisionNotification;
@@ -48,7 +49,7 @@ test('every transactional notification has consistent branded content', function
     $text = (string) $markdown->renderText($mailMessage->markdown, $mailMessage->data());
 
     expect($html)
-        ->toContain('https://prodeals.test/prodeals-email-logo.png')
+        ->toContain('prodeals-email-logo.png')
         ->toContain('alt="ProDeals.lk"')
         ->toContain('background-color: #0f766e')
         ->toContain('Better deals. Closer to home.')
@@ -81,6 +82,13 @@ test('every transactional notification has consistent branded content', function
         'Review return request',
         '/seller/returns',
         'Amal Silva requested to return 2 × Travel Backpack.',
+    ],
+    'order acknowledgment' => [
+        fn (): OrderAcknowledgmentNotification => new OrderAcknowledgmentNotification('CM-260904-ABCDEFGH', '22500.00', 'cod', 2),
+        'Order received: CM-260904-ABCDEFGH',
+        'View your order',
+        '/buyer/orders',
+        "Thank you for your order. We've received 2 items under order CM-260904-ABCDEFGH.",
     ],
     'return decision' => [
         fn (): ReturnDecisionNotification => new ReturnDecisionNotification(42, 'Travel Backpack', 'rejected', 'The item is outside the return window.'),

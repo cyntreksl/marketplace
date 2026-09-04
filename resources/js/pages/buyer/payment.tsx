@@ -26,12 +26,15 @@ import { show as cartShow } from '@/routes/cart';
 import { show as checkoutShow } from '@/routes/checkout';
 import { store as paymentStore } from '@/routes/checkout/payment';
 import { terms } from '@/routes/legal';
-import type { CheckoutCart, CheckoutCartItem, ShippingAddress } from '@/types';
-
-type PaymentMethod = 'stripe' | 'bank_transfer' | 'cod';
+import type {
+    CheckoutCart,
+    CheckoutCartItem,
+    CheckoutPaymentMethod,
+    ShippingAddress,
+} from '@/types';
 
 type PaymentMethodOption = {
-    value: PaymentMethod | 'mobile_wallet' | 'installment';
+    value: CheckoutPaymentMethod | 'mobile_wallet' | 'installment';
     title: string;
     description: string;
     icon: LucideIcon;
@@ -98,7 +101,7 @@ function PaymentMethodButton({
 }: {
     option: PaymentMethodOption;
     selected: boolean;
-    onSelect: (method: PaymentMethod) => void;
+    onSelect: (method: CheckoutPaymentMethod) => void;
 }) {
     const Icon = option.icon;
 
@@ -109,7 +112,7 @@ function PaymentMethodButton({
             aria-pressed={selected}
             onClick={() => {
                 if (!option.disabled) {
-                    onSelect(option.value as PaymentMethod);
+                    onSelect(option.value as CheckoutPaymentMethod);
                 }
             }}
             className={`flex w-full items-center gap-3 rounded-lg border px-4 py-4 text-left transition focus-visible:ring-3 focus-visible:ring-orange-100 focus-visible:outline-none ${
@@ -495,21 +498,19 @@ function OrderSummary({
 export default function BuyerPayment({
     cart,
     shippingAddress,
+    paymentMethod: savedPaymentMethod,
 }: {
     cart: CheckoutCart;
     shippingAddress: ShippingAddress;
+    paymentMethod: CheckoutPaymentMethod | null;
 }) {
-    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('stripe');
+    const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>(
+        savedPaymentMethod ?? 'stripe',
+    );
     const subtotal = cart.items.reduce(
         (total, item) => total + itemPrice(item) * item.quantity,
         0,
     );
-    const submitLabel =
-        paymentMethod === 'stripe'
-            ? `Pay ${formatPrice(subtotal)}`
-            : paymentMethod === 'bank_transfer'
-              ? 'Place bank transfer order'
-              : 'Place cash on delivery order';
 
     return (
         <StorefrontLayout title="Payment">
@@ -608,7 +609,7 @@ export default function BuyerPayment({
                                                     <LockKeyhole className="size-4" />
                                                     {processing
                                                         ? 'Processing...'
-                                                        : submitLabel}
+                                                        : 'Continue to Review'}
                                                 </button>
                                                 <p className="mt-3 text-center text-[10px] leading-5 text-slate-500">
                                                     By continuing, you agree to

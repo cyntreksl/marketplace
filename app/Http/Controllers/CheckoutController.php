@@ -13,7 +13,12 @@ use Inertia\Response;
 
 class CheckoutController extends Controller
 {
-    public function __construct(private readonly CartRepository $carts) {}
+    private const array PAYMENT_METHODS = ['stripe', 'bank_transfer', 'cod'];
+
+    public function __construct(
+        private readonly CartRepository $carts,
+        private readonly CheckoutService $checkout,
+    ) {}
 
     public function show(Request $request): Response
     {
@@ -48,10 +53,11 @@ class CheckoutController extends Controller
         return Inertia::render('buyer/payment', [
             'cart' => $this->carts->forBuyer($request->user()),
             'shippingAddress' => $shippingAddress,
+            'paymentMethod' => $this->paymentMethod($request),
         ]);
     }
 
-    public function storePayment(CheckoutPaymentRequest $request, CheckoutService $checkout): RedirectResponse
+    public function storePayment(CheckoutPaymentRequest $request): RedirectResponse
     {
         $shippingAddress = $request->session()->get('checkout.shipping_address');
 
@@ -60,13 +66,62 @@ class CheckoutController extends Controller
         }
 
         $paymentMethod = (string) $request->validated('payment_method');
-        $order = $checkout->checkout($request->user(), $paymentMethod, $shippingAddress);
-        $request->session()->forget('checkout.shipping_address');
+        $request->session()->put('checkout.payment_method', $paymentMethod);
+
+        return to_route('checkout.review.show');
+    }
+
+    public function showReview(Request $request): Response|RedirectResponse
+    {
+        $shippingAddress = $request->session()->get('checkout.shipping_address');
+
+        if (! is_array($shippingAddress)) {
+            return to_route('checkout.show')->withErrors(['checkout' => 'Add your delivery details before reviewing your order.']);
+        }
+
+        $paymentMethod = $this->paymentMethod($request);
+
+        if ($paymentMethod === null) {
+            return to_route('checkout.payment.show')->withErrors(['payment_method' => 'Choose a payment method before reviewing your order.']);
+        }
+
+        return Inertia::render('buyer/review', [
+            'cart' => $this->carts->forBuyer($request->user()),
+            'shippingAddress' => $shippingAddress,
+            'paymentMethod' => $paymentMethod,
+        ]);
+    }
+
+    public function placeOrder(Request $request): RedirectResponse
+    {
+        $shippingAddress = $request->session()->get('checkout.shipping_address');
+
+        if (! is_array($shippingAddress)) {
+            return to_route('checkout.show')->withErrors(['checkout' => 'Add your delivery details before placing your order.']);
+        }
+
+        $paymentMethod = $this->paymentMethod($request);
+
+        if ($paymentMethod === null) {
+            return to_route('checkout.payment.show')->withErrors(['payment_method' => 'Choose a payment method before placing your order.']);
+        }
+
+        $order = $this->checkout->checkout($request->user(), $paymentMethod, $shippingAddress);
+        $request->session()->forget('checkout');
 
         $status = $paymentMethod === 'cod'
             ? "Order {$order->number} was confirmed for cash on delivery."
             : "Order {$order->number} was created. Complete payment to release it to the seller.";
 
         return to_route('buyer.orders.index')->with('status', $status);
+    }
+
+    private function paymentMethod(Request $request): ?string
+    {
+        $paymentMethod = $request->session()->get('checkout.payment_method');
+
+        return is_string($paymentMethod) && in_array($paymentMethod, self::PAYMENT_METHODS, true)
+            ? $paymentMethod
+            : null;
     }
 }
