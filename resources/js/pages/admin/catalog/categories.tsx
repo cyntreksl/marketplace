@@ -448,7 +448,7 @@ function CategoryMetadataForm({
 
 function CategoryArtwork({ category }: { category: Category }) {
     return (
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="contents">
             <CategoryArtworkForm category={category} type="image" />
             <CategoryArtworkForm category={category} type="banner" />
         </div>
@@ -483,9 +483,10 @@ function CategoryArtworkForm({
     const label = isBanner ? 'Category banner image' : 'Category image';
 
     return (
-        <section className="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
+        <section className="min-w-0 rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
             <Form
                 {...uploadForm}
+                encType="multipart/form-data"
                 resetOnSuccess
                 onSubmit={(event) => {
                     if (
@@ -837,7 +838,7 @@ function CategoryDetails({
                             />
                         </div>
                     </section>
-                    <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="grid min-w-0 gap-4 xl:grid-cols-3">
                         <CategoryArtwork category={category} />
                         <CategoryAvailability category={category} />
                     </div>
@@ -884,7 +885,12 @@ function CreateCategory({
                     Cancel
                 </button>
             </div>
-            <Form {...store.form()} resetOnSuccess className="mt-6 grid gap-4">
+            <Form
+                {...store.form()}
+                encType="multipart/form-data"
+                resetOnSuccess
+                className="mt-6 grid gap-4"
+            >
                 {({ errors, processing, progress }) => (
                     <>
                         <div className="grid gap-4 lg:grid-cols-2">
