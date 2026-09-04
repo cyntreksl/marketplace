@@ -110,6 +110,7 @@ Route::middleware(['auth', 'verified'])->prefix('seller')->name('seller.')->grou
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/cart', [CartController::class, 'show'])->name('cart.show');
     Route::post('/cart/items', [CartController::class, 'store'])->name('cart.items.store');
+    Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
     Route::get('/buyer/orders', [BuyerDashboardController::class, 'index'])->name('buyer.orders.index');
     Route::post('/buyer/order-items/{orderItem}/review', [BuyerReviewController::class, 'store'])->name('buyer.reviews.store');

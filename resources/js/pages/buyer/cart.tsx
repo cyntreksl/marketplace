@@ -1,7 +1,7 @@
-import { Form, Head, Link } from '@inertiajs/react';
-import { store as checkout } from '@/actions/App/Http/Controllers/CheckoutController';
+import { Head, Link } from '@inertiajs/react';
+import { ArrowRight, CreditCard, ShieldCheck, ShoppingBag } from 'lucide-react';
 import { PortalLayout } from '@/components/portal-layout';
-import { index as ordersIndex } from '@/routes/buyer/orders';
+import { show as checkoutShow } from '@/routes/checkout';
 
 type CartItem = {
     id: number;
@@ -15,9 +15,14 @@ type CartItem = {
         title: string;
         price: string;
         sale_price: string | null;
+        media: { cardUrl: string; card2xUrl: string }[];
         seller_profile: { store_name: string };
     };
 };
+
+function formatPrice(value: number): string {
+    return `LKR ${value.toLocaleString('en-LK')}`;
+}
 
 export default function BuyerCart({ cart }: { cart: { items: CartItem[] } }) {
     const itemPrice = (item: CartItem): number =>
@@ -26,6 +31,7 @@ export default function BuyerCart({ cart }: { cart: { items: CartItem[] } }) {
                 item.listing.sale_price ??
                 item.listing.price,
         );
+
     const subtotal = cart.items.reduce(
         (total, item) => total + itemPrice(item) * item.quantity,
         0,
@@ -34,175 +40,215 @@ export default function BuyerCart({ cart }: { cart: { items: CartItem[] } }) {
     return (
         <PortalLayout portal="buyer" title="Your cart">
             <Head title="Your cart" />
-            <main className="mx-auto max-w-6xl">
-                <div className="flex items-end justify-between gap-5">
-                    <div>
-                        <p className="text-sm font-bold tracking-wider text-primary uppercase">
-                            Buyer portal
-                        </p>
-                        <h1 className="mt-2 text-4xl font-black">Your cart</h1>
+            <main className="mx-auto max-w-7xl">
+                <div className="rounded-[2rem] border border-orange-100 bg-gradient-to-r from-orange-50 via-white to-orange-50 p-6 shadow-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <p className="text-sm font-bold tracking-[0.18em] text-[#ff5a00] uppercase">
+                                Buyer checkout
+                            </p>
+                            <h1 className="mt-2 text-4xl font-black tracking-tight text-slate-950">
+                                Cart and checkout
+                            </h1>
+                        </div>
+                        <Link
+                            href={checkoutShow()}
+                            className="inline-flex items-center gap-2 rounded-2xl bg-[#ff5a00] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5"
+                        >
+                            <CreditCard className="size-4" />
+                            Go to checkout
+                            <ArrowRight className="size-4" />
+                        </Link>
                     </div>
-                    <Link
-                        href={ordersIndex()}
-                        className="text-sm font-bold text-primary"
-                    >
-                        Order history
-                    </Link>
                 </div>
 
                 {cart.items.length === 0 ? (
-                    <div className="mt-8 rounded-2xl border border-dashed border-stone-300 p-12 text-center text-stone-500 dark:border-stone-700">
-                        Your cart is empty. Explore Buy Now listings to get
-                        started.
+                    <div className="mt-8 rounded-3xl border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
+                        <ShoppingBag className="mx-auto size-12 text-slate-300" />
+                        <h2 className="mt-4 text-2xl font-black text-slate-950">
+                            Your cart is empty
+                        </h2>
+                        <p className="mt-2 text-sm text-slate-500">
+                            Add a buy-now product to begin checkout.
+                        </p>
+                        <Link
+                            href={checkoutShow()}
+                            className="mt-6 inline-flex rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white"
+                        >
+                            Review checkout page
+                        </Link>
                     </div>
                 ) : (
                     <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_22rem]">
-                        <section className="overflow-hidden rounded-2xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
-                            <ul className="divide-y divide-stone-200 dark:divide-stone-800">
+                        <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+                            <div className="border-b border-slate-200 px-6 py-5">
+                                <h2 className="text-xl font-black text-slate-950">
+                                    Cart items
+                                </h2>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    Review what you have saved before you pay.
+                                </p>
+                            </div>
+                            <ul className="divide-y divide-slate-100">
                                 {cart.items.map((item) => (
                                     <li
                                         key={item.id}
-                                        className="flex items-center justify-between gap-4 p-5"
+                                        className="flex flex-col gap-5 p-6 sm:flex-row"
                                     >
-                                        <div>
-                                            <p className="font-bold">
-                                                {item.listing.title}
-                                            </p>
-                                            <p className="mt-1 text-sm text-stone-500">
-                                                Sold by{' '}
-                                                {
-                                                    item.listing.seller_profile
-                                                        .store_name
-                                                }{' '}
-                                                · Qty {item.quantity}
-                                            </p>
-                                            {item.variant && (
-                                                <p className="mt-1 text-xs text-primary">
-                                                    {item.variant.option_values
-                                                        .map(
-                                                            (value) =>
-                                                                `${value.option.name}: ${value.value}`,
-                                                        )
-                                                        .join(' · ')}{' '}
-                                                    · {item.variant.sku}
-                                                </p>
+                                        <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-slate-100 bg-slate-50">
+                                            {item.listing.media[0] ? (
+                                                <img
+                                                    src={
+                                                        item.listing.media[0]
+                                                            .cardUrl
+                                                    }
+                                                    srcSet={`${item.listing.media[0].cardUrl} 640w, ${item.listing.media[0].card2xUrl} 1280w`}
+                                                    alt={item.listing.title}
+                                                    className="size-full object-contain p-2"
+                                                />
+                                            ) : (
+                                                <div className="grid size-full place-items-center text-xs text-slate-400">
+                                                    No image
+                                                </div>
                                             )}
                                         </div>
-                                        <p className="font-bold">
-                                            LKR{' '}
-                                            {(
-                                                itemPrice(item) * item.quantity
-                                            ).toLocaleString()}
-                                        </p>
+
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex flex-wrap items-start justify-between gap-3">
+                                                <div>
+                                                    <p className="text-lg font-bold text-slate-950">
+                                                        {item.listing.title}
+                                                    </p>
+                                                    <p className="mt-1 text-sm text-slate-500">
+                                                        Sold by{' '}
+                                                        {
+                                                            item.listing
+                                                                .seller_profile
+                                                                .store_name
+                                                        }
+                                                    </p>
+                                                </div>
+                                                <p className="text-lg font-black text-slate-950">
+                                                    {formatPrice(
+                                                        itemPrice(item) *
+                                                            item.quantity,
+                                                    )}
+                                                </p>
+                                            </div>
+                                            <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
+                                                <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold">
+                                                    Qty {item.quantity}
+                                                </span>
+                                                {item.variant && (
+                                                    <span className="rounded-full bg-orange-50 px-3 py-1 font-semibold text-[#ff5a00]">
+                                                        {item.variant.option_values
+                                                            .map(
+                                                                (value) =>
+                                                                    `${value.option.name}: ${value.value}`,
+                                                            )
+                                                            .join(' · ')}
+                                                    </span>
+                                                )}
+                                                {item.variant?.sku && (
+                                                    <span className="rounded-full bg-slate-100 px-3 py-1 font-semibold">
+                                                        SKU {item.variant.sku}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
                                     </li>
                                 ))}
                             </ul>
                         </section>
-                        <Form
-                            {...checkout.form()}
-                            className="grid h-max gap-4 rounded-2xl bg-stone-100 p-5 dark:bg-stone-900"
-                        >
-                            {({ errors, processing }) => (
-                                <>
+
+                        <aside className="grid h-max gap-4">
+                            <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                                <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-sm text-stone-500">
+                                        <p className="text-sm font-semibold text-slate-500">
+                                            Order summary
+                                        </p>
+                                        <h2 className="text-2xl font-black text-slate-950">
+                                            {cart.items.length} items
+                                        </h2>
+                                    </div>
+                                    <div className="rounded-2xl bg-orange-50 p-3 text-[#ff5a00]">
+                                        <ShieldCheck className="size-5" />
+                                    </div>
+                                </div>
+
+                                <dl className="mt-6 grid gap-3 text-sm">
+                                    <div className="flex items-center justify-between">
+                                        <dt className="text-slate-500">
                                             Subtotal
+                                        </dt>
+                                        <dd className="font-bold text-slate-950">
+                                            {formatPrice(subtotal)}
+                                        </dd>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <dt className="text-slate-500">
+                                            Shipping
+                                        </dt>
+                                        <dd className="font-bold text-slate-950">
+                                            Calculated at checkout
+                                        </dd>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <dt className="text-slate-500">
+                                            Secure checkout
+                                        </dt>
+                                        <dd className="font-bold text-emerald-600">
+                                            Enabled
+                                        </dd>
+                                    </div>
+                                </dl>
+
+                                <Link
+                                    href={checkoutShow()}
+                                    className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#ff5a00] px-5 py-4 text-base font-black text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5"
+                                >
+                                    Continue to checkout
+                                    <ArrowRight className="size-5" />
+                                </Link>
+
+                                <p className="mt-4 text-xs leading-5 text-slate-500">
+                                    We will save your cart, shipping address,
+                                    and payment choice when you submit the
+                                    checkout form.
+                                </p>
+                            </div>
+
+                            <div className="grid gap-3 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                                <div className="flex items-center gap-3">
+                                    <div className="rounded-2xl bg-orange-50 p-3 text-[#ff5a00]">
+                                        <ShieldCheck className="size-5" />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-slate-950">
+                                            Safe and encrypted
                                         </p>
-                                        <p className="text-3xl font-black">
-                                            LKR {subtotal.toLocaleString()}
+                                        <p className="text-sm text-slate-500">
+                                            Every checkout is protected.
                                         </p>
                                     </div>
-                                    <label className="grid gap-1 text-sm font-semibold">
-                                        Payment method
-                                        <select
-                                            required
-                                            name="payment_method"
-                                            className="rounded-lg border bg-transparent p-3"
-                                        >
-                                            <option value="stripe">
-                                                Card via Stripe
-                                            </option>
-                                            <option value="bank_transfer">
-                                                Bank transfer
-                                            </option>
-                                            <option value="cod">
-                                                Cash on delivery
-                                            </option>
-                                        </select>
-                                    </label>
-                                    <label className="grid gap-1 text-sm font-semibold">
-                                        Recipient name
-                                        <input
-                                            required
-                                            name="recipient_name"
-                                            className="rounded-lg border bg-transparent p-3"
-                                        />
-                                    </label>
-                                    <label className="grid gap-1 text-sm font-semibold">
-                                        Address
-                                        <input
-                                            required
-                                            name="address_line_one"
-                                            className="rounded-lg border bg-transparent p-3"
-                                        />
-                                    </label>
-                                    <label className="grid gap-1 text-sm font-semibold">
-                                        Address line 2
-                                        <input
-                                            name="address_line_two"
-                                            className="rounded-lg border bg-transparent p-3"
-                                        />
-                                    </label>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <label className="grid gap-1 text-sm font-semibold">
-                                            City
-                                            <input
-                                                required
-                                                name="city"
-                                                className="rounded-lg border bg-transparent p-3"
-                                            />
-                                        </label>
-                                        <label className="grid gap-1 text-sm font-semibold">
-                                            Postcode
-                                            <input
-                                                name="postal_code"
-                                                className="rounded-lg border bg-transparent p-3"
-                                            />
-                                        </label>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="rounded-2xl bg-orange-50 p-3 text-[#ff5a00]">
+                                        <ShoppingBag className="size-5" />
                                     </div>
-                                    <label className="grid gap-1 text-sm font-semibold">
-                                        Phone
-                                        <input
-                                            required
-                                            name="phone"
-                                            className="rounded-lg border bg-transparent p-3"
-                                        />
-                                    </label>
-                                    {Object.values(errors).map((error) => (
-                                        <p
-                                            className="text-sm text-red-600"
-                                            key={error}
-                                        >
-                                            {error}
+                                    <div>
+                                        <p className="font-bold text-slate-950">
+                                            Direct buy-now flow
                                         </p>
-                                    ))}
-                                    <button
-                                        disabled={processing}
-                                        className="rounded-xl bg-primary px-5 py-3 font-bold text-primary-foreground disabled:opacity-50"
-                                    >
-                                        {processing
-                                            ? 'Creating order…'
-                                            : 'Place secure order'}
-                                    </button>
-                                    <p className="text-xs text-stone-500">
-                                        Each seller receives an independent
-                                        fulfilment order. We never share your
-                                        contact information beyond delivery
-                                        needs.
-                                    </p>
-                                </>
-                            )}
-                        </Form>
+                                        <p className="text-sm text-slate-500">
+                                            Add items first or jump into
+                                            checkout from a listing.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </aside>
                     </div>
                 )}
             </main>
