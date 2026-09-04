@@ -19,14 +19,15 @@ test('a buyer checkout splits one cart into seller fulfilment orders', function 
     $this->actingAs($buyer)->post(route('cart.items.store'), ['listing_id' => $secondListing->id, 'quantity' => 1])->assertRedirect();
 
     $this->actingAs($buyer)->post(route('checkout.store'), [
-        'payment_method' => 'cod',
         'recipient_name' => 'Buyer Name',
         'address_line_one' => '10 Galle Road',
         'city' => 'Colombo',
         'phone' => '0771234567',
-    ])->assertRedirect(route('buyer.orders.index', absolute: false));
+    ])->assertRedirect(route('checkout.payment.show', absolute: false));
 
-    $order = $buyer->fresh()->cart()->firstOrFail();
+    $this->actingAs($buyer)->post(route('checkout.payment.store'), [
+        'payment_method' => 'cod',
+    ])->assertRedirect(route('buyer.orders.index', absolute: false));
 
     expect(Cart::query()->where('buyer_id', $buyer->id)->firstOrFail()->items)->toHaveCount(0)
         ->and($buyer->fresh()->cart)->not->toBeNull()
@@ -42,10 +43,13 @@ test('cash on delivery is unavailable when the cart total exceeds the configured
     $cart->items()->create(['listing_id' => $listing->id, 'quantity' => 1]);
 
     $this->actingAs($buyer)->post(route('checkout.store'), [
-        'payment_method' => 'cod',
         'recipient_name' => 'Buyer Name',
         'address_line_one' => '10 Galle Road',
         'city' => 'Colombo',
         'phone' => '0771234567',
+    ])->assertRedirect(route('checkout.payment.show'));
+
+    $this->actingAs($buyer)->post(route('checkout.payment.store'), [
+        'payment_method' => 'cod',
     ])->assertSessionHasErrors('payment_method');
 });

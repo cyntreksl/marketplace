@@ -15,11 +15,14 @@ function createPaidSellerOrder(SellerProfile $seller): SellerOrder
     $cart->items()->create(['listing_id' => $listing->id, 'quantity' => 1]);
 
     test()->actingAs($buyer)->post(route('checkout.store'), [
-        'payment_method' => 'cod',
         'recipient_name' => 'Buyer Name',
         'address_line_one' => '10 Galle Road',
         'city' => 'Colombo',
         'phone' => '0771234567',
+    ])->assertRedirect();
+
+    test()->actingAs($buyer)->post(route('checkout.payment.store'), [
+        'payment_method' => 'cod',
     ])->assertRedirect();
 
     return $seller->sellerOrders()->sole();

@@ -2,16 +2,11 @@ import { Form, Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
     BadgeCheck,
-    Banknote,
-    Check,
-    CheckCircle2,
     CircleHelp,
     Clock3,
-    CreditCard,
     Headphones,
     Home,
     LockKeyhole,
-    MapPin,
     NotebookPen,
     PackageCheck,
     ShieldCheck,
@@ -21,30 +16,11 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { CheckoutProgress } from '@/components/checkout-progress';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { show as cartShow } from '@/routes/cart';
 import { store as checkoutStore } from '@/routes/checkout';
-
-type CartItem = {
-    id: number;
-    quantity: number;
-    variant: {
-        sku: string;
-        selling_price: string | null;
-        option_values: { value: string; option: { name: string } }[];
-    } | null;
-    listing: {
-        title: string;
-        price: string;
-        sale_price: string | null;
-        media: {
-            cardUrl?: string;
-            card2xUrl?: string;
-            url?: string;
-        }[];
-        seller_profile: { store_name: string };
-    };
-};
+import type { CheckoutCart, CheckoutCartItem, ShippingAddress } from '@/types';
 
 type CheckoutSectionProps = {
     number: number;
@@ -118,47 +94,6 @@ function Field({
     );
 }
 
-function ProgressStep({
-    icon: Icon,
-    label,
-    state,
-}: {
-    icon: LucideIcon;
-    label: string;
-    state: 'complete' | 'active' | 'upcoming';
-}) {
-    const isActive = state === 'active';
-    const isComplete = state === 'complete';
-
-    return (
-        <div
-            className="flex min-w-max items-center gap-2.5"
-            aria-current={isActive ? 'step' : undefined}
-        >
-            <span
-                className={`grid size-10 place-items-center rounded-full border-2 ${
-                    isActive
-                        ? 'border-[#ff5a00] bg-white text-[#ff5a00]'
-                        : isComplete
-                          ? 'border-slate-300 bg-white text-slate-600'
-                          : 'border-slate-200 bg-white text-slate-400'
-                }`}
-            >
-                {isComplete ? (
-                    <Check className="size-4" strokeWidth={3} />
-                ) : (
-                    <Icon className="size-4" />
-                )}
-            </span>
-            <span
-                className={`text-sm font-bold ${isActive ? 'text-[#ff5a00]' : 'text-slate-700'}`}
-            >
-                {label}
-            </span>
-        </div>
-    );
-}
-
 function DeliveryOption({
     id,
     icon: Icon,
@@ -208,45 +143,6 @@ function DeliveryOption({
     );
 }
 
-function PaymentOption({
-    value,
-    title,
-    description,
-    icon: Icon,
-    defaultChecked = false,
-}: {
-    value: string;
-    title: string;
-    description: string;
-    icon: LucideIcon;
-    defaultChecked?: boolean;
-}) {
-    return (
-        <label className="relative cursor-pointer">
-            <input
-                type="radio"
-                name="payment_method"
-                value={value}
-                defaultChecked={defaultChecked}
-                className="peer sr-only"
-            />
-            <span className="flex h-full items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 transition peer-checked:border-[#ff5a00] peer-checked:bg-orange-50/50 peer-focus-visible:ring-3 peer-focus-visible:ring-orange-100">
-                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-slate-50 text-slate-600 peer-checked:text-[#ff5a00]">
-                    <Icon className="size-4" />
-                </span>
-                <span>
-                    <span className="block text-xs font-extrabold text-slate-900">
-                        {title}
-                    </span>
-                    <span className="block text-[10px] leading-4 text-slate-500">
-                        {description}
-                    </span>
-                </span>
-            </span>
-        </label>
-    );
-}
-
 function TrustItem({
     icon: Icon,
     title,
@@ -275,11 +171,13 @@ function TrustItem({
 
 export default function BuyerCheckout({
     cart,
+    shippingAddress,
 }: {
-    cart: { items: CartItem[] };
+    cart: CheckoutCart;
+    shippingAddress: ShippingAddress | null;
 }) {
     const { auth, marketplace } = usePage().props;
-    const itemPrice = (item: CartItem): number =>
+    const itemPrice = (item: CheckoutCartItem): number =>
         Number(
             item.variant?.selling_price ??
                 item.listing.sale_price ??
@@ -294,32 +192,8 @@ export default function BuyerCheckout({
         <StorefrontLayout title="Checkout">
             <Head title="Checkout" />
             <main className="mx-auto max-w-[82rem] px-4 py-5 sm:px-6 sm:py-7">
-                <section className="[scrollbar-width:none] overflow-x-auto rounded-xl bg-gradient-to-r from-[#fff8f3] via-[#fffaf6] to-[#fff5ed] px-5 py-5 sm:px-8">
-                    <div className="mx-auto flex max-w-4xl min-w-[620px] items-center justify-between gap-4">
-                        <ProgressStep
-                            icon={ShoppingCart}
-                            label="Cart"
-                            state="complete"
-                        />
-                        <span className="h-px min-w-8 flex-1 border-t border-dashed border-orange-300" />
-                        <ProgressStep
-                            icon={MapPin}
-                            label="Checkout"
-                            state="active"
-                        />
-                        <span className="h-px min-w-8 flex-1 border-t border-dashed border-slate-300" />
-                        <ProgressStep
-                            icon={CreditCard}
-                            label="Payment"
-                            state="upcoming"
-                        />
-                        <span className="h-px min-w-8 flex-1 border-t border-dashed border-slate-300" />
-                        <ProgressStep
-                            icon={CheckCircle2}
-                            label="Confirmation"
-                            state="upcoming"
-                        />
-                    </div>
+                <section className="rounded-xl bg-gradient-to-r from-[#fff8f3] via-[#fffaf6] to-[#fff5ed] px-5 py-5 sm:px-8">
+                    <CheckoutProgress current="shipping" />
                     <p className="mt-5 flex items-center justify-center gap-2 text-center text-xs font-medium text-slate-600">
                         <LockKeyhole className="size-3.5" />
                         You're in safe hands. All transactions are secure and
@@ -369,6 +243,9 @@ export default function BuyerCheckout({
                                                 label="Phone Number"
                                                 name="phone"
                                                 type="tel"
+                                                defaultValue={
+                                                    shippingAddress?.phone
+                                                }
                                                 placeholder="077 123 4567"
                                                 required
                                                 error={errors.phone}
@@ -393,7 +270,10 @@ export default function BuyerCheckout({
                                             <Field
                                                 label="Full Name"
                                                 name="recipient_name"
-                                                defaultValue={auth.user.name}
+                                                defaultValue={
+                                                    shippingAddress?.recipient_name ??
+                                                    auth.user.name
+                                                }
                                                 placeholder="Saman Perera"
                                                 required
                                                 error={errors.recipient_name}
@@ -401,6 +281,9 @@ export default function BuyerCheckout({
                                             <Field
                                                 label="Address Line 1"
                                                 name="address_line_one"
+                                                defaultValue={
+                                                    shippingAddress?.address_line_one
+                                                }
                                                 placeholder="123, Galle Road"
                                                 required
                                                 error={errors.address_line_one}
@@ -408,6 +291,10 @@ export default function BuyerCheckout({
                                             <Field
                                                 label="Address Line 2 (Optional)"
                                                 name="address_line_two"
+                                                defaultValue={
+                                                    shippingAddress?.address_line_two ??
+                                                    undefined
+                                                }
                                                 placeholder="Apartment 5B, Ocean View Residencies"
                                                 error={errors.address_line_two}
                                             />
@@ -415,6 +302,9 @@ export default function BuyerCheckout({
                                                 <Field
                                                     label="City"
                                                     name="city"
+                                                    defaultValue={
+                                                        shippingAddress?.city
+                                                    }
                                                     placeholder="Colombo"
                                                     required
                                                     error={errors.city}
@@ -422,6 +312,10 @@ export default function BuyerCheckout({
                                                 <Field
                                                     label="Postal Code"
                                                     name="postal_code"
+                                                    defaultValue={
+                                                        shippingAddress?.postal_code ??
+                                                        undefined
+                                                    }
                                                     placeholder="00300"
                                                     error={errors.postal_code}
                                                 />
@@ -502,39 +396,6 @@ export default function BuyerCheckout({
                                                 Use a different billing address
                                             </label>
                                         </div>
-                                    </CheckoutSection>
-
-                                    <CheckoutSection
-                                        number={6}
-                                        title="Payment Method"
-                                        icon={CreditCard}
-                                    >
-                                        <div className="grid gap-3 sm:grid-cols-3">
-                                            <PaymentOption
-                                                value="stripe"
-                                                title="Card Payment"
-                                                description="Visa, Mastercard and AMEX"
-                                                icon={CreditCard}
-                                                defaultChecked
-                                            />
-                                            <PaymentOption
-                                                value="bank_transfer"
-                                                title="Bank Transfer"
-                                                description="Manual payment confirmation"
-                                                icon={Banknote}
-                                            />
-                                            <PaymentOption
-                                                value="cod"
-                                                title="Cash on Delivery"
-                                                description="Available for eligible totals"
-                                                icon={Truck}
-                                            />
-                                        </div>
-                                        {errors.payment_method && (
-                                            <p className="mt-3 text-xs text-red-600">
-                                                {errors.payment_method}
-                                            </p>
-                                        )}
                                     </CheckoutSection>
                                 </div>
 
@@ -718,7 +579,7 @@ export default function BuyerCheckout({
                                             >
                                                 <LockKeyhole className="size-4" />
                                                 {processing
-                                                    ? 'Placing order...'
+                                                    ? 'Saving delivery...'
                                                     : 'Continue to Payment'}
                                                 <ArrowRight className="ml-auto size-4" />
                                             </button>

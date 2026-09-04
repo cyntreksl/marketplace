@@ -3,8 +3,9 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class CheckoutRequest extends FormRequest
+class CheckoutPaymentRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,12 +23,7 @@ class CheckoutRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'recipient_name' => ['required', 'string', 'max:120'],
-            'address_line_one' => ['required', 'string', 'max:255'],
-            'address_line_two' => ['nullable', 'string', 'max:255'],
-            'city' => ['required', 'string', 'max:120'],
-            'postal_code' => ['nullable', 'string', 'max:20'],
-            'phone' => ['required', 'string', 'max:30'],
+            'payment_method' => ['required', Rule::in(['stripe', 'bank_transfer', 'cod'])],
         ];
     }
 }

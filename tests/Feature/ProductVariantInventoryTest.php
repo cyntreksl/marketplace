@@ -541,11 +541,17 @@ test('active availability backorders and stock status control public purchasing'
 
     $this->actingAs($buyer)
         ->post(route('checkout.store'), [
-            'payment_method' => 'cod',
             'recipient_name' => 'Backorder Buyer',
             'address_line_one' => '10 Galle Road',
             'city' => 'Colombo',
             'phone' => '0771234567',
+        ])
+        ->assertRedirect(route('checkout.payment.show', absolute: false))
+        ->assertSessionHasNoErrors();
+
+    $this->actingAs($buyer)
+        ->post(route('checkout.payment.store'), [
+            'payment_method' => 'cod',
         ])
         ->assertRedirect(route('buyer.orders.index', absolute: false))
         ->assertSessionHasNoErrors();

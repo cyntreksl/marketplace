@@ -50,11 +50,14 @@ test('effective offer pricing is snapshotted through totals commissions and cod 
     $cart->items()->create(['listing_id' => $listing->id, 'quantity' => 1]);
 
     $this->actingAs($buyer)->post(route('checkout.store'), [
-        'payment_method' => 'cod',
         'recipient_name' => 'Buyer Name',
         'address_line_one' => '10 Galle Road',
         'city' => 'Colombo',
         'phone' => '0771234567',
+    ])->assertRedirect(route('checkout.payment.show', absolute: false));
+
+    $this->actingAs($buyer)->post(route('checkout.payment.store'), [
+        'payment_method' => 'cod',
     ])->assertRedirect(route('buyer.orders.index', absolute: false));
 
     $order = CustomerOrder::query()->where('buyer_id', $buyer->id)->sole();

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Contracts\CourierAdapter;
 use App\Contracts\PaymentGateway;
 use App\Contracts\Repositories\AuctionRepository;
+use App\Contracts\Repositories\CartRepository;
 use App\Contracts\Repositories\CatalogRepository;
 use App\Contracts\Repositories\GoogleProductTaxonomyRepository;
 use App\Contracts\Repositories\ListingRepository;
@@ -20,6 +21,7 @@ use App\Couriers\ManualCourierAdapter;
 use App\Models\User;
 use App\Payments\StripePaymentGateway;
 use App\Repositories\EloquentAuctionRepository;
+use App\Repositories\EloquentCartRepository;
 use App\Repositories\EloquentCatalogRepository;
 use App\Repositories\EloquentGoogleProductTaxonomyRepository;
 use App\Repositories\EloquentListingRepository;
@@ -51,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(AuctionRepository::class, EloquentAuctionRepository::class);
+        $this->app->bind(CartRepository::class, EloquentCartRepository::class);
         $this->app->bind(CatalogRepository::class, EloquentCatalogRepository::class);
         $this->app->bind(GoogleProductTaxonomyRepository::class, EloquentGoogleProductTaxonomyRepository::class);
         $this->app->bind(ListingRepository::class, EloquentListingRepository::class);

@@ -54,7 +54,7 @@ class CheckoutService
         return $cart->load('items.listing.sellerProfile');
     }
 
-    /** @param array<string, string> $shippingAddress */
+    /** @param array<string, string|null> $shippingAddress */
     public function checkout(User $buyer, string $paymentMethod, array $shippingAddress): CustomerOrder
     {
         return DB::transaction(function () use ($buyer, $paymentMethod, $shippingAddress): CustomerOrder {

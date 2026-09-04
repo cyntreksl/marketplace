@@ -183,11 +183,14 @@ test('multiple variants of one listing coexist in a cart and are snapshotted at 
     expect(Cart::query()->whereBelongsTo($buyer, 'buyer')->sole()->items)->toHaveCount(2);
 
     $this->actingAs($buyer)->post(route('checkout.store'), [
-        'payment_method' => 'cod',
         'recipient_name' => 'Buyer Name',
         'address_line_one' => '10 Galle Road',
         'city' => 'Colombo',
         'phone' => '0771234567',
+    ])->assertRedirect(route('checkout.payment.show', absolute: false));
+
+    $this->actingAs($buyer)->post(route('checkout.payment.store'), [
+        'payment_method' => 'cod',
     ])->assertRedirect(route('buyer.orders.index', absolute: false));
 
     $items = CustomerOrder::query()->whereBelongsTo($buyer, 'buyer')->sole()->sellerOrders()->firstOrFail()->items()->orderBy('variant_sku')->get();
