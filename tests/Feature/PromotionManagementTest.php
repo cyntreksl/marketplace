@@ -48,6 +48,33 @@ test('an admin can upload schedule and replace homepage promotion artwork', func
     $this->assertDatabaseHas('audit_logs', ['actor_id' => $admin->id, 'action' => 'promotion.updated']);
 });
 
+test('an admin can delete a homepage promotion and remove it from the storefront', function () {
+    Storage::fake('public');
+    config()->set('filesystems.media', 'public');
+    $admin = User::factory()->create();
+    $admin->roles()->attach(Role::factory()->create(['name' => Role::Admin, 'label' => 'Administrator']));
+
+    $promotion = Promotion::factory()->create([
+        'title' => 'Hero banner',
+        'placement' => 'hero',
+        'image_disk' => 'public',
+        'image_path' => 'promotions/hero-banner.webp',
+    ]);
+    Storage::disk('public')->put($promotion->image_path, 'banner');
+
+    $this->actingAs($admin)->delete(route('admin.homepage.promotions.destroy', $promotion), [
+        'reason' => 'Remove the outdated homepage banner',
+    ])->assertRedirect(route('admin.homepage.index'));
+
+    Storage::disk('public')->assertMissing('promotions/hero-banner.webp');
+    $this->assertDatabaseMissing('promotions', ['id' => $promotion->id]);
+    $this->assertDatabaseHas('audit_logs', ['actor_id' => $admin->id, 'action' => 'promotion.deleted']);
+    $heroSlides = $this->get(route('home'))->assertOk()->inertiaProps('promotions.hero');
+
+    expect($heroSlides)->toHaveCount(2)
+        ->and(collect($heroSlides)->pluck('title'))->not->toContain('Hero banner');
+});
+
 test('the storefront returns only active currently scheduled promotions in display order', function () {
     Promotion::factory()->create(['title' => 'Second', 'placement' => 'hero', 'sort_order' => 2]);
     Promotion::factory()->create(['title' => 'First', 'placement' => 'hero', 'sort_order' => 1]);

@@ -91,6 +91,22 @@ class PromotionService
         return $promotion;
     }
 
+    public function delete(User $actor, Promotion $promotion, string $reason): void
+    {
+        DB::transaction(function () use ($actor, $promotion, $reason): void {
+            $before = $promotion->getAttributes();
+            $imagePath = $promotion->image_path;
+            $imageDisk = $promotion->image_disk ?: $this->mediaDisk();
+
+            $this->promotions->delete($promotion);
+            $this->auditLogs->record($actor, 'promotion.deleted', $promotion, $before, [], $reason);
+
+            if ($imagePath !== null) {
+                Storage::disk($imageDisk)->delete($imagePath);
+            }
+        });
+    }
+
     /** @return array{disk: string, path: string} */
     private function storeImage(mixed $image): array
     {

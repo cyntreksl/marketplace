@@ -19,6 +19,8 @@ interface PromotionRepository
 
     public function save(Promotion $promotion): Promotion;
 
+    public function delete(Promotion $promotion): void;
+
     /** @return LazyCollection<int, Promotion> */
     public function forMediaMigration(): LazyCollection;
 }

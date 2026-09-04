@@ -6,6 +6,7 @@ import {
     updateListing,
 } from '@/actions/App/Http/Controllers/AdminHomepageController';
 import {
+    destroy as destroyPromotion,
     store as storePromotion,
     update as updatePromotion,
 } from '@/actions/App/Http/Controllers/AdminPromotionController';
@@ -434,167 +435,214 @@ export default function AdminHomepage({
                     </Form>
                     <div className="mt-5 grid gap-4 lg:grid-cols-2">
                         {promotions.data.map((promotion) => (
-                            <Form
-                                key={promotion.id}
-                                {...updatePromotion.form(promotion.id)}
-                                className="grid gap-3 rounded-2xl border p-4 sm:grid-cols-2"
-                            >
-                                {({ processing, errors }) => (
-                                    <>
-                                        <input
-                                            required
-                                            name="title"
-                                            defaultValue={promotion.title}
-                                            className="rounded-lg border bg-transparent p-2"
-                                        />
-                                        <input
-                                            name="subtitle"
-                                            defaultValue={
-                                                promotion.subtitle ?? ''
-                                            }
-                                            placeholder="Subtitle"
-                                            className="rounded-lg border bg-transparent p-2"
-                                        />
-                                        <input
-                                            name="cta_label"
-                                            defaultValue={
-                                                promotion.cta_label ?? ''
-                                            }
-                                            placeholder="CTA label"
-                                            className="rounded-lg border bg-transparent p-2"
-                                        />
-                                        <input
-                                            name="artwork_alt"
-                                            defaultValue={
-                                                promotion.artwork_alt ?? ''
-                                            }
-                                            placeholder="Artwork alt"
-                                            className="rounded-lg border bg-transparent p-2"
-                                        />
-                                        <select
-                                            name="visual_theme"
-                                            defaultValue={
-                                                promotion.visual_theme
-                                            }
-                                            className="rounded-lg border bg-transparent p-2"
-                                        >
-                                            <option value="orange">
-                                                Orange
-                                            </option>
-                                            <option value="dark">Dark</option>
-                                            <option value="light">Light</option>
-                                        </select>
-                                        <input
-                                            type="file"
-                                            name="image"
-                                            accept="image/*"
-                                            className="rounded-lg border p-2"
-                                        />
-                                        <input
-                                            name="link_url"
-                                            defaultValue={
-                                                promotion.link_url ?? ''
-                                            }
-                                            className="rounded-lg border bg-transparent p-2"
-                                        />
-                                        <select
-                                            name="placement"
-                                            defaultValue={promotion.placement}
-                                            className="rounded-lg border bg-transparent p-2"
-                                        >
-                                            <option value="hero">Hero</option>
-                                            <option value="secondary">
-                                                Secondary
-                                            </option>
-                                            <option value="flash_sale">
-                                                Flash sale
-                                            </option>
-                                        </select>
-                                        <select
-                                            multiple
-                                            name="listing_ids[]"
-                                            defaultValue={promotion.listings.map(
-                                                (listing) => String(listing.id),
-                                            )}
-                                            aria-label="Promotion listings"
-                                            className="min-h-24 rounded-lg border bg-transparent p-2 sm:col-span-2"
-                                        >
-                                            {listings.data
-                                                .filter(
-                                                    (listing) =>
-                                                        listing.status ===
-                                                            'approved' &&
-                                                        listing.listing_type ===
-                                                            'buy_now',
-                                                )
-                                                .map((listing) => (
-                                                    <option
-                                                        key={listing.id}
-                                                        value={listing.id}
-                                                    >
-                                                        {listing.title}
-                                                    </option>
-                                                ))}
-                                        </select>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            name="sort_order"
-                                            defaultValue={promotion.sort_order}
-                                            className="rounded-lg border bg-transparent p-2"
-                                        />
-                                        <select
-                                            name="is_active"
-                                            defaultValue={
-                                                promotion.is_active ? '1' : '0'
-                                            }
-                                            className="rounded-lg border bg-transparent p-2"
-                                        >
-                                            <option value="1">Active</option>
-                                            <option value="0">Inactive</option>
-                                        </select>
-                                        <input
-                                            type="datetime-local"
-                                            name="starts_at"
-                                            defaultValue={promotion.starts_at?.slice(
-                                                0,
-                                                16,
-                                            )}
-                                            className="rounded-lg border bg-transparent p-2"
-                                        />
-                                        <input
-                                            type="datetime-local"
-                                            name="ends_at"
-                                            defaultValue={promotion.ends_at?.slice(
-                                                0,
-                                                16,
-                                            )}
-                                            className="rounded-lg border bg-transparent p-2"
-                                        />
-                                        <input
-                                            required
-                                            minLength={5}
-                                            name="reason"
-                                            placeholder="Update reason"
-                                            className="rounded-lg border bg-transparent p-2 sm:col-span-2"
-                                        />
-                                        {Object.values(errors).map((error) => (
-                                            <p
-                                                key={error}
-                                                className="text-xs text-red-600 sm:col-span-2"
+                            <div key={promotion.id} className="grid gap-4">
+                                <Form
+                                    {...updatePromotion.form(promotion.id)}
+                                    className="grid gap-3 rounded-2xl border p-4 sm:grid-cols-2"
+                                >
+                                    {({ processing, errors }) => (
+                                        <>
+                                            <input
+                                                required
+                                                name="title"
+                                                defaultValue={promotion.title}
+                                                className="rounded-lg border bg-transparent p-2"
+                                            />
+                                            <input
+                                                name="subtitle"
+                                                defaultValue={
+                                                    promotion.subtitle ?? ''
+                                                }
+                                                placeholder="Subtitle"
+                                                className="rounded-lg border bg-transparent p-2"
+                                            />
+                                            <input
+                                                name="cta_label"
+                                                defaultValue={
+                                                    promotion.cta_label ?? ''
+                                                }
+                                                placeholder="CTA label"
+                                                className="rounded-lg border bg-transparent p-2"
+                                            />
+                                            <input
+                                                name="artwork_alt"
+                                                defaultValue={
+                                                    promotion.artwork_alt ?? ''
+                                                }
+                                                placeholder="Artwork alt"
+                                                className="rounded-lg border bg-transparent p-2"
+                                            />
+                                            <select
+                                                name="visual_theme"
+                                                defaultValue={
+                                                    promotion.visual_theme
+                                                }
+                                                className="rounded-lg border bg-transparent p-2"
                                             >
-                                                {error}
-                                            </p>
-                                        ))}
-                                        <button
-                                            disabled={processing}
-                                            className="rounded-lg bg-primary px-4 py-2 text-sm font-black text-primary-foreground sm:col-span-2"
-                                        >
-                                            Save promotion
-                                        </button>
-                                    </>
-                                )}
-                            </Form>
+                                                <option value="orange">
+                                                    Orange
+                                                </option>
+                                                <option value="dark">
+                                                    Dark
+                                                </option>
+                                                <option value="light">
+                                                    Light
+                                                </option>
+                                            </select>
+                                            <input
+                                                type="file"
+                                                name="image"
+                                                accept="image/*"
+                                                className="rounded-lg border p-2"
+                                            />
+                                            <input
+                                                name="link_url"
+                                                defaultValue={
+                                                    promotion.link_url ?? ''
+                                                }
+                                                className="rounded-lg border bg-transparent p-2"
+                                            />
+                                            <select
+                                                name="placement"
+                                                defaultValue={
+                                                    promotion.placement
+                                                }
+                                                className="rounded-lg border bg-transparent p-2"
+                                            >
+                                                <option value="hero">
+                                                    Hero
+                                                </option>
+                                                <option value="secondary">
+                                                    Secondary
+                                                </option>
+                                                <option value="flash_sale">
+                                                    Flash sale
+                                                </option>
+                                            </select>
+                                            <select
+                                                multiple
+                                                name="listing_ids[]"
+                                                defaultValue={promotion.listings.map(
+                                                    (listing) =>
+                                                        String(listing.id),
+                                                )}
+                                                aria-label="Promotion listings"
+                                                className="min-h-24 rounded-lg border bg-transparent p-2 sm:col-span-2"
+                                            >
+                                                {listings.data
+                                                    .filter(
+                                                        (listing) =>
+                                                            listing.status ===
+                                                                'approved' &&
+                                                            listing.listing_type ===
+                                                                'buy_now',
+                                                    )
+                                                    .map((listing) => (
+                                                        <option
+                                                            key={listing.id}
+                                                            value={listing.id}
+                                                        >
+                                                            {listing.title}
+                                                        </option>
+                                                    ))}
+                                            </select>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                name="sort_order"
+                                                defaultValue={
+                                                    promotion.sort_order
+                                                }
+                                                className="rounded-lg border bg-transparent p-2"
+                                            />
+                                            <select
+                                                name="is_active"
+                                                defaultValue={
+                                                    promotion.is_active
+                                                        ? '1'
+                                                        : '0'
+                                                }
+                                                className="rounded-lg border bg-transparent p-2"
+                                            >
+                                                <option value="1">
+                                                    Active
+                                                </option>
+                                                <option value="0">
+                                                    Inactive
+                                                </option>
+                                            </select>
+                                            <input
+                                                type="datetime-local"
+                                                name="starts_at"
+                                                defaultValue={promotion.starts_at?.slice(
+                                                    0,
+                                                    16,
+                                                )}
+                                                className="rounded-lg border bg-transparent p-2"
+                                            />
+                                            <input
+                                                type="datetime-local"
+                                                name="ends_at"
+                                                defaultValue={promotion.ends_at?.slice(
+                                                    0,
+                                                    16,
+                                                )}
+                                                className="rounded-lg border bg-transparent p-2"
+                                            />
+                                            <input
+                                                required
+                                                minLength={5}
+                                                name="reason"
+                                                placeholder="Update reason"
+                                                className="rounded-lg border bg-transparent p-2 sm:col-span-2"
+                                            />
+                                            {Object.values(errors).map(
+                                                (error) => (
+                                                    <p
+                                                        key={error}
+                                                        className="text-xs text-red-600 sm:col-span-2"
+                                                    >
+                                                        {error}
+                                                    </p>
+                                                ),
+                                            )}
+                                            <button
+                                                disabled={processing}
+                                                className="rounded-lg bg-primary px-4 py-2 text-sm font-black text-primary-foreground sm:col-span-2"
+                                            >
+                                                Save promotion
+                                            </button>
+                                        </>
+                                    )}
+                                </Form>
+                                <Form
+                                    {...destroyPromotion.form(promotion.id)}
+                                    className="rounded-2xl border border-dashed border-red-200 bg-red-50 p-4 dark:border-red-900/60 dark:bg-red-950/30"
+                                >
+                                    {({ processing, errors }) => (
+                                        <div className="grid gap-3">
+                                            <input
+                                                required
+                                                minLength={5}
+                                                name="reason"
+                                                placeholder="Reason for deleting this banner"
+                                                className="rounded-lg border bg-white p-2 dark:bg-slate-950"
+                                            />
+                                            {errors.reason && (
+                                                <p className="text-xs text-red-600">
+                                                    {errors.reason}
+                                                </p>
+                                            )}
+                                            <button
+                                                disabled={processing}
+                                                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-black text-white disabled:opacity-50"
+                                            >
+                                                Delete promotion
+                                            </button>
+                                        </div>
+                                    )}
+                                </Form>
+                            </div>
                         ))}
                     </div>
                 </section>

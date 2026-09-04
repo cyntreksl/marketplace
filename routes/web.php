@@ -133,6 +133,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::patch('/homepage/listings/{listing}', [AdminHomepageController::class, 'updateListing'])->name('homepage.listings.update');
     Route::post('/homepage/promotions', [AdminPromotionController::class, 'store'])->name('homepage.promotions.store');
     Route::patch('/homepage/promotions/{promotion}', [AdminPromotionController::class, 'update'])->name('homepage.promotions.update');
+    Route::delete('/homepage/promotions/{promotion}', [AdminPromotionController::class, 'destroy'])->name('homepage.promotions.destroy');
     Route::get('/returns', [AdminReturnController::class, 'index'])->name('returns.index');
     Route::post('/returns/{returnRequest}/refund-ready', [AdminReturnController::class, 'ready'])->name('returns.ready');
     Route::post('/returns/{returnRequest}/refund', [AdminReturnController::class, 'refund'])->name('returns.refund');

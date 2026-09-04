@@ -51,6 +51,11 @@ class EloquentPromotionRepository implements PromotionRepository
         return $promotion;
     }
 
+    public function delete(Promotion $promotion): void
+    {
+        $promotion->delete();
+    }
+
     public function forMediaMigration(): LazyCollection
     {
         return Promotion::query()

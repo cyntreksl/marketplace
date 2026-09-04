@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\DestroyPromotionRequest;
 use App\Http\Requests\StorePromotionRequest;
 use App\Http\Requests\UpdatePromotionRequest;
 use App\Models\Promotion;
@@ -25,5 +26,12 @@ class AdminPromotionController extends Controller
         $promotions->update($request->user(), $promotion, Arr::except($data, 'reason'), $data['reason']);
 
         return to_route('admin.homepage.index')->with('status', 'Promotion updated.');
+    }
+
+    public function destroy(DestroyPromotionRequest $request, Promotion $promotion, PromotionService $promotions): RedirectResponse
+    {
+        $promotions->delete($request->user(), $promotion, $request->string('reason')->toString());
+
+        return to_route('admin.homepage.index')->with('status', 'Promotion deleted.');
     }
 }

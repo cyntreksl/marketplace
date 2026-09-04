@@ -44,7 +44,7 @@ class PromotionPolicy
      */
     public function delete(User $user, Promotion $promotion): bool
     {
-        return false;
+        return $this->isOperationsUser($user);
     }
 
     /**
