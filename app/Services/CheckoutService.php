@@ -45,14 +45,23 @@ class CheckoutService
             throw ValidationException::withMessages(['quantity' => 'This quantity is no longer available.']);
         }
 
-        $cart = Cart::query()->firstOrCreate(['buyer_id' => $buyer->id]);
-        $item = $cart->items()->firstOrNew([
+        $cart = Cart::withTrashed()->firstOrCreate(['buyer_id' => $buyer->id]);
+        if ($cart->trashed()) {
+            $cart->restore();
+        }
+
+        $item = $cart->items()->withTrashed()->firstOrNew([
             'listing_id' => $listing->id,
             'selection_key' => $variant === null ? 'base' : $variant->combination_key,
         ]);
         $item->variant()->associate($variant);
         $item->quantity = $quantity;
-        $item->save();
+
+        if ($item->trashed()) {
+            $item->restore();
+        } else {
+            $item->save();
+        }
 
         return $cart->load('items.listing.sellerProfile');
     }

@@ -31,6 +31,63 @@ test('buy now saves the item and redirects directly to checkout', function (): v
         ->and($cart->items->first()->listing_id)->toBe($listing->id);
 });
 
+test('adding a previously removed item restores it without a duplicate key error', function (): void {
+    $user = User::factory()->create();
+    $cart = Cart::factory()->for($user, 'buyer')->create();
+    $listing = Listing::factory()->create([
+        'listing_type' => 'buy_now',
+        'status' => 'approved',
+        'is_active' => true,
+        'stock_quantity' => 5,
+    ]);
+    $removedItem = CartItem::factory()->for($cart)->for($listing)->create([
+        'selection_key' => 'base',
+        'quantity' => 1,
+    ]);
+    $removedItem->delete();
+
+    $this->actingAs($user)
+        ->post(route('cart.items.store'), [
+            'listing_id' => $listing->id,
+            'quantity' => 2,
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $restoredItem = CartItem::withTrashed()->whereBelongsTo($cart)->sole();
+
+    expect($restoredItem->id)->toBe($removedItem->id)
+        ->and($restoredItem->trashed())->toBeFalse()
+        ->and($restoredItem->quantity)->toBe(2);
+});
+
+test('adding an item restores a previously removed cart', function (): void {
+    $user = User::factory()->create();
+    $removedCart = Cart::factory()->for($user, 'buyer')->create();
+    $removedCart->delete();
+    $listing = Listing::factory()->create([
+        'listing_type' => 'buy_now',
+        'status' => 'approved',
+        'is_active' => true,
+        'stock_quantity' => 5,
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('cart.items.store'), [
+            'listing_id' => $listing->id,
+            'quantity' => 1,
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $restoredCart = Cart::withTrashed()->whereBelongsTo($user, 'buyer')->sole();
+
+    expect($restoredCart->id)->toBe($removedCart->id)
+        ->and($restoredCart->trashed())->toBeFalse()
+        ->and($restoredCart->items)->toHaveCount(1)
+        ->and($restoredCart->items->first()->listing_id)->toBe($listing->id);
+});
+
 test('buyer checkout page renders the saved cart summary', function (): void {
     $user = User::factory()->create();
     $cart = Cart::factory()->for($user, 'buyer')->create();
