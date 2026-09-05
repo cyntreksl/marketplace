@@ -1,5 +1,6 @@
 import { Form, Link, usePage } from '@inertiajs/react';
 import { Gavel, ShoppingCart, Star } from 'lucide-react';
+import { toast } from 'sonner';
 import { store as addCartItem } from '@/actions/App/Http/Controllers/CartController';
 import { login } from '@/routes';
 import { show as listingShow } from '@/routes/listings';
@@ -19,6 +20,10 @@ export function ListingCard({
     const { auth } = usePage().props;
     const detailUrl = listingShow(listing.slug);
     const needsOptions = listing.productType === 'variant';
+    const isOutOfStock = listing.stockStatus === 'out_of_stock';
+    const showOutOfStockMessage = () => {
+        toast.error('This item is out of stock.');
+    };
 
     return (
         <article className="group flex h-full min-w-0 flex-col rounded-xl border border-slate-200 bg-white p-2.5 transition hover:border-orange-200 hover:shadow-lg hover:shadow-orange-100/60 sm:p-3">
@@ -48,6 +53,11 @@ export function ListingCard({
                 {listing.listingType === 'auction' && (
                     <span className="absolute top-2 left-2 rounded-full bg-slate-950 px-2 py-1 text-[10px] font-bold text-white">
                         AUCTION
+                    </span>
+                )}
+                {isOutOfStock && (
+                    <span className="absolute top-2 left-2 rounded-full bg-red-600 px-2 py-1 text-[10px] font-extrabold text-white">
+                        OUT OF STOCK
                     </span>
                 )}
             </Link>
@@ -80,9 +90,9 @@ export function ListingCard({
                         )}
                     </span>
                     <span
-                        className={`mt-1 block text-[10px] font-semibold ${listing.stockStatus === 'out_of_stock' ? 'text-red-500' : 'text-emerald-600'}`}
+                        className={`mt-1 block text-[10px] font-semibold ${isOutOfStock ? 'text-red-500' : 'text-emerald-600'}`}
                     >
-                        {listing.stockStatus === 'out_of_stock'
+                        {isOutOfStock
                             ? 'Out of stock'
                             : listing.stockStatus === 'low_stock'
                               ? 'Limited stock'
@@ -97,6 +107,15 @@ export function ListingCard({
                     >
                         <Gavel className="size-4" />
                     </Link>
+                ) : isOutOfStock ? (
+                    <button
+                        type="button"
+                        onClick={showOutOfStockMessage}
+                        aria-label={`${listing.title} is out of stock`}
+                        className="grid size-9 shrink-0 place-items-center rounded-full border border-red-200 bg-red-50 text-red-500 hover:border-red-400"
+                    >
+                        <ShoppingCart className="size-4" />
+                    </button>
                 ) : !auth.user || needsOptions ? (
                     <Link
                         href={!auth.user ? login() : detailUrl}
@@ -113,6 +132,12 @@ export function ListingCard({
                     <Form
                         {...addCartItem.form()}
                         options={{ preserveScroll: true }}
+                        onError={(errors) =>
+                            toast.error(
+                                Object.values(errors)[0] ??
+                                    'This item could not be added to your cart.',
+                            )
+                        }
                     >
                         {({ processing }) => (
                             <>
@@ -128,10 +153,7 @@ export function ListingCard({
                                 />
                                 <button
                                     type="submit"
-                                    disabled={
-                                        processing ||
-                                        listing.stockStatus === 'out_of_stock'
-                                    }
+                                    disabled={processing}
                                     aria-label={`Add ${listing.title} to cart`}
                                     className="grid size-9 shrink-0 place-items-center rounded-full border border-slate-200 text-slate-700 hover:border-[#ff5a00] hover:text-[#ff5a00] disabled:cursor-not-allowed disabled:opacity-40"
                                 >

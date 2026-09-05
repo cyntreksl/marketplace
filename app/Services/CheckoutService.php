@@ -32,7 +32,7 @@ class CheckoutService
             throw ValidationException::withMessages(['quantity' => 'Choose at least one item.']);
         }
 
-        $listing = Listing::query()->publiclyVisible()->findOrFail($listingId);
+        $listing = Listing::query()->directlyVisible()->findOrFail($listingId);
 
         if ($listing->listing_type !== 'buy_now') {
             throw ValidationException::withMessages(['listing_id' => 'Auction items cannot be added to a cart.']);

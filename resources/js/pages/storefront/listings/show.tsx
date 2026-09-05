@@ -19,6 +19,7 @@ import {
     X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { store as placeBid } from '@/actions/App/Http/Controllers/AuctionBidController';
 import { store as addCartItem } from '@/actions/App/Http/Controllers/CartController';
 import { store as askQuestion } from '@/actions/App/Http/Controllers/ProductQuestionController';
@@ -280,6 +281,13 @@ export default function ListingShow({
             : Boolean(
                   selectedVariant && selectedVariant.stockQuantity >= quantity,
               );
+    const isOutOfStock =
+        listing.stockStatus === 'out_of_stock' ||
+        (listing.productType === 'variant' &&
+            selectedVariant?.stockQuantity === 0);
+    const showOutOfStockMessage = () => {
+        toast.error('This item is out of stock.');
+    };
 
     useEffect(() => {
         const url = listingShow.url(listing.slug, {
@@ -442,11 +450,9 @@ export default function ListingShow({
                         )}
                         <p className="mt-5 text-xs">
                             <span
-                                className={`font-bold ${listing.stockStatus === 'out_of_stock' ? 'text-red-500' : 'text-emerald-600'}`}
+                                className={`font-bold ${isOutOfStock ? 'text-red-500' : 'text-emerald-600'}`}
                             >
-                                {listing.stockStatus === 'out_of_stock'
-                                    ? 'Out of stock'
-                                    : 'In Stock'}
+                                {isOutOfStock ? 'Out of stock' : 'In Stock'}
                             </span>
                             <span className="ml-2 text-slate-400">
                                 Ships when delivery is configured
@@ -521,10 +527,34 @@ export default function ListingShow({
                         )}
 
                         {listing.listingType === 'buy_now' ? (
-                            auth.user ? (
+                            isOutOfStock ? (
+                                <div className="mt-5 grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={showOutOfStockMessage}
+                                        className="flex items-center justify-center gap-2 rounded-lg border border-red-300 bg-red-50 py-3 text-xs font-bold text-red-600"
+                                    >
+                                        <ShoppingCart className="size-4" />
+                                        Add to Cart
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={showOutOfStockMessage}
+                                        className="rounded-lg bg-slate-400 py-3 text-xs font-bold text-white"
+                                    >
+                                        Buy Now
+                                    </button>
+                                </div>
+                            ) : auth.user ? (
                                 <Form
                                     {...addCartItem.form()}
                                     className="mt-5 grid grid-cols-2 gap-2"
+                                    onError={(errors) =>
+                                        toast.error(
+                                            Object.values(errors)[0] ??
+                                                'This item could not be added to your cart.',
+                                        )
+                                    }
                                 >
                                     {({ processing }) => (
                                         <>
@@ -547,10 +577,7 @@ export default function ListingShow({
                                             />
                                             <button
                                                 disabled={
-                                                    processing ||
-                                                    !canPurchase ||
-                                                    listing.stockStatus ===
-                                                        'out_of_stock'
+                                                    processing || !canPurchase
                                                 }
                                                 className="flex items-center justify-center gap-2 rounded-lg border border-[#ff5a00] py-3 text-xs font-bold text-[#ff5a00] disabled:opacity-40"
                                             >
@@ -561,10 +588,7 @@ export default function ListingShow({
                                                 name="buy_now"
                                                 value="1"
                                                 disabled={
-                                                    processing ||
-                                                    !canPurchase ||
-                                                    listing.stockStatus ===
-                                                        'out_of_stock'
+                                                    processing || !canPurchase
                                                 }
                                                 className="rounded-lg bg-[#ff5a00] py-3 text-xs font-bold text-white disabled:opacity-40"
                                             >

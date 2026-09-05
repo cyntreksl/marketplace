@@ -32,7 +32,10 @@ test('approved sold-out products remain indexable details but are absent from br
 
     $this->actingAs(User::factory()->create())
         ->post(route('cart.items.store'), ['listing_id' => $soldOut->id, 'quantity' => 1])
-        ->assertNotFound();
+        ->assertRedirect()
+        ->assertSessionHasErrors(['quantity' => 'This quantity is no longer available.']);
+
+    $this->assertDatabaseMissing('cart_items', ['listing_id' => $soldOut->id]);
 
     $this->get(route('sitemap.products', 1))
         ->assertOk()
