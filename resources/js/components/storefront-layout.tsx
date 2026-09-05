@@ -7,17 +7,16 @@ import {
     PackageSearch,
     Phone,
     Search,
-    ShoppingCart,
     UserRound,
 } from 'lucide-react';
 import { useState } from 'react';
 import { BrandLogo } from '@/components/brand-logo';
+import { CartDrawer } from '@/components/cart-drawer';
 import { MobileStorefrontCategoryMenu } from '@/components/storefront-category-menu';
 import type { StorefrontCategory } from '@/components/storefront-category-menu';
 import { StorefrontFooter } from '@/components/storefront-footer';
 import { home, login } from '@/routes';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
-import { show as cartShow } from '@/routes/cart';
 import { index as listingsIndex } from '@/routes/listings';
 import { register as sellerRegister } from '@/routes/seller';
 import { index as sellerListingsIndex } from '@/routes/seller/listings';
@@ -202,17 +201,7 @@ export function StorefrontLayout({
                             <Heart className="size-5" />
                             <CountBadge count={commerce.wishlist_count} />
                         </Link>
-                        <Link
-                            href={auth.user ? cartShow() : login()}
-                            className="relative flex items-center gap-2 rounded-lg p-2 hover:bg-slate-50"
-                            aria-label="Cart"
-                        >
-                            <ShoppingCart className="size-5" />
-                            <CountBadge count={commerce.cart_quantity} />
-                            <span className="hidden text-xs font-bold lg:block">
-                                Cart
-                            </span>
-                        </Link>
+                        <CartDrawer />
                         {marketplace.support.phone ? (
                             <a
                                 href={`tel:${marketplace.support.phone}`}

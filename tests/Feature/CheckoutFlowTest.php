@@ -6,6 +6,7 @@ use App\Models\CustomerOrder;
 use App\Models\Listing;
 use App\Models\User;
 use App\Notifications\OrderAcknowledgmentNotification;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
 
 test('buy now saves the item and redirects directly to checkout', function (): void {
@@ -198,7 +199,7 @@ test('buyer reviews and places an order before the checkout session and cart are
             ->where('shippingAddress.recipient_name', 'Saman Perera')
             ->where('paymentMethod', 'cod'));
 
-    $response = $this->actingAs($user)->post(route('checkout.review.store'));
+    $response = $this->actingAs($user)->post(route('checkout.review.store'), checkoutReviewData());
 
     $order = CustomerOrder::query()->whereBelongsTo($user, 'buyer')->sole();
 
@@ -219,7 +220,7 @@ test('buyer reviews and places an order before the checkout session and cart are
             ->component('buyer/thank-you')
             ->where('order.number', $order->number)
             ->where('order.status', 'confirmed')
-            ->where('order.total', '22000.00')
+            ->where('order.total', '22600.00')
             ->where('order.payment.method', 'cod')
             ->where('order.payment.status', 'pending_collection')
             ->where('order.shippingAddress.recipient_name', 'Saman Perera')
@@ -235,12 +236,14 @@ test('buyer reviews and places an order before the checkout session and cart are
         OrderAcknowledgmentNotification::class,
         fn (OrderAcknowledgmentNotification $notification): bool => $notification->paymentMethod === 'cod'
             && $notification->itemCount === 1
-            && $notification->orderTotal === '22000.00'
+            && $notification->orderTotal === '22600.00'
             && $notification->orderNumber === $order->number,
     );
 });
 
 test('buyer can create a pending order with an online payment method', function (string $paymentMethod): void {
+    config(['services.stripe.secret' => 'sk_test_fake', 'services.stripe.webhook_secret' => 'whsec_fake']);
+    Http::fake(['api.stripe.com/*' => Http::response(['error' => ['message' => 'Unavailable']], 503)]);
     $user = User::factory()->create();
     $cart = Cart::factory()->for($user, 'buyer')->create();
     $listing = Listing::factory()->create([
@@ -271,7 +274,7 @@ test('buyer can create a pending order with an online payment method', function 
         ])
         ->assertRedirect(route('checkout.review.show'));
 
-    $response = $this->actingAs($user)->post(route('checkout.review.store'));
+    $response = $this->actingAs($user)->post(route('checkout.review.store'), checkoutReviewData());
 
     $order = CustomerOrder::query()->whereBelongsTo($user, 'buyer')->sole();
     $payment = $order->payments()->sole();
@@ -281,7 +284,7 @@ test('buyer can create a pending order with an online payment method', function 
     expect($order->status)->toBe('pending_payment')
         ->and($payment->method)->toBe($paymentMethod)
         ->and($payment->status)->toBe('pending');
-})->with(['stripe', 'bank_transfer']);
+})->with(['stripe']);
 
 test('a buyer cannot view another buyers order confirmation', function (): void {
     $buyer = User::factory()->create();

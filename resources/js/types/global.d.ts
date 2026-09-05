@@ -1,5 +1,6 @@
 import type { SeoPayload } from '@/components/seo-head';
 import type { Auth } from '@/types/auth';
+import type { CheckoutCart } from '@/types/checkout';
 import type { MarketplaceDetails } from '@/types/marketplace';
 
 declare module 'react' {
@@ -14,7 +15,12 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
-            commerce: { cart_quantity: number; wishlist_count: number };
+            commerce: {
+                cart_quantity: number;
+                wishlist_count: number;
+                cart: CheckoutCart;
+                cart_added: boolean;
+            };
             marketplace: MarketplaceDetails;
             seo: SeoPayload;
             sidebarOpen: boolean;

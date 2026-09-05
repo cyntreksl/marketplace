@@ -16,6 +16,10 @@ class EmailVerificationResponse implements VerifyEmailResponse
             return new JsonResponse('', 204);
         }
 
+        if ($request->session()->pull('checkout_intended', false)) {
+            return to_route('checkout.show');
+        }
+
         $user = $request->user();
 
         if ($user->roles()->whereIn('name', [Role::IndividualSeller, Role::BusinessSeller])->exists()) {

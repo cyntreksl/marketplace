@@ -29,7 +29,7 @@ test('a buyer checkout splits one cart into seller fulfilment orders', function 
         'payment_method' => 'cod',
     ])->assertRedirect(route('checkout.review.show', absolute: false));
 
-    $this->actingAs($buyer)->post(route('checkout.review.store'))
+    $this->actingAs($buyer)->post(route('checkout.review.store'), checkoutReviewData())
         ->assertRedirect();
 
     expect(Cart::query()->where('buyer_id', $buyer->id)->firstOrFail()->items)->toHaveCount(0)
@@ -56,6 +56,6 @@ test('cash on delivery is unavailable when the cart total exceeds the configured
         'payment_method' => 'cod',
     ])->assertRedirect(route('checkout.review.show'));
 
-    $this->actingAs($buyer)->post(route('checkout.review.store'))
+    $this->actingAs($buyer)->post(route('checkout.review.store'), checkoutReviewData())
         ->assertSessionHasErrors('payment_method');
 });

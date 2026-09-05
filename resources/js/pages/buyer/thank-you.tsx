@@ -11,6 +11,7 @@ import {
     ReceiptText,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { OrderPaymentStatus } from '@/components/order-payment-status';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { home } from '@/routes';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
@@ -230,8 +231,15 @@ export default function BuyerThankYou({
 
     return (
         <StorefrontLayout title="Thank You for Your Order">
-            <Head title={`Order ${order.number} confirmed`} />
+            <Head
+                title={`Order ${order.number} — ${formatStatus(order.status)}`}
+            />
             <main className="mx-auto max-w-[82rem] px-4 py-7 sm:px-6 sm:py-10">
+                <OrderPaymentStatus
+                    number={order.number}
+                    method={order.payment?.method}
+                    status={order.payment?.status}
+                />
                 <section className="overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-[0_8px_32px_rgba(15,23,42,0.07)]">
                     <div className="bg-emerald-50/80 px-5 py-8 text-center sm:px-8 sm:py-10">
                         <span className="mx-auto grid size-16 place-items-center rounded-full bg-emerald-600 text-white shadow-[0_8px_20px_rgba(5,150,105,0.25)]">

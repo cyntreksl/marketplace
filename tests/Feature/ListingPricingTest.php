@@ -60,7 +60,7 @@ test('effective offer pricing is snapshotted through totals commissions and cod 
         'payment_method' => 'cod',
     ])->assertRedirect(route('checkout.review.show', absolute: false));
 
-    $this->actingAs($buyer)->post(route('checkout.review.store'))
+    $this->actingAs($buyer)->post(route('checkout.review.store'), checkoutReviewData())
         ->assertRedirect();
 
     $order = CustomerOrder::query()->where('buyer_id', $buyer->id)->sole();

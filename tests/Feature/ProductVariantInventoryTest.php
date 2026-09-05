@@ -514,7 +514,7 @@ test('variant image uploads accept smaller square source crops', function () {
 test('active availability backorders and stock status control public purchasing', function () {
     $inactive = Listing::factory()->create(['is_active' => false, 'stock_quantity' => 10]);
     $outOfStock = Listing::factory()->create(['stock_quantity' => 0, 'allow_backorders' => false]);
-    $backorder = Listing::factory()->create(['stock_quantity' => 0, 'allow_backorders' => true]);
+    $backorder = Listing::factory()->create(['stock_quantity' => 0, 'allow_backorders' => true, 'price' => 20000]);
     $lowStock = Listing::factory()->create(['stock_quantity' => 2, 'low_stock_threshold' => 3]);
 
     $publicIds = Listing::query()->publiclyVisible()->pluck('listings.id');
@@ -557,7 +557,7 @@ test('active availability backorders and stock status control public purchasing'
         ->assertSessionHasNoErrors();
 
     $this->actingAs($buyer)
-        ->post(route('checkout.review.store'))
+        ->post(route('checkout.review.store'), checkoutReviewData())
         ->assertRedirect()
         ->assertSessionHasNoErrors();
 

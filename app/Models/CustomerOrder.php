@@ -18,7 +18,7 @@ use Illuminate\Support\Carbon;
  * @property array<string, string|null> $shipping_address
  * @property Carbon|null $created_at
  */
-#[Fillable(['number', 'buyer_id', 'status', 'subtotal', 'shipping_total', 'total', 'shipping_address'])]
+#[Fillable(['checkout_token', 'number', 'buyer_id', 'status', 'subtotal', 'shipping_total', 'total', 'shipping_address'])]
 class CustomerOrder extends Model
 {
     /** @use HasFactory<CustomerOrderFactory> */

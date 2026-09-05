@@ -7,10 +7,12 @@ use App\Contracts\PaymentGateway;
 use App\Contracts\Repositories\AuctionRepository;
 use App\Contracts\Repositories\CartRepository;
 use App\Contracts\Repositories\CatalogRepository;
+use App\Contracts\Repositories\CheckoutRepository;
 use App\Contracts\Repositories\CustomerOrderRepository;
 use App\Contracts\Repositories\GoogleProductTaxonomyRepository;
 use App\Contracts\Repositories\ListingRepository;
 use App\Contracts\Repositories\ListingVariantRepository;
+use App\Contracts\Repositories\MarketplaceSettingRepository;
 use App\Contracts\Repositories\OrderTrackingRepository;
 use App\Contracts\Repositories\ProductQuestionRepository;
 use App\Contracts\Repositories\PromotionRepository;
@@ -24,10 +26,12 @@ use App\Payments\StripePaymentGateway;
 use App\Repositories\EloquentAuctionRepository;
 use App\Repositories\EloquentCartRepository;
 use App\Repositories\EloquentCatalogRepository;
+use App\Repositories\EloquentCheckoutRepository;
 use App\Repositories\EloquentCustomerOrderRepository;
 use App\Repositories\EloquentGoogleProductTaxonomyRepository;
 use App\Repositories\EloquentListingRepository;
 use App\Repositories\EloquentListingVariantRepository;
+use App\Repositories\EloquentMarketplaceSettingRepository;
 use App\Repositories\EloquentOrderTrackingRepository;
 use App\Repositories\EloquentProductQuestionRepository;
 use App\Repositories\EloquentPromotionRepository;
@@ -69,6 +73,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ReturnRequestRepository::class, EloquentReturnRequestRepository::class);
         $this->app->bind(WatchlistRepository::class, EloquentWatchlistRepository::class);
         $this->app->bind(PaymentGateway::class, StripePaymentGateway::class);
+        $this->app->bind(CheckoutRepository::class, EloquentCheckoutRepository::class);
+        $this->app->bind(MarketplaceSettingRepository::class, EloquentMarketplaceSettingRepository::class);
         $this->app->bind(CourierAdapter::class, ManualCourierAdapter::class);
     }
 

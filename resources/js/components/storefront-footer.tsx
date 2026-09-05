@@ -16,11 +16,7 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
             <div className="mx-auto max-w-[96rem] px-4 sm:px-6">
                 <div className="grid gap-4 rounded-xl bg-orange-50/70 px-5 py-5 sm:grid-cols-2 lg:grid-cols-4">
                     {[
-                        [
-                            Truck,
-                            'Fast & Free Delivery',
-                            'Islandwide on eligible orders',
-                        ],
+                        [Truck, 'Fast Delivery', 'Islandwide delivery'],
                         [
                             ShieldCheck,
                             '1 Year Warranty',

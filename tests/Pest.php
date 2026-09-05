@@ -48,3 +48,12 @@ function something()
 {
     // ..
 }
+
+/** @return array{checkout_token: string, review_hash: string} */
+function checkoutReviewData(): array
+{
+    $response = test()->get(route('checkout.review.show'))->assertOk();
+    $props = $response->viewData('page')['props'];
+
+    return ['checkout_token' => $props['checkoutToken'], 'review_hash' => $props['reviewHash']];
+}

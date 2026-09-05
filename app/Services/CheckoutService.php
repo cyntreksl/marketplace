@@ -2,13 +2,12 @@
 
 namespace App\Services;
 
+use App\Contracts\Repositories\CheckoutRepository;
 use App\Contracts\Repositories\CustomerOrderRepository;
-use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\CustomerOrder;
 use App\Models\Listing;
 use App\Models\ListingVariant;
-use App\Models\Payment;
 use App\Models\SellerOrder;
 use App\Models\User;
 use App\Notifications\OrderAcknowledgmentNotification;
@@ -24,54 +23,30 @@ class CheckoutService
         private readonly MarketplaceSettingsService $settings,
         private readonly AuditLogService $auditLogs,
         private readonly CustomerOrderRepository $customerOrders,
+        private readonly CheckoutRepository $repository,
+        private readonly CartService $cartService,
     ) {}
 
-    public function addItem(User $buyer, int $listingId, int $quantity, ?int $listingVariantId = null): Cart
-    {
-        if ($quantity < 1) {
-            throw ValidationException::withMessages(['quantity' => 'Choose at least one item.']);
-        }
-
-        $listing = Listing::query()->directlyVisible()->findOrFail($listingId);
-
-        if ($listing->listing_type !== 'buy_now') {
-            throw ValidationException::withMessages(['listing_id' => 'Auction items cannot be added to a cart.']);
-        }
-
-        $variant = $this->resolveVariant($listing, $listingVariantId);
-        $availableQuantity = $variant?->availableQuantity() ?? ($listing->stock_quantity - $listing->reserved_quantity);
-
-        if (! $listing->allow_backorders && $quantity > $availableQuantity) {
-            throw ValidationException::withMessages(['quantity' => 'This quantity is no longer available.']);
-        }
-
-        $cart = Cart::withTrashed()->firstOrCreate(['buyer_id' => $buyer->id]);
-        if ($cart->trashed()) {
-            $cart->restore();
-        }
-
-        $item = $cart->items()->withTrashed()->firstOrNew([
-            'listing_id' => $listing->id,
-            'selection_key' => $variant === null ? 'base' : $variant->combination_key,
-        ]);
-        $item->variant()->associate($variant);
-        $item->quantity = $quantity;
-
-        if ($item->trashed()) {
-            $item->restore();
-        } else {
-            $item->save();
-        }
-
-        return $cart->load('items.listing.sellerProfile');
-    }
-
     /** @param array<string, string|null> $shippingAddress */
-    public function checkout(User $buyer, string $paymentMethod, array $shippingAddress): CustomerOrder
+    public function checkout(User $buyer, string $paymentMethod, array $shippingAddress, ?string $token = null, ?string $reviewHash = null): CustomerOrder
     {
-        $order = DB::transaction(function () use ($buyer, $paymentMethod, $shippingAddress): CustomerOrder {
-            $cart = Cart::query()->where('buyer_id', $buyer->id)->lockForUpdate()->firstOrFail();
-            $cartItems = $cart->items()->with(['listing.sellerProfile', 'variant.optionValues.option'])->lockForUpdate()->get();
+        $created = false;
+        $order = DB::transaction(function () use ($buyer, $paymentMethod, $shippingAddress, $token, $reviewHash, &$created): CustomerOrder {
+            $cart = $this->repository->cart($buyer);
+            if ($token !== null && ($existing = $this->repository->findSubmission($buyer, $token)) !== null) {
+                return $this->repository->details($existing);
+            }
+            $cartItems = $cart->items;
+            $summary = $this->cartService->summarize($cartItems->toArray());
+            if (! $summary['canCheckout']) {
+                throw ValidationException::withMessages(['cart' => 'Update unavailable items in your cart before checking out.']);
+            }
+            if (! in_array($paymentMethod, $summary['paymentMethods'], true)) {
+                throw ValidationException::withMessages(['payment_method' => 'This payment method is unavailable for your order.']);
+            }
+            if ($reviewHash !== null && ! hash_equals($reviewHash, $this->reviewHash($summary))) {
+                throw ValidationException::withMessages(['cart' => 'Your cart or prices changed. Reload the review page to confirm the updated total.']);
+            }
 
             if ($cartItems->isEmpty()) {
                 throw ValidationException::withMessages(['cart' => 'Your cart is empty.']);
@@ -80,7 +55,7 @@ class CheckoutService
             $lockedListings = [];
             $lockedVariants = [];
             foreach ($cartItems as $cartItem) {
-                $listing = Listing::query()->lockForUpdate()->findOrFail($cartItem->listing_id);
+                $listing = $this->repository->listing($cartItem->listing_id);
 
                 if ($listing->listing_type !== 'buy_now' || $listing->status !== 'approved' || ! $listing->is_active) {
                     throw ValidationException::withMessages(['cart' => "{$listing->title} is no longer available to purchase."]);
@@ -88,7 +63,7 @@ class CheckoutService
 
                 $variant = $cartItem->listing_variant_id === null
                     ? null
-                    : ListingVariant::query()->with('optionValues.option')->lockForUpdate()->find($cartItem->listing_variant_id);
+                    : $this->repository->variant($cartItem->listing_variant_id);
 
                 if ($listing->product_type === 'variant' && ($variant === null || $variant->listing_id !== $listing->id || ! $variant->is_active)) {
                     throw ValidationException::withMessages(['cart' => "Choose an available option for {$listing->title}."]);
@@ -116,15 +91,29 @@ class CheckoutService
                 throw ValidationException::withMessages(['payment_method' => 'Cash on delivery is not available for this order total.']);
             }
 
-            $order = CustomerOrder::query()->create([
+            $shippingTotal = BigDecimal::of($summary['shippingTotal']);
+            $total = $subtotal->plus($shippingTotal);
+            $lockedSummary = $summary;
+            $lockedSummary['items'] = array_map(function (array $item) use ($lockedListings, $lockedVariants): array {
+                $item['unitPrice'] = $this->buyNowPrice($lockedListings[$item['listing_id']], $lockedVariants[$item['id']] ?? null);
+
+                return $item;
+            }, $summary['items']);
+            $lockedSummary['subtotal'] = (string) $subtotal->toScale(2);
+            $lockedSummary['total'] = (string) $total->toScale(2);
+            if ($reviewHash !== null && ! hash_equals($reviewHash, $this->reviewHash($lockedSummary))) {
+                throw ValidationException::withMessages(['cart' => 'Prices changed. Reload the review page before placing your order.']);
+            }
+            $order = $this->repository->createOrder([
+                'checkout_token' => $token,
                 'number' => (string) Str::uuid(),
                 'buyer_id' => $buyer->id,
                 'status' => $paymentMethod === 'cod' ? 'confirmed' : 'pending_payment',
                 'subtotal' => (string) $subtotal,
-                'total' => (string) $subtotal,
+                'total' => (string) $total,
+                'shipping_total' => (string) $shippingTotal,
                 'shipping_address' => $shippingAddress,
             ]);
-            $order->update(['number' => $this->customerOrderNumber($order)]);
 
             foreach ($cartItems->groupBy(fn (CartItem $item): int => $item->listing->seller_profile_id) as $sellerProfileId => $items) {
                 $sellerSubtotal = BigDecimal::zero();
@@ -134,7 +123,7 @@ class CheckoutService
                     $sellerSubtotal = $sellerSubtotal->plus(BigDecimal::of($this->buyNowPrice($listing, $variant))->multipliedBy($item->quantity));
                 }
 
-                $sellerOrder = SellerOrder::query()->create([
+                $sellerOrder = $this->repository->createSellerOrder([
                     'number' => $this->orderNumber('SO'),
                     'customer_order_id' => $order->id,
                     'seller_profile_id' => $sellerProfileId,
@@ -149,7 +138,7 @@ class CheckoutService
                     $effectivePrice = $this->buyNowPrice($listing, $variant);
                     $lineTotal = BigDecimal::of($effectivePrice)->multipliedBy($item->quantity);
                     $commission = $lineTotal->multipliedBy((string) $listing->commission_percentage)->dividedBy(100, 2, RoundingMode::Down);
-                    $sellerOrder->items()->create([
+                    $this->repository->addItem($sellerOrder, [
                         'listing_id' => $listing->id,
                         'listing_variant_id' => $variant?->id,
                         'title' => $listing->title,
@@ -161,30 +150,33 @@ class CheckoutService
                         'commission_amount' => (string) $commission,
                         'total' => (string) $lineTotal,
                     ]);
-                    $listing->increment('reserved_quantity', $item->quantity);
-                    $variant?->increment('reserved_quantity', $item->quantity);
+                    $this->repository->reserve($listing, $variant, $item->quantity);
                 }
             }
 
-            $payment = Payment::query()->create([
+            $this->repository->createPayment([
                 'customer_order_id' => $order->id,
                 'method' => $paymentMethod,
                 'status' => $paymentMethod === 'cod' ? 'pending_collection' : 'pending',
                 'idempotency_key' => (string) Str::uuid(),
-                'amount' => (string) $subtotal,
+                'amount' => (string) $total,
+                'expires_at' => $paymentMethod === 'stripe' ? now()->addMinutes(30) : null,
             ]);
-            $cart->items()->delete();
+            $this->repository->clear($cart);
+            $created = true;
             $this->auditLogs->record($buyer, 'checkout.created', $order, after: $order->getAttributes());
 
-            return $order->load(['sellerOrders.items', 'payments']);
+            return $this->repository->details($order);
         }, attempts: 3);
 
-        $buyer->notify(new OrderAcknowledgmentNotification(
-            orderNumber: $order->number,
-            orderTotal: $order->total,
-            paymentMethod: $paymentMethod,
-            itemCount: (int) $order->sellerOrders->sum(fn (SellerOrder $sellerOrder): int => (int) $sellerOrder->items->sum('quantity')),
-        ));
+        if ($created) {
+            $buyer->notify(new OrderAcknowledgmentNotification(
+                orderNumber: $order->number,
+                orderTotal: $order->total,
+                paymentMethod: $paymentMethod,
+                itemCount: (int) $order->sellerOrders->sum(fn (SellerOrder $sellerOrder): int => (int) $sellerOrder->items->sum('quantity')),
+            ));
+        }
 
         return $order;
     }
@@ -230,37 +222,18 @@ class CheckoutService
         ];
     }
 
-    private function customerOrderNumber(CustomerOrder $customerOrder): string
+    /** @param array<string, mixed> $summary */
+    public function reviewHash(array $summary): string
     {
-        return 'PRO'.Str::padLeft((string) $customerOrder->getKey(), 6, '0');
+        $items = array_map(fn (array $item): array => [$item['listing_id'], $item['listing_variant_id'], $item['quantity'], $item['unitPrice']], $summary['items']);
+        sort($items);
+
+        return hash('sha256', json_encode([$items, $summary['subtotal'], $summary['shippingTotal'], $summary['total']], JSON_THROW_ON_ERROR));
     }
 
     private function orderNumber(string $prefix): string
     {
         return $prefix.'-'.now()->format('ymd').'-'.Str::upper(Str::random(8));
-    }
-
-    private function resolveVariant(Listing $listing, ?int $listingVariantId): ?ListingVariant
-    {
-        if ($listing->product_type !== 'variant') {
-            if ($listingVariantId !== null) {
-                throw ValidationException::withMessages(['listing_variant_id' => 'This product does not use selectable options.']);
-            }
-
-            return null;
-        }
-
-        if ($listingVariantId === null) {
-            throw ValidationException::withMessages(['listing_variant_id' => 'Choose all product options before adding this item.']);
-        }
-
-        $variant = ListingVariant::query()->whereBelongsTo($listing)->with('optionValues.option')->find($listingVariantId);
-
-        if ($variant === null || ! $variant->is_active) {
-            throw ValidationException::withMessages(['listing_variant_id' => 'The selected product option is unavailable.']);
-        }
-
-        return $variant;
     }
 
     private function buyNowPrice(Listing $listing, ?ListingVariant $variant): string

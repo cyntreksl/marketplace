@@ -14,6 +14,7 @@ import {
     Store,
     Truck,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { StorefrontBreadcrumbs } from '@/components/storefront-breadcrumbs';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { StorefrontListingFilters } from '@/components/storefront-listing-filters';
@@ -29,6 +30,7 @@ import {
     SheetTrigger,
 } from '@/components/ui/sheet';
 import { home } from '@/routes';
+import { store as addCartItem } from '@/routes/cart/items';
 import { show as categoryShow } from '@/routes/categories';
 import { index as listingsIndex } from '@/routes/listings';
 import { show as listingShow } from '@/routes/listings';
@@ -226,16 +228,60 @@ function ListingTile({ listing }: { listing: StorefrontListing }) {
                     </span>
                 </div>
 
-                <Button
-                    asChild
-                    variant="outline"
-                    className="mt-4 h-10 rounded-xl border-[#FF6D00]/30 text-sm font-bold text-[#FF6D00] hover:border-[#FF6D00] hover:bg-orange-50 hover:text-[#e86100]"
-                >
-                    <Link href={listingShow(listing.slug)}>
-                        <ShoppingCart className="size-4" />
-                        Add to Cart
-                    </Link>
-                </Button>
+                {listing.listingType === 'auction' ||
+                listing.productType === 'variant' ? (
+                    <Button
+                        asChild
+                        variant="outline"
+                        className="mt-4 h-10 rounded-xl"
+                    >
+                        <Link href={listingShow(listing.slug)}>
+                            {listing.listingType === 'auction'
+                                ? 'View auction'
+                                : 'Choose options'}
+                        </Link>
+                    </Button>
+                ) : (
+                    <Form
+                        {...addCartItem.form()}
+                        className="mt-4"
+                        onError={(errors) =>
+                            toast.error(
+                                Object.values(errors)[0] ??
+                                    'Unable to add this item.',
+                            )
+                        }
+                    >
+                        {({ processing }) => (
+                            <>
+                                <input
+                                    type="hidden"
+                                    name="listing_id"
+                                    value={listing.id}
+                                />
+                                <input
+                                    type="hidden"
+                                    name="quantity"
+                                    value="1"
+                                />
+                                <Button
+                                    type="submit"
+                                    variant="outline"
+                                    disabled={
+                                        processing ||
+                                        listing.stockStatus === 'out_of_stock'
+                                    }
+                                    className="h-10 w-full rounded-xl border-orange-200 font-bold text-orange-600"
+                                >
+                                    <ShoppingCart className="size-4" />
+                                    {listing.stockStatus === 'out_of_stock'
+                                        ? 'Out of stock'
+                                        : 'Add to Cart'}
+                                </Button>
+                            </>
+                        )}
+                    </Form>
+                )}
             </div>
         </article>
     );

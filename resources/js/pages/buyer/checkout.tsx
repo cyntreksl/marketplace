@@ -183,10 +183,7 @@ export default function BuyerCheckout({
                 item.listing.sale_price ??
                 item.listing.price,
         );
-    const subtotal = cart.items.reduce(
-        (total, item) => total + itemPrice(item) * item.quantity,
-        0,
-    );
+    const subtotal = Number(cart.subtotal);
 
     return (
         <StorefrontLayout title="Checkout">
@@ -333,7 +330,9 @@ export default function BuyerCheckout({
                                                 icon={Truck}
                                                 title="Islandwide Standard Delivery"
                                                 description="Delivery timing is confirmed after order placement"
-                                                price="FREE"
+                                                price={formatPrice(
+                                                    Number(cart.shippingTotal),
+                                                )}
                                             />
                                             <DeliveryOption
                                                 id="express"
@@ -514,7 +513,11 @@ export default function BuyerCheckout({
                                                         Shipping
                                                     </dt>
                                                     <dd className="font-bold text-emerald-600">
-                                                        FREE
+                                                        {formatPrice(
+                                                            Number(
+                                                                cart.shippingTotal,
+                                                            ),
+                                                        )}
                                                     </dd>
                                                 </div>
                                                 <div className="flex justify-between gap-4">
@@ -555,7 +558,9 @@ export default function BuyerCheckout({
                                                     </span>
                                                 </span>
                                                 <strong className="text-xl font-black text-[#ff5a00]">
-                                                    {formatPrice(subtotal)}
+                                                    {formatPrice(
+                                                        Number(cart.total),
+                                                    )}
                                                 </strong>
                                             </div>
 
@@ -574,7 +579,10 @@ export default function BuyerCheckout({
 
                                             <button
                                                 type="submit"
-                                                disabled={processing}
+                                                disabled={
+                                                    processing ||
+                                                    !cart.canCheckout
+                                                }
                                                 className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#ff5a00] px-4 text-sm font-extrabold text-white shadow-[0_8px_20px_rgba(255,90,0,0.24)] transition hover:bg-[#eb5200] disabled:cursor-not-allowed disabled:opacity-60"
                                             >
                                                 <LockKeyhole className="size-4" />

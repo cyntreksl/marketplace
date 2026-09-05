@@ -545,7 +545,7 @@ export default function ListingShow({
                                         Buy Now
                                     </button>
                                 </div>
-                            ) : auth.user ? (
+                            ) : (
                                 <Form
                                     {...addCartItem.form()}
                                     className="mt-5 grid grid-cols-2 gap-2"
@@ -597,13 +597,6 @@ export default function ListingShow({
                                         </>
                                     )}
                                 </Form>
-                            ) : (
-                                <Link
-                                    href={login()}
-                                    className="mt-5 flex rounded-lg bg-[#ff5a00] py-3 text-center text-xs font-bold text-white"
-                                >
-                                    Sign in to purchase
-                                </Link>
                             )
                         ) : (
                             listing.auction && (

@@ -9,17 +9,22 @@ interface PaymentGateway
     /**
      * Start a payment with the configured gateway.
      *
-     * @return array{reference: string, redirect_url: string|null}
+     * @return array{reference: string, redirect_url: string|null, expires_at: int}
      */
     public function createPayment(Payment $payment): array;
 
     /**
      * Verify and normalize an incoming provider callback.
      *
-     * @param  array<string, mixed>  $payload
-     * @return array{reference: string, status: string, amount: string}
+     * @return array<string, mixed>
      */
-    public function verifyCallback(array $payload, ?string $signature): array;
+    public function verifyCallback(string $payload, ?string $signature): array;
+
+    /** @return array<string, mixed> */
+    public function retrieveCheckout(string $reference): array;
+
+    /** @return array<string, mixed> */
+    public function expireCheckout(string $reference): array;
 
     /**
      * Request a refund for a captured payment.

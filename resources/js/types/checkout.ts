@@ -1,12 +1,17 @@
 export type CheckoutCartItem = {
-    id: number;
+    id: number | string;
     quantity: number;
+    unitPrice: string;
+    total: string;
+    error: string | null;
+    availableQuantity: number;
     variant: {
         sku: string;
         selling_price: string | null;
         option_values: { value: string; option: { name: string } }[];
     } | null;
     listing: {
+        slug: string | null;
         title: string;
         price: string;
         sale_price: string | null;
@@ -21,6 +26,12 @@ export type CheckoutCartItem = {
 
 export type CheckoutCart = {
     items: CheckoutCartItem[];
+    subtotal: string;
+    shippingTotal: string;
+    total: string;
+    quantity: number;
+    canCheckout: boolean;
+    paymentMethods: CheckoutPaymentMethod[];
 };
 
 export type CheckoutPaymentMethod = 'stripe' | 'bank_transfer' | 'cod';

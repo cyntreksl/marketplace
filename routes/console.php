@@ -18,3 +18,5 @@ Schedule::call(function (): void {
         ->cursor()
         ->each(fn (Auction $auction) => CloseAuction::dispatch($auction->id));
 })->name('close-ended-auctions')->everyMinute()->withoutOverlapping()->onOneServer();
+
+Schedule::command('checkout:reconcile-payments')->everyMinute()->withoutOverlapping()->onOneServer();

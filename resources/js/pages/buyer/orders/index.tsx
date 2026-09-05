@@ -3,6 +3,7 @@ import { Star } from 'lucide-react';
 import { store as storeReview } from '@/actions/App/Http/Controllers/BuyerReviewController';
 import { PortalLayout } from '@/components/portal-layout';
 import { show as cartShow } from '@/routes/cart';
+import { show as orderShow } from '@/routes/checkout/thank_you';
 
 type Order = {
     number: string;
@@ -62,9 +63,15 @@ export default function BuyerOrders({ orders }: { orders: { data: Order[] } }) {
                                     className="grid gap-3 p-5 sm:grid-cols-[1fr_auto]"
                                 >
                                     <div>
-                                        <p className="font-bold">
-                                            {order.number}
-                                        </p>
+                                        <Link
+                                            href={orderShow(order.number)}
+                                            className="font-bold text-orange-600 hover:underline"
+                                        >
+                                            {order.number} — View order
+                                            {order.status === 'pending_payment'
+                                                ? ' / Pay'
+                                                : ''}
+                                        </Link>
                                         <p className="mt-1 text-sm text-stone-500">
                                             {order.seller_orders
                                                 .map(

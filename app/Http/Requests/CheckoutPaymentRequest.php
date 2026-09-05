@@ -23,7 +23,7 @@ class CheckoutPaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'payment_method' => ['required', Rule::in(['stripe', 'bank_transfer', 'cod'])],
+            'payment_method' => ['required', Rule::in(['stripe', 'cod'])],
         ];
     }
 }

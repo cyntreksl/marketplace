@@ -204,8 +204,8 @@ function DeliveryDetails({
                             Islandwide Standard Delivery
                         </strong>
                         <span className="mt-1 block text-[11px] leading-5 text-slate-500">
-                            Free delivery. Timing is confirmed after your order
-                            is placed.
+                            Delivery timing is confirmed after your order is
+                            placed.
                         </span>
                     </span>
                 </div>
@@ -249,14 +249,15 @@ function PaymentDetails({
 function OrderSummary({
     cart,
     paymentMethod,
+    checkoutToken,
+    reviewHash,
 }: {
+    checkoutToken: string;
+    reviewHash: string;
     cart: CheckoutCart;
     paymentMethod: CheckoutPaymentMethod;
 }) {
-    const subtotal = cart.items.reduce(
-        (total, item) => total + itemPrice(item) * item.quantity,
-        0,
-    );
+    const subtotal = Number(cart.subtotal);
 
     return (
         <aside className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_6px_24px_rgba(15,23,42,0.07)] lg:sticky lg:top-5">
@@ -278,7 +279,9 @@ function OrderSummary({
                     </div>
                     <div className="flex justify-between gap-4">
                         <dt className="text-slate-600">Delivery</dt>
-                        <dd className="font-bold text-emerald-600">FREE</dd>
+                        <dd className="font-bold text-emerald-600">
+                            {formatPrice(Number(cart.shippingTotal))}
+                        </dd>
                     </div>
                     <div className="flex justify-between gap-4">
                         <dt className="text-slate-600">VAT</dt>
@@ -295,7 +298,7 @@ function OrderSummary({
                         </span>
                     </span>
                     <strong className="text-xl font-black text-[#ff5a00]">
-                        {formatPrice(subtotal)}
+                        {formatPrice(Number(cart.total))}
                     </strong>
                 </div>
             </div>
@@ -305,6 +308,16 @@ function OrderSummary({
             >
                 {({ errors, processing }) => (
                     <>
+                        <input
+                            type="hidden"
+                            name="checkout_token"
+                            value={checkoutToken}
+                        />
+                        <input
+                            type="hidden"
+                            name="review_hash"
+                            value={reviewHash}
+                        />
                         {Object.values(errors).length > 0 && (
                             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
                                 {Object.entries(errors).map(
@@ -316,7 +329,7 @@ function OrderSummary({
                         )}
                         <button
                             type="submit"
-                            disabled={processing}
+                            disabled={processing || !cart.canCheckout}
                             className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#ff5a00] px-4 text-sm font-extrabold text-white shadow-[0_8px_20px_rgba(255,90,0,0.24)] transition hover:bg-[#eb5200] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             <LockKeyhole className="size-4" />
@@ -348,7 +361,11 @@ export default function BuyerReview({
     cart,
     shippingAddress,
     paymentMethod,
+    checkoutToken,
+    reviewHash,
 }: {
+    checkoutToken: string;
+    reviewHash: string;
     cart: CheckoutCart;
     shippingAddress: ShippingAddress;
     paymentMethod: CheckoutPaymentMethod;
@@ -415,6 +432,8 @@ export default function BuyerReview({
                         <OrderSummary
                             cart={cart}
                             paymentMethod={paymentMethod}
+                            checkoutToken={checkoutToken}
+                            reviewHash={reviewHash}
                         />
                     </div>
                 )}

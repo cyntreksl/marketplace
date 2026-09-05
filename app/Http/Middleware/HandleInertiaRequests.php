@@ -3,13 +3,14 @@
 namespace App\Http\Middleware;
 
 use App\Models\Role;
+use App\Services\CartService;
 use App\Services\SeoHeadService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
-    public function __construct(private readonly SeoHeadService $seo) {}
+    public function __construct(private readonly SeoHeadService $seo, private readonly CartService $carts) {}
 
     /**
      * The root template that's loaded on the first page visit.
@@ -52,10 +53,16 @@ class HandleInertiaRequests extends Middleware
                     ->whereIn('name', [Role::IndividualSeller, Role::BusinessSeller])
                     ->exists() ?? false,
             ],
-            'commerce' => [
-                'cart_quantity' => fn (): int => (int) ($request->user()?->cart?->items()->sum('quantity') ?? 0),
-                'wishlist_count' => fn (): int => $request->user()?->watchlistEntries()->count() ?? 0,
-            ],
+            'commerce' => function () use ($request): array {
+                $cart = $this->carts->summary($request);
+
+                return [
+                    'cart_quantity' => $cart['quantity'],
+                    'cart' => $cart,
+                    'cart_added' => (bool) $request->session()->get('cart_added', false),
+                    'wishlist_count' => $request->user()?->watchlistEntries()->count() ?? 0,
+                ];
+            },
             'marketplace' => config('marketplace'),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

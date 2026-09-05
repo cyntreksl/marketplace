@@ -1,8 +1,7 @@
-import { Form, Link, usePage } from '@inertiajs/react';
+import { Form, Link } from '@inertiajs/react';
 import { Gavel, ShoppingCart, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { store as addCartItem } from '@/actions/App/Http/Controllers/CartController';
-import { login } from '@/routes';
 import { show as listingShow } from '@/routes/listings';
 import type { StorefrontListing } from '@/types';
 
@@ -17,7 +16,6 @@ export function ListingCard({
     listing: StorefrontListing;
     compact?: boolean;
 }) {
-    const { auth } = usePage().props;
     const detailUrl = listingShow(listing.slug);
     const needsOptions = listing.productType === 'variant';
     const isOutOfStock = listing.stockStatus === 'out_of_stock';
@@ -116,9 +114,9 @@ export function ListingCard({
                     >
                         <ShoppingCart className="size-4" />
                     </button>
-                ) : !auth.user || needsOptions ? (
+                ) : needsOptions ? (
                     <Link
-                        href={!auth.user ? login() : detailUrl}
+                        href={detailUrl}
                         aria-label={
                             needsOptions
                                 ? `Choose options for ${listing.title}`
