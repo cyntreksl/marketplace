@@ -317,3 +317,22 @@ test('product details and checkout keep supporting text readable', function (str
     'components/cart-contents',
     'components/checkout-progress',
 ]);
+
+test('payment uses card-first tiles and keeps full delivery details with the order summary', function () {
+    $source = file_get_contents(resource_path('js/pages/buyer/payment.tsx'));
+
+    expect($source)
+        ->toContain("cart.paymentMethods.includes('stripe')")
+        ->toContain("? 'stripe'")
+        ->toContain('className="peer sr-only"')
+        ->toContain('peer-checked:border-[#ff5a00]')
+        ->toContain('Delivery address', 'Change details')
+        ->toContain(
+            'shippingAddress.recipient_name',
+            'shippingAddress.address_line_one',
+            'shippingAddress.address_line_two',
+            'shippingAddress.city',
+            'shippingAddress.postal_code',
+            'shippingAddress.phone',
+        );
+});
