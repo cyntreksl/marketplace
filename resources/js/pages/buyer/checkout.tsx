@@ -13,7 +13,7 @@ import {
     Truck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { CheckoutProgress } from '@/components/checkout-progress';
 import { StorefrontLayout } from '@/components/storefront-layout';
@@ -85,17 +85,13 @@ function Field({
                 required={required}
                 name={name}
                 type={type}
-                inputMode={type === 'tel' ? 'tel' : undefined}
+                inputMode={type === 'tel' ? 'numeric' : undefined}
                 autoComplete={type === 'tel' ? 'tel' : undefined}
-                maxLength={type === 'tel' ? 30 : undefined}
-                pattern={
-                    type === 'tel'
-                        ? '\\+?(?=(?:[^0-9]*[0-9]){7,15}[^0-9]*$)[0-9 \\(\\)\\-]+'
-                        : undefined
-                }
+                maxLength={type === 'tel' ? 10 : undefined}
+                pattern={type === 'tel' ? '0[0-9]{9}' : undefined}
                 title={
                     type === 'tel'
-                        ? 'Enter 7 to 15 digits, with an optional country code, spaces, brackets or hyphens.'
+                        ? 'Enter a 10-digit phone number starting with 0.'
                         : undefined
                 }
                 onInput={
@@ -103,8 +99,8 @@ function Field({
                         ? (event) => {
                               event.currentTarget.value =
                                   event.currentTarget.value
-                                      .replace(/[^0-9+ ()-]/g, '')
-                                      .replace(/(?!^)\+/g, '');
+                                      .replace(/\D/g, '')
+                                      .slice(0, 10);
                           }
                         : undefined
                 }
@@ -215,26 +211,10 @@ export default function BuyerCheckout({
     billingAddress?: ShippingAddress | null;
 }) {
     const { auth } = usePage().props;
-    const summaryRef = useRef<HTMLElement>(null);
-    const [summaryHeight, setSummaryHeight] = useState(0);
     const headerHeight = useStorefrontHeaderHeight();
-    const hasItems = cart.items.length > 0;
     const [billingMethod, setBillingMethod] = useState(
         billingAddress ? 'different' : 'shipping',
     );
-
-    useEffect(() => {
-        if (!summaryRef.current) {
-            return;
-        }
-
-        const observer = new ResizeObserver(([entry]) =>
-            setSummaryHeight(entry.target.getBoundingClientRect().height),
-        );
-        observer.observe(summaryRef.current);
-
-        return () => observer.disconnect();
-    }, [hasItems]);
 
     const itemPrice = (item: CheckoutCartItem): number =>
         Number(
@@ -312,7 +292,7 @@ export default function BuyerCheckout({
                                                 defaultValue={
                                                     shippingAddress?.phone
                                                 }
-                                                placeholder="077 123 4567"
+                                                placeholder="0771234567"
                                                 required
                                                 error={errors.phone}
                                             />
@@ -584,11 +564,10 @@ export default function BuyerCheckout({
                                 </div>
 
                                 <aside
-                                    ref={summaryRef}
                                     id="order-summary"
                                     className="scroll-mt-36 lg:sticky"
                                     style={{
-                                        top: `min(${headerHeight + 16}px, calc(100dvh - ${summaryHeight + 16}px))`,
+                                        top: `${headerHeight + 16}px`,
                                     }}
                                 >
                                     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_6px_24px_rgba(15,23,42,0.07)]">

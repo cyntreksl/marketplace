@@ -152,21 +152,23 @@ test('unavailable delivery choices are disabled and clearly marked coming soon',
     assert.doesNotMatch(html, /UNAVAILABLE/);
 });
 
-test('phone validation accepts formatted numbers and rejects letters and short numbers', () => {
+test('phone validation requires exactly 10 digits starting with zero', () => {
     const html = renderCheckout();
     const phoneInput = html.match(/<input[^>]*name="phone"[^>]*>/)[0];
     const pattern = phoneInput.match(/pattern="([^"]+)"/)[1];
     const phonePattern = new RegExp(`^(?:${pattern})$`, 'v');
 
-    for (const phone of ['0771234567', '077 123 4567', '+94 (77) 123-4567']) {
-        assert.ok(phonePattern.test(phone), phone);
-    }
+    assert.match(phoneInput, /inputMode="numeric"/);
+    assert.match(phoneInput, /maxLength="10"/);
+    assert.ok(phonePattern.test('0771234567'));
 
     for (const phone of [
         '077abc4567',
-        '1234',
-        '077+1234567',
-        '1234567890123456',
+        '7712345678',
+        '077123456',
+        '07712345678',
+        '077 123 4567',
+        '+94771234567',
     ]) {
         assert.ok(!phonePattern.test(phone), phone);
     }
@@ -192,9 +194,13 @@ test('the sticky summary ends after payment controls and has no internal scroll 
     const summary = html.match(
         /<aside[^>]*id="order-summary"[^>]*>[\s\S]*?<\/aside>/,
     )[0];
+    const summaryOpeningTag = summary.match(/^<aside[^>]*>/)[0];
 
     assert.match(summary, /Total Payable/);
     assert.match(summary, /Continue to Payment/);
+    assert.match(summaryOpeningTag, /position:sticky|lg:sticky/);
+    assert.match(summaryOpeningTag, /style="top:[1-9][0-9]*px"/);
+    assert.doesNotMatch(summaryOpeningTag, /100dvh|calc\(/);
     assert.doesNotMatch(summary, /overflow-y-auto|max-h-|100% Secure Checkout/);
     assert.ok(html.indexOf('100% Secure Checkout') > html.indexOf('</aside>'));
 });

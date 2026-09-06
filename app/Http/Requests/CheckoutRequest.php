@@ -27,7 +27,7 @@ class CheckoutRequest extends FormRequest
             'address_line_two' => ['nullable', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:120'],
             'postal_code' => ['nullable', 'string', 'max:20'],
-            'phone' => ['required', 'string', 'max:30', 'regex:/^\+?(?=(?:[^0-9]*[0-9]){7,15}[^0-9]*$)[0-9 ()-]+$/'],
+            'phone' => ['required', 'string', 'regex:/^0[0-9]{9}$/'],
         ];
 
         $rules = $addressRules;
@@ -46,8 +46,8 @@ class CheckoutRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'phone.regex' => 'Enter a valid phone number with 7 to 15 digits and an optional country code. Letters are not allowed.',
-            'billing_phone.regex' => 'Enter a valid billing phone number with 7 to 15 digits and an optional country code. Letters are not allowed.',
+            'phone.regex' => 'Enter a 10-digit phone number starting with 0.',
+            'billing_phone.regex' => 'Enter a 10-digit billing phone number starting with 0.',
         ];
     }
 }

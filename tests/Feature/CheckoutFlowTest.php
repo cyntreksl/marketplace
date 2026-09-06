@@ -152,7 +152,7 @@ test('buyer shipping details continue to the payment page', function (string $ph
             ->has('cart.items', 1)
             ->where('shippingAddress.recipient_name', 'Saman Perera')
             ->where('shippingAddress.city', 'Colombo'));
-})->with(['0771234567', '077 123 4567', '+94 (77) 123-4567']);
+})->with(['0771234567']);
 
 test('checkout rejects invalid phone numbers without saving shipping details', function (string $phone): void {
     $user = User::factory()->create();
@@ -164,7 +164,7 @@ test('checkout rejects invalid phone numbers without saving shipping details', f
         'phone' => $phone,
     ])->assertSessionHasErrors('phone')
         ->assertSessionMissing('checkout.shipping_address');
-})->with(['abcdefghij', '077abc4567', '0771234567<script>', '07712', '1234567890123456', '077+1234567', '--- () ---']);
+})->with(['abcdefghij', '077abc4567', '0771234567<script>', '077123456', '07712345678', '7712345678', '077 123 4567', '+94771234567', '--- () ---']);
 
 test('buyer reviews and places an order before the checkout session and cart are cleared', function (): void {
     Notification::fake();
