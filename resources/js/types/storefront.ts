@@ -122,6 +122,7 @@ export type StorefrontPromotion = {
     ctaLabel?: string | null;
     visualTheme?: 'orange' | 'dark' | 'light';
     artworkAlt?: string | null;
+    containsEmbeddedCopy?: boolean;
     imageUrl: string;
     linkUrl: string | null;
 };

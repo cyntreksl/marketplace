@@ -15,6 +15,7 @@ class StaticMediaService
         'prodeals-email-logo.png',
         'prodeals-logo.svg',
         'prodeals-social-card.png',
+        'images/storefront/home-deals-banner.png',
         'images/storefront/hero-home-appliances.webp',
         'images/storefront/hero-marketplace.jpg',
         'images/storefront/home-lifestyle.jpg',

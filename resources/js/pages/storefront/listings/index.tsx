@@ -206,7 +206,7 @@ export default function ListingsIndex({
                                 <p className="text-xs font-bold tracking-[0.22em] text-slate-500 uppercase">
                                     Top brands, best prices
                                 </p>
-                                <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+                                <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
                                     {pageTitle}
                                 </h1>
                                 <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
@@ -215,7 +215,7 @@ export default function ListingsIndex({
                             </div>
                             <div className="flex flex-wrap items-center gap-3">
                                 <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
-                                    <p className="text-[11px] font-semibold text-slate-500">
+                                    <p className="text-xs font-semibold text-slate-500">
                                         Showing
                                     </p>
                                     <p className="text-lg font-black text-slate-950">
@@ -225,7 +225,7 @@ export default function ListingsIndex({
                                     </p>
                                 </div>
                                 <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
-                                    <p className="text-[11px] font-semibold text-slate-500">
+                                    <p className="text-xs font-semibold text-slate-500">
                                         Total results
                                     </p>
                                     <p className="text-lg font-black text-slate-950">
@@ -411,7 +411,7 @@ export default function ListingsIndex({
 
                         <div className="min-w-0">
                             {listings.data.length > 0 ? (
-                                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                                <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
                                     {listings.data.map((listing) => (
                                         <ListingCard
                                             key={listing.id}

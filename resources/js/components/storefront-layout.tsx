@@ -78,7 +78,7 @@ export function StorefrontLayout({
         <div className="min-h-screen bg-white text-slate-950">
             <header className="relative z-40 border-b border-slate-100 bg-white">
                 <div className="bg-[#FF6D00] text-white">
-                    <div className="mx-auto flex min-h-10 max-w-[82rem] items-center justify-between gap-4 px-4 text-[11px] sm:px-6">
+                    <div className="mx-auto flex min-h-10 max-w-[82rem] items-center justify-between gap-4 px-4 text-xs sm:px-6">
                         <div className="flex min-w-0 items-center gap-3 sm:gap-8">
                             <label className="flex min-w-0 items-center gap-1.5 font-semibold">
                                 <MapPin className="size-4 shrink-0" />
@@ -156,7 +156,7 @@ export function StorefrontLayout({
                             <select
                                 name="category"
                                 aria-label="Search category"
-                                className="hidden border-l border-slate-100 bg-white px-3 text-xs text-slate-500 outline-none lg:block"
+                                className="hidden border-l border-slate-100 bg-white px-3 text-sm text-slate-500 outline-none lg:block"
                             >
                                 <option value="">All Categories</option>
                                 {categories.map((category) => (
@@ -182,7 +182,7 @@ export function StorefrontLayout({
                             className="hidden items-center gap-2 rounded-lg p-2 hover:bg-slate-50 sm:flex"
                         >
                             <UserRound className="size-5" />
-                            <span className="hidden text-[11px] leading-4 lg:block">
+                            <span className="hidden text-xs leading-4 lg:block">
                                 <span className="block text-slate-500">
                                     My Account
                                 </span>
@@ -232,7 +232,7 @@ export function StorefrontLayout({
                 </div>
 
                 <div className="mx-auto max-w-[82rem] px-4 pb-3 sm:px-6">
-                    <div className="flex [scrollbar-width:none] items-center gap-5 overflow-x-auto text-xs font-bold whitespace-nowrap lg:justify-between lg:gap-3">
+                    <div className="flex [scrollbar-width:none] items-center gap-5 overflow-x-auto text-sm font-bold whitespace-nowrap lg:justify-between lg:gap-3">
                         <Link
                             href={listingsIndex()}
                             className="rounded-lg border border-slate-200 px-4 py-2.5 shadow-sm hover:border-[#FF6D00] hover:text-[#FF6D00]"

@@ -23,7 +23,7 @@ export default function Watchlist({
                         Your wishlist is empty.
                     </p>
                 ) : (
-                    <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-5">
+                    <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
                         {listings.map((listing) => (
                             <div key={listing.id}>
                                 <ListingCard listing={listing} />

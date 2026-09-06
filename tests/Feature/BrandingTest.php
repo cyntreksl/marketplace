@@ -91,15 +91,24 @@ test('storefront listing pages share the category listing card', function () {
 
     expect($listingCard)
         ->toContain('export function ListingCard({ listing }: { listing: StorefrontListing })')
-        ->toContain('Official warranty')
-        ->toContain('Islandwide delivery')
+        ->toContain('src={image.cardUrl}', 'alt={listing.title}', '{listing.title}')
+        ->toContain('href={listingShow(listing.slug)}', 'formatPrice(listing.effectivePrice)')
+        ->toContain('Save {formatPrice(savings.toString())}', 'Contact seller', 'Out of stock', 'Auction')
+        ->toContain('Number.isFinite(savings) && savings > 0', "listing.listingType === 'buy_now'")
+        ->not->toContain('line-through')
+        ->not->toContain('<Form', '<Button', '<button', 'addCartItem', 'toast')
+        ->not->toContain('Official warranty', 'Islandwide delivery', 'ratingAverage', 'listingBadge')
         ->and($categoryListings)
         ->toContain("import { ListingCard } from '@/components/listing-card';")
         ->toContain('<ListingCard')
+        ->toContain('grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6')
         ->not->toContain('function ListingTile')
         ->and($home)
         ->toContain("import { ListingCard } from '@/components/listing-card';")
-        ->toContain('<ListingCard listing={listing} />');
+        ->toContain('<ListingCard listing={listing} />')
+        ->toContain('w-[calc((100%-0.75rem)/2)]', 'lg:w-[calc((100%-3.75rem)/6)]')
+        ->and(file_get_contents(resource_path('js/pages/storefront/watchlist/index.tsx')))
+        ->toContain('grid-cols-2', 'lg:grid-cols-6');
 });
 
 test('seller product form keeps listing inputs conditional and chip based', function () {

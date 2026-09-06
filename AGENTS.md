@@ -1,6 +1,12 @@
 <laravel-boost-guidelines>
 === foundation rules ===
 
+# Media Storage
+
+- All site and runtime media, including static assets under `public/images`, must be stored and served through the configured Cloudflare R2 media disk.
+- Keep `MEDIA_DISK=r2` in local and deployed environments. When adding a static asset, register it in `StaticMediaService::ASSETS` and migrate it with `php artisan media:migrate-to-r2 --source=public --destination=r2`.
+- Do not switch local media back to the public disk as a workaround for missing R2 objects; fix the migration or upload instead.
+
 # Laravel Boost Guidelines
 
 The Laravel Boost guidelines are specifically curated by Laravel maintainers for this application. These guidelines should be followed closely to ensure the best experience when building Laravel applications.

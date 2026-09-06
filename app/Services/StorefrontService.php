@@ -34,16 +34,14 @@ class StorefrontService
         return [
             'categories' => $this->storefrontCategories(),
             'promotions' => [
-                'hero' => $this->promotionData('hero', 5, [
+                'hero' => $this->promotionData('hero', 1, [
                     [
-                        'title' => 'Upgrade your everyday essentials',
-                        'subtitle' => 'Smart appliances and must-have tech at prices worth celebrating.',
-                        'ctaLabel' => 'Shop the Sale',
-                        'artworkAlt' => 'Kitchen appliances and personal technology featured in a limited-time sale',
-                        'imageUrl' => $this->staticMedia->url('images/storefront/hero-home-appliances.webp'),
+                        'title' => 'Bring home better deals',
+                        'artworkAlt' => 'ProDeals.lk banner promoting up to 40 percent off selected appliances, gadgets, and essentials',
+                        'containsEmbeddedCopy' => true,
+                        'imageUrl' => $this->staticMedia->url('images/storefront/home-deals-banner.png'),
                         'linkUrl' => '/collections/deals',
                     ],
-                    ['title' => 'Discover better deals, closer to home', 'imageUrl' => $this->staticMedia->url('images/storefront/hero-marketplace.jpg'), 'linkUrl' => '/listings'],
                 ]),
                 'secondary' => $this->promotionData('secondary', 2, [
                     ['title' => 'Refresh your everyday spaces', 'imageUrl' => $this->staticMedia->url('images/storefront/home-lifestyle.jpg'), 'linkUrl' => '/listings'],

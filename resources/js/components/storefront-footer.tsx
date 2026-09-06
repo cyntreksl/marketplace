@@ -42,10 +42,10 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                             >
                                 <TrustIcon className="size-5 shrink-0 text-[#ff5a00]" />
                                 <span>
-                                    <strong className="block text-xs">
+                                    <strong className="block text-sm">
                                         {title as string}
                                     </strong>
-                                    <span className="text-[10px] text-slate-500">
+                                    <span className="text-xs text-slate-500">
                                         {copy as string}
                                     </span>
                                 </span>
@@ -57,19 +57,19 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                 <div className="grid gap-8 py-10 md:grid-cols-[1.2fr_2fr]">
                     <div>
                         <BrandLogo className="text-xl" />
-                        <p className="mt-3 max-w-sm text-xs leading-5 text-slate-500">
+                        <p className="mt-3 max-w-sm text-sm leading-5 text-slate-500">
                             Sri Lanka’s marketplace for trusted products,
                             transparent offers, and supported shopping.
                         </p>
                         <a
                             href={`mailto:${marketplace.support.email}`}
-                            className="mt-3 inline-block text-xs font-bold text-[#c2410c]"
+                            className="mt-3 inline-block text-sm font-bold text-[#c2410c]"
                         >
                             {marketplace.support.email}
                         </a>
                     </div>
                     <nav
-                        className="grid grid-cols-2 gap-6 text-xs sm:grid-cols-4"
+                        className="grid grid-cols-2 gap-6 text-sm sm:grid-cols-4"
                         aria-label="Footer"
                     >
                         {[
@@ -132,7 +132,7 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                         ))}
                     </nav>
                 </div>
-                <div className="flex flex-col gap-3 border-t py-5 text-[10px] text-slate-600 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-3 border-t py-5 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between">
                     <span>
                         © {new Date().getFullYear()} ProDeals.lk. All rights
                         reserved.

@@ -122,17 +122,22 @@ test('homepage output filters curated listings and uses the reference-first coll
         ->toContain('Call to Order');
 });
 
-test('homepage default slider starts with the home appliances campaign', function () {
+test('homepage starts with the single home deals banner', function () {
     $response = $this->get(route('home'))->assertOk();
+    $homepageComponent = file_get_contents(resource_path('js/pages/storefront/home.tsx'));
 
     expect($response->inertiaProps('promotions.hero'))
-        ->toHaveCount(2)
+        ->toHaveCount(1)
         ->and($response->inertiaProps('promotions.hero.0.title'))
-        ->toBe('Upgrade your everyday essentials')
+        ->toBe('Bring home better deals')
         ->and($response->inertiaProps('promotions.hero.0.imageUrl'))
-        ->toEndWith('/images/storefront/hero-home-appliances.webp')
-        ->and(public_path('images/storefront/hero-home-appliances.webp'))
-        ->toBeFile();
+        ->toEndWith('/images/storefront/home-deals-banner.png')
+        ->and($response->inertiaProps('promotions.hero.0.containsEmbeddedCopy'))
+        ->toBeTrue()
+        ->and(public_path('images/storefront/home-deals-banner.png'))
+        ->toBeFile()
+        ->and($homepageComponent)
+        ->toContain('aspect-[3/1]');
 });
 
 test('homepage exposes the seller portal state for seller accounts', function () {

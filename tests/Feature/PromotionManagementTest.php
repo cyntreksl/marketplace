@@ -71,7 +71,7 @@ test('an admin can delete a homepage promotion and remove it from the storefront
     $this->assertDatabaseHas('audit_logs', ['actor_id' => $admin->id, 'action' => 'promotion.deleted']);
     $heroSlides = $this->get(route('home'))->assertOk()->inertiaProps('promotions.hero');
 
-    expect($heroSlides)->toHaveCount(2)
+    expect($heroSlides)->toHaveCount(1)
         ->and(collect($heroSlides)->pluck('title'))->not->toContain('Hero banner');
 });
 
@@ -84,9 +84,8 @@ test('the storefront returns only active currently scheduled promotions in displ
 
     $promotions = $this->get(route('home'))->assertOk()->inertiaProps('promotions.hero');
 
-    expect($promotions)->toHaveCount(2)
-        ->and($promotions[0]['title'])->toBe('First')
-        ->and($promotions[1]['title'])->toBe('Second');
+    expect($promotions)->toHaveCount(1)
+        ->and($promotions[0]['title'])->toBe('First');
 });
 
 test('non operations users cannot manage promotions', function () {
