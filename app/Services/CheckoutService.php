@@ -25,6 +25,7 @@ class CheckoutService
         private readonly CustomerOrderRepository $customerOrders,
         private readonly CheckoutRepository $repository,
         private readonly CartService $cartService,
+        private readonly SellerOrderNotificationService $sellerOrderNotifications,
     ) {}
 
     /**
@@ -180,6 +181,10 @@ class CheckoutService
                 paymentMethod: $paymentMethod,
                 itemCount: (int) $order->sellerOrders->sum(fn (SellerOrder $sellerOrder): int => (int) $sellerOrder->items->sum('quantity')),
             ));
+
+            if ($paymentMethod === 'cod') {
+                $this->sellerOrderNotifications->notifyReady($order, $paymentMethod);
+            }
         }
 
         return $order;

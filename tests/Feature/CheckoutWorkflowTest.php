@@ -6,8 +6,13 @@ use App\Models\CustomerOrder;
 use App\Models\Listing;
 use App\Models\SellerProfile;
 use App\Models\User;
+use App\Notifications\OrderAcknowledgmentNotification;
+use App\Notifications\SellerOrderReadyNotification;
+use Illuminate\Support\Facades\Notification;
 
 test('a buyer checkout splits one cart into seller fulfilment orders', function () {
+    Notification::fake();
+
     $buyer = User::factory()->create();
     $category = Category::factory()->create();
     $firstSeller = SellerProfile::factory()->create();
@@ -32,11 +37,28 @@ test('a buyer checkout splits one cart into seller fulfilment orders', function 
     $this->actingAs($buyer)->post(route('checkout.review.store'), checkoutReviewData())
         ->assertRedirect();
 
+    $customerOrder = CustomerOrder::query()->where('buyer_id', $buyer->id)->sole();
+    $firstSellerOrder = $customerOrder->sellerOrders()->whereBelongsTo($firstSeller, 'sellerProfile')->sole();
+    $secondSellerOrder = $customerOrder->sellerOrders()->whereBelongsTo($secondSeller, 'sellerProfile')->sole();
+
     expect(Cart::query()->where('buyer_id', $buyer->id)->firstOrFail()->items)->toHaveCount(0)
         ->and($buyer->fresh()->cart)->not->toBeNull()
-        ->and(CustomerOrder::query()->where('buyer_id', $buyer->id)->sole()->sellerOrders)->toHaveCount(2)
+        ->and($customerOrder->sellerOrders)->toHaveCount(2)
         ->and($firstListing->refresh()->reserved_quantity)->toBe(2)
         ->and($secondListing->refresh()->reserved_quantity)->toBe(1);
+
+    Notification::assertSentToTimes($buyer, OrderAcknowledgmentNotification::class, 1);
+    Notification::assertSentTo($firstSeller->user, SellerOrderReadyNotification::class, fn (SellerOrderReadyNotification $notification): bool => $notification->sellerOrderNumber === $firstSellerOrder->number
+        && $notification->customerOrderNumber === $customerOrder->number
+        && $notification->itemCount === 2
+        && $notification->sellerSubtotal === '20000.00'
+        && $notification->paymentMethod === 'cod');
+    Notification::assertSentTo($secondSeller->user, SellerOrderReadyNotification::class, fn (SellerOrderReadyNotification $notification): bool => $notification->sellerOrderNumber === $secondSellerOrder->number
+        && $notification->customerOrderNumber === $customerOrder->number
+        && $notification->itemCount === 1
+        && $notification->sellerSubtotal === '25000.00'
+        && $notification->paymentMethod === 'cod');
+    Notification::assertSentTimes(SellerOrderReadyNotification::class, 2);
 });
 
 test('cash on delivery is unavailable when the cart total exceeds the configured limit', function () {

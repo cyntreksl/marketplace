@@ -792,24 +792,6 @@ export default function BuyerCheckout({
                                         </div>
                                     </section>
                                 </aside>
-
-                                <section className="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-[0_3px_18px_rgba(15,23,42,0.04)] sm:grid-cols-3 lg:col-span-2">
-                                    <TrustItem
-                                        icon={LockKeyhole}
-                                        title="100% Secure Checkout"
-                                        description="Your checkout data is protected with SSL encryption."
-                                    />
-                                    <TrustItem
-                                        icon={BadgeCheck}
-                                        title="Genuine Products"
-                                        description="Shop approved products from verified sellers."
-                                    />
-                                    <TrustItem
-                                        icon={Truck}
-                                        title="Islandwide Delivery"
-                                        description="Reliable delivery service across Sri Lanka."
-                                    />
-                                </section>
                             </div>
                         )}
                     </Form>

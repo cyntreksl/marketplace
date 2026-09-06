@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Notifications\QueuedResetPasswordNotification;
+use App\Notifications\QueuedVerifyEmailNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -91,6 +93,16 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function cart(): HasOne
     {
         return $this->hasOne(Cart::class, 'buyer_id');
+    }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new QueuedVerifyEmailNotification);
+    }
+
+    public function sendPasswordResetNotification(#[\SensitiveParameter] mixed $token): void
+    {
+        $this->notify(new QueuedResetPasswordNotification((string) $token));
     }
 
     /** @return HasMany<ProductQuestion, $this> */

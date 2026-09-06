@@ -3,11 +3,15 @@
 use App\Models\User;
 use App\Notifications\NewReturnRequestNotification;
 use App\Notifications\OrderAcknowledgmentNotification;
+use App\Notifications\PaymentConfirmedNotification;
+use App\Notifications\QueuedResetPasswordNotification;
+use App\Notifications\QueuedVerifyEmailNotification;
 use App\Notifications\RefundOutcomeNotification;
 use App\Notifications\RefundReadyNotification;
 use App\Notifications\ReturnDecisionNotification;
-use Illuminate\Auth\Notifications\ResetPassword;
-use Illuminate\Auth\Notifications\VerifyEmail;
+use App\Notifications\SellerOrderReadyNotification;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Markdown;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -35,6 +39,11 @@ test('every transactional notification has consistent branded content', function
 
     expect($notification)->toBeInstanceOf(Notification::class);
 
+    expect($notification)
+        ->toBeInstanceOf(ShouldQueue::class)
+        ->and(class_uses_recursive($notification))->toContain(Queueable::class)
+        ->and($notification->afterCommit)->toBeTrue();
+
     $mailMessage = $notification->toMail($user);
 
     expect($mailMessage)->toBeInstanceOf(MailMessage::class)
@@ -49,13 +58,15 @@ test('every transactional notification has consistent branded content', function
     $text = (string) $markdown->renderText($mailMessage->markdown, $mailMessage->data());
 
     expect($html)
-        ->toContain('prodeals-email-logo.png')
+        ->toContain('prodeals-email-logo.png?v=')
         ->toContain('alt="ProDeals.lk"')
-        ->toContain('background-color: #0f766e')
+        ->toContain('background-color: #ff6d00')
         ->toContain('Better deals. Closer to home.')
         ->toContain('support@prodeals.lk')
         ->toContain('The ProDeals.lk team')
         ->not->toContain('laravel.com/img/notification-logo')
+        ->not->toContain('#0f766e')
+        ->not->toContain('#102a5c')
         ->and($text)
         ->toContain('ProDeals.lk - Better deals. Closer to home.')
         ->toContain('support@prodeals.lk')
@@ -63,14 +74,14 @@ test('every transactional notification has consistent branded content', function
         ->toContain($mailMessage->actionUrl);
 })->with([
     'password reset' => [
-        fn (): ResetPassword => new ResetPassword('brand-test-token'),
+        fn (): QueuedResetPasswordNotification => new QueuedResetPasswordNotification('brand-test-token'),
         'Reset your ProDeals.lk password',
         'Reset password',
         '/reset-password/brand-test-token',
         'We received a request to reset the password for your ProDeals.lk account.',
     ],
     'email verification' => [
-        fn (): VerifyEmail => new VerifyEmail,
+        fn (): QueuedVerifyEmailNotification => new QueuedVerifyEmailNotification,
         'Confirm your ProDeals.lk email address',
         'Confirm email address',
         '/email/verify/',
@@ -89,6 +100,20 @@ test('every transactional notification has consistent branded content', function
         'View order confirmation',
         '/checkout/thank-you/PRO000234',
         "Thank you for your order. We've received 2 items under order PRO000234.",
+    ],
+    'payment confirmation' => [
+        fn (): PaymentConfirmedNotification => new PaymentConfirmedNotification('PRO000234', '22500.00'),
+        'Payment confirmed: PRO000234',
+        'View order',
+        '/checkout/thank-you/PRO000234',
+        'We received your payment of LKR 22500.00. Your order is confirmed.',
+    ],
+    'seller order ready' => [
+        fn (): SellerOrderReadyNotification => new SellerOrderReadyNotification('SO-260906-ABC12345', 'PRO000234', 2, '22000.00', 'stripe'),
+        'New order ready: SO-260906-ABC12345',
+        'Open seller orders',
+        '/seller/orders',
+        'Payment status: Card payment confirmed.',
     ],
     'return decision' => [
         fn (): ReturnDecisionNotification => new ReturnDecisionNotification(42, 'Travel Backpack', 'rejected', 'The item is outside the return window.'),
@@ -112,3 +137,25 @@ test('every transactional notification has consistent branded content', function
         'Reply to this email if you need help with your refund.',
     ],
 ]);
+
+test('the branded email inventory covers every application notification', function (): void {
+    $notificationClasses = collect(glob(app_path('Notifications/*.php')))
+        ->map(fn (string $path): string => 'App\\Notifications\\'.pathinfo($path, PATHINFO_FILENAME))
+        ->sort()
+        ->values()
+        ->all();
+
+    $coveredClasses = collect([
+        NewReturnRequestNotification::class,
+        OrderAcknowledgmentNotification::class,
+        PaymentConfirmedNotification::class,
+        QueuedResetPasswordNotification::class,
+        QueuedVerifyEmailNotification::class,
+        RefundOutcomeNotification::class,
+        RefundReadyNotification::class,
+        ReturnDecisionNotification::class,
+        SellerOrderReadyNotification::class,
+    ])->sort()->values()->all();
+
+    expect($notificationClasses)->toBe($coveredClasses);
+});

@@ -15,7 +15,11 @@ use Illuminate\Validation\ValidationException;
 
 class CheckoutPaymentService
 {
-    public function __construct(private readonly CheckoutRepository $orders, private readonly PaymentGateway $gateway) {}
+    public function __construct(
+        private readonly CheckoutRepository $orders,
+        private readonly PaymentGateway $gateway,
+        private readonly SellerOrderNotificationService $sellerOrderNotifications,
+    ) {}
 
     public function start(CustomerOrder $order): ?string
     {
@@ -119,6 +123,7 @@ class CheckoutPaymentService
                 $this->orders->savePayment($payment, ['status' => 'paid', 'paid_at' => now(), 'provider_reference' => $session['payment_intent'], 'checkout_session_id' => $session['id']]);
                 $this->orders->confirm($payment->customerOrder);
                 $payment->customerOrder->buyer->notify(new PaymentConfirmedNotification($payment->customerOrder->number, $payment->amount));
+                $this->sellerOrderNotifications->notifyReady($payment->customerOrder, $payment->method);
             } elseif (($session['status'] ?? '') === 'expired' && ($session['payment_status'] ?? '') === 'unpaid') {
                 $this->expire($payment->id);
             }

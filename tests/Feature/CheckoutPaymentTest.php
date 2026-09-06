@@ -4,7 +4,9 @@ use App\Models\CustomerOrder;
 use App\Models\Listing;
 use App\Models\Payment;
 use App\Models\User;
+use App\Notifications\OrderAcknowledgmentNotification;
 use App\Notifications\PaymentConfirmedNotification;
+use App\Notifications\SellerOrderReadyNotification;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
@@ -55,12 +57,15 @@ function sendStripeEvent(Payment $payment, string $type = 'checkout.session.comp
 
 test('card checkout redirects to hosted payment and duplicate placement reuses the order', function (): void {
     [$buyer, $listing, $review] = prepareCardOrder();
+    $seller = $listing->sellerProfile->user;
     fakeStripeCheckout();
     $this->post(route('checkout.review.store'), $review)->assertRedirect('https://checkout.stripe.com/c/pay/cs_test_checkout');
     $order = CustomerOrder::sole();
     $payment = Payment::sole();
     $this->post(route('checkout.review.store'), $review)->assertRedirect(route('checkout.thank_you.show', $order->number));
     expect(CustomerOrder::count())->toBe(1)->and(Payment::count())->toBe(1)->and($listing->fresh()->reserved_quantity)->toBe(2)->and($order->total)->toBe('2600.00')->and($order->shipping_total)->toBe('600.00');
+    Notification::assertSentToTimes($buyer, OrderAcknowledgmentNotification::class, 1);
+    Notification::assertNotSentTo($seller, SellerOrderReadyNotification::class);
     Http::assertSent(fn ($request) => $request->hasHeader('Idempotency-Key')
         && $request['line_items'][0]['price_data']['unit_amount'] === 260000
         && $request['payment_method_types'] === ['card']
@@ -77,8 +82,10 @@ test('card checkout redirects to hosted payment and duplicate placement reuses t
 
 test('verified card payment confirms seller orders and notifies once', function (): void {
     [, $listing, $review] = prepareCardOrder();
+    $seller = $listing->sellerProfile->user;
     fakeStripeCheckout();
     $this->post(route('checkout.review.store'), $review);
+    Notification::assertNotSentTo($seller, SellerOrderReadyNotification::class);
     $payment = Payment::sole();
     fakeStripeCheckout('paid');
     sendStripeEvent($payment)->assertNoContent();
@@ -86,6 +93,12 @@ test('verified card payment confirms seller orders and notifies once', function 
     $this->get(route('checkout.card.return', $payment->customerOrder->number))->assertRedirect();
     expect($payment->fresh()->status)->toBe('paid')->and($payment->fresh()->provider_reference)->toBe('pi_test_paid')->and($payment->customerOrder->fresh()->status)->toBe('confirmed')->and($payment->customerOrder->sellerOrders()->sole()->status)->toBe('paid')->and($listing->fresh()->reserved_quantity)->toBe(2);
     Notification::assertSentTimes(PaymentConfirmedNotification::class, 1);
+    Notification::assertSentTo($seller, SellerOrderReadyNotification::class, fn (SellerOrderReadyNotification $notification): bool => $notification->sellerOrderNumber === $payment->customerOrder->sellerOrders()->sole()->number
+        && $notification->customerOrderNumber === $payment->customerOrder->number
+        && $notification->itemCount === 2
+        && $notification->sellerSubtotal === '2000.00'
+        && $notification->paymentMethod === 'stripe');
+    Notification::assertSentTimes(SellerOrderReadyNotification::class, 1);
 });
 
 test('canceled or declined card checkout remains retryable without a new order', function (): void {

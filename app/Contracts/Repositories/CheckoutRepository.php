@@ -39,6 +39,9 @@ interface CheckoutRepository
 
     public function details(CustomerOrder $order): CustomerOrder;
 
+    /** @return Collection<int, SellerOrder> */
+    public function sellerOrdersForNotification(CustomerOrder $order): Collection;
+
     public function payment(CustomerOrder $order): Payment;
 
     public function lockPayment(int $id): Payment;

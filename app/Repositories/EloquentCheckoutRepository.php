@@ -76,6 +76,15 @@ class EloquentCheckoutRepository implements CheckoutRepository
         return $order->load(['sellerOrders.items', 'payments']);
     }
 
+    public function sellerOrdersForNotification(CustomerOrder $order): Collection
+    {
+        return SellerOrder::query()
+            ->whereBelongsTo($order, 'customerOrder')
+            ->with(['items:id,seller_order_id,quantity', 'sellerProfile.user'])
+            ->orderBy('id')
+            ->get();
+    }
+
     public function payment(CustomerOrder $order): Payment
     {
         return $order->payments()->where('method', 'stripe')->firstOrFail();

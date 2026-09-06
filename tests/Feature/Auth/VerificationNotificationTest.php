@@ -1,8 +1,10 @@
 <?php
 
 use App\Models\User;
-use Illuminate\Auth\Notifications\VerifyEmail;
+use App\Notifications\QueuedVerifyEmailNotification;
+use Illuminate\Notifications\SendQueuedNotifications;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Laravel\Fortify\Features;
 
 beforeEach(function () {
@@ -10,7 +12,7 @@ beforeEach(function () {
 });
 
 test('sends verification notification', function () {
-    Notification::fake();
+    Queue::fake();
 
     $user = User::factory()->unverified()->create();
 
@@ -18,7 +20,11 @@ test('sends verification notification', function () {
         ->post(route('verification.send'))
         ->assertRedirect(route('home'));
 
-    Notification::assertSentTo($user, VerifyEmail::class);
+    Queue::assertPushed(
+        SendQueuedNotifications::class,
+        fn (SendQueuedNotifications $job): bool => $job->notification instanceof QueuedVerifyEmailNotification
+            && $job->afterCommit === true,
+    );
 });
 
 test('does not send verification notification if email is verified', function () {

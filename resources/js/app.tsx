@@ -1,22 +1,12 @@
 import { createInertiaApp } from '@inertiajs/react';
-import type { ReactNode } from 'react';
-import { SeoHead } from '@/components/seo-head';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
+import SeoLayout from '@/layouts/seo-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
 const appName = import.meta.env.VITE_APP_NAME || 'ProDeals.lk';
-
-function SeoLayout({ children }: { children: ReactNode }) {
-    return (
-        <>
-            <SeoHead />
-            {children}
-        </>
-    );
-}
 
 createInertiaApp({
     serverHead: true,
