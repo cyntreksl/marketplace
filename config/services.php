@@ -2,6 +2,10 @@
 
 return [
 
+    'google_tag_manager' => [
+        'container_id' => env('VITE_GTM_CONTAINER_ID'),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

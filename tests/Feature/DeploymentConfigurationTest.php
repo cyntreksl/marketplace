@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 test('production deployment is gated and uses atomic releases', function () {
     $workflow = file_get_contents(base_path('.github/workflows/tests.yml'));
     $releaseScript = file_get_contents(base_path('.github/deploy/remote-release.sh'));
+    $ssrInstaller = file_get_contents(base_path('.github/deploy/install-web-ssr.sh'));
+    $ssrService = file_get_contents(base_path('.github/deploy/prodeals-ssr.service'));
     $buildEnvironment = file_get_contents(base_path('.env.example'));
     $composer = json_decode(file_get_contents(base_path('composer.json')), true, flags: JSON_THROW_ON_ERROR);
 
@@ -17,6 +19,17 @@ test('production deployment is gated and uses atomic releases', function () {
         ->toContain('https://prodeals.lk/mcp/marketplace')
         ->toContain('"method":"initialize"')
         ->toContain('VITE_TINYMCE_API_KEY: ${{ secrets.TINYMCE_API_KEY }}')
+        ->toContain('npm run build:ssr')
+        ->toContain('test -f bootstrap/ssr/app.js')
+        ->toContain('npm prune --omit=dev')
+        ->toContain('node_modules/@inertiajs/react')
+        ->toContain('web_release_id')
+        ->toContain('worker_release_id')
+        ->toContain('rollback-to')
+        ->toContain('inertia:check-ssr')
+        ->toContain('sudo systemctl restart prodeals-ssr')
+        ->toContain('sudo supervisorctl status prodeals-worker')
+        ->toContain('Online Shopping &amp; Auctions in Sri Lanka')
         ->and($buildEnvironment)
         ->toContain('VITE_TINYMCE_API_KEY=')
         ->and($composer['require'])
@@ -26,7 +39,21 @@ test('production deployment is gated and uses atomic releases', function () {
         ->and($releaseScript)
         ->toContain('mv -Tf "$next_link" "$current_link"')
         ->toContain('rollback_release')
+        ->toContain('rollback_to_release')
+        ->toContain('current_release')
         ->toContain('index = 5');
+
+    expect($ssrInstaller)
+        ->toContain('node_22.x')
+        ->toContain('systemctl enable prodeals-ssr.service')
+        ->toContain('/etc/sudoers.d/prodeals-deploy')
+        ->toContain('/usr/bin/systemctl restart prodeals-ssr')
+        ->and($ssrService)
+        ->toContain('User=deploy')
+        ->toContain('WorkingDirectory=/var/www/prodeals/current')
+        ->toContain('ExecStart=/usr/bin/php8.4 artisan inertia:start-ssr --runtime=/usr/bin/node')
+        ->toContain('MemoryMax=512M')
+        ->toContain('Restart=always');
 });
 
 test('production service configuration keeps queue timeout below retry interval', function () {

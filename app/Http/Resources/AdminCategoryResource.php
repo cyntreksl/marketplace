@@ -22,6 +22,9 @@ class AdminCategoryResource extends JsonResource
             'parent_id' => $this->resource->parent_id === null ? null : (int) $this->resource->parent_id,
             'name' => $this->resource->name,
             'slug' => $this->resource->slug,
+            'seo_title' => $this->resource->seo_title,
+            'seo_description' => $this->resource->seo_description,
+            'seo_intro' => $this->resource->seo_intro,
             'path' => (string) ($this->resource->getAttribute('category_path') ?: $this->resource->name),
             'google_product_category_id' => $this->resource->google_product_category_id === null
                 ? null

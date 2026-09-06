@@ -13,6 +13,7 @@ class SeoHeadService
     public function __construct(
         private readonly StaticMediaService $staticMedia,
         private readonly ProductStructuredDataService $structuredData,
+        private readonly SeoIndexabilityService $indexability,
     ) {}
 
     /** @return array<string, mixed> */
@@ -23,6 +24,7 @@ class SeoHeadService
         $description = "Discover more with {$name}, Sri Lanka's marketplace for everyday finds and better deals.";
         $routeName = (string) optional($request->route())->getName();
         $pageLabel = match ($routeName) {
+            'home' => 'Online Shopping & Auctions in Sri Lanka',
             'about' => 'About Us',
             'contact' => 'Contact Us',
             'help' => 'Help Centre',
@@ -30,7 +32,8 @@ class SeoHeadService
             'buying' => 'Buying on ProDeals.lk',
             'selling' => 'Selling on ProDeals.lk',
             'brands.index' => 'Brands',
-            'listings.index' => 'Products in Sri Lanka',
+            'listings.index' => 'Online Shopping in Sri Lanka',
+            'auctions.index' => 'Online Auctions in Sri Lanka',
             'collections.show' => Str::of((string) $request->route('collection'))->replace('-', ' ')->title()->toString(),
             'policies.shipping' => 'Shipping Policy',
             'policies.returns' => 'Returns and Refunds',
@@ -62,16 +65,7 @@ class SeoHeadService
 
     public function robotsPolicy(Request $request): string
     {
-        $indexableRoutes = [
-            'home', 'about', 'contact', 'help', 'faq', 'buying', 'selling', 'brands.index',
-            'brands.show', 'categories.show', 'listings.index', 'listings.show', 'collections.show',
-            'policies.shipping', 'policies.returns', 'policies.sellers', 'policies.prohibited',
-            'legal.terms', 'legal.privacy', 'legal.cookies',
-        ];
-        $indexable = in_array((string) optional($request->route())->getName(), $indexableRoutes, true)
-            && ! $this->hasNonIndexableCatalogQuery($request);
-
-        return $indexable ? 'index,follow,max-image-preview:large' : 'noindex,follow,max-image-preview:large';
+        return $this->indexability->robots($request);
     }
 
     /** @param array<int, array{name: string, slug: string}> $categoryTrail
@@ -79,6 +73,7 @@ class SeoHeadService
      */
     public function listingPayload(Listing $listing, array $categoryTrail): array
     {
+        $this->indexability->mark(request(), true);
         $name = (string) config('app.name', 'ProDeals.lk');
         $title = filled($listing->meta_title)
             ? $this->plainText((string) $listing->meta_title)
@@ -109,10 +104,19 @@ class SeoHeadService
     }
 
     /** @param array<int, array{name: string, url: string}> $breadcrumbs
+     * @param  array<int, array<string, mixed>>  $items
      * @return array<string, mixed>
      */
-    public function catalogPayload(string $title, string $description, string $canonical, array $breadcrumbs, bool $indexable = true): array
-    {
+    public function catalogPayload(
+        string $title,
+        string $description,
+        string $canonical,
+        array $breadcrumbs,
+        bool $indexable = true,
+        array $items = [],
+    ): array {
+        $this->indexability->mark(request(), $indexable);
+
         return $this->payload(
             title: $title,
             description: $description,
@@ -122,7 +126,10 @@ class SeoHeadService
             imageWidth: 1200,
             imageHeight: 630,
             robots: $indexable ? 'index,follow,max-image-preview:large' : 'noindex,follow,max-image-preview:large',
-            graphs: [$this->structuredData->breadcrumbs($breadcrumbs)],
+            graphs: [
+                $this->structuredData->breadcrumbs($breadcrumbs),
+                ...($items === [] ? [] : [$this->structuredData->itemList($items, $canonical, $title)]),
+            ],
         );
     }
 

@@ -39,13 +39,16 @@ class EloquentSellerStoreRepository implements SellerStoreRepository
 
     public function sitemapStores(): Collection
     {
-        return $this->publicQuery()->whereIn('id', Listing::query()->publiclyVisible()->select('seller_profile_id'))->orderBy('id')->get();
+        return $this->publicQuery()->whereIn('id', Listing::query()->directlyVisible()->select('seller_profile_id'))->orderBy('id')->get();
     }
 
     /** @return Builder<SellerProfile> */
     private function publicQuery(): Builder
     {
         return SellerProfile::query()->whereIn('status', ['approved', 'active'])
-            ->withCount(['listings as public_product_count' => fn ($query) => $query->publiclyVisible()]);
+            ->withCount([
+                'listings as public_product_count' => fn ($query) => $query->publiclyVisible(),
+                'listings as indexable_product_count' => fn ($query) => $query->directlyVisible(),
+            ]);
     }
 }

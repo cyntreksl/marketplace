@@ -10,3 +10,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/** | .ai/rules/resources.md |
 | app/Services/**, app/Services/ListingService.php | .ai/rules/services.md |
 | tests/** | .ai/rules/tests.md |
+| .github/deploy/**,.github/workflows/** | .ai/rules/workflows.md |

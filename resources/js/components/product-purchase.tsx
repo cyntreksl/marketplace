@@ -2,6 +2,7 @@ import { Form } from '@inertiajs/react';
 import { Minus, Plus, ShoppingCart, ArrowRight } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { store as addCartItem } from '@/actions/App/Http/Controllers/CartController';
+import { trackEvent } from '@/lib/tracking';
 
 export function ProductPurchase({
     listingId,
@@ -58,7 +59,25 @@ export function ProductPurchase({
             : null;
 
     return (
-        <Form {...addCartItem.form()} id={formId} className="mt-5">
+        <Form
+            {...addCartItem.form()}
+            id={formId}
+            className="mt-5"
+            onSuccess={() =>
+                trackEvent('add_to_cart', {
+                    currency: 'LKR',
+                    value: Number(price.replace(/[^0-9.]/g, '')) * quantity,
+                    items: [
+                        {
+                            item_id: String(variantId ?? listingId),
+                            item_group_id: String(listingId),
+                            price: Number(price.replace(/[^0-9.]/g, '')),
+                            quantity,
+                        },
+                    ],
+                })
+            }
+        >
             {({ processing, errors }) => (
                 <>
                     <input type="hidden" name="listing_id" value={listingId} />

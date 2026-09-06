@@ -1,12 +1,19 @@
-import { createInertiaApp } from '@inertiajs/react';
+import { createInertiaApp, router } from '@inertiajs/react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SeoLayout from '@/layouts/seo-layout';
 import SettingsLayout from '@/layouts/settings/layout';
+import { initializeTracking, trackPageView } from '@/lib/tracking';
 
 const appName = import.meta.env.VITE_APP_NAME || 'ProDeals.lk';
+
+if (typeof window !== 'undefined') {
+    initializeTracking();
+    router.on('navigate', (event) => trackPageView(event.detail.page.url));
+    window.queueMicrotask(() => trackPageView(window.location.href));
+}
 
 createInertiaApp({
     serverHead: true,

@@ -139,6 +139,13 @@ class Listing extends Model
     {
         $query->where('listings.status', 'approved')
             ->where('listings.is_active', true)
+            ->where(function (Builder $query): void {
+                $query->where('listings.listing_type', '!=', 'auction')
+                    ->orWhereHas('auction', fn (Builder $query): Builder => $query
+                        ->where('status', 'live')
+                        ->where('starts_at', '<=', now())
+                        ->where('ends_at', '>', now()));
+            })
             ->whereHas('sellerProfile', fn (Builder $query) => $query
                 ->whereNull('seller_profiles.deleted_at')
                 ->whereIn('status', ['approved', 'active']))

@@ -331,6 +331,7 @@ test('storefront category payloads expose optional artwork on home and category 
         'slug' => 'electronics-computers',
         'image_path' => 'categories/child/child.webp',
     ]);
+    Listing::factory()->create(['category_id' => $child->id]);
 
     $home = $this->get(route('home'))->assertOk();
     expect($home->inertiaProps('popularCategories.0.image_url'))->toBe(Storage::disk('public')->url($root->image_path));

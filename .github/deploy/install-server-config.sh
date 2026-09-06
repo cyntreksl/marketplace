@@ -22,6 +22,7 @@ if [[ "$role" == "web" ]]; then
     fi
 
     install -m 644 "${script_dir}/nginx-prodeals.conf" /etc/nginx/sites-available/prodeals
+    bash "${script_dir}/install-web-ssr.sh"
     ln -sfn /etc/nginx/sites-available/prodeals /etc/nginx/sites-enabled/prodeals
     rm -f /etc/nginx/sites-enabled/default
     nginx -t

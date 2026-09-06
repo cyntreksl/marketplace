@@ -346,15 +346,19 @@ class EloquentCatalogRepository implements CatalogRepository
 
     public function activeTopLevelCategories(): Collection
     {
+        $categoryIds = $this->indexableCategoryIds();
+
         return Category::query()
             ->select(['id', 'name', 'slug', 'image_path', 'image_disk', 'sort_order'])
             ->with(['children' => fn ($query) => $query
                 ->select(['id', 'parent_id', 'name', 'slug', 'image_path', 'image_disk', 'sort_order'])
                 ->storefrontAvailable()
+                ->whereIn('id', $categoryIds)
                 ->orderBy('sort_order')
                 ->orderBy('name')])
             ->whereNull('parent_id')
             ->storefrontAvailable()
+            ->whereIn('id', $categoryIds)
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
@@ -364,6 +368,7 @@ class EloquentCatalogRepository implements CatalogRepository
     {
         return Brand::query()
             ->withCount(['listings' => fn ($query) => $query->publiclyVisible()])
+            ->whereIn('id', Listing::query()->select('brand_id')->directlyVisible())
             ->orderBy('name')
             ->get()
             ->map(function (Brand $brand): Brand {
@@ -388,8 +393,25 @@ class EloquentCatalogRepository implements CatalogRepository
         return Category::query()
             ->select(['id', 'slug', 'updated_at'])
             ->storefrontAvailable()
+            ->whereIn('id', $this->indexableCategoryIds())
             ->orderBy('id')
             ->get();
+    }
+
+    public function categoryHasVisibleProducts(Category $category): bool
+    {
+        return Listing::query()
+            ->directlyVisible()
+            ->whereIn('category_id', $this->activeDescendantIdsForSlug($category->slug))
+            ->exists();
+    }
+
+    public function brandHasVisibleProducts(Brand $brand): bool
+    {
+        return Listing::query()
+            ->directlyVisible()
+            ->where('brand_id', $brand->id)
+            ->exists();
     }
 
     public function sitemapBrands(): Collection
@@ -490,6 +512,7 @@ class EloquentCatalogRepository implements CatalogRepository
     {
         return Brand::query()
             ->select(['id', 'name', 'slug'])
+            ->whereIn('id', Listing::query()->select('brand_id')->directlyVisible())
             ->orderBy('name')
             ->get();
     }
@@ -567,38 +590,30 @@ class EloquentCatalogRepository implements CatalogRepository
             return [];
         }
 
-        if ($category->google_product_category_id === null) {
-            return [(int) $category->getKey()];
+        $categoryIds = collect([(int) $category->getKey()]);
+        $parentIds = $categoryIds;
+
+        while ($parentIds->isNotEmpty()) {
+            $children = Category::query()
+                ->storefrontAvailable()
+                ->whereIn('parent_id', $parentIds)
+                ->pluck('id')
+                ->map(fn (int $id): int => $id)
+                ->unique()
+                ->reject(fn (int $id): bool => $categoryIds->contains($id))
+                ->values();
+            $categoryIds = $categoryIds->merge($children)->unique()->values();
+            $parentIds = $children;
         }
 
-        $node = GoogleProductTaxonomyNode::query()
-            ->where('google_product_category_id', $category->google_product_category_id)
-            ->whereHas('taxonomyVersion', fn (Builder $query): Builder => $query->where('is_active', true))
-            ->first();
-
-        if ($node === null) {
-            return [(int) $category->getKey()];
-        }
-
-        $googleIds = GoogleProductTaxonomyNode::query()
-            ->where('google_product_taxonomy_version_id', $node->google_product_taxonomy_version_id)
-            ->where(fn (Builder $query): Builder => $query
-                ->where('full_path', $node->full_path)
-                ->orWhere('full_path', 'like', $node->full_path.' > %'))
-            ->select('google_product_category_id');
-
-        return Category::query()
-            ->storefrontAvailable()
-            ->whereIn('google_product_category_id', $googleIds)
-            ->pluck('id')
-            ->map(fn (int $id): int => $id)
-            ->all();
+        return $categoryIds->all();
     }
 
     public function activeCategoryContextBySlug(string $slug): ?array
     {
+        $indexableCategoryIds = $this->indexableCategoryIds();
         $category = Category::query()
-            ->select(['id', 'parent_id', 'name', 'slug', 'image_path', 'image_disk'])
+            ->select(['id', 'parent_id', 'name', 'slug', 'seo_title', 'seo_description', 'seo_intro', 'image_path', 'image_disk'])
             ->where('slug', $slug)
             ->storefrontAvailable()
             ->first();
@@ -611,6 +626,7 @@ class EloquentCatalogRepository implements CatalogRepository
             ->select(['id', 'parent_id', 'name', 'slug', 'image_path', 'image_disk', 'sort_order'])
             ->where('parent_id', $category->id)
             ->storefrontAvailable()
+            ->whereIn('id', $indexableCategoryIds)
             ->withCount(['children as active_children_count' => fn (Builder $query): Builder => $query
                 ->whereNull('categories.deleted_at')
                 ->where('is_active', true)
@@ -651,6 +667,36 @@ class EloquentCatalogRepository implements CatalogRepository
         return Category::withTrashed()
             ->withCount(['children as all_children_count' => fn (Builder $query): Builder => $query
                 ->withoutGlobalScope(SoftDeletingScope::class)]);
+    }
+
+    /** @return array<int, int> */
+    private function indexableCategoryIds(): array
+    {
+        $categoryIds = Listing::query()
+            ->directlyVisible()
+            ->whereNotNull('category_id')
+            ->pluck('category_id')
+            ->map(fn (int $id): int => $id)
+            ->unique()
+            ->values();
+        $pendingParentIds = $categoryIds;
+
+        while ($pendingParentIds->isNotEmpty()) {
+            $parents = Category::query()
+                ->storefrontAvailable()
+                ->whereKey($pendingParentIds)
+                ->whereNotNull('parent_id')
+                ->pluck('parent_id')
+                ->map(fn (int $id): int => $id)
+                ->unique()
+                ->reject(fn (int $id): bool => $categoryIds->contains($id))
+                ->values();
+
+            $categoryIds = $categoryIds->merge($parents)->unique()->values();
+            $pendingParentIds = $parents;
+        }
+
+        return $categoryIds->all();
     }
 
     /**

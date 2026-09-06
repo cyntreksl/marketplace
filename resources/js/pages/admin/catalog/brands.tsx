@@ -10,6 +10,9 @@ export default function Brands({
             id: number;
             name: string;
             slug: string;
+            seo_title: string | null;
+            seo_description: string | null;
+            seo_intro: string | null;
             deleted_at: string | null;
             logo_url: string | null;
             is_featured: boolean;
@@ -39,6 +42,23 @@ export default function Brands({
                                     name="slug"
                                     placeholder="URL slug (optional)"
                                     className="rounded-xl border p-3"
+                                />
+                                <input
+                                    name="seo_title"
+                                    placeholder="SEO title (optional)"
+                                    className="rounded-xl border p-3"
+                                />
+                                <textarea
+                                    name="seo_description"
+                                    maxLength={320}
+                                    placeholder="Search result description"
+                                    className="min-h-20 rounded-xl border p-3"
+                                />
+                                <textarea
+                                    name="seo_intro"
+                                    maxLength={5000}
+                                    placeholder="Visible brand introduction"
+                                    className="min-h-28 rounded-xl border p-3"
                                 />
                                 <input
                                     type="file"
@@ -119,6 +139,28 @@ export default function Brands({
                                         name="slug"
                                         defaultValue={brand.slug}
                                         className="rounded-lg border bg-transparent p-2 text-sm"
+                                    />
+                                    <input
+                                        name="seo_title"
+                                        defaultValue={brand.seo_title ?? ''}
+                                        placeholder="SEO title"
+                                        className="rounded-lg border bg-transparent p-2 text-sm"
+                                    />
+                                    <textarea
+                                        name="seo_description"
+                                        maxLength={320}
+                                        defaultValue={
+                                            brand.seo_description ?? ''
+                                        }
+                                        placeholder="Search result description"
+                                        className="min-h-20 rounded-lg border bg-transparent p-2 text-sm"
+                                    />
+                                    <textarea
+                                        name="seo_intro"
+                                        maxLength={5000}
+                                        defaultValue={brand.seo_intro ?? ''}
+                                        placeholder="Visible brand introduction"
+                                        className="min-h-24 rounded-lg border bg-transparent p-2 text-sm"
                                     />
                                     <input
                                         type="file"

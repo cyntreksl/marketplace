@@ -41,7 +41,7 @@ class StorefrontController extends Controller
             }
         }
 
-        return Inertia::render('storefront/listings/index', $this->storefront->browseData($filters));
+        return Inertia::render('storefront/listings/index', $this->storefront->listingIndexData($filters));
     }
 
     public function category(StorefrontBrowseRequest $request, string $category): Response
@@ -56,10 +56,12 @@ class StorefrontController extends Controller
 
     public function collection(StorefrontBrowseRequest $request, string $collection): Response
     {
-        return Inertia::render('storefront/listings/index', $this->storefront->browseData([
-            ...$request->filters(),
-            'collection' => $collection,
-        ]));
+        return Inertia::render('storefront/listings/index', $this->storefront->collectionData($collection, $request->filters()));
+    }
+
+    public function auctions(StorefrontBrowseRequest $request): Response
+    {
+        return Inertia::render('storefront/listings/index', $this->storefront->auctionData($request->filters()));
     }
 
     public function show(Request $request, string $listing): Response

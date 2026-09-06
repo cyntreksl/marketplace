@@ -37,6 +37,9 @@ type Category = {
     parent_id: number | null;
     name: string;
     slug: string;
+    seo_title: string | null;
+    seo_description: string | null;
+    seo_intro: string | null;
     path: string;
     google_product_category_id: number | null;
     image_url: string | null;
@@ -340,6 +343,37 @@ function CategoryMetadataForm({
                                     {errors.slug}
                                 </span>
                             )}
+                        </label>
+                    </div>
+                    <div className="grid gap-4">
+                        <label className="grid gap-1.5 text-sm font-bold">
+                            SEO title
+                            <input
+                                name="seo_title"
+                                defaultValue={category.seo_title ?? ''}
+                                placeholder="Optional search result title"
+                                className={inputClassName}
+                            />
+                        </label>
+                        <label className="grid gap-1.5 text-sm font-bold">
+                            SEO description
+                            <textarea
+                                name="seo_description"
+                                maxLength={320}
+                                defaultValue={category.seo_description ?? ''}
+                                placeholder="Concise search result description"
+                                className={`${inputClassName} min-h-24`}
+                            />
+                        </label>
+                        <label className="grid gap-1.5 text-sm font-bold">
+                            Visible introduction
+                            <textarea
+                                name="seo_intro"
+                                maxLength={5000}
+                                defaultValue={category.seo_intro ?? ''}
+                                placeholder="Helpful copy shown above category products"
+                                className={`${inputClassName} min-h-32`}
+                            />
                         </label>
                     </div>
                     <input
@@ -909,6 +943,34 @@ function CreateCategory({
                                     name="slug"
                                     placeholder="Generated from name when empty"
                                     className={inputClassName}
+                                />
+                            </label>
+                        </div>
+                        <div className="grid gap-4">
+                            <label className="grid gap-1.5 text-sm font-bold">
+                                SEO title
+                                <input
+                                    name="seo_title"
+                                    placeholder="Optional search result title"
+                                    className={inputClassName}
+                                />
+                            </label>
+                            <label className="grid gap-1.5 text-sm font-bold">
+                                SEO description
+                                <textarea
+                                    name="seo_description"
+                                    maxLength={320}
+                                    placeholder="Concise search result description"
+                                    className={`${inputClassName} min-h-24`}
+                                />
+                            </label>
+                            <label className="grid gap-1.5 text-sm font-bold">
+                                Visible introduction
+                                <textarea
+                                    name="seo_intro"
+                                    maxLength={5000}
+                                    placeholder="Helpful copy shown above category products"
+                                    className={`${inputClassName} min-h-32`}
                                 />
                             </label>
                         </div>

@@ -70,11 +70,12 @@ export function StorefrontLayout({
     };
 
     const navigation = [
-        ['Today’s Deals', '/collections/deals'],
-        ['Best Sellers', '/collections/best-sellers'],
-        ['New Arrivals', '/collections/new-arrivals'],
+        ['Shop', '/listings'],
+        ['Auctions', '/auctions'],
+        ['Deals', '/collections/deals'],
         ['Brands', '/brands'],
-        ['Clearance Sale', '/collections/clearance'],
+        ['Buying', '/buying'],
+        ['Selling', '/selling'],
     ] as const;
 
     return (
@@ -204,53 +205,34 @@ export function StorefrontLayout({
                     </div>
                 </div>
 
-                {isHomePage && (
-                    <nav
-                        aria-label="Storefront navigation"
-                        className="storefront-container flex items-center gap-5 pb-2"
-                    >
+                <nav
+                    aria-label="Storefront navigation"
+                    className="storefront-container flex items-center gap-5 pb-2"
+                >
+                    {isHomePage && (
                         <div className="hidden shrink-0 lg:block">
                             <DesktopStorefrontCategoryMenu
                                 {...categoryMenuProps}
                             />
                         </div>
-                        <div className="flex min-w-0 flex-1 [scrollbar-width:none] items-center gap-5 overflow-x-auto text-sm font-bold whitespace-nowrap lg:justify-between lg:gap-3">
-                            {navigation.map(([label, href], index) => (
-                                <Link
-                                    key={href}
-                                    href={href}
-                                    className="flex items-center gap-1.5 py-2 hover:text-[#FF6D00]"
-                                >
-                                    {label}
-                                    {index === 0 && (
-                                        <span className="rounded-full bg-[#FF6D00] px-1.5 py-0.5 text-[8px] font-black text-white uppercase">
-                                            Hot
-                                        </span>
-                                    )}
-                                    {index === 4 && (
-                                        <span className="rounded-full bg-red-500 px-1.5 py-0.5 text-[8px] font-black text-white uppercase">
-                                            Sale
-                                        </span>
-                                    )}
-                                </Link>
-                            ))}
-                            <button
-                                disabled
-                                title="Installments are not configured"
-                                className="cursor-not-allowed py-2 text-slate-400"
+                    )}
+                    <div className="flex min-w-0 flex-1 [scrollbar-width:none] items-center gap-5 overflow-x-auto text-sm font-bold whitespace-nowrap lg:justify-between lg:gap-3">
+                        {navigation.map(([label, href], index) => (
+                            <Link
+                                key={href}
+                                href={href}
+                                className="flex items-center gap-1.5 py-2 hover:text-[#FF6D00]"
                             >
-                                Installment Plans
-                            </button>
-                            <button
-                                disabled
-                                title="Business deals are not configured"
-                                className="cursor-not-allowed py-2 text-slate-400"
-                            >
-                                Business Deals
-                            </button>
-                        </div>
-                    </nav>
-                )}
+                                {label}
+                                {index === 2 && (
+                                    <span className="rounded-full bg-[#FF6D00] px-1.5 py-0.5 text-[8px] font-black text-white uppercase">
+                                        Hot
+                                    </span>
+                                )}
+                            </Link>
+                        ))}
+                    </div>
+                </nav>
                 <div className="px-4 pb-3 sm:px-6 md:hidden">
                     <Form {...listingsIndex.form()} role="search">
                         <label className="flex h-10 overflow-hidden rounded-full border-2 border-[#FF6D00] focus-within:ring-2 focus-within:ring-orange-100">

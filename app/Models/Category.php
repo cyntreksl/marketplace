@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['parent_id', 'google_product_category_id', 'name', 'slug', 'commission_percentage', 'return_window_days', 'cod_enabled', 'is_active', 'is_selectable', 'is_popular', 'homepage_order', 'sort_order'])]
+#[Fillable(['parent_id', 'google_product_category_id', 'name', 'slug', 'seo_title', 'seo_description', 'seo_intro', 'commission_percentage', 'return_window_days', 'cod_enabled', 'is_active', 'is_selectable', 'is_popular', 'homepage_order', 'sort_order'])]
 class Category extends Model
 {
     /** @use HasFactory<CategoryFactory> */

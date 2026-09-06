@@ -75,14 +75,65 @@ class EloquentListingRepository implements ListingRepository
         return Listing::query()->directlyVisible()->count();
     }
 
+    public function indexableAuctionCount(): int
+    {
+        return Listing::query()
+            ->directlyVisible()
+            ->where('listings.listing_type', 'auction')
+            ->count();
+    }
+
+    public function indexableCollectionSlugs(): array
+    {
+        $collections = ['featured', 'deals', 'best-sellers', 'new-arrivals', 'clearance'];
+
+        return collect($collections)
+            ->filter(function (string $collection): bool {
+                $query = Listing::query()->directlyVisible();
+
+                match ($collection) {
+                    'featured' => $query->where('listings.is_featured', true),
+                    'deals' => $query->where('listings.is_best_offer', true)
+                        ->where('listings.listing_type', 'buy_now')
+                        ->whereNotNull('listings.sale_price')
+                        ->whereColumn('listings.sale_price', '<', 'listings.price'),
+                    'best-sellers' => $query->where('listings.is_best_seller', true),
+                    'new-arrivals' => $query->where('listings.is_new_arrival', true),
+                    'clearance' => $query->where('listings.is_clearance', true)
+                        ->where('listings.listing_type', 'buy_now')
+                        ->whereNotNull('listings.sale_price')
+                        ->whereColumn('listings.sale_price', '<', 'listings.price'),
+                    default => $query->whereRaw('1 = 0'),
+                };
+
+                return $query->exists();
+            })
+            ->values()
+            ->all();
+    }
+
     public function sitemapProducts(int $page, int $perPage): Collection
     {
         return Listing::query()
-            ->select(['id', 'slug', 'updated_at'])
+            ->select(['id', 'title', 'slug', 'updated_at'])
             ->directlyVisible()
+            ->with(['media:id,listing_id,disk,path,type,sort_order,variant_version,variants,processing_status'])
             ->orderBy('id')
             ->forPage($page, $perPage)
             ->get();
+    }
+
+    public function merchantProducts(): LazyCollection
+    {
+        return $this->directPublicQuery()
+            ->where('listings.listing_type', 'buy_now')
+            ->with([
+                'variantOptions.values',
+                'variants.optionValues.option',
+                'variants.image',
+            ])
+            ->orderBy('listings.id')
+            ->lazyById(column: 'listings.id', alias: 'id');
     }
 
     public function homepageBestOffers(int $limit = 8): Collection
@@ -133,7 +184,14 @@ class EloquentListingRepository implements ListingRepository
     public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator
     {
         return Listing::query()
-            ->with(['category:id,name', 'sellerProfile:id,store_name'])
+            ->with([
+                'auction',
+                'brand:id,name,deleted_at',
+                'category:id,name,google_product_category_id,is_active,is_taxonomy_available,deleted_at',
+                'media:id,listing_id,disk,path,type,sort_order,variant_version,variants,processing_status',
+                'sellerProfile:id,store_name',
+                'variants:id,listing_id,gtin,mpn,selling_price,stock_quantity,reserved_quantity,is_active',
+            ])
             ->when($filters['search'] ?? null, fn (Builder $query, string $search): Builder => $query->where('title', 'like', "%{$search}%"))
             ->when($filters['status'] ?? null, fn (Builder $query, string $status): Builder => $query->where('status', $status))
             ->latest()

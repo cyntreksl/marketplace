@@ -3,6 +3,7 @@
 use App\Http\Middleware\AddSearchRobotHeaders;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Support\TrackingConsent;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,7 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
         $middleware->validateCsrfTokens(except: ['webhooks/stripe']);
 
-        $middleware->encryptCookies(except: ['sidebar_state']);
+        $middleware->encryptCookies(except: ['sidebar_state', TrackingConsent::COOKIE_NAME]);
 
         $middleware->web(append: [
             HandleAppearance::class,

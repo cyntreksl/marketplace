@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateListingModerationRequest;
 use App\Models\Listing;
+use App\Services\AdminListingService;
 use App\Services\MarketplaceModerationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,12 +13,12 @@ use Inertia\Response;
 
 class AdminListingController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, AdminListingService $listings): Response
     {
         abort_unless($request->user()->can('viewAny', Listing::class), 403);
 
         return Inertia::render('admin/listings/index', [
-            'listings' => Listing::query()->with(['sellerProfile:id,store_name', 'category:id,name'])->latest()->paginate(20)->withQueryString(),
+            'listings' => $listings->moderationQueue($request->only(['search', 'status'])),
         ]);
     }
 

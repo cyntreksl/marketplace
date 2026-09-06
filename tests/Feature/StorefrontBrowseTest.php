@@ -12,7 +12,8 @@ test('category pages receive their full ancestry and active immediate children',
     $parent = Category::factory()->create(['parent_id' => $root->id, 'name' => 'Clothing', 'slug' => 'fashion-clothing', 'is_selectable' => false]);
     $current = Category::factory()->create(['parent_id' => $parent->id, 'name' => 'Outerwear', 'slug' => 'fashion-clothing-outerwear', 'is_selectable' => false]);
     $activeChild = Category::factory()->create(['parent_id' => $current->id, 'name' => 'Coats', 'slug' => 'fashion-clothing-outerwear-coats', 'sort_order' => 2]);
-    Category::factory()->create(['parent_id' => $activeChild->id, 'name' => 'Rain Coats', 'slug' => 'fashion-clothing-outerwear-coats-rain']);
+    $rainCoats = Category::factory()->create(['parent_id' => $activeChild->id, 'name' => 'Rain Coats', 'slug' => 'fashion-clothing-outerwear-coats-rain']);
+    Listing::factory()->create(['category_id' => $rainCoats->id]);
     Category::factory()->create(['parent_id' => $current->id, 'name' => 'Inactive Jackets', 'slug' => 'inactive-jackets', 'is_active' => false]);
 
     $this->get(route('categories.show', $current->slug))

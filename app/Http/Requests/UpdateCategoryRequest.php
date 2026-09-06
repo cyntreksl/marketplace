@@ -44,6 +44,9 @@ class UpdateCategoryRequest extends FormRequest
             ],
             'google_product_category_id' => ['nullable', 'integer', 'min:1', Rule::unique('categories', 'google_product_category_id')->ignore($this->route('category'))],
             'name' => ['required', 'string', 'max:255'], 'slug' => ['nullable', 'string', 'max:255', Rule::unique('categories', 'slug')->ignore($this->route('category'))],
+            'seo_title' => ['nullable', 'string', 'max:255'],
+            'seo_description' => ['nullable', 'string', 'max:320'],
+            'seo_intro' => ['nullable', 'string', 'max:5000'],
             'commission_percentage' => ['required', 'numeric', 'between:0,100'], 'return_window_days' => ['required', 'integer', 'min:0', 'max:365'],
             'cod_enabled' => ['required', 'boolean'], 'reason' => ['required', 'string', 'min:5', 'max:1000'],
         ];

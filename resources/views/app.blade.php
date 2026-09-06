@@ -1,4 +1,5 @@
 @inject('staticMedia', 'App\Services\StaticMediaService')
+@inject('trackingConsent', 'App\Support\TrackingConsent')
 <!DOCTYPE html>
 <html lang="{{ config('marketplace.seo.language', 'en-LK') }}">
     <head>
@@ -28,6 +29,9 @@
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">
+        @if ($trackingConsent->allowsGtmCookie(request()->cookie($trackingConsent::COOKIE_NAME)) && filled(config('services.google_tag_manager.container_id')))
+            <noscript><iframe src="https://www.googletagmanager.com/ns.html?id={{ urlencode(config('services.google_tag_manager.container_id')) }}" height="0" width="0" class="hidden invisible"></iframe></noscript>
+        @endif
         <x-inertia::app />
     </body>
 </html>

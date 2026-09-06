@@ -36,6 +36,9 @@ class UpdateBrandRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255', Rule::unique('brands', 'name')->ignore($this->route('brand'))],
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('brands', 'slug')->ignore($this->route('brand'))],
+            'seo_title' => ['nullable', 'string', 'max:255'],
+            'seo_description' => ['nullable', 'string', 'max:320'],
+            'seo_intro' => ['nullable', 'string', 'max:5000'],
             'logo' => ['nullable', 'image', 'max:2048'],
             'is_featured' => ['required', 'boolean'],
             'homepage_order' => ['nullable', 'integer', 'min:0', 'max:65535'],

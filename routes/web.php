@@ -24,6 +24,7 @@ use App\Http\Controllers\CategoryLookupController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CheckoutPaymentController;
 use App\Http\Controllers\ComparisonController;
+use App\Http\Controllers\MerchantFeedController;
 use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\ProductQuestionController;
 use App\Http\Controllers\ProductQuestionQueueController;
@@ -42,15 +43,24 @@ use App\Http\Controllers\SiteManifestController;
 use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\WatchlistController;
 use Illuminate\Auth\Middleware\RequirePassword;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::get('/', [StorefrontController::class, 'home'])->name('home');
-Route::get('/sitemap.xml', [SeoDiscoveryController::class, 'sitemap'])->name('sitemap.index');
-Route::get('/sitemaps/static.xml', [SeoDiscoveryController::class, 'staticPages'])->name('sitemap.static');
-Route::get('/sitemaps/categories.xml', [SeoDiscoveryController::class, 'categories'])->name('sitemap.categories');
-Route::get('/sitemaps/brands.xml', [SeoDiscoveryController::class, 'brands'])->name('sitemap.brands');
-Route::get('/sitemaps/products-{page}.xml', [SeoDiscoveryController::class, 'products'])->whereNumber('page')->name('sitemap.products');
-Route::get('/robots.txt', [SeoDiscoveryController::class, 'robots'])->name('robots');
+Route::middleware('cache.headers:public;no_cache;must_revalidate;etag')
+    ->withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, PreventRequestForgery::class])
+    ->group(function (): void {
+        Route::get('/sitemap.xml', [SeoDiscoveryController::class, 'sitemap'])->name('sitemap.index');
+        Route::get('/sitemaps/static.xml', [SeoDiscoveryController::class, 'staticPages'])->name('sitemap.static');
+        Route::get('/sitemaps/categories.xml', [SeoDiscoveryController::class, 'categories'])->name('sitemap.categories');
+        Route::get('/sitemaps/brands.xml', [SeoDiscoveryController::class, 'brands'])->name('sitemap.brands');
+        Route::get('/sitemaps/products-{page}.xml', [SeoDiscoveryController::class, 'products'])->whereNumber('page')->name('sitemap.products');
+        Route::get('/sitemaps/stores.xml', [SeoDiscoveryController::class, 'stores'])->name('sitemap.stores');
+        Route::get('/robots.txt', [SeoDiscoveryController::class, 'robots'])->name('robots');
+        Route::get('/feeds/google-merchant.xml', MerchantFeedController::class)->name('feeds.google_merchant');
+    });
 Route::get('/manifest.webmanifest', SiteManifestController::class)->name('site.manifest');
 Route::inertia('/about', 'storefront/content/show', ['document' => 'about'])->name('about');
 Route::inertia('/contact', 'storefront/content/show', ['document' => 'contact'])->name('contact');
@@ -66,6 +76,7 @@ Route::inertia('/legal/cookies', 'storefront/content/show', ['document' => 'cook
 Route::inertia('/policies/sellers', 'storefront/content/show', ['document' => 'sellers'])->name('policies.sellers');
 Route::inertia('/policies/prohibited-items', 'storefront/content/show', ['document' => 'prohibited'])->name('policies.prohibited');
 Route::get('/listings', [StorefrontController::class, 'index'])->name('listings.index');
+Route::get('/auctions', [StorefrontController::class, 'auctions'])->name('auctions.index');
 Route::get('/collections/{collection}', [StorefrontController::class, 'collection'])
     ->whereIn('collection', ['featured', 'deals', 'best-sellers', 'new-arrivals', 'clearance'])
     ->name('collections.show');
@@ -212,4 +223,3 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/seller/store', [SellerStoreController::class, 'edit'])->name('seller.store.edit');
     Route::put('/seller/store', [SellerStoreController::class, 'update'])->name('seller.store.update');
 });
-Route::get('/sitemaps/stores.xml', [SeoDiscoveryController::class, 'stores'])->name('sitemap.stores');

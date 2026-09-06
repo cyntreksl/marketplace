@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Auction;
 use App\Models\Category;
 use App\Models\Listing;
 use App\Models\ListingMedia;
@@ -64,7 +65,9 @@ test('simple products render safe merchant JSON-LD with Sri Lankan commerce valu
         ->and($product['offers']['availability'])->toBe('https://schema.org/InStock')
         ->and($product['offers']['hasMerchantReturnPolicy']['applicableCountry'])->toBe('LK')
         ->and($product['offers']['hasMerchantReturnPolicy']['merchantReturnDays'])->toBe(7)
-        ->and($product['offers'])->not->toHaveKey('shippingDetails')
+        ->and($product['offers']['shippingDetails']['shippingRate']['value'])->toBe(600)
+        ->and($product['offers']['shippingDetails']['deliveryTime']['handlingTime']['minValue'])->toBe(1)
+        ->and($product['offers']['shippingDetails']['deliveryTime']['transitTime']['maxValue'])->toBe(5)
         ->and($product)->not->toHaveKey('additionalProperty')
         ->and($product)->not->toHaveKey('aggregateRating');
 });
@@ -147,6 +150,7 @@ test('variant pages expose ProductGroup relationships and stable direct variant 
 
 test('auction pages emit breadcrumbs but no merchant Product graph', function () {
     $listing = Listing::factory()->create(['listing_type' => 'auction']);
+    Auction::factory()->for($listing)->create();
     ListingMedia::factory()->for($listing)->create();
 
     $graphs = productSeoGraphs($this->get(route('listings.show', $listing->slug))->getContent());

@@ -68,13 +68,16 @@ jobs:
           composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
           php artisan key:generate --no-interaction
           npm ci
-          npm run build
+          npm run build:ssr
+          test -f public/build/manifest.json
+          test -f bootstrap/ssr/app.js
+          npm prune --omit=dev
+          test -d node_modules/@inertiajs/react
           rm .env
           tar \
             --exclude='.git' \
             --exclude='.github' \
             --exclude='.env' \
-            --exclude='node_modules' \
             --exclude='tests' \
             --exclude='storage' \
             --exclude='bootstrap/cache/*.php' \
@@ -134,36 +137,74 @@ jobs:
           ssh_options=(-o BatchMode=yes -o StrictHostKeyChecking=yes)
           remote_script="/tmp/prodeals-remote-release.sh"
           remote_artifact="/tmp/prodeals-${RELEASE_ID}.tar.gz"
+          previous_release_id=""
 
           rollback() {
             exit_code="$?"
             trap - ERR
             set +e
-            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" "${remote_script} rollback ${RELEASE_ID}"
-            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" "${remote_script} rollback ${RELEASE_ID}"
-            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" 'sudo systemctl restart php8.4-fpm && sudo systemctl reload nginx'
-            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl restart prodeals-worker'
+            if [[ "$previous_release_id" =~ ^[0-9a-f]{40}$ ]]; then
+              ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" "${remote_script} rollback-to ${RELEASE_ID} ${previous_release_id}"
+              ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" "${remote_script} rollback-to ${RELEASE_ID} ${previous_release_id}"
+              ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" 'sudo systemctl restart php8.4-fpm && sudo systemctl reload nginx && sudo systemctl restart prodeals-ssr'
+              ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl restart prodeals-worker'
+            fi
             exit "$exit_code"
           }
 
+          for host in "$WEB_HOST" "$WORKER_HOST"; do
+            scp "${ssh_options[@]}" .github/deploy/remote-release.sh "${DEPLOY_USER}@${host}:${remote_script}"
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "chmod 700 ${remote_script}"
+          done
+
+          web_release_id="$(ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" "${remote_script} current ${RELEASE_ID}")"
+          worker_release_id="$(ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" "${remote_script} current ${RELEASE_ID}")"
+
+          if [[ ! "$web_release_id" =~ ^[0-9a-f]{40}$ ]] || [[ "$web_release_id" != "$worker_release_id" ]]; then
+            echo "Web and worker must start on the same release before deployment." >&2
+            exit 1
+          fi
+
+          previous_release_id="$web_release_id"
           trap rollback ERR
 
           for host in "$WEB_HOST" "$WORKER_HOST"; do
             scp "${ssh_options[@]}" artifact/prodeals-release.tar.gz "${DEPLOY_USER}@${host}:${remote_artifact}"
-            scp "${ssh_options[@]}" .github/deploy/remote-release.sh "${DEPLOY_USER}@${host}:${remote_script}"
-            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "chmod 700 ${remote_script} && ${remote_script} prepare ${RELEASE_ID} ${remote_artifact}"
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "${remote_script} prepare ${RELEASE_ID} ${remote_artifact}"
           done
 
-          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl stop prodeals-worker || true'
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" "${remote_script} migrate ${RELEASE_ID}"
-          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" "${remote_script} activate ${RELEASE_ID}"
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" "${remote_script} migrate-media ${RELEASE_ID}"
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl stop prodeals-worker || true'
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" "${remote_script} activate ${RELEASE_ID}"
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" "${remote_script} activate ${RELEASE_ID}"
-          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" 'sudo systemctl restart php8.4-fpm && sudo systemctl reload nginx'
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" 'sudo systemctl restart php8.4-fpm && sudo systemctl reload nginx && sudo systemctl restart prodeals-ssr'
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl reread && sudo supervisorctl update && sudo supervisorctl restart prodeals-worker'
+
+          for host in "$WEB_HOST" "$WORKER_HOST"; do
+            active_release_id="$(ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "${remote_script} current ${RELEASE_ID}")"
+            test "$active_release_id" = "$RELEASE_ID"
+          done
+
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" 'cd /var/www/prodeals/current && php8.4 artisan inertia:check-ssr'
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl status prodeals-worker | grep -q RUNNING'
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" '! ss -ltn | grep -q "127.0.0.1:13714"'
 
           curl --fail --silent --show-error --retry 20 --retry-delay 3 --retry-max-time 90 \
             --retry-connrefused --retry-all-errors https://prodeals.lk/up
+
+          homepage_html="$(mktemp)"
+          product_html="$(mktemp)"
+          curl --fail --silent --show-error https://prodeals.lk/ > "$homepage_html"
+          grep -q 'Online Shopping &amp; Auctions in Sri Lanka' "$homepage_html"
+          grep -qE 'href="[^"]*/(listings|auctions)' "$homepage_html"
+
+          product_sitemap_url="$(curl --fail --silent --show-error https://prodeals.lk/sitemap.xml | grep -oE '<loc>[^<]*sitemaps/products-[^<]+' | head -1 | cut -c6-)"
+          product_url="$(curl --fail --silent --show-error "$product_sitemap_url" | grep -oE '<loc>[^<]+' | head -1 | cut -c6-)"
+          curl --fail --silent --show-error "$product_url" > "$product_html"
+          grep -q '<h1' "$product_html"
+          grep -qE 'Rs\.|LKR' "$product_html"
+          grep -q 'application/ld+json' "$product_html"
 
           curl --fail --silent --show-error --max-time 30 \
             --header 'Accept: application/json, text/event-stream' \

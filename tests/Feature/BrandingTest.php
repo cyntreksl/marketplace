@@ -198,12 +198,15 @@ test('the storefront shares an ordered two-level active category menu', function
         'sort_order' => 0,
     ]);
     $deletedChild->delete();
-    Category::factory()->create([
+    $accessories = Category::factory()->create([
         'parent_id' => $firstChild->id,
         'name' => 'Laptop Accessories',
         'slug' => 'laptop-accessories',
         'sort_order' => 0,
     ]);
+    Listing::factory()->create(['category_id' => $accessories->id]);
+    Listing::factory()->create(['category_id' => $laterChild->id]);
+    Listing::factory()->create(['category_id' => $laterCategory->id]);
 
     $expectedCategories = [
         [
@@ -261,6 +264,7 @@ test('listing details retain the storefront category menu', function () {
 test('informational pages share categories for the compact storefront header', function (string $routeName) {
     $category = Category::factory()->create(['name' => 'Electronics', 'slug' => 'electronics']);
     $child = Category::factory()->create(['parent_id' => $category->id]);
+    Listing::factory()->create(['category_id' => $child->id]);
     Category::factory()->create(['is_active' => false]);
 
     $this->get(route($routeName))

@@ -12,11 +12,12 @@ import {
     Truck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { CheckoutProgress } from '@/components/checkout-progress';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { useStorefrontHeaderHeight } from '@/hooks/use-storefront-header-height';
+import { trackEvent } from '@/lib/tracking';
 import { show as cartShow } from '@/routes/cart';
 import { store as checkoutStore } from '@/routes/checkout';
 import type {
@@ -207,6 +208,19 @@ export default function BuyerCheckout({
                 item.listing.price,
         );
     const subtotal = Number(cart.subtotal);
+
+    useEffect(() => {
+        trackEvent('begin_checkout', {
+            currency: 'LKR',
+            value: Number(cart.total),
+            items: cart.items.map((item) => ({
+                item_id: String(item.id),
+                item_name: item.listing.title,
+                price: Number(item.unitPrice),
+                quantity: item.quantity,
+            })),
+        });
+    }, [cart.items, cart.total]);
 
     return (
         <StorefrontLayout title="Checkout">

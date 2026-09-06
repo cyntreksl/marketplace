@@ -17,7 +17,7 @@ test('public stores expose only public seller fields and eligible products', fun
     Listing::factory()->create();
     Listing::factory()->for($seller)->create(['status' => 'draft']);
     Listing::factory()->for($seller)->create(['stock_quantity' => 0, 'reserved_quantity' => 0]);
-    $this->get(route('stores.show', $seller->slug))->assertOk()->assertInertia(fn (Assert $page) => $page
+    $this->get(route('stores.show', $seller->slug))->assertOk()->assertHeaderMissing('X-Robots-Tag')->assertInertia(fn (Assert $page) => $page
         ->component('storefront/stores/show')
         ->where('seller.store_name', $seller->store_name)
         ->where('seller.productCount', 1)
@@ -45,7 +45,7 @@ test('deleted stores and missing slugs return 404', function () {
 
 test('empty active stores are accessible but noindex and absent from sitemap', function () {
     $seller = SellerProfile::factory()->create(['status' => 'active', 'approved_at' => null]);
-    $this->get(route('stores.show', $seller->slug))->assertOk()->assertInertia(fn (Assert $page) => $page
+    $this->get(route('stores.show', $seller->slug))->assertOk()->assertHeader('X-Robots-Tag', 'noindex, follow')->assertInertia(fn (Assert $page) => $page
         ->where('seller.productCount', 0)->where('seller.sellingSince', null)
         ->where('seo.robots', 'noindex,follow,max-image-preview:large'));
     $this->get(route('sitemap.stores'))->assertOk()->assertDontSee(route('stores.show', $seller->slug), false);

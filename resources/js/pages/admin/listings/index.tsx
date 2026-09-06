@@ -11,6 +11,20 @@ type Listing = {
     moderation_reason: string | null;
     seller_profile: { store_name: string };
     category: { name: string } | null;
+    seo_score: SeoScore;
+};
+type SeoScore = {
+    score: number;
+    maximum: number;
+    label: 'Strong' | 'Needs Improvement' | 'Weak';
+    checks: {
+        key: string;
+        label: string;
+        points: number;
+        maximum: number;
+        passed: boolean;
+        recommendation: string | null;
+    }[];
 };
 export default function AdminListings({
     listings,
@@ -47,6 +61,36 @@ export default function AdminListings({
                                     Current status:{' '}
                                     {listing.status.replace('_', ' ')}
                                 </p>
+                                <details className="mt-4 rounded-xl bg-stone-50 p-3 dark:bg-stone-950">
+                                    <summary className="cursor-pointer text-sm font-bold">
+                                        SEO readiness: {listing.seo_score.score}
+                                        /{listing.seo_score.maximum} ·{' '}
+                                        {listing.seo_score.label}
+                                    </summary>
+                                    <ul className="mt-3 grid gap-2">
+                                        {listing.seo_score.checks.map(
+                                            (check) => (
+                                                <li
+                                                    key={check.key}
+                                                    className="text-sm text-stone-600 dark:text-stone-300"
+                                                >
+                                                    <strong className="text-stone-900 dark:text-white">
+                                                        {check.label}:{' '}
+                                                        {check.points}/
+                                                        {check.maximum}
+                                                    </strong>
+                                                    {check.recommendation && (
+                                                        <span className="mt-0.5 block">
+                                                            {
+                                                                check.recommendation
+                                                            }
+                                                        </span>
+                                                    )}
+                                                </li>
+                                            ),
+                                        )}
+                                    </ul>
+                                </details>
                             </div>
                             <Form
                                 {...update.form(listing.id)}

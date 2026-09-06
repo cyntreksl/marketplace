@@ -528,7 +528,7 @@ export const marketplaceDocuments: Record<string, MarketplaceDocument> = {
         eyebrow: 'Legal',
         title: 'Cookie policy',
         summary:
-            'ProDeals.lk currently uses cookies and similar browser storage for security, sessions, and user-requested appearance preferences-not advertising or analytics.',
+            'ProDeals.lk uses required storage for security and optional analytics or marketing technologies only after your consent.',
         sections: [
             {
                 id: 'what-they-are',
@@ -539,7 +539,7 @@ export const marketplaceDocuments: Record<string, MarketplaceDocument> = {
             },
             {
                 id: 'cookies-we-use',
-                title: 'What ProDeals.lk uses',
+                title: 'Required cookies and storage',
                 paragraphs: [
                     'The marketplace uses a session cookie to keep signed-in activity connected, CSRF/XSRF protection to defend form submissions, and an appearance preference to remember light, dark, or system mode. Authentication and security features may use related short-lived browser storage as required.',
                 ],
@@ -547,20 +547,22 @@ export const marketplaceDocuments: Record<string, MarketplaceDocument> = {
                     'Session and authentication: required to sign in and use protected marketplace areas.',
                     'Security and CSRF protection: required to validate trusted requests.',
                     'Appearance preference: remembers a display choice requested by the user.',
+                    'Consent preference: stores your versioned analytics and marketing choices for up to one year.',
                 ],
             },
             {
-                id: 'no-tracking',
-                title: 'No advertising or analytics cookies',
+                id: 'optional-technologies',
+                title: 'Optional analytics and marketing',
                 paragraphs: [
-                    'The current service does not intentionally set advertising, cross-site tracking, or analytics cookies. Because there are no non-essential tracking categories to accept or reject, we do not display a consent banner that offers a meaningless choice.',
+                    'If you grant analytics consent, Google Analytics 4 and Microsoft Clarity may measure page use, product discovery, checkout progress, and purchases so we can improve the marketplace. If you grant marketing consent, Meta Pixel may measure campaign performance. These providers can set their own cookies only after the relevant permission is granted.',
+                    'Google Tag Manager loads only after analytics or marketing consent. Rejecting all prevents the tag manager and optional vendors from loading. We do not send names, email addresses, phone numbers, postal addresses, or other direct personal details in analytics events.',
                 ],
             },
             {
-                id: 'future-changes',
-                title: 'Future changes',
+                id: 'change-your-choice',
+                title: 'Change or withdraw consent',
                 paragraphs: [
-                    'If non-essential cookies or tracking scripts are introduced, this policy will be updated and a genuine consent mechanism will be added before those technologies run where consent is required.',
+                    'Use Cookie preferences on any page to accept, reject, or manage optional categories. Withdrawing all consent stops new optional events, removes known GA4, Clarity, and Meta cookies available to this site, and reloads the page.',
                 ],
             },
             {

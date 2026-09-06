@@ -101,6 +101,33 @@ rollback_release() {
     mv -Tf "$rollback_link" "$current_link"
 }
 
+rollback_to_release() {
+    local target_release_id="${3:-}"
+    local target_release
+    local rollback_link="${app_root}/.rollback-${release_id}"
+
+    if [[ ! "$target_release_id" =~ ^[0-9a-f]{40}$ ]]; then
+        echo "Rollback release ID must be a full Git commit SHA." >&2
+        exit 1
+    fi
+
+    target_release="${releases_dir}/${target_release_id}"
+    if [[ ! -d "$target_release" ]]; then
+        echo "Rollback release ${target_release_id} does not exist." >&2
+        exit 1
+    fi
+
+    ln -s "$target_release" "$rollback_link"
+    mv -Tf "$rollback_link" "$current_link"
+}
+
+current_release() {
+    local active_release
+
+    active_release="$(readlink -f "$current_link" 2>/dev/null || true)"
+    basename "$active_release"
+}
+
 cleanup_releases() {
     local current_release
     local previous_release
@@ -148,11 +175,17 @@ case "$command_name" in
     rollback)
         rollback_release
         ;;
+    rollback-to)
+        rollback_to_release "$@"
+        ;;
+    current)
+        current_release
+        ;;
     cleanup)
         cleanup_releases
         ;;
     *)
-        echo "Usage: $0 {prepare|migrate|migrate-media|activate|rollback|cleanup} RELEASE_ID [ARTIFACT]" >&2
+        echo "Usage: $0 {prepare|migrate|migrate-media|activate|rollback|rollback-to|current|cleanup} RELEASE_ID [ARGUMENT]" >&2
         exit 1
         ;;
 esac

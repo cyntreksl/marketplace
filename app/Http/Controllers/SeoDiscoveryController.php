@@ -45,7 +45,40 @@ class SeoDiscoveryController extends Controller
 
     public function robots(): Response
     {
-        return response("User-agent: *\nAllow: /\n\nSitemap: ".route('sitemap.index')."\n", 200, [
+        $robots = <<<'ROBOTS'
+User-agent: GPTBot
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: *
+Allow: /
+
+ROBOTS;
+
+        return response($robots.'Sitemap: '.route('sitemap.index')."\n", 200, [
             'Content-Type' => 'text/plain; charset=UTF-8',
         ]);
     }

@@ -87,7 +87,7 @@ printf '%s\n' \
 install -m 440 /dev/null /etc/sudoers.d/prodeals-deploy
 if [[ "$role" == "web" ]]; then
     printf '%s\n' \
-        'deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart php8.4-fpm, /usr/bin/systemctl reload nginx' \
+        'deploy ALL=(root) NOPASSWD: /usr/bin/systemctl restart php8.4-fpm, /usr/bin/systemctl reload nginx, /usr/bin/systemctl restart prodeals-ssr, /usr/bin/systemctl status prodeals-ssr' \
         > /etc/sudoers.d/prodeals-deploy
 else
     printf '%s\n' \

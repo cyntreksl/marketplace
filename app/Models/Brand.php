@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'slug', 'logo_path', 'logo_disk', 'is_featured', 'homepage_order'])]
+#[Fillable(['name', 'slug', 'seo_title', 'seo_description', 'seo_intro', 'logo_path', 'logo_disk', 'is_featured', 'homepage_order'])]
 class Brand extends Model
 {
     /** @use HasFactory<BrandFactory> */

@@ -26,10 +26,11 @@ class SellerStoreService
         $url = route('stores.show', $slug);
         $canonical = $page > 1 && ! $filtered ? $url.'?page='.$page : $url;
         $description = filled($seller->about) ? Str::limit($seller->about, 160) : 'Browse products from '.$seller->store_name.' on '.config('app.name').'.';
+        $data = $this->storefront->browseData([...$filters, 'seller_id' => $seller->id]);
         $seo = $this->seo->catalogPayload($seller->store_name.' | '.config('app.name'), $description, $canonical, [
             ['name' => 'Home', 'url' => route('home')],
             ['name' => $seller->store_name, 'url' => $url],
-        ], ! $filtered && $summary['productCount'] > 0);
+        ], ! $filtered && (int) $seller->getAttribute('indexable_product_count') > 0, array_values($data['listings']->items()));
         if ($summary['coverUrl'] || $summary['logoUrl']) {
             $seo['openGraph']['image'] = $summary['coverUrl'] ?? $summary['logoUrl'];
             $seo['openGraph']['imageWidth'] = null;
@@ -39,9 +40,15 @@ class SellerStoreService
             '@context' => 'https://schema.org', '@type' => 'CollectionPage',
             'name' => $seller->store_name, 'description' => $description, 'url' => $canonical,
         ];
-        $data = $this->storefront->browseData([...$filters, 'seller_id' => $seller->id]);
 
-        return [...$data, 'filters' => $filters, 'seller' => $summary, 'seo' => $seo, 'head' => $this->seo->tags($seo)];
+        return [
+            ...$data,
+            'browseUrl' => route('stores.show', $slug),
+            'filters' => $filters,
+            'seller' => $summary,
+            'seo' => $seo,
+            'head' => $this->seo->tags($seo),
+        ];
     }
 
     public function ownedSeller(int $userId): SellerProfile

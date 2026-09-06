@@ -32,6 +32,9 @@ class StoreBrandRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255', Rule::unique('brands', 'name')],
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('brands', 'slug')],
+            'seo_title' => ['nullable', 'string', 'max:255'],
+            'seo_description' => ['nullable', 'string', 'max:320'],
+            'seo_intro' => ['nullable', 'string', 'max:5000'],
             'logo' => ['nullable', 'image', 'max:2048'],
             'is_featured' => ['required', 'boolean'],
             'homepage_order' => ['nullable', 'integer', 'min:0', 'max:65535'],

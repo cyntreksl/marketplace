@@ -129,6 +129,8 @@ class StorefrontService
         return [
             'filters' => $filters,
             'listings' => $this->listings->paginatePublic($filters)->through(fn (Listing $listing) => $this->listingData($listing)),
+            'pageHeading' => 'Online Shopping in Sri Lanka',
+            'intro' => 'Browse products from approved Sri Lankan sellers, compare prices, and buy securely through ProDeals.lk.',
             'categories' => $this->storefrontCategories(),
             'categoryContext' => is_string($selectedCategorySlug)
                 ? $this->catalog->activeCategoryContextBySlug($selectedCategorySlug)
@@ -144,6 +146,35 @@ class StorefrontService
     /** @param array<string, mixed> $filters
      * @return array<string, mixed>
      */
+    public function listingIndexData(array $filters): array
+    {
+        $data = $this->browseData($filters);
+        $page = max(1, (int) request()->query('page', 1));
+        $hasFilters = collect(request()->query())->except('page')->filter()->isNotEmpty();
+        $canonical = route('listings.index').(! $hasFilters && $page > 1 ? '?page='.$page : '');
+        $seo = $this->seo->catalogPayload(
+            title: 'Online Shopping in Sri Lanka - '.config('app.name'),
+            description: 'Shop products from approved Sri Lankan sellers with clear prices and secure checkout on '.config('app.name').'.',
+            canonical: $canonical,
+            breadcrumbs: [
+                ['name' => 'Home', 'url' => route('home')],
+                ['name' => 'Shop', 'url' => route('listings.index')],
+            ],
+            indexable: ! $hasFilters && $this->listings->sitemapProductCount() > 0,
+            items: $this->catalogItems($data),
+        );
+
+        return [
+            ...$data,
+            'browseUrl' => route('listings.index'),
+            'seo' => $seo,
+            'head' => $this->seo->tags($seo),
+        ];
+    }
+
+    /** @param array<string, mixed> $filters
+     * @return array<string, mixed>
+     */
     public function categoryData(string $slug, array $filters): array
     {
         $category = $this->catalog->activeCategoryBySlug($slug);
@@ -151,18 +182,46 @@ class StorefrontService
         $page = max(1, (int) request()->query('page', 1));
         $hasFilters = collect(request()->query())->except('page')->filter(fn (mixed $value): bool => filled($value))->isNotEmpty();
         $canonical = route('categories.show', $slug).(! $hasFilters && $page > 1 ? '?page='.$page : '');
+        $title = filled($category->seo_title) ? (string) $category->seo_title : $category->name.' in Sri Lanka - '.config('app.name');
+        $description = filled($category->seo_description)
+            ? (string) $category->seo_description
+            : 'Shop '.$category->name.' from trusted Sri Lankan sellers on '.config('app.name').'.';
+        $ancestorBreadcrumbs = [];
+
+        foreach ((array) ($data['categoryContext']['ancestors'] ?? []) as $ancestor) {
+            if (! is_array($ancestor) || ! is_string($ancestor['name'] ?? null) || ! is_string($ancestor['slug'] ?? null)) {
+                continue;
+            }
+
+            $ancestorBreadcrumbs[] = [
+                'name' => $ancestor['name'],
+                'url' => route('categories.show', $ancestor['slug']),
+            ];
+        }
+
+        $breadcrumbs = [
+            ['name' => 'Home', 'url' => route('home')],
+            ...$ancestorBreadcrumbs,
+            ['name' => $category->name, 'url' => route('categories.show', $slug)],
+        ];
+        $indexable = ! $hasFilters && $this->catalog->categoryHasVisibleProducts($category);
         $seo = $this->seo->catalogPayload(
-            title: $category->name.' in Sri Lanka - '.config('app.name'),
-            description: 'Shop '.$category->name.' from trusted Sri Lankan sellers on '.config('app.name').'.',
+            title: $title,
+            description: $description,
             canonical: $canonical,
-            breadcrumbs: [
-                ['name' => 'Home', 'url' => route('home')],
-                ['name' => $category->name, 'url' => route('categories.show', $slug)],
-            ],
-            indexable: ! $hasFilters,
+            breadcrumbs: $breadcrumbs,
+            indexable: $indexable,
+            items: $this->catalogItems($data),
         );
 
-        return [...$data, 'seo' => $seo, 'head' => $this->seo->tags($seo)];
+        return [
+            ...$data,
+            'browseUrl' => route('categories.show', $slug),
+            'pageHeading' => $category->name,
+            'intro' => filled($category->seo_intro) ? $category->seo_intro : $description,
+            'seo' => $seo,
+            'head' => $this->seo->tags($seo),
+        ];
     }
 
     /** @param array<string, mixed> $filters
@@ -175,19 +234,101 @@ class StorefrontService
         $page = max(1, (int) request()->query('page', 1));
         $hasFilters = collect(request()->query())->except('page')->filter(fn (mixed $value): bool => filled($value))->isNotEmpty();
         $canonical = route('brands.show', $slug).(! $hasFilters && $page > 1 ? '?page='.$page : '');
+        $title = filled($brand->seo_title) ? (string) $brand->seo_title : $brand->name.' Products in Sri Lanka - '.config('app.name');
+        $description = filled($brand->seo_description)
+            ? (string) $brand->seo_description
+            : 'Shop '.$brand->name.' products from trusted Sri Lankan sellers on '.config('app.name').'.';
         $seo = $this->seo->catalogPayload(
-            title: $brand->name.' Products in Sri Lanka - '.config('app.name'),
-            description: 'Shop '.$brand->name.' products from trusted Sri Lankan sellers on '.config('app.name').'.',
+            title: $title,
+            description: $description,
             canonical: $canonical,
             breadcrumbs: [
                 ['name' => 'Home', 'url' => route('home')],
                 ['name' => 'Brands', 'url' => route('brands.index')],
                 ['name' => $brand->name, 'url' => route('brands.show', $slug)],
             ],
-            indexable: ! $hasFilters,
+            indexable: ! $hasFilters && $this->catalog->brandHasVisibleProducts($brand),
+            items: $this->catalogItems($data),
         );
 
-        return [...$data, 'seo' => $seo, 'head' => $this->seo->tags($seo)];
+        return [
+            ...$data,
+            'browseUrl' => route('brands.show', $slug),
+            'pageHeading' => $brand->name,
+            'intro' => filled($brand->seo_intro) ? $brand->seo_intro : $description,
+            'seo' => $seo,
+            'head' => $this->seo->tags($seo),
+        ];
+    }
+
+    /** @param array<string, mixed> $filters
+     * @return array<string, mixed>
+     */
+    public function collectionData(string $collection, array $filters): array
+    {
+        $labels = [
+            'featured' => 'Featured Products',
+            'deals' => 'Latest Deals',
+            'best-sellers' => 'Best Sellers',
+            'new-arrivals' => 'New Arrivals',
+            'clearance' => 'Clearance Deals',
+        ];
+        $label = $labels[$collection] ?? 'Products';
+        $data = $this->browseData([...$filters, 'collection' => $collection]);
+        $page = max(1, (int) request()->query('page', 1));
+        $canonical = route('collections.show', $collection).($page > 1 ? '?page='.$page : '');
+        $seo = $this->seo->catalogPayload(
+            title: $label.' in Sri Lanka - '.config('app.name'),
+            description: 'Discover '.$label.' from approved sellers across Sri Lanka on '.config('app.name').'.',
+            canonical: $canonical,
+            breadcrumbs: [
+                ['name' => 'Home', 'url' => route('home')],
+                ['name' => $label, 'url' => route('collections.show', $collection)],
+            ],
+            indexable: collect(request()->query())->except('page')->filter()->isEmpty()
+                && in_array($collection, $this->listings->indexableCollectionSlugs(), true),
+            items: $this->catalogItems($data),
+        );
+
+        return [
+            ...$data,
+            'browseUrl' => route('collections.show', $collection),
+            'pageHeading' => $label,
+            'intro' => 'Fresh marketplace picks selected from approved ProDeals.lk sellers.',
+            'seo' => $seo,
+            'head' => $this->seo->tags($seo),
+        ];
+    }
+
+    /** @param array<string, mixed> $filters
+     * @return array<string, mixed>
+     */
+    public function auctionData(array $filters): array
+    {
+        $data = $this->browseData([...$filters, 'listing_type' => 'auction']);
+        $page = max(1, (int) request()->query('page', 1));
+        $hasFilters = collect(request()->query())->except('page')->filter()->isNotEmpty();
+        $canonical = route('auctions.index').(! $hasFilters && $page > 1 ? '?page='.$page : '');
+        $seo = $this->seo->catalogPayload(
+            title: 'Online Auctions in Sri Lanka - '.config('app.name'),
+            description: 'Bid on active and ending-soon auctions from approved Sri Lankan sellers on '.config('app.name').'.',
+            canonical: $canonical,
+            breadcrumbs: [
+                ['name' => 'Home', 'url' => route('home')],
+                ['name' => 'Auctions', 'url' => route('auctions.index')],
+            ],
+            indexable: ! $hasFilters && $this->listings->indexableAuctionCount() > 0,
+            items: $this->catalogItems($data),
+        );
+
+        return [
+            ...$data,
+            'browseUrl' => route('auctions.index'),
+            'pageHeading' => 'Online Auctions in Sri Lanka',
+            'intro' => 'Discover live auctions, see current prices, and bid before the closing time.',
+            'seo' => $seo,
+            'head' => $this->seo->tags($seo),
+        ];
     }
 
     /** @return array<string, mixed> */
@@ -362,6 +503,14 @@ class StorefrontService
                 ])->values()
                 : [],
         ];
+    }
+
+    /** @param array<string, mixed> $data
+     * @return array<int, array<string, mixed>>
+     */
+    private function catalogItems(array $data): array
+    {
+        return array_values($data['listings']->items());
     }
 
     /** @return array<string, mixed> */

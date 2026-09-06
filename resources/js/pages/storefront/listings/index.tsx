@@ -1,5 +1,6 @@
 import { Form, Link } from '@inertiajs/react';
 import { Filter, LayoutGrid, PackageSearch, Search, Store } from 'lucide-react';
+import { useEffect } from 'react';
 import { ListingCard } from '@/components/listing-card';
 import { StorefrontBreadcrumbs } from '@/components/storefront-breadcrumbs';
 import { StorefrontCategoryArtwork } from '@/components/storefront-category-artwork';
@@ -15,9 +16,9 @@ import {
     SheetTitle,
     SheetTrigger,
 } from '@/components/ui/sheet';
+import { trackEvent } from '@/lib/tracking';
 import { home } from '@/routes';
 import { show as categoryShow } from '@/routes/categories';
-import { index as listingsIndex } from '@/routes/listings';
 import type {
     StorefrontBrand,
     StorefrontBreadcrumbItem,
@@ -62,9 +63,10 @@ function activeFilterCount(filters: StorefrontBrowseFilters): number {
 
 function breadcrumbItems(
     categoryContext: StorefrontCategoryContext | null,
+    pageHeading: string,
 ): StorefrontBreadcrumbItem[] {
     if (!categoryContext) {
-        return [{ label: 'Home', href: home.url() }, { label: 'Products' }];
+        return [{ label: 'Home', href: home.url() }, { label: pageHeading }];
     }
 
     const trail = [...categoryContext.ancestors, categoryContext.current];
@@ -105,9 +107,9 @@ function CategoryStrip({
     return (
         <section className="mt-5">
             <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
-                <h1 className="text-xl font-extrabold tracking-tight text-slate-950 sm:text-2xl">
+                <h2 className="text-xl font-extrabold tracking-tight text-slate-950 sm:text-2xl">
                     {categoryContext?.current.name ?? 'Popular categories'}
-                </h1>
+                </h2>
                 <span className="text-xs font-semibold text-slate-400 sm:text-sm">
                     Shop by category
                 </span>
@@ -141,18 +143,40 @@ export default function ListingsIndex({
     filters,
     categoryContext,
     filterOptions,
+    pageHeading,
+    intro,
+    browseUrl,
 }: {
     listings: StorefrontListingPaginator;
     categories: StorefrontCategory[];
     filters: StorefrontBrowseFilters;
     categoryContext: StorefrontCategoryContext | null;
     filterOptions: { brands: StorefrontBrand[] };
+    pageHeading: string;
+    intro: string;
+    browseUrl: string;
 }) {
     const filterCount = activeFilterCount(filters);
-    const pageTitle = categoryContext?.current.name ?? 'Smartphones';
+    const pageTitle = pageHeading;
     const trail = categoryContext
         ? [...categoryContext.ancestors, categoryContext.current]
         : [];
+
+    useEffect(() => {
+        trackEvent('view_item_list', {
+            item_list_name: pageHeading,
+            items: listings.data.map((listing, index) => ({
+                item_id: String(listing.id),
+                item_name: listing.title,
+                price: Number(listing.effectivePrice ?? 0),
+                index,
+            })),
+        });
+
+        if (filters.search) {
+            trackEvent('search', { search_term: filters.search });
+        }
+    }, [filters.search, listings.data, pageHeading]);
 
     return (
         <StorefrontLayout
@@ -162,8 +186,17 @@ export default function ListingsIndex({
         >
             <main className="storefront-container py-6 lg:py-8">
                 <StorefrontBreadcrumbs
-                    items={breadcrumbItems(categoryContext)}
+                    items={breadcrumbItems(categoryContext, pageHeading)}
                 />
+
+                <header className="mt-5 max-w-4xl">
+                    <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+                        {pageHeading}
+                    </h1>
+                    <p className="mt-3 text-base leading-7 text-slate-600">
+                        {intro}
+                    </p>
+                </header>
 
                 <CategoryStrip
                     categories={categories}
@@ -230,6 +263,8 @@ export default function ListingsIndex({
                                     <StorefrontListingFilters
                                         filters={filters}
                                         brands={filterOptions.brands}
+                                        browseUrl={browseUrl}
+                                        omitCategory={Boolean(categoryContext)}
                                         idPrefix="mobile-storefront"
                                         className="px-6 py-6"
                                     />
@@ -237,12 +272,17 @@ export default function ListingsIndex({
                             </Sheet>
 
                             <Form
-                                {...listingsIndex.form()}
+                                action={browseUrl}
+                                method="get"
                                 className="flex items-center gap-2"
                             >
                                 <BrowseHiddenInputs
                                     filters={filters}
-                                    omit={['sort']}
+                                    omit={
+                                        categoryContext
+                                            ? ['sort', 'category']
+                                            : ['sort']
+                                    }
                                 />
                                 <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
                                     <LayoutGrid className="size-4 text-slate-400" />
@@ -303,19 +343,7 @@ export default function ListingsIndex({
                                         : 'Try a broader search, remove a filter, or explore another marketplace category.'}
                                 </p>
                                 <Button asChild className="mt-6 rounded-xl">
-                                    <Link
-                                        href={listingsIndex({
-                                            query: categoryContext
-                                                ? {
-                                                      category:
-                                                          categoryContext
-                                                              .current.slug,
-                                                  }
-                                                : {},
-                                        })}
-                                    >
-                                        Clear filters
-                                    </Link>
+                                    <Link href={browseUrl}>Clear filters</Link>
                                 </Button>
                             </div>
                         )}

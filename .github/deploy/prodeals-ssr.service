@@ -1,0 +1,23 @@
+[Unit]
+Description=ProDeals Inertia SSR
+After=network.target
+ConditionPathExists=/var/www/prodeals/current/bootstrap/ssr/app.js
+
+[Service]
+Type=simple
+User=deploy
+Group=www-data
+WorkingDirectory=/var/www/prodeals/current
+Environment=APP_ENV=production
+Environment=NODE_OPTIONS=--max-old-space-size=384
+ExecStart=/usr/bin/php8.4 artisan inertia:start-ssr --runtime=/usr/bin/node
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+KillSignal=SIGTERM
+MemoryMax=512M
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

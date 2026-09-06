@@ -22,6 +22,9 @@ test('operations admins can create and archive local categories with an audit re
     $this->actingAs($admin)->post(route('admin.categories.store'), [
         'name' => 'Wearable technology', 'slug' => 'wearable-technology', 'commission_percentage' => 8,
         'return_window_days' => 7, 'cod_enabled' => true, 'is_active' => true, 'reason' => 'Initial marketplace catalog structure',
+        'seo_title' => 'Wearable Technology in Sri Lanka',
+        'seo_description' => 'Shop watches and wearable technology from approved Sri Lankan sellers.',
+        'seo_intro' => 'Compare wearable technology, prices, features, and delivery options.',
     ])->assertRedirectContains('/admin/catalog/categories?category=');
 
     $category = Category::query()->sole();
@@ -31,7 +34,9 @@ test('operations admins can create and archive local categories with an audit re
     ])->assertRedirect();
     $this->actingAs($admin)->delete(route('admin.categories.destroy', $category), ['reason' => 'Category is being consolidated'])->assertRedirect();
 
-    expect($category->fresh()->trashed())->toBeTrue()
+    expect($category->seo_title)->toBe('Wearable Technology in Sri Lanka')
+        ->and($category->seo_intro)->toBe('Compare wearable technology, prices, features, and delivery options.')
+        ->and($category->fresh()->trashed())->toBeTrue()
         ->and(AuditLog::query()->where('auditable_id', $category->id)->count())->toBe(3);
 });
 
@@ -44,11 +49,20 @@ test('operations admins can browse and maintain brands', function () {
     Brand::factory()->create();
 
     $this->actingAs($admin)->get(route('admin.brands.index'))->assertOk();
-    $this->actingAs($admin)->post(route('admin.brands.store'), ['name' => 'Circuit', 'slug' => 'circuit', 'reason' => 'Approved manufacturer catalogue'])->assertRedirect();
+    $this->actingAs($admin)->post(route('admin.brands.store'), [
+        'name' => 'Circuit',
+        'slug' => 'circuit',
+        'seo_title' => 'Circuit Products in Sri Lanka',
+        'seo_description' => 'Shop Circuit products from approved Sri Lankan sellers.',
+        'seo_intro' => 'Explore the latest Circuit products and prices.',
+        'reason' => 'Approved manufacturer catalogue',
+    ])->assertRedirect();
     $brand = Brand::query()->where('slug', 'circuit')->sole();
     $this->actingAs($admin)->delete(route('admin.brands.destroy', $brand), ['reason' => 'Duplicate manufacturer entry'])->assertRedirect();
 
-    expect($brand->fresh()->trashed())->toBeTrue();
+    expect($brand->seo_title)->toBe('Circuit Products in Sri Lanka')
+        ->and($brand->seo_intro)->toBe('Explore the latest Circuit products and prices.')
+        ->and($brand->fresh()->trashed())->toBeTrue();
 });
 
 test('operations admins can upload and order featured brand artwork', function () {

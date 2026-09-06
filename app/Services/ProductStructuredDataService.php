@@ -11,6 +11,8 @@ use Illuminate\Support\Str;
 
 class ProductStructuredDataService
 {
+    public function __construct(private readonly MarketplaceSettingsService $settings) {}
+
     /** @param array<int, array{name: string, slug: string}> $categoryTrail
      * @return array<int, array<string, mixed>>
      */
@@ -87,6 +89,27 @@ class ProductStructuredDataService
                 'position' => $index + 1,
                 'name' => $item['name'],
                 'item' => $item['url'],
+            ])->all(),
+        ];
+    }
+
+    /** @param array<int, array<string, mixed>> $listings
+     * @return array<string, mixed>
+     */
+    public function itemList(array $listings, string $url, string $name): array
+    {
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'ItemList',
+            'name' => $name,
+            'url' => $url,
+            'numberOfItems' => count($listings),
+            'itemListElement' => collect($listings)->values()->map(fn (array $listing, int $index): array => [
+                '@type' => 'ListItem',
+                'position' => $index + 1,
+                'url' => route('listings.show', $listing['slug']),
+                'name' => $listing['title'],
+                'image' => $listing['media'][0]['card2xUrl'] ?? null,
             ])->all(),
         ];
     }
@@ -179,7 +202,12 @@ class ProductStructuredDataService
         $url = route('listings.show', ['listing' => $listing->slug, 'variant' => $variant->id]);
         $image = $variant->image === null
             ? $this->listingImages($listing)
-            : [$this->absoluteUrl($variant->image->urlForVariant('card'))];
+            : [[
+                '@type' => 'ImageObject',
+                'url' => $this->absoluteUrl($variant->image->urlForVariant('card_2x')),
+                'width' => 1280,
+                'height' => 1280,
+            ]];
         $variantName = collect($selections)->values()->implode(' / ');
 
         return $this->withoutEmpty([
@@ -273,11 +301,21 @@ class ProductStructuredDataService
         return [
             '@type' => 'OfferShippingDetails',
             'shippingDestination' => ['@type' => 'DefinedRegion', 'addressCountry' => 'LK'],
-            'shippingRate' => ['@type' => 'MonetaryAmount', 'value' => $shipping['rate'], 'currency' => 'LKR'],
+            'shippingRate' => [
+                '@type' => 'MonetaryAmount',
+                'value' => $this->settings->integer('checkout.shipping_fee', (int) $shipping['rate']),
+                'currency' => 'LKR',
+            ],
             'deliveryTime' => [
                 '@type' => 'ShippingDeliveryTime',
                 'handlingTime' => ['@type' => 'QuantitativeValue', 'minValue' => $shipping['handling_days_min'], 'maxValue' => $shipping['handling_days_max'], 'unitCode' => 'DAY'],
                 'transitTime' => ['@type' => 'QuantitativeValue', 'minValue' => $shipping['transit_days_min'], 'maxValue' => $shipping['transit_days_max'], 'unitCode' => 'DAY'],
+                'businessDays' => [
+                    '@type' => 'OpeningHoursSpecification',
+                    'dayOfWeek' => collect((array) ($shipping['business_days'] ?? []))
+                        ->map(fn (string $day): string => 'https://schema.org/'.$day)
+                        ->all(),
+                ],
             ],
         ];
     }
@@ -339,11 +377,17 @@ class ProductStructuredDataService
         return SeoText::plain((string) $description);
     }
 
-    /** @return array<int, string> */
+    /** @return array<int, array<string, mixed>> */
     private function listingImages(Listing $listing): array
     {
         return $listing->media
-            ->map(fn (ListingMedia $media): string => $this->absoluteUrl($media->urlForVariant('card')))
+            ->filter(fn (ListingMedia $media): bool => $media->type === 'image')
+            ->map(fn (ListingMedia $media): array => [
+                '@type' => 'ImageObject',
+                'url' => $this->absoluteUrl($media->urlForVariant('card_2x')),
+                'width' => 1280,
+                'height' => 1280,
+            ])
             ->values()
             ->all();
     }

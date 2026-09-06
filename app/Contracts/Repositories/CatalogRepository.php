@@ -148,6 +148,10 @@ interface CatalogRepository
     /** @return Collection<int, Category> */
     public function sitemapCategories(): Collection;
 
+    public function categoryHasVisibleProducts(Category $category): bool;
+
+    public function brandHasVisibleProducts(Brand $brand): bool;
+
     /** @return Collection<int, Brand> */
     public function sitemapBrands(): Collection;
 }

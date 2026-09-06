@@ -315,6 +315,17 @@ export default function StorefrontHome({
             <main className="storefront-container py-4">
                 <HeroBanner slides={promotions.hero} />
 
+                <section className="mt-6 max-w-4xl">
+                    <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+                        Online Shopping &amp; Auctions in Sri Lanka
+                    </h1>
+                    <p className="mt-3 text-base leading-7 text-slate-600">
+                        Discover products, deals, and live auctions from
+                        approved Sri Lankan sellers with clear pricing and
+                        secure checkout.
+                    </p>
+                </section>
+
                 <section
                     className="mt-4 flex snap-x snap-mandatory [scrollbar-width:none] gap-3 overflow-x-auto pb-2"
                     aria-label="Popular categories"

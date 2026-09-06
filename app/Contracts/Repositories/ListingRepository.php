@@ -22,8 +22,16 @@ interface ListingRepository
 
     public function sitemapProductCount(): int;
 
+    public function indexableAuctionCount(): int;
+
+    /** @return array<int, string> */
+    public function indexableCollectionSlugs(): array;
+
     /** @return Collection<int, Listing> */
     public function sitemapProducts(int $page, int $perPage): Collection;
+
+    /** @return LazyCollection<int, Listing> */
+    public function merchantProducts(): LazyCollection;
 
     /** @return Collection<int, Listing> */
     public function homepageBestOffers(int $limit = 8): Collection;

@@ -25,6 +25,7 @@ import { SellerSummary } from '@/components/seller-summary';
 import { StorefrontBreadcrumbs } from '@/components/storefront-breadcrumbs';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { useProductComparison } from '@/hooks/use-product-comparison';
+import { trackEvent } from '@/lib/tracking';
 import { home, login } from '@/routes';
 import { show as brandShow } from '@/routes/brands';
 import { show as categoryShow } from '@/routes/categories';
@@ -164,6 +165,30 @@ export default function ListingShow({
         listing.stockStatus === 'out_of_stock' ||
         (listing.productType === 'variant' &&
             selectedVariant?.stockQuantity === 0);
+    useEffect(() => {
+        trackEvent('view_item', {
+            currency: 'LKR',
+            value: Number(displayedSellingPrice ?? 0),
+            items: [
+                {
+                    item_id: String(selectedVariant?.id ?? listing.id),
+                    item_group_id: String(listing.id),
+                    item_name: listing.title,
+                    item_brand: listing.brand?.name,
+                    item_category: listing.category?.name,
+                    price: Number(displayedSellingPrice ?? 0),
+                },
+            ],
+        });
+    }, [
+        displayedSellingPrice,
+        listing.brand?.name,
+        listing.category?.name,
+        listing.id,
+        listing.title,
+        selectedVariant?.id,
+    ]);
+
     useEffect(() => {
         const url = listingShow.url(listing.slug, {
             query: selectedVariant

@@ -7,15 +7,17 @@ import type { StorefrontBrand, StorefrontBrowseFilters } from '@/types';
 
 function HiddenBrowseContext({
     filters,
+    omitCategory,
 }: {
     filters: StorefrontBrowseFilters;
+    omitCategory: boolean;
 }) {
     return (
         <>
             {filters.search && (
                 <input type="hidden" name="search" value={filters.search} />
             )}
-            {filters.category && (
+            {filters.category && !omitCategory && (
                 <input type="hidden" name="category" value={filters.category} />
             )}
             <input type="hidden" name="sort" value={filters.sort} />
@@ -65,11 +67,15 @@ export function StorefrontListingFilters({
     brands,
     idPrefix,
     className = '',
+    browseUrl = listingsIndex.url(),
+    omitCategory = false,
 }: {
     filters: StorefrontBrowseFilters;
     brands: StorefrontBrand[];
     idPrefix: string;
     className?: string;
+    browseUrl?: string;
+    omitCategory?: boolean;
 }) {
     const brandInputId = `${idPrefix}-brand`;
     const priceLimit = 1_000_000;
@@ -89,7 +95,9 @@ export function StorefrontListingFilters({
     );
     const resetQuery = {
         ...(filters.search ? { search: filters.search } : {}),
-        ...(filters.category ? { category: filters.category } : {}),
+        ...(filters.category && !omitCategory
+            ? { category: filters.category }
+            : {}),
     };
     const priceTrackStyle = {
         background: `linear-gradient(to right, #e2e8f0 ${(minimumPrice / priceLimit) * 100}%, #ff6d00 ${(minimumPrice / priceLimit) * 100}%, #ff6d00 ${(maximumPrice / priceLimit) * 100}%, #e2e8f0 ${(maximumPrice / priceLimit) * 100}%)`,
@@ -100,8 +108,15 @@ export function StorefrontListingFilters({
         }).format(price);
 
     return (
-        <Form {...listingsIndex.form()} className={`space-y-7 ${className}`}>
-            <HiddenBrowseContext filters={filters} />
+        <Form
+            action={browseUrl}
+            method="get"
+            className={`space-y-7 ${className}`}
+        >
+            <HiddenBrowseContext
+                filters={filters}
+                omitCategory={omitCategory}
+            />
 
             <RadioGroup
                 label="Condition"
@@ -228,7 +243,7 @@ export function StorefrontListingFilters({
                     Apply filters
                 </Button>
                 <Button asChild variant="outline" className="h-11 rounded-xl">
-                    <Link href={listingsIndex({ query: resetQuery })}>
+                    <Link href={browseUrl} data={resetQuery}>
                         <RotateCcw className="size-4" />
                         Reset
                     </Link>
