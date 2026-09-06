@@ -7,6 +7,7 @@ test('production deployment is gated and uses atomic releases', function () {
     $releaseScript = file_get_contents(base_path('.github/deploy/remote-release.sh'));
     $ssrInstaller = file_get_contents(base_path('.github/deploy/install-web-ssr.sh'));
     $ssrService = file_get_contents(base_path('.github/deploy/prodeals-ssr.service'));
+    $serverBootstrap = file_get_contents(base_path('.github/deploy/bootstrap-server.sh'));
     $buildEnvironment = file_get_contents(base_path('.env.example'));
     $composer = json_decode(file_get_contents(base_path('composer.json')), true, flags: JSON_THROW_ON_ERROR);
 
@@ -54,6 +55,9 @@ test('production deployment is gated and uses atomic releases', function () {
         ->toContain('ExecStart=/usr/bin/php8.4 artisan inertia:start-ssr --runtime=/usr/bin/node')
         ->toContain('MemoryMax=512M')
         ->toContain('Restart=always');
+
+    expect($serverBootstrap)
+        ->toContain('/usr/bin/supervisorctl status prodeals-worker');
 });
 
 test('production service configuration keeps queue timeout below retry interval', function () {

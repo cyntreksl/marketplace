@@ -91,7 +91,7 @@ if [[ "$role" == "web" ]]; then
         > /etc/sudoers.d/prodeals-deploy
 else
     printf '%s\n' \
-        'deploy ALL=(root) NOPASSWD: /usr/bin/supervisorctl stop prodeals-worker, /usr/bin/supervisorctl restart prodeals-worker, /usr/bin/supervisorctl reread, /usr/bin/supervisorctl update' \
+        'deploy ALL=(root) NOPASSWD: /usr/bin/supervisorctl stop prodeals-worker, /usr/bin/supervisorctl restart prodeals-worker, /usr/bin/supervisorctl status prodeals-worker, /usr/bin/supervisorctl reread, /usr/bin/supervisorctl update' \
         > /etc/sudoers.d/prodeals-deploy
 fi
 
