@@ -1,6 +1,6 @@
 import { Form, Head } from '@inertiajs/react';
 import { Clock3, Image, PackageCheck } from 'lucide-react';
-import { PortalLayout } from '@/components/portal-layout';
+import { BuyerPortalLayout } from '@/components/buyer-portal-layout';
 import { store } from '@/routes/buyer/returns';
 import { show as evidenceShow } from '@/routes/returns/evidence';
 
@@ -55,8 +55,16 @@ export default function BuyerReturns({
     returns: { data: ReturnRecord[] };
     reasons: Reason[];
 }) {
+    const eligibleItems = items.data.filter((item) => item.is_eligible);
+    const activeReturns = returns.data.filter(
+        (record) => !['rejected', 'refunded'].includes(record.status),
+    );
+    const completedReturns = returns.data.filter((record) =>
+        ['rejected', 'refunded'].includes(record.status),
+    );
+
     return (
-        <PortalLayout portal="buyer" title="Returns">
+        <BuyerPortalLayout title="Returns & refunds">
             <Head title="Returns" />
             <main className="mx-auto max-w-7xl space-y-10">
                 <header>
@@ -78,7 +86,7 @@ export default function BuyerReturns({
                         Purchased items
                     </h2>
                     <div className="mt-4 grid gap-4">
-                        {items.data.map((item) => (
+                        {eligibleItems.map((item) => (
                             <article
                                 key={item.id}
                                 className="rounded-2xl border bg-white p-5 shadow-sm dark:bg-slate-900"
@@ -254,91 +262,110 @@ export default function BuyerReturns({
                                 </div>
                             </article>
                         ))}
-                        {items.data.length === 0 && (
+                        {eligibleItems.length === 0 && (
                             <p className="rounded-2xl border border-dashed p-10 text-center text-muted-foreground">
-                                No purchased items are available yet.
+                                No items are currently eligible for return.
                             </p>
                         )}
                     </div>
                 </section>
 
-                <section aria-labelledby="request-history">
-                    <h2 id="request-history" className="text-2xl font-black">
-                        Request history
-                    </h2>
-                    <div className="mt-4 grid gap-4">
-                        {returns.data.map((record) => (
-                            <article
-                                key={record.id}
-                                className="rounded-2xl border bg-white p-5 dark:bg-slate-900"
-                            >
-                                <div className="flex flex-wrap items-start justify-between gap-4">
-                                    <div>
-                                        <h3 className="font-bold">
-                                            {record.item.title}
-                                        </h3>
-                                        <p className="mt-1 text-sm text-muted-foreground">
-                                            {record.item.seller_name} ·{' '}
-                                            {record.item.seller_order_number}
-                                        </p>
-                                    </div>
-                                    <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary capitalize">
-                                        {record.status.replaceAll('_', ' ')}
-                                    </span>
-                                </div>
-                                <p className="mt-4 text-sm">
-                                    {record.reason_label} · Quantity{' '}
-                                    {record.quantity} · LKR{' '}
-                                    {Number(
-                                        record.refund_amount,
-                                    ).toLocaleString()}
-                                </p>
-                                <p className="mt-2 text-sm text-muted-foreground">
-                                    {record.description}
-                                </p>
-                                {record.resolution_reason && (
-                                    <p className="mt-3 rounded-lg bg-slate-100 p-3 text-sm dark:bg-slate-950">
-                                        Seller response:{' '}
-                                        {record.resolution_reason}
-                                    </p>
-                                )}
-                                {record.evidence.length > 0 && (
-                                    <div className="mt-4 flex flex-wrap gap-2">
-                                        {record.evidence.map((file) => (
-                                            <a
-                                                key={file.index}
-                                                href={
-                                                    evidenceShow({
-                                                        returnRequest:
-                                                            record.id,
-                                                        evidence: file.index,
-                                                    }).url
+                {[
+                    {
+                        id: 'active-requests',
+                        title: 'Active requests',
+                        records: activeReturns,
+                        empty: 'You have no active return requests.',
+                    },
+                    {
+                        id: 'completed-returns',
+                        title: 'Completed & refund history',
+                        records: completedReturns,
+                        empty: 'Completed returns and refunds will appear here.',
+                    },
+                ].map((group) => (
+                    <section key={group.id} aria-labelledby={group.id}>
+                        <h2 id={group.id} className="text-2xl font-black">
+                            {group.title}
+                        </h2>
+                        <div className="mt-4 grid gap-4">
+                            {group.records.map((record) => (
+                                <article
+                                    key={record.id}
+                                    className="rounded-2xl border bg-white p-5 dark:bg-slate-900"
+                                >
+                                    <div className="flex flex-wrap items-start justify-between gap-4">
+                                        <div>
+                                            <h3 className="font-bold">
+                                                {record.item.title}
+                                            </h3>
+                                            <p className="mt-1 text-sm text-muted-foreground">
+                                                {record.item.seller_name} ·{' '}
+                                                {
+                                                    record.item
+                                                        .seller_order_number
                                                 }
-                                                className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold hover:border-primary hover:text-primary"
-                                            >
-                                                <Image className="size-4" />
-                                                {file.name}
-                                            </a>
-                                        ))}
+                                            </p>
+                                        </div>
+                                        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary capitalize">
+                                            {record.status.replaceAll('_', ' ')}
+                                        </span>
                                     </div>
-                                )}
-                                {record.status === 'rejected' && (
-                                    <p className="mt-4 text-sm text-muted-foreground">
-                                        Seller decisions are final in the
-                                        portal. Email support@prodeals.lk if you
-                                        need assistance.
+                                    <p className="mt-4 text-sm">
+                                        {record.reason_label} · Quantity{' '}
+                                        {record.quantity} · LKR{' '}
+                                        {Number(
+                                            record.refund_amount,
+                                        ).toLocaleString()}
                                     </p>
-                                )}
-                            </article>
-                        ))}
-                        {returns.data.length === 0 && (
-                            <p className="rounded-2xl border border-dashed p-10 text-center text-muted-foreground">
-                                You have not submitted a return request.
-                            </p>
-                        )}
-                    </div>
-                </section>
+                                    <p className="mt-2 text-sm text-muted-foreground">
+                                        {record.description}
+                                    </p>
+                                    {record.resolution_reason && (
+                                        <p className="mt-3 rounded-lg bg-slate-100 p-3 text-sm dark:bg-slate-950">
+                                            Seller response:{' '}
+                                            {record.resolution_reason}
+                                        </p>
+                                    )}
+                                    {record.evidence.length > 0 && (
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            {record.evidence.map((file) => (
+                                                <a
+                                                    key={file.index}
+                                                    href={
+                                                        evidenceShow({
+                                                            returnRequest:
+                                                                record.id,
+                                                            evidence:
+                                                                file.index,
+                                                        }).url
+                                                    }
+                                                    className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold hover:border-primary hover:text-primary"
+                                                >
+                                                    <Image className="size-4" />
+                                                    {file.name}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {record.status === 'rejected' && (
+                                        <p className="mt-4 text-sm text-muted-foreground">
+                                            Seller decisions are final in the
+                                            portal. Email support@prodeals.lk if
+                                            you need assistance.
+                                        </p>
+                                    )}
+                                </article>
+                            ))}
+                            {group.records.length === 0 && (
+                                <p className="rounded-2xl border border-dashed p-10 text-center text-muted-foreground">
+                                    {group.empty}
+                                </p>
+                            )}
+                        </div>
+                    </section>
+                ))}
             </main>
-        </PortalLayout>
+        </BuyerPortalLayout>
     );
 }

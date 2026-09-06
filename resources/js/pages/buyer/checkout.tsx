@@ -1,7 +1,6 @@
 import { Form, Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
-    BadgeCheck,
     Clock3,
     Home,
     LockKeyhole,
@@ -20,7 +19,12 @@ import { StorefrontLayout } from '@/components/storefront-layout';
 import { useStorefrontHeaderHeight } from '@/hooks/use-storefront-header-height';
 import { show as cartShow } from '@/routes/cart';
 import { store as checkoutStore } from '@/routes/checkout';
-import type { CheckoutCart, CheckoutCartItem, ShippingAddress } from '@/types';
+import type {
+    BuyerAddress,
+    CheckoutCart,
+    CheckoutCartItem,
+    ShippingAddress,
+} from '@/types';
 
 type CheckoutSectionProps = {
     number: number;
@@ -175,46 +179,26 @@ function DeliveryOption({
     );
 }
 
-function TrustItem({
-    icon: Icon,
-    title,
-    description,
-}: {
-    icon: LucideIcon;
-    title: string;
-    description: string;
-}) {
-    return (
-        <div className="flex items-start gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-orange-50 text-[#ff5a00]">
-                <Icon className="size-5" />
-            </span>
-            <span>
-                <strong className="block text-sm text-slate-900">
-                    {title}
-                </strong>
-                <span className="mt-0.5 block text-sm leading-5 text-slate-500">
-                    {description}
-                </span>
-            </span>
-        </div>
-    );
-}
-
 export default function BuyerCheckout({
     cart,
     shippingAddress,
     billingAddress = null,
+    savedAddresses,
 }: {
     cart: CheckoutCart;
     shippingAddress: ShippingAddress | null;
     billingAddress?: ShippingAddress | null;
+    savedAddresses: BuyerAddress[];
 }) {
     const { auth } = usePage().props;
     const headerHeight = useStorefrontHeaderHeight();
     const [billingMethod, setBillingMethod] = useState(
         billingAddress ? 'different' : 'shipping',
     );
+    const [selectedShipping, setSelectedShipping] = useState(shippingAddress);
+    const [selectedBilling, setSelectedBilling] = useState(billingAddress);
+    const [shippingAddressKey, setShippingAddressKey] = useState('initial');
+    const [billingAddressKey, setBillingAddressKey] = useState('initial');
 
     const itemPrice = (item: CheckoutCartItem): number =>
         Number(
@@ -286,11 +270,12 @@ export default function BuyerCheckout({
                                                 />
                                             </label>
                                             <Field
+                                                key={`phone-${shippingAddressKey}`}
                                                 label="Phone Number"
                                                 name="phone"
                                                 type="tel"
                                                 defaultValue={
-                                                    shippingAddress?.phone
+                                                    selectedShipping?.phone
                                                 }
                                                 placeholder="0771234567"
                                                 required
@@ -313,12 +298,72 @@ export default function BuyerCheckout({
                                         title="Shipping Address"
                                         icon={Home}
                                     >
-                                        <div className="grid gap-4">
+                                        {savedAddresses.some(
+                                            (address) =>
+                                                address.shipping_enabled,
+                                        ) && (
+                                            <label className="mb-4 grid gap-1.5 text-sm font-semibold text-slate-700">
+                                                Use a saved shipping address
+                                                <select
+                                                    defaultValue=""
+                                                    className={inputClassName}
+                                                    onChange={(event) => {
+                                                        const address =
+                                                            savedAddresses.find(
+                                                                (candidate) =>
+                                                                    candidate.id ===
+                                                                    Number(
+                                                                        event
+                                                                            .currentTarget
+                                                                            .value,
+                                                                    ),
+                                                            );
+                                                        setSelectedShipping(
+                                                            address ?? null,
+                                                        );
+                                                        setShippingAddressKey(
+                                                            event.currentTarget
+                                                                .value ||
+                                                                'manual',
+                                                        );
+                                                    }}
+                                                >
+                                                    <option value="">
+                                                        Enter a different
+                                                        address
+                                                    </option>
+                                                    {savedAddresses
+                                                        .filter(
+                                                            (address) =>
+                                                                address.shipping_enabled,
+                                                        )
+                                                        .map((address) => (
+                                                            <option
+                                                                key={address.id}
+                                                                value={
+                                                                    address.id
+                                                                }
+                                                            >
+                                                                {address.label}{' '}
+                                                                —{' '}
+                                                                {
+                                                                    address.address_line_one
+                                                                }
+                                                                , {address.city}
+                                                            </option>
+                                                        ))}
+                                                </select>
+                                            </label>
+                                        )}
+                                        <div
+                                            key={shippingAddressKey}
+                                            className="grid gap-4"
+                                        >
                                             <Field
                                                 label="Full Name"
                                                 name="recipient_name"
                                                 defaultValue={
-                                                    shippingAddress?.recipient_name ??
+                                                    selectedShipping?.recipient_name ??
                                                     auth.user.name
                                                 }
                                                 placeholder="Saman Perera"
@@ -329,7 +374,7 @@ export default function BuyerCheckout({
                                                 label="Address Line 1"
                                                 name="address_line_one"
                                                 defaultValue={
-                                                    shippingAddress?.address_line_one
+                                                    selectedShipping?.address_line_one
                                                 }
                                                 placeholder="123, Galle Road"
                                                 required
@@ -339,7 +384,7 @@ export default function BuyerCheckout({
                                                 label="Address Line 2 (Optional)"
                                                 name="address_line_two"
                                                 defaultValue={
-                                                    shippingAddress?.address_line_two ??
+                                                    selectedShipping?.address_line_two ??
                                                     undefined
                                                 }
                                                 placeholder="Apartment 5B, Ocean View Residencies"
@@ -350,7 +395,7 @@ export default function BuyerCheckout({
                                                     label="City"
                                                     name="city"
                                                     defaultValue={
-                                                        shippingAddress?.city
+                                                        selectedShipping?.city
                                                     }
                                                     placeholder="Colombo"
                                                     required
@@ -360,12 +405,43 @@ export default function BuyerCheckout({
                                                     label="Postal Code"
                                                     name="postal_code"
                                                     defaultValue={
-                                                        shippingAddress?.postal_code ??
+                                                        selectedShipping?.postal_code ??
                                                         undefined
                                                     }
                                                     placeholder="00300"
                                                     error={errors.postal_code}
                                                 />
+                                            </div>
+                                            <div className="rounded-lg bg-orange-50 p-3">
+                                                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                                    <input
+                                                        type="checkbox"
+                                                        name="save_shipping_address"
+                                                        value="1"
+                                                        className="size-4 accent-[#ff5a00]"
+                                                    />
+                                                    Save these details as a new
+                                                    address
+                                                </label>
+                                                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                                    <input
+                                                        name="shipping_address_label"
+                                                        placeholder="Label, e.g. Home"
+                                                        aria-label="New shipping address label"
+                                                        className={
+                                                            inputClassName
+                                                        }
+                                                    />
+                                                    <label className="flex items-center gap-2 text-sm text-slate-600">
+                                                        <input
+                                                            type="checkbox"
+                                                            name="save_shipping_for_billing"
+                                                            value="1"
+                                                            className="size-4 accent-[#ff5a00]"
+                                                        />
+                                                        Also allow for billing
+                                                    </label>
+                                                </div>
                                             </div>
                                         </div>
                                     </CheckoutSection>
@@ -486,6 +562,75 @@ export default function BuyerCheckout({
                                             <legend className="sr-only">
                                                 Different billing address
                                             </legend>
+                                            {savedAddresses.some(
+                                                (address) =>
+                                                    address.billing_enabled,
+                                            ) && (
+                                                <label className="grid gap-1.5 text-sm font-semibold text-slate-700 sm:col-span-2">
+                                                    Use a saved billing address
+                                                    <select
+                                                        defaultValue=""
+                                                        className={
+                                                            inputClassName
+                                                        }
+                                                        onChange={(event) => {
+                                                            const address =
+                                                                savedAddresses.find(
+                                                                    (
+                                                                        candidate,
+                                                                    ) =>
+                                                                        candidate.id ===
+                                                                        Number(
+                                                                            event
+                                                                                .currentTarget
+                                                                                .value,
+                                                                        ),
+                                                                );
+                                                            setSelectedBilling(
+                                                                address ?? null,
+                                                            );
+                                                            setBillingAddressKey(
+                                                                event
+                                                                    .currentTarget
+                                                                    .value ||
+                                                                    'manual',
+                                                            );
+                                                        }}
+                                                    >
+                                                        <option value="">
+                                                            Enter a different
+                                                            address
+                                                        </option>
+                                                        {savedAddresses
+                                                            .filter(
+                                                                (address) =>
+                                                                    address.billing_enabled,
+                                                            )
+                                                            .map((address) => (
+                                                                <option
+                                                                    key={
+                                                                        address.id
+                                                                    }
+                                                                    value={
+                                                                        address.id
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        address.label
+                                                                    }{' '}
+                                                                    —{' '}
+                                                                    {
+                                                                        address.address_line_one
+                                                                    }
+                                                                    ,{' '}
+                                                                    {
+                                                                        address.city
+                                                                    }
+                                                                </option>
+                                                            ))}
+                                                    </select>
+                                                </label>
+                                            )}
                                             {(
                                                 [
                                                     {
@@ -535,6 +680,7 @@ export default function BuyerCheckout({
                                                     }
                                                 >
                                                     <Field
+                                                        key={`${field.key}-${billingAddressKey}`}
                                                         label={field.label}
                                                         name={`billing_${field.key}`}
                                                         type={
@@ -544,7 +690,7 @@ export default function BuyerCheckout({
                                                                 : 'text'
                                                         }
                                                         defaultValue={
-                                                            billingAddress?.[
+                                                            selectedBilling?.[
                                                                 field.key
                                                             ] ?? undefined
                                                         }
@@ -559,6 +705,24 @@ export default function BuyerCheckout({
                                                     />
                                                 </div>
                                             ))}
+                                            <div className="rounded-lg bg-orange-50 p-3 sm:col-span-2">
+                                                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                                    <input
+                                                        type="checkbox"
+                                                        name="save_billing_address"
+                                                        value="1"
+                                                        className="size-4 accent-[#ff5a00]"
+                                                    />
+                                                    Save this as a new billing
+                                                    address
+                                                </label>
+                                                <input
+                                                    name="billing_address_label"
+                                                    placeholder="Label, e.g. Office billing"
+                                                    aria-label="New billing address label"
+                                                    className={`${inputClassName} mt-3`}
+                                                />
+                                            </div>
                                         </fieldset>
                                     </CheckoutSection>
                                 </div>

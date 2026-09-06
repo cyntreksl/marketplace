@@ -1,13 +1,13 @@
 import { Form, Head, usePage } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
-import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { edit } from '@/routes/profile';
+import { update as updateBuyerProfile } from '@/routes/buyer/settings/profile';
+import { edit, update as updateProfile } from '@/routes/profile';
 import { send } from '@/routes/verification';
 import type { Auth } from '@/types';
 
@@ -18,9 +18,11 @@ type PageProps = {
 export default function Profile({
     mustVerifyEmail,
     status,
+    buyer = false,
 }: {
     mustVerifyEmail: boolean;
     status?: string;
+    buyer?: boolean;
 }) {
     const { auth } = usePage<PageProps>().props;
 
@@ -38,7 +40,9 @@ export default function Profile({
                 />
 
                 <Form
-                    {...ProfileController.update.form()}
+                    {...(buyer
+                        ? updateBuyerProfile.form()
+                        : updateProfile.form())}
                     options={{
                         preserveScroll: true,
                     }}
@@ -123,7 +127,7 @@ export default function Profile({
                 </Form>
             </div>
 
-            <DeleteUser />
+            <DeleteUser buyer={buyer} />
         </>
     );
 }
