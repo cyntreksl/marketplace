@@ -165,6 +165,12 @@ jobs:
           curl --fail --silent --show-error --retry 20 --retry-delay 3 --retry-max-time 90 \
             --retry-connrefused --retry-all-errors https://prodeals.lk/up
 
+          curl --fail --silent --show-error --max-time 30 \
+            --header 'Accept: application/json, text/event-stream' \
+            --header 'Content-Type: application/json' \
+            --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"deployment-smoke-test","version":"1.0.0"}}}' \
+            https://prodeals.lk/mcp/marketplace
+
           for host in "$WEB_HOST" "$WORKER_HOST"; do
             ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "${remote_script} cleanup ${RELEASE_ID}"
             ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "rm -f ${remote_artifact} ${remote_script}"
