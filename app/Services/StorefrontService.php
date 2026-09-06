@@ -34,15 +34,16 @@ class StorefrontService
         return [
             'categories' => $this->storefrontCategories(),
             'promotions' => [
-                'hero' => $this->promotionData('hero', 1, [
+                'hero' => [
                     [
+                        'id' => null,
                         'title' => 'Bring home better deals',
                         'artworkAlt' => 'ProDeals.lk banner promoting up to 40 percent off selected appliances, gadgets, and essentials',
                         'containsEmbeddedCopy' => true,
-                        'imageUrl' => $this->staticMedia->url('images/storefront/home-deals-banner.png'),
+                        'imageUrl' => $this->staticMedia->url('images/storefront/home-deals-banner.png', versioned: true),
                         'linkUrl' => '/collections/deals',
                     ],
-                ]),
+                ],
                 'secondary' => $this->promotionData('secondary', 2, [
                     ['title' => 'Refresh your everyday spaces', 'imageUrl' => $this->staticMedia->url('images/storefront/home-lifestyle.jpg'), 'linkUrl' => '/listings'],
                     ['title' => 'Technology that fits your day', 'imageUrl' => $this->staticMedia->url('images/storefront/technology.jpg'), 'linkUrl' => '/listings?category=electronics'],

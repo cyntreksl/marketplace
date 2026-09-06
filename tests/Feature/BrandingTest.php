@@ -29,17 +29,17 @@ test('runtime site images use the configured Cloudflare media domain', function 
         'filesystems.disks.r2.url' => 'https://media.prodeals.lk',
     ]);
     Promotion::factory()->create([
-        'placement' => 'hero',
-        'image_path' => 'promotions/cloudflare-hero.jpg',
+        'placement' => 'secondary',
+        'image_path' => 'promotions/cloudflare-secondary.jpg',
         'image_disk' => 'r2',
     ]);
 
     $home = $this->get(route('home'))->assertOk();
 
     expect($home->inertiaProps('promotions.hero.0.imageUrl'))
-        ->toBe('https://media.prodeals.lk/promotions/cloudflare-hero.jpg')
+        ->toBe('https://media.prodeals.lk/site/images/storefront/home-deals-banner.png?v='.hash_file('sha256', public_path('images/storefront/home-deals-banner.png')))
         ->and($home->inertiaProps('promotions.secondary.0.imageUrl'))
-        ->toBe('https://media.prodeals.lk/site/images/storefront/home-lifestyle.jpg')
+        ->toBe('https://media.prodeals.lk/promotions/cloudflare-secondary.jpg')
         ->and(implode('', $home->inertiaProps('head')))
         ->toContain('https://media.prodeals.lk/site/prodeals-social-card.png')
         ->and($home->getContent())

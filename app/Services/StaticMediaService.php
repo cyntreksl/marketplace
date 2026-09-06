@@ -22,15 +22,14 @@ class StaticMediaService
         'images/storefront/technology.jpg',
     ];
 
-    public function url(string $path): string
+    public function url(string $path, bool $versioned = false): string
     {
         $disk = (string) config('filesystems.media', 'public');
+        $url = $disk === 'public'
+            ? asset($path)
+            : Storage::disk($disk)->url($this->objectPath($path));
 
-        if ($disk === 'public') {
-            return asset($path);
-        }
-
-        return Storage::disk($disk)->url($this->objectPath($path));
+        return $versioned ? $url.'?v='.hash_file('sha256', public_path($path)) : $url;
     }
 
     public function objectPath(string $path): string

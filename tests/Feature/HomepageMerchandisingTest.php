@@ -2,6 +2,7 @@
 
 use App\Models\Category;
 use App\Models\Listing;
+use App\Models\Promotion;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
@@ -120,7 +121,13 @@ test('homepage output filters curated listings and uses the reference-first coll
         ->toContain('Become a Seller');
 });
 
-test('homepage starts with the single home deals banner', function () {
+test('homepage keeps the uploaded single banner even when legacy hero promotions exist', function (string $disk) {
+    config()->set('filesystems.media', $disk);
+    $legacyPromotion = Promotion::factory()->create([
+        'title' => 'Discover better deals, closer to home',
+        'placement' => 'hero',
+        'is_active' => true,
+    ]);
     $response = $this->get(route('home'))->assertOk();
     $homepageComponent = file_get_contents(resource_path('js/pages/storefront/home.tsx'));
 
@@ -129,14 +136,18 @@ test('homepage starts with the single home deals banner', function () {
         ->and($response->inertiaProps('promotions.hero.0.title'))
         ->toBe('Bring home better deals')
         ->and($response->inertiaProps('promotions.hero.0.imageUrl'))
-        ->toEndWith('/images/storefront/home-deals-banner.png')
+        ->toEndWith('/images/storefront/home-deals-banner.png?v='.hash_file('sha256', public_path('images/storefront/home-deals-banner.png')))
+        ->and($response->inertiaProps('promotions.hero.0.id'))
+        ->toBeNull()
         ->and($response->inertiaProps('promotions.hero.0.containsEmbeddedCopy'))
         ->toBeTrue()
         ->and(public_path('images/storefront/home-deals-banner.png'))
         ->toBeFile()
         ->and($homepageComponent)
         ->toContain('aspect-[3/1]');
-});
+
+    $this->assertDatabaseHas('promotions', ['id' => $legacyPromotion->id, 'is_active' => true]);
+})->with(['r2', 'public']);
 
 test('homepage exposes the seller portal state for seller accounts', function () {
     $seller = User::factory()->create();

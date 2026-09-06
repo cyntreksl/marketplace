@@ -76,16 +76,17 @@ test('an admin can delete a homepage promotion and remove it from the storefront
 });
 
 test('the storefront returns only active currently scheduled promotions in display order', function () {
-    Promotion::factory()->create(['title' => 'Second', 'placement' => 'hero', 'sort_order' => 2]);
-    Promotion::factory()->create(['title' => 'First', 'placement' => 'hero', 'sort_order' => 1]);
-    Promotion::factory()->create(['title' => 'Future', 'placement' => 'hero', 'starts_at' => now()->addDay()]);
-    Promotion::factory()->create(['title' => 'Expired', 'placement' => 'hero', 'ends_at' => now()->subDay()]);
-    Promotion::factory()->create(['title' => 'Inactive', 'placement' => 'hero', 'is_active' => false]);
+    Promotion::factory()->create(['title' => 'Second', 'placement' => 'secondary', 'sort_order' => 2]);
+    Promotion::factory()->create(['title' => 'First', 'placement' => 'secondary', 'sort_order' => 1]);
+    Promotion::factory()->create(['title' => 'Future', 'placement' => 'secondary', 'starts_at' => now()->addDay()]);
+    Promotion::factory()->create(['title' => 'Expired', 'placement' => 'secondary', 'ends_at' => now()->subDay()]);
+    Promotion::factory()->create(['title' => 'Inactive', 'placement' => 'secondary', 'is_active' => false]);
 
-    $promotions = $this->get(route('home'))->assertOk()->inertiaProps('promotions.hero');
+    $promotions = $this->get(route('home'))->assertOk()->inertiaProps('promotions.secondary');
 
-    expect($promotions)->toHaveCount(1)
-        ->and($promotions[0]['title'])->toBe('First');
+    expect($promotions)->toHaveCount(2)
+        ->and($promotions[0]['title'])->toBe('First')
+        ->and($promotions[1]['title'])->toBe('Second');
 });
 
 test('non operations users cannot manage promotions', function () {

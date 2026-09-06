@@ -17,3 +17,6 @@ Seller removal is lifecycle-sensitive: soft-delete a listing only when it has no
 
 ## Keep cart and payment operations replay safe
 Guest carts live in the session and merge through durable cart_merges tokens; preserve these tokens when changing authentication handoff. Cart, drawer, and checkout use CartService summaries, with checkout.shipping_fee charged once per customer order. Stripe payment expires_at is the local 30-minute reservation deadline: reconcile and expire the provider session before releasing inventory, and keep provider_reference as the PaymentIntent ID for refunds.
+
+## Keep the homepage hero as the selected single artwork
+The homepage hero is the selected home-deals-banner.png artwork, displayed without added text or gradients; legacy hero promotions must not override it. Secondary and flash-sale promotions remain scheduled. Version this static banner URL from its contents because the R2 custom domain can cache a missing object before upload.
