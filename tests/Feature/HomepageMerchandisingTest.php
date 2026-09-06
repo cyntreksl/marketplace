@@ -144,7 +144,8 @@ test('homepage keeps the uploaded single banner even when legacy hero promotions
         ->and(public_path('images/storefront/home-deals-banner.png'))
         ->toBeFile()
         ->and($homepageComponent)
-        ->toContain('aspect-[3/1]');
+        ->toContain("? 'aspect-[3/1] w-full'")
+        ->not->toContain('aspect-[3/1] min-h');
 
     $this->assertDatabaseHas('promotions', ['id' => $legacyPromotion->id, 'is_active' => true]);
 })->with(['r2', 'public']);

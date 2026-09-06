@@ -50,7 +50,7 @@ function HeroBanner({ slides }: { slides: StorefrontPromotion[] }) {
     }
 
     const heroSizing = slide.containsEmbeddedCopy
-        ? 'aspect-[3/1] min-h-[19rem] sm:min-h-[21rem] lg:min-h-0'
+        ? 'aspect-[3/1] w-full'
         : 'min-h-[19rem] sm:min-h-[21rem] lg:min-h-[22rem]';
 
     return (
