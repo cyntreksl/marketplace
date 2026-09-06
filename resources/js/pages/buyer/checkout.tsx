@@ -13,9 +13,11 @@ import {
     Truck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { CheckoutProgress } from '@/components/checkout-progress';
 import { StorefrontLayout } from '@/components/storefront-layout';
+import { useStorefrontHeaderHeight } from '@/hooks/use-storefront-header-height';
 import { show as cartShow } from '@/routes/cart';
 import { store as checkoutStore } from '@/routes/checkout';
 import type { CheckoutCart, CheckoutCartItem, ShippingAddress } from '@/types';
@@ -211,6 +213,24 @@ export default function BuyerCheckout({
     shippingAddress: ShippingAddress | null;
 }) {
     const { auth } = usePage().props;
+    const summaryRef = useRef<HTMLElement>(null);
+    const [summaryHeight, setSummaryHeight] = useState(0);
+    const headerHeight = useStorefrontHeaderHeight();
+    const hasItems = cart.items.length > 0;
+
+    useEffect(() => {
+        if (!summaryRef.current) {
+            return;
+        }
+
+        const observer = new ResizeObserver(([entry]) =>
+            setSummaryHeight(entry.target.getBoundingClientRect().height),
+        );
+        observer.observe(summaryRef.current);
+
+        return () => observer.disconnect();
+    }, [hasItems]);
+
     const itemPrice = (item: CheckoutCartItem): number =>
         Number(
             item.variant?.selling_price ??
@@ -440,8 +460,12 @@ export default function BuyerCheckout({
                                 </div>
 
                                 <aside
+                                    ref={summaryRef}
                                     id="order-summary"
-                                    className="grid scroll-mt-36 gap-4 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:overscroll-contain"
+                                    className="scroll-mt-36 lg:sticky"
+                                    style={{
+                                        top: `min(${headerHeight + 16}px, calc(100dvh - ${summaryHeight + 16}px))`,
+                                    }}
                                 >
                                     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_6px_24px_rgba(15,23,42,0.07)]">
                                         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4 sm:px-5">
@@ -474,7 +498,7 @@ export default function BuyerCheckout({
                                                 return (
                                                     <li
                                                         key={item.id}
-                                                        className="flex gap-3 py-4"
+                                                        className="flex gap-3 py-4 lg:py-3"
                                                     >
                                                         <div className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-lg border border-slate-100 bg-slate-50">
                                                             {imageUrl ? (
@@ -664,25 +688,25 @@ export default function BuyerCheckout({
                                             </p>
                                         </div>
                                     </section>
-
-                                    <section className="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-[0_3px_18px_rgba(15,23,42,0.04)]">
-                                        <TrustItem
-                                            icon={LockKeyhole}
-                                            title="100% Secure Checkout"
-                                            description="Your checkout data is protected with SSL encryption."
-                                        />
-                                        <TrustItem
-                                            icon={BadgeCheck}
-                                            title="Genuine Products"
-                                            description="Shop approved products from verified sellers."
-                                        />
-                                        <TrustItem
-                                            icon={Truck}
-                                            title="Islandwide Delivery"
-                                            description="Reliable delivery service across Sri Lanka."
-                                        />
-                                    </section>
                                 </aside>
+
+                                <section className="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-[0_3px_18px_rgba(15,23,42,0.04)] sm:grid-cols-3 lg:col-span-2">
+                                    <TrustItem
+                                        icon={LockKeyhole}
+                                        title="100% Secure Checkout"
+                                        description="Your checkout data is protected with SSL encryption."
+                                    />
+                                    <TrustItem
+                                        icon={BadgeCheck}
+                                        title="Genuine Products"
+                                        description="Shop approved products from verified sellers."
+                                    />
+                                    <TrustItem
+                                        icon={Truck}
+                                        title="Islandwide Delivery"
+                                        description="Reliable delivery service across Sri Lanka."
+                                    />
+                                </section>
                             </div>
                         )}
                     </Form>

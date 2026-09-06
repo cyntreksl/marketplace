@@ -150,3 +150,15 @@ test('checkout exposes one payment action and prevents checkout for unavailable 
         /Continue to Payment|View summary/,
     );
 });
+
+test('the sticky summary ends after payment controls and has no internal scroll box', () => {
+    const html = renderCheckout();
+    const summary = html.match(
+        /<aside[^>]*id="order-summary"[^>]*>[\s\S]*?<\/aside>/,
+    )[0];
+
+    assert.match(summary, /Total Payable/);
+    assert.match(summary, /Continue to Payment/);
+    assert.doesNotMatch(summary, /overflow-y-auto|max-h-|100% Secure Checkout/);
+    assert.ok(html.indexOf('100% Secure Checkout') > html.indexOf('</aside>'));
+});
