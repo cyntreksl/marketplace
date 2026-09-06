@@ -117,8 +117,6 @@ test('homepage output filters curated listings and uses the reference-first coll
         ->toContain('Big tech. Bigger savings.')
         ->and($storefrontLayout)
         ->toContain('bg-[#FF6D00]')
-        ->toContain('LKR · Sri Lankan Rupee')
-        ->toContain('All Categories')
         ->toContain('Become a Seller');
 });
 

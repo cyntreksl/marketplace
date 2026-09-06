@@ -5,12 +5,17 @@ namespace App\Http\Middleware;
 use App\Models\Role;
 use App\Services\CartService;
 use App\Services\SeoHeadService;
+use App\Services\StorefrontService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
-    public function __construct(private readonly SeoHeadService $seo, private readonly CartService $carts) {}
+    public function __construct(
+        private readonly SeoHeadService $seo,
+        private readonly CartService $carts,
+        private readonly StorefrontService $storefront,
+    ) {}
 
     /**
      * The root template that's loaded on the first page visit.
@@ -47,6 +52,9 @@ class HandleInertiaRequests extends Middleware
             'head' => $this->seo->tags($seo),
             'seo' => $seo,
             'name' => config('app.name'),
+            ...($request->route('component') === 'storefront/content/show' ? [
+                'categories' => fn () => $this->storefront->navigationCategories(),
+            ] : []),
             'auth' => [
                 'user' => $request->user(),
                 'is_seller' => $request->user()?->roles()

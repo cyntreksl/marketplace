@@ -85,14 +85,17 @@ export function DesktopStorefrontCategoryMenu({
     categories,
     selectedCategorySlug,
     isAllProductsSelected,
+    compact = false,
 }: {
     categories: StorefrontCategory[];
     selectedCategorySlug: string | null;
     isAllProductsSelected: boolean;
+    compact?: boolean;
 }) {
     const menuId = useId();
     const closeTimer = useRef<number | null>(null);
     const menuRegion = useRef<HTMLDivElement>(null);
+    const trigger = useRef<HTMLButtonElement>(null);
     const currentParent = selectedParent(categories, selectedCategorySlug);
     const [isOpen, setIsOpen] = useState(false);
     const [activeCategoryId, setActiveCategoryId] = useState<number | null>(
@@ -150,12 +153,23 @@ export function DesktopStorefrontCategoryMenu({
         const handleEscape = (event: globalThis.KeyboardEvent) => {
             if (event.key === 'Escape') {
                 closeMenu();
+                trigger.current?.focus();
+            }
+        };
+
+        const handleOutsideClick = (event: PointerEvent) => {
+            if (!menuRegion.current?.contains(event.target as Node)) {
+                closeMenu();
             }
         };
 
         document.addEventListener('keydown', handleEscape);
+        document.addEventListener('pointerdown', handleOutsideClick);
 
-        return () => document.removeEventListener('keydown', handleEscape);
+        return () => {
+            document.removeEventListener('keydown', handleEscape);
+            document.removeEventListener('pointerdown', handleOutsideClick);
+        };
     });
 
     useEffect(
@@ -173,161 +187,155 @@ export function DesktopStorefrontCategoryMenu({
             className="relative z-30"
             onPointerEnter={openMenu}
             onPointerLeave={scheduleClose}
-            onFocus={focusMenu}
             onBlur={handleBlur}
         >
             <button
+                ref={trigger}
                 type="button"
+                aria-label="All categories"
                 aria-controls={menuId}
                 aria-expanded={isOpen}
                 onClick={openMenu}
-                className="inline-flex min-h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-black text-primary-foreground shadow-sm shadow-primary/25 transition hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none dark:focus-visible:ring-offset-slate-950"
+                onKeyDown={(event) => {
+                    if (event.key === 'ArrowDown') {
+                        event.preventDefault();
+                        focusMenu();
+                    }
+                }}
+                className={`inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-full text-sm font-bold transition hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${compact ? 'w-10 border border-slate-200 text-slate-900' : 'bg-slate-100 px-4 text-slate-900'}`}
             >
-                <Menu className="size-4" />
-                All categories
-                <ChevronDown
-                    className={`size-4 transition ${isOpen ? 'rotate-180' : ''}`}
-                />
+                <Menu className="size-5" />
+                {!compact && (
+                    <>
+                        All categories
+                        <ChevronDown
+                            className={`size-4 transition ${isOpen ? 'rotate-180' : ''}`}
+                        />
+                    </>
+                )}
             </button>
 
             {isOpen && (
-                <>
-                    <button
-                        type="button"
-                        aria-label="Close category menu"
-                        onClick={closeMenu}
-                        className="fixed inset-x-0 top-[7.75rem] bottom-0 z-10 cursor-default bg-slate-950/45 backdrop-blur-[1px]"
-                    />
-                    <div
-                        id={menuId}
-                        className="absolute top-[calc(100%+0.5rem)] left-0 z-20 flex max-h-[calc(100vh-9rem)] rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 dark:border-slate-700 dark:bg-slate-950"
+                <div
+                    id={menuId}
+                    onFocus={focusMenu}
+                    className="absolute top-[calc(100%+0.5rem)] left-0 z-20 flex max-h-[min(36rem,calc(100dvh-9rem))] rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 dark:border-slate-700 dark:bg-slate-950"
+                >
+                    <nav
+                        aria-label="Marketplace categories"
+                        className="w-80 shrink-0 overflow-y-auto p-3"
                     >
-                        <nav
-                            aria-label="Marketplace categories"
-                            className="w-80 shrink-0 overflow-y-auto p-3"
+                        <p className="px-3 pt-2 pb-3 text-xs font-black tracking-[0.16em] text-primary uppercase">
+                            Shop by category
+                        </p>
+                        <Link
+                            href={listingsIndex()}
+                            onClick={closeMenu}
+                            aria-current={
+                                isAllProductsSelected ? 'page' : undefined
+                            }
+                            className={`mb-1 flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
+                                isAllProductsSelected
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'text-slate-700 hover:bg-primary/10 hover:text-primary dark:text-slate-200'
+                            }`}
                         >
-                            <p className="px-3 pt-2 pb-3 text-xs font-black tracking-[0.16em] text-primary uppercase">
-                                Shop by category
+                            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                                <Menu className="size-4" />
+                            </span>
+                            All products
+                        </Link>
+                        {categories.map((category) => {
+                            const CategoryIcon =
+                                categoryIcons[category.slug] ?? PackageSearch;
+                            const isActive = category.id === activeCategory?.id;
+                            const isSelected = categoryContainsSlug(
+                                category,
+                                selectedCategorySlug,
+                            );
+
+                            return (
+                                <Link
+                                    key={category.id}
+                                    href={categoryHref(category.slug)}
+                                    onClick={closeMenu}
+                                    onPointerEnter={() =>
+                                        setActiveCategoryId(category.id)
+                                    }
+                                    onFocus={() =>
+                                        setActiveCategoryId(category.id)
+                                    }
+                                    aria-current={
+                                        category.slug === selectedCategorySlug
+                                            ? 'page'
+                                            : undefined
+                                    }
+                                    className={`group flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
+                                        isActive || isSelected
+                                            ? 'bg-primary/10 text-primary dark:bg-primary/15'
+                                            : 'text-slate-700 hover:bg-slate-100 hover:text-primary dark:text-slate-200 dark:hover:bg-slate-900'
+                                    }`}
+                                >
+                                    <span
+                                        className={`grid size-8 shrink-0 place-items-center rounded-lg transition ${
+                                            isActive || isSelected
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'bg-slate-100 text-slate-500 group-hover:text-primary dark:bg-slate-900 dark:text-slate-300'
+                                        }`}
+                                    >
+                                        <CategoryIcon className="size-4" />
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                        {category.name}
+                                    </span>
+                                    {category.children.length > 0 && (
+                                        <ChevronRight className="size-4 shrink-0" />
+                                    )}
+                                </Link>
+                            );
+                        })}
+                    </nav>
+
+                    {activeCategory && activeCategory.children.length > 0 && (
+                        <section
+                            aria-label={`${activeCategory.name} subcategories`}
+                            className="w-80 overflow-y-auto border-l border-slate-200 p-5 dark:border-slate-800"
+                        >
+                            <p className="text-xs font-black tracking-[0.16em] text-slate-400 uppercase">
+                                Explore
                             </p>
                             <Link
-                                href={listingsIndex()}
+                                href={categoryHref(activeCategory.slug)}
                                 onClick={closeMenu}
-                                aria-current={
-                                    isAllProductsSelected ? 'page' : undefined
-                                }
-                                className={`mb-1 flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
-                                    isAllProductsSelected
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'text-slate-700 hover:bg-primary/10 hover:text-primary dark:text-slate-200'
-                                }`}
+                                className="mt-1 flex items-center justify-between rounded-lg py-2 text-lg font-black text-slate-950 transition hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none dark:text-white"
                             >
-                                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                                    <Menu className="size-4" />
-                                </span>
-                                All products
+                                {activeCategory.name}
+                                <ChevronRight className="size-5" />
                             </Link>
-                            {categories.map((category) => {
-                                const CategoryIcon =
-                                    categoryIcons[category.slug] ??
-                                    PackageSearch;
-                                const isActive =
-                                    category.id === activeCategory?.id;
-                                const isSelected = categoryContainsSlug(
-                                    category,
-                                    selectedCategorySlug,
-                                );
-
-                                return (
+                            <div className="mt-3 flex flex-col gap-1">
+                                {activeCategory.children.map((child) => (
                                     <Link
-                                        key={category.id}
-                                        href={categoryHref(category.slug)}
+                                        key={child.id}
+                                        href={categoryHref(child.slug)}
                                         onClick={closeMenu}
-                                        onPointerEnter={() =>
-                                            setActiveCategoryId(category.id)
-                                        }
-                                        onFocus={() =>
-                                            setActiveCategoryId(category.id)
-                                        }
                                         aria-current={
-                                            category.slug ===
-                                            selectedCategorySlug
+                                            child.slug === selectedCategorySlug
                                                 ? 'page'
                                                 : undefined
                                         }
-                                        className={`group flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
-                                            isActive || isSelected
-                                                ? 'bg-primary/10 text-primary dark:bg-primary/15'
-                                                : 'text-slate-700 hover:bg-slate-100 hover:text-primary dark:text-slate-200 dark:hover:bg-slate-900'
+                                        className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
+                                            child.slug === selectedCategorySlug
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'text-slate-600 hover:bg-primary/10 hover:text-primary dark:text-slate-300'
                                         }`}
                                     >
-                                        <span
-                                            className={`grid size-8 shrink-0 place-items-center rounded-lg transition ${
-                                                isActive || isSelected
-                                                    ? 'bg-primary text-primary-foreground'
-                                                    : 'bg-slate-100 text-slate-500 group-hover:text-primary dark:bg-slate-900 dark:text-slate-300'
-                                            }`}
-                                        >
-                                            <CategoryIcon className="size-4" />
-                                        </span>
-                                        <span className="min-w-0 flex-1">
-                                            {category.name}
-                                        </span>
-                                        {category.children.length > 0 && (
-                                            <ChevronRight className="size-4 shrink-0" />
-                                        )}
+                                        {child.name}
                                     </Link>
-                                );
-                            })}
-                        </nav>
-
-                        {activeCategory &&
-                            activeCategory.children.length > 0 && (
-                                <section
-                                    aria-label={`${activeCategory.name} subcategories`}
-                                    className="w-80 overflow-y-auto border-l border-slate-200 p-5 dark:border-slate-800"
-                                >
-                                    <p className="text-xs font-black tracking-[0.16em] text-slate-400 uppercase">
-                                        Explore
-                                    </p>
-                                    <Link
-                                        href={categoryHref(activeCategory.slug)}
-                                        onClick={closeMenu}
-                                        className="mt-1 flex items-center justify-between rounded-lg py-2 text-lg font-black text-slate-950 transition hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none dark:text-white"
-                                    >
-                                        {activeCategory.name}
-                                        <ChevronRight className="size-5" />
-                                    </Link>
-                                    <div className="mt-3 flex flex-col gap-1">
-                                        {activeCategory.children.map(
-                                            (child) => (
-                                                <Link
-                                                    key={child.id}
-                                                    href={categoryHref(
-                                                        child.slug,
-                                                    )}
-                                                    onClick={closeMenu}
-                                                    aria-current={
-                                                        child.slug ===
-                                                        selectedCategorySlug
-                                                            ? 'page'
-                                                            : undefined
-                                                    }
-                                                    className={`rounded-lg px-3 py-2.5 text-sm font-semibold transition focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${
-                                                        child.slug ===
-                                                        selectedCategorySlug
-                                                            ? 'bg-primary text-primary-foreground'
-                                                            : 'text-slate-600 hover:bg-primary/10 hover:text-primary dark:text-slate-300'
-                                                    }`}
-                                                >
-                                                    {child.name}
-                                                </Link>
-                                            ),
-                                        )}
-                                    </div>
-                                </section>
-                            )}
-                    </div>
-                </>
+                                ))}
+                            </div>
+                        </section>
+                    )}
+                </div>
             )}
         </div>
     );

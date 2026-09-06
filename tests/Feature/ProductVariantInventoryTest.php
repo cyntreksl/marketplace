@@ -112,7 +112,7 @@ test('submission requires a complete product while drafts still enforce pricing 
 });
 
 test('a complete variant product generates the exact matrix and aggregate inventory', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
     $payload = variantProductPayload($category, [
@@ -202,7 +202,7 @@ test('variant pricing and status determine the product summary', function () {
 });
 
 test('active variants require valid selling and market prices when publishing', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
     $basePayload = variantProductPayload($category, [
@@ -371,7 +371,7 @@ test('editing options keeps unchanged inventory suggests new skus and removes ob
 });
 
 test('variant combination images are optional and persist with an unchanged combination', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
     $payload = variantProductPayload($category, [
@@ -402,7 +402,7 @@ test('variant combination images are optional and persist with an unchanged comb
         ->and($image->crop_y)->toBe(100)
         ->and($image->crop_width)->toBe(1000)
         ->and($image->crop_height)->toBe(1000)
-        ->and(Storage::disk('public')->exists($image->path))->toBeTrue();
+        ->and(Storage::disk('r2')->exists($image->path))->toBeTrue();
 
     $this->actingAs($seller->user)
         ->put(route('seller.listings.update', $listing), variantProductPayload($category, [
@@ -438,11 +438,11 @@ test('variant combination images are optional and persist with an unchanged comb
 
     expect($listing->variants()->with('image')->sole()->image)->toBeNull()
         ->and(ListingMedia::query()->find($image->id))->toBeNull()
-        ->and(Storage::disk('public')->missing($image->path))->toBeTrue();
+        ->and(Storage::disk('r2')->missing($image->path))->toBeTrue();
 });
 
 test('variant image uploads require a saved valid crop', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
     $variant = [
@@ -486,7 +486,7 @@ test('variant image uploads require a saved valid crop', function () {
 });
 
 test('variant image uploads accept smaller square source crops', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
 
@@ -586,7 +586,7 @@ test('seo and short description fields are exposed without leaking cost price', 
 });
 
 test('a seller can remove an existing product image while retaining the next cover', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create();
     $listing = Listing::factory()->create([
         'seller_profile_id' => $seller->id,

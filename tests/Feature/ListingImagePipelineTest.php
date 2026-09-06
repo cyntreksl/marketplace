@@ -44,7 +44,7 @@ function exifOrientedListingImage(): UploadedFile
 }
 
 test('new listing photos are synchronously cropped to a canonical webp image', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
 
@@ -53,8 +53,8 @@ test('new listing photos are synchronously cropped to a canonical webp image', f
         ->assertRedirect(route('seller.listings.index', absolute: false));
 
     $media = Listing::query()->sole()->media()->sole();
-    $canonical = Storage::disk('public')->get($media->path);
-    $source = Storage::disk('public')->get($media->source_path);
+    $canonical = Storage::disk('r2')->get($media->path);
+    $source = Storage::disk('r2')->get($media->source_path);
     $canonicalSize = getimagesizefromstring($canonical);
     $sourceSize = getimagesizefromstring($source);
 
@@ -75,7 +75,7 @@ test('new listing photos are synchronously cropped to a canonical webp image', f
 });
 
 test('listing photos accept ecommerce image formats and square source crops', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
 
@@ -92,7 +92,7 @@ test('listing photos accept ecommerce image formats and square source crops', fu
 });
 
 test('listing image validation rejects non square crops', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
 
@@ -103,11 +103,11 @@ test('listing image validation rejects non square crops', function () {
         ->assertSessionHasErrors('image_crops.0.width');
 
     expect(Listing::query()->count())->toBe(0)
-        ->and(Storage::disk('public')->allFiles())->toBeEmpty();
+        ->and(Storage::disk('r2')->allFiles())->toBeEmpty();
 });
 
 test('listing photos accept smaller square source crops', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
 
@@ -124,7 +124,7 @@ test('listing photos accept smaller square source crops', function () {
 });
 
 test('listing image validation rejects crop bounds outside the uploaded image', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
 
@@ -135,11 +135,11 @@ test('listing image validation rejects crop bounds outside the uploaded image', 
         ->assertSessionHasErrors('image_crops');
 
     expect(Listing::query()->count())->toBe(0)
-        ->and(Storage::disk('public')->allFiles())->toBeEmpty();
+        ->and(Storage::disk('r2')->allFiles())->toBeEmpty();
 });
 
 test('exif orientation is applied before crop bounds are validated', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
 
@@ -151,7 +151,7 @@ test('exif orientation is applied before crop bounds are validated', function ()
         ->assertRedirect(route('seller.listings.index', absolute: false));
 
     $media = Listing::query()->sole()->media()->sole();
-    $dimensions = getimagesizefromstring(Storage::disk('public')->get($media->path));
+    $dimensions = getimagesizefromstring(Storage::disk('r2')->get($media->path));
 
     expect($dimensions)->not->toBeFalse()
         ->and($dimensions[0])->toBe(1600)
@@ -159,7 +159,7 @@ test('exif orientation is applied before crop bounds are validated', function ()
 });
 
 test('new image files are removed when the surrounding transaction rolls back', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $listing = Listing::factory()->create();
 
     expect(fn () => DB::transaction(function () use ($listing): void {
@@ -175,11 +175,11 @@ test('new image files are removed when the surrounding transaction rolls back', 
     }))->toThrow(RuntimeException::class, 'Force rollback.');
 
     expect($listing->media()->count())->toBe(0)
-        ->and(Storage::disk('public')->allFiles())->toBeEmpty();
+        ->and(Storage::disk('r2')->allFiles())->toBeEmpty();
 });
 
 test('a seller cannot upload photos to another sellers listing', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $listing = Listing::factory()->create(['status' => 'draft']);
     $otherSeller = SellerProfile::factory()->create();
     $category = Category::query()->findOrFail($listing->category_id);
@@ -192,11 +192,11 @@ test('a seller cannot upload photos to another sellers listing', function () {
         ->assertForbidden();
 
     expect($listing->media()->count())->toBe(0)
-        ->and(Storage::disk('public')->allFiles())->toBeEmpty();
+        ->and(Storage::disk('r2')->allFiles())->toBeEmpty();
 });
 
 test('a listing cannot exceed five photos across saved and new media', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
     $listing = Listing::factory()->create([
@@ -220,7 +220,7 @@ test('a listing cannot exceed five photos across saved and new media', function 
 });
 
 test('variant generation is dimensionally exact idempotent and creates og only for the cover', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
     $payload = validListingImagePayload($category, [
@@ -259,7 +259,7 @@ test('variant generation is dimensionally exact idempotent and creates og only f
         'card_2x' => [1280, 1280, 'image/webp'],
         'open_graph' => [1200, 630, 'image/jpeg'],
     ] as $variant => [$width, $height, $mime]) {
-        $dimensions = getimagesizefromstring(Storage::disk('public')->get($cover->variants[$variant]));
+        $dimensions = getimagesizefromstring(Storage::disk('r2')->get($cover->variants[$variant]));
 
         expect($dimensions)->not->toBeFalse()
             ->and($dimensions[0])->toBe($width)

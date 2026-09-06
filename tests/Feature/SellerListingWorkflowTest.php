@@ -11,7 +11,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 test('an approved seller can create a draft listing and submit it for moderation', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create(['commission_percentage' => 8]);
     $description = '<p>A well cared for <strong>full-frame</strong> camera body.</p><ul><li>Low shutter count</li><li>Original box included</li></ul>';
@@ -45,7 +45,7 @@ test('an approved seller can create a draft listing and submit it for moderation
         ->and($listing->description)->toBe($description)
         ->and($listing->media)->toHaveCount(1);
 
-    Storage::disk('public')->assertExists($listing->media->sole()->path);
+    Storage::disk('r2')->assertExists($listing->media->sole()->path);
 
     $this->actingAs($seller->user)
         ->post(route('seller.listings.submit'), ['listing_id' => $listing->id])
@@ -93,7 +93,7 @@ test('listing uploads use the configured media disk', function () {
 });
 
 test('an approved seller can save a typed brand draft or submit it directly for review', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create();
     $category = Category::factory()->create();
 
@@ -229,7 +229,7 @@ test('an unapproved seller cannot submit a listing for moderation', function () 
 });
 
 test('an unapproved seller cannot submit a new listing directly for review', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()->create(['status' => 'pending_review']);
     $category = Category::factory()->create();
 
@@ -285,7 +285,7 @@ test('a seller can replace a typed brand with a catalog brand while editing a dr
 });
 
 test('an unverified seller can create a private listing draft', function () {
-    Storage::fake('public');
+    Storage::fake('r2');
     $seller = SellerProfile::factory()
         ->for(User::factory()->unverified(), 'user')
         ->create(['status' => 'pending_review']);

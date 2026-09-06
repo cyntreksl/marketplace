@@ -8,3 +8,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | bootstrap/app.php | .ai/rules/bootstrap.md |
 | app/{Notifications,Mail}/** | .ai/rules/notifications-mail.md |
 | app/Services/**, app/Services/ListingService.php | .ai/rules/services.md |
+| tests/** | .ai/rules/tests.md |

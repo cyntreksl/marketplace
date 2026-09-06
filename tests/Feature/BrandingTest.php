@@ -252,3 +252,17 @@ test('listing details retain the storefront category menu', function () {
         ],
     ]);
 });
+
+test('informational pages share categories for the compact storefront header', function (string $routeName) {
+    $category = Category::factory()->create(['name' => 'Electronics', 'slug' => 'electronics']);
+    $child = Category::factory()->create(['parent_id' => $category->id]);
+    Category::factory()->create(['is_active' => false]);
+
+    $this->get(route($routeName))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('storefront/content/show')
+            ->has('categories', 1)
+            ->where('categories.0.slug', $category->slug)
+            ->where('categories.0.children.0.slug', $child->slug));
+})->with(['about', 'help', 'policies.shipping', 'legal.terms']);
