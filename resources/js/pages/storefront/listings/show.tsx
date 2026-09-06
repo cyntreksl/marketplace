@@ -224,6 +224,7 @@ export default function ListingShow({
     activeCampaign,
     categoryPolicies,
     relatedListings,
+    sellerListings,
     selectedVariantId,
 }: {
     listing: StorefrontListing;
@@ -236,6 +237,7 @@ export default function ListingShow({
     activeCampaign: Campaign | null;
     categoryPolicies: Policies;
     relatedListings: StorefrontListing[];
+    sellerListings: StorefrontListing[];
     selectedVariantId: number | null;
 }) {
     const { auth } = usePage().props;
@@ -370,7 +372,7 @@ export default function ListingShow({
             categories={categories}
             activeCategorySlugs={categoryTrail.map((item) => item.slug)}
         >
-            <main className="mx-auto max-w-[96rem] px-4 py-5 sm:px-6">
+            <main className="mx-auto max-w-[82rem] px-4 py-4 sm:px-6">
                 <nav
                     className="mb-5 flex flex-wrap gap-2 text-[10px] text-slate-500"
                     aria-label="Breadcrumb"
@@ -915,11 +917,30 @@ export default function ListingShow({
                     </div>
                 </section>
 
+                {sellerListings.length > 0 && (
+                    <section className="mt-6">
+                        <div className="mb-3 border-b pb-2">
+                            <h2 className="text-lg font-black tracking-tight">
+                                More from{' '}
+                                {listing.seller?.store_name ?? 'this seller'}
+                            </h2>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                            {sellerListings.map((sellerListing) => (
+                                <ListingCard
+                                    key={sellerListing.id}
+                                    listing={sellerListing}
+                                />
+                            ))}
+                        </div>
+                    </section>
+                )}
+
                 {relatedListings.length > 0 && (
-                    <section className="mt-4">
+                    <section className="mt-6">
                         <div className="mb-3 flex items-center border-b pb-2">
-                            <h2 className="text-base font-black">
-                                You May Also Like
+                            <h2 className="text-lg font-black tracking-tight">
+                                Related items
                             </h2>
                             <Link
                                 href={
@@ -932,20 +953,18 @@ export default function ListingShow({
                                           })
                                         : listingsIndex()
                                 }
-                                className="ml-auto text-[10px] text-slate-500"
+                                className="ml-auto text-xs font-bold text-slate-500 transition hover:text-[#FF6D00]"
                             >
                                 View All
                             </Link>
                         </div>
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                            <>
-                                {relatedListings.map((related) => (
-                                    <ListingCard
-                                        key={related.id}
-                                        listing={related}
-                                    />
-                                ))}
-                            </>
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                            {relatedListings.map((related) => (
+                                <ListingCard
+                                    key={related.id}
+                                    listing={related}
+                                />
+                            ))}
                         </div>
                     </section>
                 )}

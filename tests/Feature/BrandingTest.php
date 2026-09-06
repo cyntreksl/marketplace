@@ -88,6 +88,7 @@ test('storefront listing pages share the category listing card', function () {
     $listingCard = file_get_contents(resource_path('js/components/listing-card.tsx'));
     $categoryListings = file_get_contents(resource_path('js/pages/storefront/listings/index.tsx'));
     $home = file_get_contents(resource_path('js/pages/storefront/home.tsx'));
+    $listingShow = file_get_contents(resource_path('js/pages/storefront/listings/show.tsx'));
 
     expect($listingCard)
         ->toContain('export function ListingCard({ listing }: { listing: StorefrontListing })')
@@ -107,6 +108,10 @@ test('storefront listing pages share the category listing card', function () {
         ->toContain("import { ListingCard } from '@/components/listing-card';")
         ->toContain('<ListingCard listing={listing} />')
         ->toContain('w-[calc((100%-0.75rem)/2)]', 'lg:w-[calc((100%-3.75rem)/6)]')
+        ->and($listingShow)
+        ->toContain('max-w-[82rem]', 'Related items', 'More from')
+        ->toContain('grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6')
+        ->not->toContain('You May Also Like', 'max-w-[96rem]')
         ->and(file_get_contents(resource_path('js/pages/storefront/watchlist/index.tsx')))
         ->toContain('grid-cols-2', 'lg:grid-cols-6');
 });

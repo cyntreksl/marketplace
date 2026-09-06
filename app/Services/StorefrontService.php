@@ -222,6 +222,7 @@ class StorefrontService
                 'codEnabled' => $listing->category->cod_enabled,
             ],
             'relatedListings' => $this->listings->related($listing)->map(fn (Listing $related): array => $this->listingData($related))->values(),
+            'sellerListings' => $this->listings->otherListingsFromSeller($listing)->map(fn (Listing $sellerListing): array => $this->listingData($sellerListing))->values(),
         ];
     }
 

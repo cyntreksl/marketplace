@@ -58,7 +58,10 @@ interface ListingRepository
     public function clearance(int $limit = 10): Collection;
 
     /** @return Collection<int, Listing> */
-    public function related(Listing $listing, int $limit = 4): Collection;
+    public function related(Listing $listing, int $limit = 6): Collection;
+
+    /** @return Collection<int, Listing> */
+    public function otherListingsFromSeller(Listing $listing, int $limit = 6): Collection;
 
     /** @return LengthAwarePaginator<int, Listing> */
     public function paginateForSeller(SellerProfile $seller, int $perPage = 15): LengthAwarePaginator;

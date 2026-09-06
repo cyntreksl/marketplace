@@ -160,7 +160,7 @@ class EloquentListingRepository implements ListingRepository
             ->latest('listings.created_at')->limit($limit)->get();
     }
 
-    public function related(Listing $listing, int $limit = 4): Collection
+    public function related(Listing $listing, int $limit = 6): Collection
     {
         return $this->publicQuery()
             ->whereKeyNot($listing->id)
@@ -169,6 +169,16 @@ class EloquentListingRepository implements ListingRepository
                     ->when($listing->brand_id !== null, fn (Builder $brandQuery) => $brandQuery->orWhere('listings.brand_id', $listing->brand_id));
             })
             ->orderByRaw('CASE WHEN listings.category_id = ? THEN 0 ELSE 1 END', [$listing->category_id])
+            ->latest('listings.created_at')
+            ->limit($limit)
+            ->get();
+    }
+
+    public function otherListingsFromSeller(Listing $listing, int $limit = 6): Collection
+    {
+        return $this->publicQuery()
+            ->whereKeyNot($listing->id)
+            ->where('listings.seller_profile_id', $listing->seller_profile_id)
             ->latest('listings.created_at')
             ->limit($limit)
             ->get();

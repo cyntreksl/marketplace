@@ -71,6 +71,7 @@ test('listing details include an empty media collection and category trail', fun
     $listingRepository = Mockery::mock(ListingRepository::class, function (MockInterface $mock) use ($listing): void {
         $mock->shouldReceive('findPublicBySlug')->once()->with('modern-laptop')->andReturn($listing);
         $mock->shouldReceive('related')->once()->with($listing)->andReturn(collect());
+        $mock->shouldReceive('otherListingsFromSeller')->once()->with($listing)->andReturn(collect());
     });
     $catalogRepository = Mockery::mock(CatalogRepository::class, function (MockInterface $mock): void {
         $mock->shouldReceive('activeTopLevelCategories')->once()->andReturn(collect());
@@ -104,5 +105,6 @@ test('listing details include an empty media collection and category trail', fun
     expect($data['listing']['media'])->toBeEmpty()
         ->and($data['head'])->toHaveCount(1)
         ->and($data['categoryTrail'])->toHaveCount(2)
-        ->and($data['categoryTrail'][1]['slug'])->toBe('laptops');
+        ->and($data['categoryTrail'][1]['slug'])->toBe('laptops')
+        ->and($data['sellerListings'])->toBeEmpty();
 });

@@ -69,6 +69,19 @@ test('storefront listing media includes its configured public url', function () 
             ->where('listing.media.0.url', 'https://media.prodeals.lk/listings/example.webp'));
 });
 
+test('listing details include six related items and other products from the seller', function () {
+    $listing = Listing::factory()->create();
+    Listing::factory()->count(7)->create([
+        'category_id' => $listing->category_id,
+        'seller_profile_id' => $listing->seller_profile_id,
+    ]);
+
+    $response = $this->get(route('listings.show', $listing->slug))->assertOk();
+
+    expect($response->inertiaProps('relatedListings'))->toHaveCount(6)
+        ->and($response->inertiaProps('sellerListings'))->toHaveCount(6);
+});
+
 test('a buyer can place a valid bid and cannot bid on their own auction', function () {
     $auction = Auction::factory()->create()->load('listing.sellerProfile.user');
     $buyer = User::factory()->create();
