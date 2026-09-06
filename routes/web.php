@@ -12,7 +12,11 @@ use App\Http\Controllers\AdminSellerController;
 use App\Http\Controllers\AdminTaxonomyController;
 use App\Http\Controllers\AuctionBidController;
 use App\Http\Controllers\BrandDirectoryController;
+use App\Http\Controllers\BuyerAddressController;
 use App\Http\Controllers\BuyerDashboardController;
+use App\Http\Controllers\BuyerFeedbackController;
+use App\Http\Controllers\BuyerOrderController;
+use App\Http\Controllers\BuyerPaymentController;
 use App\Http\Controllers\BuyerReturnRequestController;
 use App\Http\Controllers\BuyerReviewController;
 use App\Http\Controllers\CartController;
@@ -32,9 +36,12 @@ use App\Http\Controllers\SellerReturnRequestController;
 use App\Http\Controllers\SellerStoreController;
 use App\Http\Controllers\SellerWalletController;
 use App\Http\Controllers\SeoDiscoveryController;
+use App\Http\Controllers\Settings\ProfileController as SettingsProfileController;
+use App\Http\Controllers\Settings\SecurityController as SettingsSecurityController;
 use App\Http\Controllers\SiteManifestController;
 use App\Http\Controllers\StorefrontController;
 use App\Http\Controllers\WatchlistController;
+use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [StorefrontController::class, 'home'])->name('home');
@@ -125,10 +132,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/checkout/review', [CheckoutController::class, 'showReview'])->name('checkout.review.show');
     Route::post('/checkout/review', [CheckoutController::class, 'placeOrder'])->block(30, 10)->name('checkout.review.store');
     Route::get('/checkout/thank-you/{customerOrder:number}', [CheckoutController::class, 'thankYou'])->name('checkout.thank_you.show');
-    Route::get('/buyer/orders', [BuyerDashboardController::class, 'index'])->name('buyer.orders.index');
+    Route::get('/buyer', [BuyerDashboardController::class, 'index'])->name('buyer.dashboard');
+    Route::get('/buyer/orders', [BuyerOrderController::class, 'index'])->name('buyer.orders.index');
+    Route::get('/buyer/orders/{customerOrder:number}', [BuyerOrderController::class, 'show'])->name('buyer.orders.show');
+    Route::get('/buyer/payments', [BuyerPaymentController::class, 'index'])->name('buyer.payments.index');
+    Route::get('/buyer/feedback', [BuyerFeedbackController::class, 'index'])->name('buyer.feedback.index');
     Route::post('/buyer/order-items/{orderItem}/review', [BuyerReviewController::class, 'store'])->name('buyer.reviews.store');
     Route::get('/buyer/returns', [BuyerReturnRequestController::class, 'index'])->name('buyer.returns.index');
     Route::post('/buyer/returns', [BuyerReturnRequestController::class, 'store'])->name('buyer.returns.store');
+    Route::get('/buyer/addresses', [BuyerAddressController::class, 'index'])->name('buyer.addresses.index');
+    Route::post('/buyer/addresses', [BuyerAddressController::class, 'store'])->name('buyer.addresses.store');
+    Route::patch('/buyer/addresses/{buyerAddress}', [BuyerAddressController::class, 'update'])->name('buyer.addresses.update');
+    Route::delete('/buyer/addresses/{buyerAddress}', [BuyerAddressController::class, 'destroy'])->name('buyer.addresses.destroy');
+    Route::patch('/buyer/addresses/{buyerAddress}/default', [BuyerAddressController::class, 'setDefault'])->name('buyer.addresses.default');
+    Route::get('/buyer/settings/profile', [SettingsProfileController::class, 'edit'])->name('buyer.settings.profile.edit');
+    Route::patch('/buyer/settings/profile', [SettingsProfileController::class, 'update'])->name('buyer.settings.profile.update');
+    Route::delete('/buyer/settings/profile', [SettingsProfileController::class, 'destroy'])->name('buyer.settings.profile.destroy');
+    Route::get('/buyer/settings/security', [SettingsSecurityController::class, 'edit'])
+        ->middleware(RequirePassword::class)
+        ->name('buyer.settings.security.edit');
+    Route::put('/buyer/settings/password', [SettingsSecurityController::class, 'update'])
+        ->middleware('throttle:6,1')
+        ->name('buyer.settings.password.update');
     Route::get('/wishlist', [WatchlistController::class, 'index'])->name('wishlist.index');
     Route::post('/wishlist/{listing:slug}', [WatchlistController::class, 'store'])->name('wishlist.store');
     Route::delete('/wishlist/{listing:slug}', [WatchlistController::class, 'destroy'])->name('wishlist.destroy');

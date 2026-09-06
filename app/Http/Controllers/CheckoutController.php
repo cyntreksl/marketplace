@@ -7,6 +7,7 @@ use App\Http\Requests\CheckoutPaymentRequest;
 use App\Http\Requests\CheckoutRequest;
 use App\Http\Requests\PlaceOrderRequest;
 use App\Models\CustomerOrder;
+use App\Services\BuyerAddressService;
 use App\Services\CartService;
 use App\Services\CheckoutAddressService;
 use App\Services\CheckoutPaymentService;
@@ -27,24 +28,57 @@ class CheckoutController extends Controller
         private readonly CheckoutRepository $orders,
         private readonly CheckoutPaymentService $payments,
         private readonly CheckoutService $checkout,
-        private readonly CheckoutAddressService $addresses,
+        private readonly CheckoutAddressService $checkoutAddresses,
+        private readonly BuyerAddressService $buyerAddresses,
     ) {}
 
     public function show(Request $request): Response
     {
         $request->session()->forget('checkout_intended');
 
+        $shippingAddress = $request->session()->get('checkout.shipping_address');
+        $billingAddress = $request->session()->get('checkout.billing_address');
+
+        if (! is_array($shippingAddress)) {
+            $shippingAddress = $this->buyerAddresses->selected($request->user(), null, 'shipping')?->snapshot();
+        }
+
+        if (! is_array($billingAddress)) {
+            $billingAddress = $this->buyerAddresses->selected($request->user(), null, 'billing')?->snapshot();
+        }
+
         return Inertia::render('buyer/checkout', [
             'cart' => $this->carts->summary($request),
-            'shippingAddress' => $request->session()->get('checkout.shipping_address'),
-            'billingAddress' => $request->session()->get('checkout.billing_address'),
+            'shippingAddress' => $shippingAddress,
+            'billingAddress' => $billingAddress,
+            'savedAddresses' => $this->buyerAddresses->all($request->user()),
         ]);
     }
 
     public function store(CheckoutRequest $request): RedirectResponse
     {
-        foreach ($this->addresses->prepare($request->validated()) as $key => $address) {
+        $preparedAddresses = $this->checkoutAddresses->prepare($request->validated());
+
+        foreach ($preparedAddresses as $key => $address) {
             $request->session()->put('checkout.'.$key, $address);
+        }
+
+        if ($request->boolean('save_shipping_address')) {
+            $this->buyerAddresses->create($request->user(), [
+                ...$preparedAddresses['shipping_address'],
+                'label' => $request->validated('shipping_address_label'),
+                'shipping_enabled' => true,
+                'billing_enabled' => $request->boolean('save_shipping_for_billing'),
+            ]);
+        }
+
+        if ($request->boolean('save_billing_address') && is_array($preparedAddresses['billing_address'])) {
+            $this->buyerAddresses->create($request->user(), [
+                ...$preparedAddresses['billing_address'],
+                'label' => $request->validated('billing_address_label'),
+                'shipping_enabled' => false,
+                'billing_enabled' => true,
+            ]);
         }
 
         return to_route('checkout.payment.show');

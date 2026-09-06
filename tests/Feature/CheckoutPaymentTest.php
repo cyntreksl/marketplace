@@ -3,6 +3,7 @@
 use App\Models\CustomerOrder;
 use App\Models\Listing;
 use App\Models\Payment;
+use App\Models\PaymentAttempt;
 use App\Models\User;
 use App\Notifications\OrderAcknowledgmentNotification;
 use App\Notifications\PaymentConfirmedNotification;
@@ -64,6 +65,8 @@ test('card checkout redirects to hosted payment and duplicate placement reuses t
     $payment = Payment::sole();
     $this->post(route('checkout.review.store'), $review)->assertRedirect(route('checkout.thank_you.show', $order->number));
     expect(CustomerOrder::count())->toBe(1)->and(Payment::count())->toBe(1)->and($listing->fresh()->reserved_quantity)->toBe(2)->and($order->total)->toBe('2600.00')->and($order->shipping_total)->toBe('600.00');
+    expect($payment->attempts()->sole()->status->value)->toBe('pending')
+        ->and($payment->attempts()->sole()->provider_session_id)->toBe('cs_test_checkout');
     Notification::assertSentToTimes($buyer, OrderAcknowledgmentNotification::class, 1);
     Notification::assertNotSentTo($seller, SellerOrderReadyNotification::class);
     Http::assertSent(fn ($request) => $request->hasHeader('Idempotency-Key')
@@ -92,6 +95,7 @@ test('verified card payment confirms seller orders and notifies once', function 
     sendStripeEvent($payment)->assertNoContent();
     $this->get(route('checkout.card.return', $payment->customerOrder->number))->assertRedirect();
     expect($payment->fresh()->status)->toBe('paid')->and($payment->fresh()->provider_reference)->toBe('pi_test_paid')->and($payment->customerOrder->fresh()->status)->toBe('confirmed')->and($payment->customerOrder->sellerOrders()->sole()->status)->toBe('paid')->and($listing->fresh()->reserved_quantity)->toBe(2);
+    expect($payment->attempts()->sole()->status->value)->toBe('succeeded');
     Notification::assertSentTimes(PaymentConfirmedNotification::class, 1);
     Notification::assertSentTo($seller, SellerOrderReadyNotification::class, fn (SellerOrderReadyNotification $notification): bool => $notification->sellerOrderNumber === $payment->customerOrder->sellerOrders()->sole()->number
         && $notification->customerOrderNumber === $payment->customerOrder->number
@@ -121,7 +125,11 @@ test('payment creation timeouts retain a saved order for retry', function (): vo
     expect(CustomerOrder::count())->toBe(1)->and($listing->fresh()->reserved_quantity)->toBe(2);
     fakeStripeCheckout();
     $this->post(route('checkout.card.retry', CustomerOrder::sole()->number))->assertRedirect('https://checkout.stripe.com/c/pay/cs_test_checkout');
-    expect(CustomerOrder::count())->toBe(1);
+    expect(CustomerOrder::count())->toBe(1)
+        ->and(PaymentAttempt::count())->toBe(2)
+        ->and(PaymentAttempt::query()->where('attempt_number', 1)->sole()->status->value)->toBe('failed')
+        ->and(PaymentAttempt::query()->where('attempt_number', 1)->sole()->failure_summary)->toBe('Payment provider could not complete this attempt.')
+        ->and(PaymentAttempt::query()->where('attempt_number', 2)->sole()->status->value)->toBe('pending');
 });
 
 test('unpaid expired sessions release stock exactly once', function (): void {
@@ -133,6 +141,30 @@ test('unpaid expired sessions release stock exactly once', function (): void {
     sendStripeEvent($payment, 'checkout.session.expired')->assertNoContent();
     sendStripeEvent($payment, 'checkout.session.expired')->assertNoContent();
     expect($listing->fresh()->reserved_quantity)->toBe(0)->and($payment->fresh()->status)->toBe('expired')->and($payment->customerOrder->fresh()->status)->toBe('expired');
+    expect($payment->attempts()->sole()->status->value)->toBe('expired');
+});
+
+test('provider failures close the attempt and allow a new hosted session', function (): void {
+    [, , $review] = prepareCardOrder();
+    fakeStripeCheckout();
+    $this->post(route('checkout.review.store'), $review);
+    $payment = Payment::sole();
+
+    sendStripeEvent($payment, 'checkout.session.async_payment_failed')->assertNoContent();
+    $payment->refresh();
+
+    expect($payment->status)->toBe('pending')
+        ->and($payment->checkout_session_id)->toBeNull()
+        ->and($payment->attempts()->sole()->status->value)->toBe('failed');
+
+    Http::swap(new Factory);
+    Http::preventStrayRequests();
+    Http::fake(['api.stripe.com/v1/checkout/sessions*' => fn () => Http::response(array_replace(stripeSession($payment, 'open'), ['id' => 'cs_test_retry']))]);
+    $this->post(route('checkout.card.retry', $payment->customerOrder->number))
+        ->assertRedirect('https://checkout.stripe.com/c/pay/cs_test_checkout');
+
+    expect($payment->attempts()->count())->toBe(2)
+        ->and($payment->attempts()->latest('attempt_number')->firstOrFail()->status->value)->toBe('pending');
 });
 
 test('reconciliation preserves stock on provider outages and confirms delayed payments', function (): void {

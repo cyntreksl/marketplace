@@ -12,6 +12,7 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class CheckoutPaymentService
 {
@@ -19,6 +20,7 @@ class CheckoutPaymentService
         private readonly CheckoutRepository $orders,
         private readonly PaymentGateway $gateway,
         private readonly SellerOrderNotificationService $sellerOrderNotifications,
+        private readonly PaymentAttemptService $attempts,
     ) {}
 
     public function start(CustomerOrder $order): ?string
@@ -39,10 +41,20 @@ class CheckoutPaymentService
             if ($payment->expires_at === null) {
                 throw ValidationException::withMessages(['payment' => 'This older order needs support assistance to complete payment.']);
             }
-            $session = $this->gateway->createPayment($payment);
+            $this->attempts->begin($payment);
+
+            try {
+                $session = $this->gateway->createPayment($payment);
+            } catch (Throwable $exception) {
+                $this->attempts->fail($payment, $exception);
+
+                throw $exception;
+            }
+
             DB::transaction(function () use ($payment, $session): void {
                 $locked = $this->orders->lockPayment($payment->id);
                 $this->orders->savePayment($locked, ['checkout_session_id' => $session['reference'], 'checkout_url' => $session['redirect_url']]);
+                $this->attempts->attachProviderSession($locked, $session['reference']);
             });
 
             if ($payment->expires_at->isPast()) {
@@ -74,6 +86,13 @@ class CheckoutPaymentService
         if ($payment->checkout_session_id !== null && $payment->checkout_session_id !== $session['id']) {
             abort(400, 'Payment session mismatch.');
         }
+
+        if ($event['type'] === 'checkout.session.async_payment_failed') {
+            $this->markProviderFailure($payment->id, $session);
+
+            return;
+        }
+
         $this->apply($payment->id, $this->gateway->retrieveCheckout($session['id']));
     }
 
@@ -121,6 +140,7 @@ class CheckoutPaymentService
             if (($session['payment_status'] ?? '') === 'paid' && ($session['status'] ?? '') === 'complete') {
                 abort_unless(is_string($session['payment_intent'] ?? null), 400);
                 $this->orders->savePayment($payment, ['status' => 'paid', 'paid_at' => now(), 'provider_reference' => $session['payment_intent'], 'checkout_session_id' => $session['id']]);
+                $this->attempts->succeed($payment);
                 $this->orders->confirm($payment->customerOrder);
                 $payment->customerOrder->buyer->notify(new PaymentConfirmedNotification($payment->customerOrder->number, $payment->amount));
                 $this->sellerOrderNotifications->notifyReady($payment->customerOrder, $payment->method);
@@ -136,8 +156,41 @@ class CheckoutPaymentService
             $payment = $this->orders->lockPayment($paymentId);
             if ($payment->status === 'pending') {
                 $this->orders->savePayment($payment, ['status' => 'expired']);
+                $this->attempts->expire($payment);
                 $this->orders->expire($payment->customerOrder);
             }
         });
+    }
+
+    /** @param array<string, mixed> $session */
+    private function markProviderFailure(int $paymentId, array $session): void
+    {
+        DB::transaction(function () use ($paymentId, $session): void {
+            $payment = $this->orders->lockPayment($paymentId);
+            $this->validateSession($payment, $session);
+
+            if ($payment->status !== 'pending') {
+                return;
+            }
+
+            $this->attempts->failWithCode($payment, 'provider_payment_failed');
+            $this->orders->savePayment($payment, [
+                'checkout_session_id' => null,
+                'checkout_url' => null,
+            ]);
+        });
+    }
+
+    /** @param array<string, mixed> $session */
+    private function validateSession(Payment $payment, array $session): void
+    {
+        abort_unless(
+            (string) data_get($session, 'metadata.payment_id') === (string) $payment->id
+            && (string) ($session['client_reference_id'] ?? '') === (string) $payment->customer_order_id
+            && ($session['currency'] ?? '') === 'lkr'
+            && BigDecimal::of((string) ($session['amount_total'] ?? -1))->isEqualTo(BigDecimal::of($payment->amount)->multipliedBy(100))
+            && ($payment->checkout_session_id === null || $payment->checkout_session_id === $session['id']),
+            400, 'Payment details mismatch.',
+        );
     }
 }

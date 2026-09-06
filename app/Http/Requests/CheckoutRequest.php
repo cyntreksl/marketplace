@@ -32,6 +32,11 @@ class CheckoutRequest extends FormRequest
 
         $rules = $addressRules;
         $rules['billing_address'] = ['sometimes', 'required', 'in:shipping,different'];
+        $rules['save_shipping_address'] = ['sometimes', 'boolean'];
+        $rules['shipping_address_label'] = ['required_if:save_shipping_address,1', 'nullable', 'string', 'max:80'];
+        $rules['save_shipping_for_billing'] = ['sometimes', 'boolean'];
+        $rules['save_billing_address'] = ['sometimes', 'boolean'];
+        $rules['billing_address_label'] = ['required_if:save_billing_address,1', 'nullable', 'string', 'max:80'];
 
         foreach ($addressRules as $field => $fieldRules) {
             $rules['billing_'.$field] = ['exclude_unless:billing_address,different', ...$fieldRules];

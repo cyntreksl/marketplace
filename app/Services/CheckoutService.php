@@ -26,6 +26,7 @@ class CheckoutService
         private readonly CheckoutRepository $repository,
         private readonly CartService $cartService,
         private readonly SellerOrderNotificationService $sellerOrderNotifications,
+        private readonly PaymentAttemptService $paymentAttempts,
     ) {}
 
     /**
@@ -159,7 +160,7 @@ class CheckoutService
                 }
             }
 
-            $this->repository->createPayment([
+            $payment = $this->repository->createPayment([
                 'customer_order_id' => $order->id,
                 'method' => $paymentMethod,
                 'status' => $paymentMethod === 'cod' ? 'pending_collection' : 'pending',
@@ -167,6 +168,7 @@ class CheckoutService
                 'amount' => (string) $total,
                 'expires_at' => $paymentMethod === 'stripe' ? now()->addMinutes(30) : null,
             ]);
+            $this->paymentAttempts->begin($payment);
             $this->repository->clear($cart);
             $created = true;
             $this->auditLogs->record($buyer, 'checkout.created', $order, after: $order->getAttributes());

@@ -95,6 +95,12 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return $this->hasOne(Cart::class, 'buyer_id');
     }
 
+    /** @return HasMany<BuyerAddress, $this> */
+    public function buyerAddresses(): HasMany
+    {
+        return $this->hasMany(BuyerAddress::class, 'buyer_id');
+    }
+
     public function sendEmailVerificationNotification(): void
     {
         $this->notify(new QueuedVerifyEmailNotification);
