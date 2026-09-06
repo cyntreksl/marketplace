@@ -17,6 +17,13 @@ class EloquentListingRepository implements ListingRepository
 {
     public function __construct(private readonly CatalogRepository $catalog) {}
 
+    public function slugExists(string $slug, ?int $exceptListingId = null): bool
+    {
+        return Listing::query()->where('slug', $slug)
+            ->when($exceptListingId, fn (Builder $query, int $listingId) => $query->whereKeyNot($listingId))
+            ->exists();
+    }
+
     public function paginatePublic(array $filters, int $perPage = 18): LengthAwarePaginator
     {
         $effectivePrice = 'CAST(COALESCE(auctions.current_price, listings.sale_price, listings.price) AS DECIMAL(12, 2))';

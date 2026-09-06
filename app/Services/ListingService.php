@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -114,14 +115,15 @@ class ListingService
     }
 
     /**
+     * @param  array<string, mixed>  $attributes
      * @param  array<int, UploadedFile>  $images
      * @param  array<int, array{x: int, y: int, width: int, height: int}>  $crops
      */
-    public function addDraftImages(User $seller, int $listingId, array $images, array $crops): Listing
+    public function updateDraftContent(User $seller, int $listingId, array $attributes, array $images = [], array $crops = []): Listing
     {
         $profile = $this->sellerProfileFor($seller);
 
-        return DB::transaction(function () use ($seller, $profile, $listingId, $images, $crops): Listing {
+        return DB::transaction(function () use ($seller, $profile, $listingId, $attributes, $images, $crops): Listing {
             $listing = $this->listings->findForSellerOrFail($profile, $listingId, lockForUpdate: true);
 
             if (! in_array($listing->status, ['draft', 'changes_requested', 'rejected'], true)) {
@@ -134,12 +136,26 @@ class ListingService
                 ]);
             }
 
+            $before = $listing->getAttributes();
+            $changes = Arr::only($attributes, ['title', 'short_description', 'description', 'warranty']);
+
+            if (array_key_exists('title', $changes) && $changes['title'] !== $listing->title) {
+                $changes['slug'] = $this->uniqueSlug($changes['title'], $listing->id);
+            }
+
+            if (array_key_exists('specifications_text', $attributes)) {
+                $changes['specifications'] = $this->specificationAttributes($attributes['specifications_text']);
+            }
+
+            $listing->fill($changes);
+            $this->listings->save($listing);
             $this->storeImages($listing, $images, $crops);
-            $this->auditLogs->record($seller, 'listing.draft_updated', $listing, after: [
+            $this->auditLogs->record($seller, 'listing.draft_updated', $listing, $before, [
+                ...$listing->getAttributes(),
                 'media_count' => $this->listings->mediaCount($listing),
             ]);
 
-            return $listing->fresh() ?? $listing;
+            return $listing;
         });
     }
 
@@ -357,7 +373,7 @@ class ListingService
         $slug = $base;
         $counter = 2;
 
-        while (Listing::query()->where('slug', $slug)->when($exceptListingId, fn ($query, int $listingId) => $query->whereKeyNot($listingId))->exists()) {
+        while ($this->listings->slugExists($slug, $exceptListingId)) {
             $slug = $base.'-'.$counter++;
         }
 

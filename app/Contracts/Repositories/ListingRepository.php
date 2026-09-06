@@ -68,6 +68,8 @@ interface ListingRepository
 
     public function save(Listing $listing): Listing;
 
+    public function slugExists(string $slug, ?int $exceptListingId = null): bool;
+
     /** @param array<string, mixed> $attributes */
     public function createMedia(Listing $listing, array $attributes): ListingMedia;
 

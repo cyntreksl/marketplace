@@ -9,6 +9,7 @@ use App\Services\RemoteListingImageService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Http\UploadedFile;
 use Illuminate\JsonSchema\Types\Type;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -23,9 +24,9 @@ use Throwable;
 
 #[Name('update-draft-product')]
 #[Title('Update Draft Product')]
-#[Description('Adds gallery images to a draft product that already exists. Accepts public HTTPS URLs or base64-encoded JPEG, PNG, and WebP file contents, including data URLs. For a new product and a requested generated photo, use create-draft-product with image_generation_prompt instead. The product remains a draft.')]
+#[Description('Updates the title, short description, description, specifications, or warranty of an existing draft product and optionally adds gallery images. Supply only fields to change; omitted fields are preserved. Use specifications_text for specifications. Images accept public HTTPS URLs or base64-encoded JPEG, PNG, and WebP file contents, including data URLs. For a new product and a requested generated photo, use create-draft-product with image_generation_prompt instead. This never creates a duplicate, submits, or publishes the product.')]
 #[IsReadOnly(false)]
-#[IsDestructive(false)]
+#[IsDestructive(true)]
 #[IsOpenWorld]
 class UpdateDraftProductTool extends Tool
 {
@@ -46,9 +47,9 @@ class UpdateDraftProductTool extends Tool
         $temporaryUploads = [];
 
         try {
-            $this->validateRequest($request);
+            $attributes = $this->validateRequest($request);
             [$images, $crops] = $this->prepareImages($request, $temporaryUploads);
-            $listing = $this->listings->addDraftImages($seller, (int) $request->get('listing_id'), $images, $crops);
+            $listing = $this->listings->updateDraftContent($seller, (int) $request->get('listing_id'), $attributes, $images, $crops);
         } catch (ValidationException $exception) {
             return Response::error('Validation failed: '.$exception->validator->errors()->first());
         } catch (Throwable $exception) {
@@ -73,6 +74,11 @@ class UpdateDraftProductTool extends Tool
             'seller_email' => $schema->string()->description('Email address of the product seller. Required if the MCP session is not authenticated.'),
             'seller_id' => $schema->integer()->description('User ID of the product seller, as an alternative to seller_email.'),
             'listing_id' => $schema->integer()->description('ID returned by create-draft-product.')->required(),
+            'title' => $schema->string()->description('Replacement product title. Omit to preserve the current title.')->min(1)->max(160),
+            'short_description' => $schema->string()->nullable()->description('Replacement short description. Pass null to clear; omit to preserve.')->max(160),
+            'description' => $schema->string()->nullable()->description('Replacement product description. Pass null to clear; omit to preserve.')->max(10000),
+            'specifications_text' => $schema->string()->nullable()->description('Replacement specifications as text, such as "Material: Cotton\nWeight: 200g". Replaces all existing specifications. Pass null to clear; omit to preserve.')->max(10000),
+            'warranty' => $schema->string()->nullable()->description('Replacement warranty period and coverage. Pass null to clear; omit to preserve.')->max(500),
             'image_urls' => $schema->array()
                 ->description('Direct public HTTPS JPEG, PNG, or WebP image URLs. URLs and uploaded files combined may not take the product above five gallery images.')
                 ->min(1)
@@ -108,15 +114,21 @@ class UpdateDraftProductTool extends Tool
         return null;
     }
 
-    private function validateRequest(Request $request): void
+    /** @return array<string, mixed> */
+    private function validateRequest(Request $request): array
     {
-        $request->validate([
+        $validated = $request->validate([
             'seller_email' => ['nullable', 'email:rfc', 'max:255'],
             'seller_id' => ['nullable', 'integer'],
             'listing_id' => ['required', 'integer'],
-            'image_urls' => ['nullable', 'array', 'between:1,5', 'required_without:image_files'],
+            'title' => ['sometimes', 'required', 'string', 'max:160'],
+            'short_description' => ['sometimes', 'nullable', 'string', 'max:160'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'specifications_text' => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'warranty' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'image_urls' => ['nullable', 'array', 'between:1,5'],
             'image_urls.*' => ['required', 'string', 'url:https', 'max:2048', 'distinct'],
-            'image_files' => ['nullable', 'array', 'between:1,5', 'required_without:image_urls'],
+            'image_files' => ['nullable', 'array', 'between:1,5'],
             'image_files.*.filename' => ['required', 'string', 'max:255'],
             'image_files.*.content_base64' => ['required', 'string', 'max:7100000'],
         ]);
@@ -127,6 +139,14 @@ class UpdateDraftProductTool extends Tool
         if ($imageCount > 5) {
             throw ValidationException::withMessages(['images' => 'No more than five images may be added at once.']);
         }
+
+        $attributes = Arr::only($validated, ['title', 'short_description', 'description', 'specifications_text', 'warranty']);
+
+        if ($attributes === [] && $imageCount === 0) {
+            throw ValidationException::withMessages(['listing_id' => 'Provide at least one field to update or an image to add.']);
+        }
+
+        return $attributes;
     }
 
     /**
