@@ -1,7 +1,7 @@
 import { Form, Link } from '@inertiajs/react';
-import { RotateCcw, SlidersHorizontal } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { index as listingsIndex } from '@/routes/listings';
 import type { StorefrontBrand, StorefrontBrowseFilters } from '@/types';
 
@@ -72,39 +72,36 @@ export function StorefrontListingFilters({
     className?: string;
 }) {
     const brandInputId = `${idPrefix}-brand`;
-    const locationInputId = `${idPrefix}-location`;
+    const priceLimit = 1_000_000;
+    const initialMinimumPrice = Math.min(
+        Number(filters.min_price) || 0,
+        priceLimit,
+    );
+    const initialMaximumPrice = Math.min(
+        Number(filters.max_price) || priceLimit,
+        priceLimit,
+    );
+    const [minimumPrice, setMinimumPrice] = useState(
+        Math.min(initialMinimumPrice, initialMaximumPrice),
+    );
+    const [maximumPrice, setMaximumPrice] = useState(
+        Math.max(initialMinimumPrice, initialMaximumPrice),
+    );
     const resetQuery = {
         ...(filters.search ? { search: filters.search } : {}),
         ...(filters.category ? { category: filters.category } : {}),
     };
+    const priceTrackStyle = {
+        background: `linear-gradient(to right, #e2e8f0 ${(minimumPrice / priceLimit) * 100}%, #ff6d00 ${(minimumPrice / priceLimit) * 100}%, #ff6d00 ${(maximumPrice / priceLimit) * 100}%, #e2e8f0 ${(maximumPrice / priceLimit) * 100}%)`,
+    };
+    const formatPrice = (price: number) =>
+        new Intl.NumberFormat('en-LK', {
+            maximumFractionDigits: 0,
+        }).format(price);
 
     return (
-        <Form {...listingsIndex.form()} className={`space-y-6 ${className}`}>
+        <Form {...listingsIndex.form()} className={`space-y-7 ${className}`}>
             <HiddenBrowseContext filters={filters} />
-            <div className="flex items-center gap-2">
-                <span className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary">
-                    <SlidersHorizontal className="size-4" />
-                </span>
-                <div>
-                    <h2 className="font-black text-slate-950 dark:text-white">
-                        Filter products
-                    </h2>
-                    <p className="text-xs text-slate-500">
-                        Narrow down your results
-                    </p>
-                </div>
-            </div>
-
-            <RadioGroup
-                label="Listing type"
-                name="listing_type"
-                value={filters.listing_type}
-                options={[
-                    { label: 'All', value: '' },
-                    { label: 'Buy now', value: 'buy_now' },
-                    { label: 'Auction', value: 'auction' },
-                ]}
-            />
 
             <RadioGroup
                 label="Condition"
@@ -140,53 +137,91 @@ export function StorefrontListingFilters({
                 </select>
             </div>
 
-            <div className="space-y-3">
-                <span className="text-sm font-black text-slate-900 dark:text-white">
-                    Price range
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                    <label>
-                        <span className="sr-only">Minimum price</span>
-                        <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
+            <fieldset className="space-y-5">
+                <div className="flex items-center justify-between gap-4">
+                    <legend className="text-sm font-black text-slate-900 dark:text-white">
+                        Price range
+                    </legend>
+                    <span className="text-xs font-semibold text-slate-400">
+                        LKR
+                    </span>
+                </div>
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                    <label className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950">
+                        <span className="block text-[10px] font-bold tracking-wide text-slate-400 uppercase">
+                            Minimum
+                        </span>
+                        <span className="mt-0.5 block text-sm font-bold text-slate-900 dark:text-white">
+                            Rs. {formatPrice(minimumPrice)}
+                        </span>
+                        <input
+                            type="hidden"
                             name="min_price"
-                            defaultValue={filters.min_price ?? ''}
-                            placeholder="Min"
-                            className="h-11 rounded-xl bg-slate-50 dark:bg-slate-950"
+                            value={minimumPrice || ''}
                         />
                     </label>
-                    <label>
-                        <span className="sr-only">Maximum price</span>
-                        <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
+                    <span className="h-px w-3 bg-slate-300" />
+                    <label className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-950">
+                        <span className="block text-[10px] font-bold tracking-wide text-slate-400 uppercase">
+                            Maximum
+                        </span>
+                        <span className="mt-0.5 block text-sm font-bold text-slate-900 dark:text-white">
+                            Rs. {formatPrice(maximumPrice)}
+                        </span>
+                        <input
+                            type="hidden"
                             name="max_price"
-                            defaultValue={filters.max_price ?? ''}
-                            placeholder="Max"
-                            className="h-11 rounded-xl bg-slate-50 dark:bg-slate-950"
+                            value={
+                                maximumPrice === priceLimit ? '' : maximumPrice
+                            }
                         />
                     </label>
                 </div>
-            </div>
-
-            <div className="space-y-3">
-                <label
-                    htmlFor={locationInputId}
-                    className="text-sm font-black text-slate-900 dark:text-white"
-                >
-                    Location
-                </label>
-                <Input
-                    id={locationInputId}
-                    name="location"
-                    defaultValue={filters.location ?? ''}
-                    placeholder="e.g. Colombo"
-                    className="h-11 rounded-xl bg-slate-50 dark:bg-slate-950"
-                />
-            </div>
+                <div className="relative h-7">
+                    <div
+                        className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full"
+                        style={priceTrackStyle}
+                    />
+                    <input
+                        aria-label="Minimum price"
+                        type="range"
+                        min="0"
+                        max={priceLimit}
+                        step="5000"
+                        value={minimumPrice}
+                        onChange={(event) =>
+                            setMinimumPrice(
+                                Math.min(
+                                    Number(event.target.value),
+                                    maximumPrice - 5000,
+                                ),
+                            )
+                        }
+                        className="pointer-events-none absolute inset-x-0 top-1/2 z-10 h-1 w-full -translate-y-1/2 appearance-none bg-transparent [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:size-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-[#FF6D00] [&::-moz-range-thumb]:shadow-md [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:size-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-[#FF6D00] [&::-webkit-slider-thumb]:shadow-md"
+                    />
+                    <input
+                        aria-label="Maximum price"
+                        type="range"
+                        min="0"
+                        max={priceLimit}
+                        step="5000"
+                        value={maximumPrice}
+                        onChange={(event) =>
+                            setMaximumPrice(
+                                Math.max(
+                                    Number(event.target.value),
+                                    minimumPrice + 5000,
+                                ),
+                            )
+                        }
+                        className="pointer-events-none absolute inset-x-0 top-1/2 z-20 h-1 w-full -translate-y-1/2 appearance-none bg-transparent [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:size-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-[#FF6D00] [&::-moz-range-thumb]:shadow-md [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:size-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-[#FF6D00] [&::-webkit-slider-thumb]:shadow-md"
+                    />
+                </div>
+                <div className="flex justify-between text-[11px] font-semibold text-slate-400">
+                    <span>Rs. 0</span>
+                    <span>Rs. 1,000,000+</span>
+                </div>
+            </fieldset>
 
             <div className="grid grid-cols-2 gap-2 pt-1">
                 <Button type="submit" className="h-11 rounded-xl font-bold">

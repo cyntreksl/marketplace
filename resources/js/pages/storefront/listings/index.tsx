@@ -65,8 +65,6 @@ function activeFilterCount(filters: StorefrontBrowseFilters): number {
     return [
         filters.brand,
         filters.condition,
-        filters.listing_type,
-        filters.location,
         filters.min_price,
         filters.max_price,
     ].filter((value) => value !== null && value !== undefined && value !== '')
@@ -330,7 +328,7 @@ export default function ListingsIndex({
                                 <SheetTrigger asChild>
                                     <Button
                                         variant="outline"
-                                        className="rounded-xl border-slate-200 bg-white lg:hidden"
+                                        className="h-11 rounded-xl border-slate-200 bg-white px-4 font-bold shadow-sm hover:border-[#FF6D00]/40 hover:bg-orange-50 hover:text-[#FF6D00]"
                                     >
                                         <Filter className="size-4" />
                                         Filters
@@ -342,21 +340,23 @@ export default function ListingsIndex({
                                     </Button>
                                 </SheetTrigger>
                                 <SheetContent
-                                    side="left"
-                                    className="w-[92vw] overflow-y-auto sm:max-w-md"
+                                    side="right"
+                                    className="w-[94vw] gap-0 overflow-y-auto border-l-0 bg-white text-slate-950 shadow-2xl sm:max-w-md dark:bg-slate-900 dark:text-white"
                                 >
-                                    <SheetHeader>
-                                        <SheetTitle>Product filters</SheetTitle>
+                                    <SheetHeader className="border-b border-slate-100 px-6 py-5 text-left dark:border-slate-800">
+                                        <SheetTitle className="text-xl font-black tracking-tight">
+                                            Filter products
+                                        </SheetTitle>
                                         <SheetDescription>
-                                            Refine the products shown on this
-                                            page.
+                                            Refine results by condition, brand,
+                                            and price.
                                         </SheetDescription>
                                     </SheetHeader>
                                     <StorefrontListingFilters
                                         filters={filters}
                                         brands={filterOptions.brands}
                                         idPrefix="mobile-storefront"
-                                        className="px-4 pb-8"
+                                        className="px-6 py-6"
                                     />
                                 </SheetContent>
                             </Sheet>
@@ -400,62 +400,52 @@ export default function ListingsIndex({
                         </div>
                     </div>
 
-                    <div className="grid items-start gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
-                        <aside className="sticky top-36 hidden rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm lg:block">
-                            <StorefrontListingFilters
-                                filters={filters}
-                                brands={filterOptions.brands}
-                                idPrefix="desktop-storefront"
-                            />
-                        </aside>
+                    <div className="min-w-0">
+                        {listings.data.length > 0 ? (
+                            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+                                {listings.data.map((listing) => (
+                                    <ListingCard
+                                        key={listing.id}
+                                        listing={listing}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="rounded-3xl border border-dashed border-orange-200 bg-white px-6 py-16 text-center shadow-sm">
+                                <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-orange-50 text-[#FF6D00]">
+                                    {categoryContext?.children.length ? (
+                                        <PackageSearch className="size-7" />
+                                    ) : (
+                                        <Search className="size-7" />
+                                    )}
+                                </span>
+                                <h3 className="mt-5 text-xl font-black text-slate-950">
+                                    No products found
+                                </h3>
+                                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                                    {categoryContext?.children.length
+                                        ? 'This category is ready to browse. Explore a subcategory above or adjust your filters.'
+                                        : 'Try a broader search, remove a filter, or explore another marketplace category.'}
+                                </p>
+                                <Button asChild className="mt-6 rounded-xl">
+                                    <Link
+                                        href={listingsIndex({
+                                            query: categoryContext
+                                                ? {
+                                                      category:
+                                                          categoryContext
+                                                              .current.slug,
+                                                  }
+                                                : {},
+                                        })}
+                                    >
+                                        Clear filters
+                                    </Link>
+                                </Button>
+                            </div>
+                        )}
 
-                        <div className="min-w-0">
-                            {listings.data.length > 0 ? (
-                                <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
-                                    {listings.data.map((listing) => (
-                                        <ListingCard
-                                            key={listing.id}
-                                            listing={listing}
-                                        />
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="rounded-3xl border border-dashed border-orange-200 bg-white px-6 py-16 text-center shadow-sm">
-                                    <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-orange-50 text-[#FF6D00]">
-                                        {categoryContext?.children.length ? (
-                                            <PackageSearch className="size-7" />
-                                        ) : (
-                                            <Search className="size-7" />
-                                        )}
-                                    </span>
-                                    <h3 className="mt-5 text-xl font-black text-slate-950">
-                                        No products found
-                                    </h3>
-                                    <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-                                        {categoryContext?.children.length
-                                            ? 'This category is ready to browse. Explore a subcategory above or adjust your filters.'
-                                            : 'Try a broader search, remove a filter, or explore another marketplace category.'}
-                                    </p>
-                                    <Button asChild className="mt-6 rounded-xl">
-                                        <Link
-                                            href={listingsIndex({
-                                                query: categoryContext
-                                                    ? {
-                                                          category:
-                                                              categoryContext
-                                                                  .current.slug,
-                                                      }
-                                                    : {},
-                                            })}
-                                        >
-                                            Clear filters
-                                        </Link>
-                                    </Button>
-                                </div>
-                            )}
-
-                            <StorefrontPagination paginator={listings} />
-                        </div>
+                        <StorefrontPagination paginator={listings} />
                     </div>
                 </section>
             </main>
