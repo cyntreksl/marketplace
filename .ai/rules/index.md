@@ -7,5 +7,6 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/** | .ai/rules/app.md |
 | bootstrap/app.php | .ai/rules/bootstrap.md |
 | app/{Notifications,Mail}/** | .ai/rules/notifications-mail.md |
+| resources/** | .ai/rules/resources.md |
 | app/Services/**, app/Services/ListingService.php | .ai/rules/services.md |
 | tests/** | .ai/rules/tests.md |

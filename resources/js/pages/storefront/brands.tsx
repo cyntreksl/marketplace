@@ -19,8 +19,8 @@ export default function Brands({
 }) {
     return (
         <StorefrontLayout title="Brands" categories={categories}>
-            <main className="mx-auto max-w-[96rem] px-4 py-8 sm:px-6">
-                <p className="text-xs font-bold text-[#ff5a00]">
+            <main className="storefront-container py-8">
+                <p className="text-sm font-bold text-[#ff5a00]">
                     SHOP BY BRAND
                 </p>
                 <h1 className="mt-1 text-3xl font-black">Brand directory</h1>
@@ -44,7 +44,7 @@ export default function Brands({
                                     </span>
                                 )}
                             </>
-                            <span className="mt-3 text-[10px] text-slate-400">
+                            <span className="mt-3 text-sm text-slate-400">
                                 {brand.listingCount} products
                             </span>
                         </Link>

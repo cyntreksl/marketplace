@@ -19,7 +19,7 @@ const footerFaqs = [
 export function StorefrontFooter({ className = '' }: { className?: string }) {
     return (
         <footer className={`mt-12 bg-white ${className}`}>
-            <div className="mx-auto max-w-[96rem] px-4 sm:px-6">
+            <div className="storefront-container">
                 <section
                     aria-labelledby="footer-faq-heading"
                     className="border-y border-slate-100 py-7"

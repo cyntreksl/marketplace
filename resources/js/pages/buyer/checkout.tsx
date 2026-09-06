@@ -30,7 +30,7 @@ type CheckoutSectionProps = {
 };
 
 const inputClassName =
-    'h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#ff5a00] focus:ring-3 focus:ring-orange-100';
+    'h-11 w-full rounded-lg border border-slate-200 bg-white px-3.5 text-base text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#ff5a00] focus:ring-3 focus:ring-orange-100';
 
 function formatPrice(value: number): string {
     return `LKR ${value.toLocaleString('en-LK')}`;
@@ -45,10 +45,10 @@ function CheckoutSection({
     return (
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-[0_3px_18px_rgba(15,23,42,0.04)] sm:p-5">
             <div className="flex items-center gap-2.5">
-                <span className="grid size-7 shrink-0 place-items-center rounded-full border border-slate-200 bg-slate-50 text-xs font-black text-slate-700">
+                <span className="grid size-7 shrink-0 place-items-center rounded-full border border-slate-200 bg-slate-50 text-sm font-black text-slate-700">
                     {number}
                 </span>
-                <h2 className="text-base font-extrabold text-slate-950">
+                <h2 className="text-xl font-extrabold text-slate-950">
                     {title}
                 </h2>
                 {Icon && <Icon className="ml-auto size-4 text-slate-400" />}
@@ -76,7 +76,7 @@ function Field({
     error?: string;
 }) {
     return (
-        <label className="grid gap-1.5 text-xs font-semibold text-slate-700">
+        <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
             <span>
                 {label}
                 {required && <span className="ml-0.5 text-[#ff5a00]">*</span>}
@@ -89,7 +89,7 @@ function Field({
                 placeholder={placeholder}
                 className={inputClassName}
             />
-            {error && <span className="text-[11px] text-red-600">{error}</span>}
+            {error && <span className="text-sm text-red-600">{error}</span>}
         </label>
     );
 }
@@ -127,15 +127,15 @@ function DeliveryOption({
             />
             <Icon className="size-6 shrink-0 text-slate-700" />
             <span className="min-w-0 flex-1">
-                <span className="block text-xs font-extrabold text-slate-900">
+                <span className="block text-sm font-extrabold text-slate-900">
                     {title}
                 </span>
-                <span className="block text-[11px] text-slate-500">
+                <span className="block text-sm text-slate-500">
                     {description}
                 </span>
             </span>
             <span
-                className={`shrink-0 text-xs font-extrabold ${price === 'FREE' ? 'text-emerald-600' : 'text-slate-700'}`}
+                className={`shrink-0 text-sm font-extrabold ${price === 'FREE' ? 'text-emerald-600' : 'text-slate-700'}`}
             >
                 {price}
             </span>
@@ -158,10 +158,10 @@ function TrustItem({
                 <Icon className="size-5" />
             </span>
             <span>
-                <strong className="block text-xs text-slate-900">
+                <strong className="block text-sm text-slate-900">
                     {title}
                 </strong>
-                <span className="mt-0.5 block text-[11px] leading-4 text-slate-500">
+                <span className="mt-0.5 block text-sm leading-5 text-slate-500">
                     {description}
                 </span>
             </span>
@@ -188,10 +188,10 @@ export default function BuyerCheckout({
     return (
         <StorefrontLayout title="Checkout">
             <Head title="Checkout" />
-            <main className="mx-auto max-w-[82rem] px-4 py-5 sm:px-6 sm:py-7">
+            <main className="storefront-container py-5 sm:py-7">
                 <section className="rounded-xl bg-gradient-to-r from-[#fff8f3] via-[#fffaf6] to-[#fff5ed] px-5 py-5 sm:px-8">
                     <CheckoutProgress current="shipping" />
-                    <p className="mt-5 flex items-center justify-center gap-2 text-center text-xs font-medium text-slate-600">
+                    <p className="mt-5 flex items-center justify-center gap-2 text-center text-sm font-medium text-slate-600">
                         <LockKeyhole className="size-3.5" />
                         You're in safe hands. All transactions are secure and
                         encrypted.
@@ -206,12 +206,12 @@ export default function BuyerCheckout({
                         <h1 className="mt-4 text-xl font-black text-slate-950">
                             Your cart is empty
                         </h1>
-                        <p className="mt-2 text-sm text-slate-500">
+                        <p className="mt-2 text-base text-slate-500">
                             Add a product before continuing to checkout.
                         </p>
                         <Link
                             href={cartShow()}
-                            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#ff5a00] px-5 py-3 text-sm font-bold text-white"
+                            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#ff5a00] px-5 py-3 text-base font-bold text-white"
                         >
                             Return to cart
                             <ArrowRight className="size-4" />
@@ -227,7 +227,7 @@ export default function BuyerCheckout({
                                         title="Contact Details"
                                     >
                                         <div className="grid gap-4 sm:grid-cols-2">
-                                            <label className="grid gap-1.5 text-xs font-semibold text-slate-700">
+                                            <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
                                                 <span>Email Address</span>
                                                 <input
                                                     type="email"
@@ -248,7 +248,7 @@ export default function BuyerCheckout({
                                                 error={errors.phone}
                                             />
                                         </div>
-                                        <label className="mt-4 flex items-center gap-2 text-[11px] text-slate-600">
+                                        <label className="mt-4 flex items-center gap-2 text-sm text-slate-600">
                                             <input
                                                 type="checkbox"
                                                 className="size-4 rounded accent-[#ff5a00]"
@@ -351,7 +351,7 @@ export default function BuyerCheckout({
                                                 disabled
                                             />
                                         </div>
-                                        <p className="mt-3 flex items-center gap-2 rounded-lg bg-orange-50 px-3 py-2.5 text-[11px] text-amber-900">
+                                        <p className="mt-3 flex items-center gap-2 rounded-lg bg-orange-50 px-3 py-2.5 text-sm text-amber-900">
                                             <ShieldCheck className="size-4 shrink-0" />
                                             We deliver islandwide with care and
                                             keep you updated on order progress.
@@ -375,7 +375,7 @@ export default function BuyerCheckout({
                                         number={5}
                                         title="Billing Address"
                                     >
-                                        <div className="flex flex-col gap-4 text-xs sm:flex-row sm:gap-10">
+                                        <div className="flex flex-col gap-4 text-sm sm:flex-row sm:gap-10">
                                             <label className="flex items-center gap-2 font-semibold text-slate-700">
                                                 <input
                                                     type="radio"
@@ -401,9 +401,9 @@ export default function BuyerCheckout({
                                 <aside className="grid gap-4 lg:sticky lg:top-5">
                                     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_6px_24px_rgba(15,23,42,0.07)]">
                                         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4 sm:px-5">
-                                            <h2 className="text-base font-extrabold text-slate-950">
+                                            <h2 className="text-xl font-extrabold text-slate-950">
                                                 Order Summary{' '}
-                                                <span className="text-xs font-semibold text-slate-500">
+                                                <span className="text-sm font-semibold text-slate-500">
                                                     ({cart.items.length}{' '}
                                                     {cart.items.length === 1
                                                         ? 'item'
@@ -413,7 +413,7 @@ export default function BuyerCheckout({
                                             </h2>
                                             <Link
                                                 href={cartShow()}
-                                                className="text-xs font-bold text-[#ff5a00] hover:underline"
+                                                className="text-sm font-bold text-[#ff5a00] hover:underline"
                                             >
                                                 Edit Cart
                                             </Link>
@@ -451,14 +451,14 @@ export default function BuyerCheckout({
                                                         </div>
                                                         <div className="min-w-0 flex-1">
                                                             <div className="flex items-start justify-between gap-2">
-                                                                <p className="line-clamp-2 text-xs font-semibold text-slate-900">
+                                                                <p className="line-clamp-2 text-sm font-semibold text-slate-900">
                                                                     {
                                                                         item
                                                                             .listing
                                                                             .title
                                                                     }
                                                                 </p>
-                                                                <p className="shrink-0 text-xs font-bold text-slate-900">
+                                                                <p className="shrink-0 text-sm font-bold text-slate-900">
                                                                     {formatPrice(
                                                                         itemPrice(
                                                                             item,
@@ -467,7 +467,7 @@ export default function BuyerCheckout({
                                                                     )}
                                                                 </p>
                                                             </div>
-                                                            <p className="mt-1 text-[10px] text-slate-500">
+                                                            <p className="mt-1 text-sm text-slate-500">
                                                                 {
                                                                     item.listing
                                                                         .seller_profile
@@ -475,7 +475,7 @@ export default function BuyerCheckout({
                                                                 }
                                                             </p>
                                                             {item.variant && (
-                                                                <p className="mt-1 truncate text-[10px] text-slate-500">
+                                                                <p className="mt-1 truncate text-sm text-slate-500">
                                                                     {item.variant.option_values
                                                                         .map(
                                                                             (
@@ -488,7 +488,7 @@ export default function BuyerCheckout({
                                                                         )}
                                                                 </p>
                                                             )}
-                                                            <p className="mt-1 text-[10px] text-slate-500">
+                                                            <p className="mt-1 text-sm text-slate-500">
                                                                 Qty:{' '}
                                                                 {item.quantity}
                                                             </p>
@@ -499,7 +499,7 @@ export default function BuyerCheckout({
                                         </ul>
 
                                         <div className="border-t border-slate-100 p-4 sm:p-5">
-                                            <dl className="grid gap-3 text-xs">
+                                            <dl className="grid gap-3 text-sm">
                                                 <div className="flex justify-between gap-4">
                                                     <dt className="text-slate-600">
                                                         Subtotal
@@ -535,12 +535,12 @@ export default function BuyerCheckout({
                                                     disabled
                                                     aria-label="Coupon code"
                                                     placeholder="Coupon codes coming soon"
-                                                    className={`${inputClassName} min-w-0 flex-1 text-xs disabled:cursor-not-allowed disabled:bg-slate-50`}
+                                                    className={`${inputClassName} min-w-0 flex-1 text-sm disabled:cursor-not-allowed disabled:bg-slate-50`}
                                                 />
                                                 <button
                                                     type="button"
                                                     disabled
-                                                    className="cursor-not-allowed rounded-lg bg-slate-300 px-4 text-xs font-bold text-white"
+                                                    className="cursor-not-allowed rounded-lg bg-slate-300 px-4 text-sm font-bold text-white"
                                                 >
                                                     Apply
                                                 </button>
@@ -550,10 +550,10 @@ export default function BuyerCheckout({
                                         <div className="bg-gradient-to-br from-[#fff8f2] to-[#fff2e7] p-4 sm:p-5">
                                             <div className="flex items-end justify-between gap-3">
                                                 <span>
-                                                    <strong className="block text-sm text-slate-950">
+                                                    <strong className="block text-base text-slate-950">
                                                         Total Payable
                                                     </strong>
-                                                    <span className="text-[10px] text-slate-500">
+                                                    <span className="text-sm text-slate-500">
                                                         Inclusive of VAT
                                                     </span>
                                                 </span>
@@ -566,7 +566,7 @@ export default function BuyerCheckout({
 
                                             {Object.values(errors).length >
                                                 0 && (
-                                                <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-[11px] text-red-700">
+                                                <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                                                     {Object.entries(errors).map(
                                                         ([field, error]) => (
                                                             <p key={field}>
@@ -583,7 +583,7 @@ export default function BuyerCheckout({
                                                     processing ||
                                                     !cart.canCheckout
                                                 }
-                                                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#ff5a00] px-4 text-sm font-extrabold text-white shadow-[0_8px_20px_rgba(255,90,0,0.24)] transition hover:bg-[#eb5200] disabled:cursor-not-allowed disabled:opacity-60"
+                                                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#ff5a00] px-4 text-base font-extrabold text-white shadow-[0_8px_20px_rgba(255,90,0,0.24)] transition hover:bg-[#eb5200] disabled:cursor-not-allowed disabled:opacity-60"
                                             >
                                                 <LockKeyhole className="size-4" />
                                                 {processing
@@ -591,7 +591,7 @@ export default function BuyerCheckout({
                                                     : 'Continue to Payment'}
                                                 <ArrowRight className="ml-auto size-4" />
                                             </button>
-                                            <p className="mt-3 flex items-center justify-center gap-1.5 text-[10px] text-slate-500">
+                                            <p className="mt-3 flex items-center justify-center gap-1.5 text-sm text-slate-500">
                                                 <ShieldCheck className="size-3.5" />
                                                 Safe, secure and encrypted
                                                 payments
@@ -626,7 +626,7 @@ export default function BuyerCheckout({
                                         />
                                     </section>
 
-                                    <p className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400">
+                                    <p className="flex items-center justify-center gap-1.5 text-sm text-slate-400">
                                         <CircleHelp className="size-3.5" />
                                         Questions? Our support team is ready to
                                         help.

@@ -225,3 +225,11 @@
         @apply bg-background text-foreground;
     }
 }
+
+@utility storefront-container {
+    @apply mx-auto w-full max-w-[82rem] px-4;
+
+    @variant sm {
+        @apply px-6;
+    }
+}

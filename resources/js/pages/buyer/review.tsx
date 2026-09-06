@@ -73,10 +73,10 @@ function SectionHeading({
 }) {
     return (
         <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
-            <h2 className="text-base font-extrabold text-slate-950">{title}</h2>
+            <h2 className="text-xl font-extrabold text-slate-950">{title}</h2>
             <Link
                 href={editHref}
-                className="text-xs font-bold text-[#ff5a00] hover:underline"
+                className="text-sm font-bold text-[#ff5a00] hover:underline"
             >
                 {editLabel}
             </Link>
@@ -118,24 +118,24 @@ function OrderItems({ cart }: { cart: CheckoutCart }) {
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        <h3 className="text-sm font-bold text-slate-950">
+                                        <h3 className="text-base font-bold text-slate-950">
                                             {item.listing.title}
                                         </h3>
-                                        <p className="mt-1 text-xs text-slate-500">
+                                        <p className="mt-1 text-sm text-slate-500">
                                             {
                                                 item.listing.seller_profile
                                                     .store_name
                                             }
                                         </p>
                                     </div>
-                                    <strong className="shrink-0 text-sm text-slate-950">
+                                    <strong className="shrink-0 text-base text-slate-950">
                                         {formatPrice(
                                             itemPrice(item) * item.quantity,
                                         )}
                                     </strong>
                                 </div>
                                 {item.variant && (
-                                    <p className="mt-2 text-xs text-slate-500">
+                                    <p className="mt-2 text-sm text-slate-500">
                                         {item.variant.option_values
                                             .map(
                                                 (option) =>
@@ -144,7 +144,7 @@ function OrderItems({ cart }: { cart: CheckoutCart }) {
                                             .join(' · ')}
                                     </p>
                                 )}
-                                <p className="mt-2 text-xs font-semibold text-slate-600">
+                                <p className="mt-2 text-sm font-semibold text-slate-600">
                                     Quantity: {item.quantity}
                                 </p>
                             </div>
@@ -173,8 +173,8 @@ function DeliveryDetails({
                     <span className="grid size-10 shrink-0 place-items-center rounded-full bg-orange-50 text-[#ff5a00]">
                         <MapPin className="size-5" />
                     </span>
-                    <address className="text-xs leading-5 text-slate-600 not-italic">
-                        <strong className="block text-sm text-slate-950">
+                    <address className="text-sm leading-5 text-slate-600 not-italic">
+                        <strong className="block text-base text-slate-950">
                             {shippingAddress.recipient_name}
                         </strong>
                         <span className="block">
@@ -200,10 +200,10 @@ function DeliveryDetails({
                 <div className="flex items-start gap-3 rounded-lg bg-slate-50 p-4">
                     <Truck className="mt-0.5 size-5 shrink-0 text-[#ff5a00]" />
                     <span>
-                        <strong className="block text-xs text-slate-950">
+                        <strong className="block text-sm text-slate-950">
                             Islandwide Standard Delivery
                         </strong>
-                        <span className="mt-1 block text-[11px] leading-5 text-slate-500">
+                        <span className="mt-1 block text-sm leading-5 text-slate-500">
                             Delivery timing is confirmed after your order is
                             placed.
                         </span>
@@ -234,10 +234,10 @@ function PaymentDetails({
                     <Icon className="size-5" />
                 </span>
                 <span>
-                    <strong className="block text-sm text-slate-950">
+                    <strong className="block text-base text-slate-950">
                         {method.title}
                     </strong>
-                    <span className="mt-1 block text-xs leading-5 text-slate-500">
+                    <span className="mt-1 block text-sm leading-5 text-slate-500">
                         {method.description}
                     </span>
                 </span>
@@ -265,12 +265,12 @@ function OrderSummary({
                 <h2 className="text-lg font-black text-slate-950">
                     Order Summary
                 </h2>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-sm text-slate-500">
                     Review the final total before placing your order.
                 </p>
             </div>
             <div className="px-5 py-5">
-                <dl className="grid gap-3 text-xs">
+                <dl className="grid gap-3 text-sm">
                     <div className="flex justify-between gap-4">
                         <dt className="text-slate-600">Subtotal</dt>
                         <dd className="font-bold text-slate-900">
@@ -290,10 +290,10 @@ function OrderSummary({
                 </dl>
                 <div className="mt-5 flex items-end justify-between gap-4 border-t border-slate-100 pt-5">
                     <span>
-                        <strong className="block text-sm text-slate-950">
+                        <strong className="block text-base text-slate-950">
                             Total Payable
                         </strong>
-                        <span className="text-[10px] text-slate-500">
+                        <span className="text-sm text-slate-500">
                             Inclusive of VAT
                         </span>
                     </span>
@@ -319,7 +319,7 @@ function OrderSummary({
                             value={reviewHash}
                         />
                         {Object.values(errors).length > 0 && (
-                            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+                            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                                 {Object.entries(errors).map(
                                     ([field, error]) => (
                                         <p key={field}>{error}</p>
@@ -330,12 +330,12 @@ function OrderSummary({
                         <button
                             type="submit"
                             disabled={processing || !cart.canCheckout}
-                            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#ff5a00] px-4 text-sm font-extrabold text-white shadow-[0_8px_20px_rgba(255,90,0,0.24)] transition hover:bg-[#eb5200] disabled:cursor-not-allowed disabled:opacity-60"
+                            className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#ff5a00] px-4 text-base font-extrabold text-white shadow-[0_8px_20px_rgba(255,90,0,0.24)] transition hover:bg-[#eb5200] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             <LockKeyhole className="size-4" />
                             {processing ? 'Placing order...' : 'Place Order'}
                         </button>
-                        <p className="mt-3 text-center text-[10px] leading-5 text-slate-500">
+                        <p className="mt-3 text-center text-sm leading-5 text-slate-500">
                             By placing your order, you agree to our{' '}
                             <Link
                                 href={terms()}
@@ -345,7 +345,7 @@ function OrderSummary({
                             </Link>
                             .
                         </p>
-                        <p className="mt-3 flex items-center justify-center gap-1.5 text-[10px] font-semibold text-emerald-700">
+                        <p className="mt-3 flex items-center justify-center gap-1.5 text-sm font-semibold text-emerald-700">
                             <ShieldCheck className="size-3.5" />
                             Secure checkout ·{' '}
                             {paymentMethods[paymentMethod].title}
@@ -373,7 +373,7 @@ export default function BuyerReview({
     return (
         <StorefrontLayout title="Review & Place Order">
             <Head title="Review & Place Order" />
-            <main className="mx-auto max-w-[82rem] px-4 py-5 sm:px-6 sm:py-7">
+            <main className="storefront-container py-5 sm:py-7">
                 <CheckoutProgress current="review" />
 
                 <header className="mt-7 flex items-center gap-4">
@@ -384,7 +384,7 @@ export default function BuyerReview({
                         <h1 className="text-2xl font-black tracking-tight text-slate-950">
                             Review & Place Order
                         </h1>
-                        <p className="mt-1 text-sm text-slate-500">
+                        <p className="mt-1 text-base text-slate-500">
                             Check your items, delivery details, and payment
                             method.
                         </p>
@@ -397,12 +397,12 @@ export default function BuyerReview({
                         <h2 className="mt-4 text-xl font-black text-slate-950">
                             Your cart is empty
                         </h2>
-                        <p className="mt-2 text-sm text-slate-500">
+                        <p className="mt-2 text-base text-slate-500">
                             Add an item before placing your order.
                         </p>
                         <Link
                             href={cartShow()}
-                            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#ff5a00] px-5 py-3 text-sm font-bold text-white"
+                            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#ff5a00] px-5 py-3 text-base font-bold text-white"
                         >
                             <ArrowLeft className="size-4" />
                             Return to cart
@@ -416,7 +416,7 @@ export default function BuyerReview({
                                 shippingAddress={shippingAddress}
                             />
                             <PaymentDetails paymentMethod={paymentMethod} />
-                            <section className="flex items-start gap-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-5 text-xs leading-5 text-emerald-900">
+                            <section className="flex items-start gap-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-5 text-sm leading-5 text-emerald-900">
                                 <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-600" />
                                 <span>
                                     <strong className="block">

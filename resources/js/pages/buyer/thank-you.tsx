@@ -60,18 +60,18 @@ function AddressCard({
                     <MapPin className="size-4" />
                 </span>
                 <div>
-                    <h2 className="text-sm font-extrabold text-slate-950">
+                    <h2 className="text-xl font-extrabold text-slate-950">
                         {title}
                     </h2>
                     {isBilling && (
-                        <p className="mt-0.5 text-[11px] text-slate-500">
+                        <p className="mt-0.5 text-sm text-slate-500">
                             Same as shipping address
                         </p>
                     )}
                 </div>
             </div>
-            <address className="mt-4 text-xs leading-5 text-slate-600 not-italic">
-                <strong className="block text-sm text-slate-950">
+            <address className="mt-4 text-sm leading-5 text-slate-600 not-italic">
+                <strong className="block text-base text-slate-950">
                     {address.recipient_name}
                 </strong>
                 <span className="block">{address.address_line_one}</span>
@@ -97,11 +97,11 @@ function OrderItems({ order }: { order: CheckoutConfirmationOrder }) {
             <div className="flex items-center justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
                 <div className="flex items-center gap-3">
                     <PackageCheck className="size-5 text-[#ff5a00]" />
-                    <h2 className="text-base font-extrabold text-slate-950">
+                    <h2 className="text-xl font-extrabold text-slate-950">
                         Order items
                     </h2>
                 </div>
-                <span className="text-xs font-semibold text-slate-500">
+                <span className="text-sm font-semibold text-slate-500">
                     {order.items.reduce(
                         (quantity, item) => quantity + item.quantity,
                         0,
@@ -114,14 +114,14 @@ function OrderItems({ order }: { order: CheckoutConfirmationOrder }) {
                     <li key={item.id} className="py-5">
                         <div className="flex items-start justify-between gap-4">
                             <div className="min-w-0">
-                                <h3 className="text-sm font-bold text-slate-950">
+                                <h3 className="text-base font-bold text-slate-950">
                                     {item.title}
                                 </h3>
-                                <p className="mt-1 text-xs text-slate-500">
+                                <p className="mt-1 text-sm text-slate-500">
                                     Sold by {item.seller}
                                 </p>
                                 {item.variantOptions && (
-                                    <p className="mt-2 text-xs text-slate-500">
+                                    <p className="mt-2 text-sm text-slate-500">
                                         {Object.entries(item.variantOptions)
                                             .map(
                                                 ([option, value]) =>
@@ -131,16 +131,16 @@ function OrderItems({ order }: { order: CheckoutConfirmationOrder }) {
                                     </p>
                                 )}
                                 {item.variantSku && (
-                                    <p className="mt-1 text-[11px] text-slate-400">
+                                    <p className="mt-1 text-sm text-slate-400">
                                         SKU: {item.variantSku}
                                     </p>
                                 )}
-                                <p className="mt-2 text-xs font-semibold text-slate-600">
+                                <p className="mt-2 text-sm font-semibold text-slate-600">
                                     {item.quantity} ×{' '}
                                     {formatPrice(item.unitPrice)}
                                 </p>
                             </div>
-                            <strong className="shrink-0 text-sm text-slate-950">
+                            <strong className="shrink-0 text-base text-slate-950">
                                 {formatPrice(item.total)}
                             </strong>
                         </div>
@@ -168,7 +168,7 @@ function OrderSummary({ order }: { order: CheckoutConfirmationOrder }) {
                 </div>
             </div>
             <div className="px-5 py-5">
-                <dl className="grid gap-3 text-xs">
+                <dl className="grid gap-3 text-sm">
                     <div className="flex justify-between gap-4">
                         <dt className="text-slate-600">Subtotal</dt>
                         <dd className="font-bold text-slate-900">
@@ -191,7 +191,7 @@ function OrderSummary({ order }: { order: CheckoutConfirmationOrder }) {
                     </div>
                 </dl>
                 <div className="mt-5 flex items-end justify-between gap-4 border-t border-slate-100 pt-5">
-                    <span className="text-sm font-bold text-slate-950">
+                    <span className="text-base font-bold text-slate-950">
                         Total
                     </span>
                     <strong className="text-xl font-black text-[#ff5a00]">
@@ -201,7 +201,7 @@ function OrderSummary({ order }: { order: CheckoutConfirmationOrder }) {
                 {paymentMethod && order.payment && PaymentIcon && (
                     <div className="mt-5 flex items-start gap-3 rounded-lg bg-slate-50 p-4">
                         <PaymentIcon className="mt-0.5 size-4 shrink-0 text-[#ff5a00]" />
-                        <span className="text-xs text-slate-600">
+                        <span className="text-sm text-slate-600">
                             <strong className="block text-slate-950">
                                 {paymentMethod.label}
                             </strong>
@@ -234,7 +234,7 @@ export default function BuyerThankYou({
             <Head
                 title={`Order ${order.number} — ${formatStatus(order.status)}`}
             />
-            <main className="mx-auto max-w-[82rem] px-4 py-7 sm:px-6 sm:py-10">
+            <main className="storefront-container py-7 sm:py-10">
                 <OrderPaymentStatus
                     number={order.number}
                     method={order.payment?.method}
@@ -248,26 +248,26 @@ export default function BuyerThankYou({
                         <h1 className="mt-5 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
                             Thank you! Your order has been placed.
                         </h1>
-                        <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-600">
+                        <p className="mx-auto mt-2 max-w-xl text-base leading-6 text-slate-600">
                             We have sent an acknowledgement email with your
                             order details. Keep your order number for tracking
                             and support.
                         </p>
                         <div className="mx-auto mt-5 inline-flex flex-col items-center rounded-xl border border-emerald-200 bg-white px-7 py-4 shadow-sm">
-                            <span className="text-[11px] font-bold tracking-widest text-slate-500 uppercase">
+                            <span className="text-sm font-bold tracking-widest text-slate-500 uppercase">
                                 Order number
                             </span>
                             <strong className="mt-1 text-2xl font-black tracking-wide text-[#ff5a00]">
                                 {order.number}
                             </strong>
                             {placedDate && (
-                                <span className="mt-1 text-xs text-slate-500">
+                                <span className="mt-1 text-sm text-slate-500">
                                     Placed on {placedDate}
                                 </span>
                             )}
                         </div>
                     </div>
-                    <div className="flex items-start gap-3 border-t border-emerald-100 px-5 py-4 text-xs leading-5 text-emerald-900 sm:px-8">
+                    <div className="flex items-start gap-3 border-t border-emerald-100 px-5 py-4 text-sm leading-5 text-emerald-900 sm:px-8">
                         <MailCheck className="mt-0.5 size-5 shrink-0 text-emerald-600" />
                         <span>
                             Your confirmation email may take a few minutes to
@@ -298,14 +298,14 @@ export default function BuyerThankYou({
                 <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
                     <Link
                         href={buyerOrdersIndex()}
-                        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#ff5a00] px-6 text-sm font-extrabold text-white transition hover:bg-[#eb5200]"
+                        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#ff5a00] px-6 text-base font-extrabold text-white transition hover:bg-[#eb5200]"
                     >
                         View my orders
                         <ArrowRight className="size-4" />
                     </Link>
                     <Link
                         href={home()}
-                        className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-6 text-sm font-bold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
+                        className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-6 text-base font-bold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"
                     >
                         Continue shopping
                     </Link>

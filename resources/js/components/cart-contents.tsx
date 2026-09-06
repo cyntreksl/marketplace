@@ -37,18 +37,18 @@ function CartLine({ item }: { item: CheckoutCartItem }) {
                 {item.listing.slug ? (
                     <Link
                         href={listingShow(item.listing.slug)}
-                        className="text-sm font-bold hover:text-orange-600"
+                        className="text-base font-bold hover:text-orange-600"
                     >
                         {item.listing.title}
                     </Link>
                 ) : (
-                    <strong className="text-sm">{item.listing.title}</strong>
+                    <strong className="text-base">{item.listing.title}</strong>
                 )}
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-sm text-slate-500">
                     {item.listing.seller_profile.store_name}
                 </p>
                 {item.variant && (
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-sm text-slate-500">
                         {item.variant.option_values
                             .map(
                                 (option) =>
@@ -57,7 +57,7 @@ function CartLine({ item }: { item: CheckoutCartItem }) {
                             .join(' · ')}
                     </p>
                 )}
-                <p className="mt-2 text-xs text-slate-600">
+                <p className="mt-2 text-sm text-slate-600">
                     {cartMoney(item.unitPrice)} each
                 </p>
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
@@ -93,7 +93,7 @@ function CartLine({ item }: { item: CheckoutCartItem }) {
                                     event.currentTarget.blur();
                                 }
                             }}
-                            className="w-12 text-center text-sm font-semibold"
+                            className="w-12 text-center text-base font-semibold"
                         />
                         <button
                             type="button"
@@ -107,7 +107,9 @@ function CartLine({ item }: { item: CheckoutCartItem }) {
                             <Plus className="size-4" />
                         </button>
                     </div>
-                    <strong className="text-sm">{cartMoney(item.total)}</strong>
+                    <strong className="text-base">
+                        {cartMoney(item.total)}
+                    </strong>
                     <button
                         type="button"
                         disabled={busy}
@@ -125,7 +127,7 @@ function CartLine({ item }: { item: CheckoutCartItem }) {
                     </button>
                 </div>
                 {(item.error || form.errors.quantity) && (
-                    <p role="alert" className="mt-2 text-xs text-red-600">
+                    <p role="alert" className="mt-2 text-sm text-red-600">
                         {form.errors.quantity || item.error}
                     </p>
                 )}
@@ -142,7 +144,7 @@ export function CartContents({ cart }: { cart: CheckoutCart }) {
                 <h2 className="text-lg font-bold">Your cart is empty</h2>
                 <Link
                     href={listingsIndex()}
-                    className="text-sm font-semibold text-orange-600"
+                    className="text-base font-semibold text-orange-600"
                 >
                     Explore products
                 </Link>
@@ -161,7 +163,7 @@ export function CartContents({ cart }: { cart: CheckoutCart }) {
 
 export function CartTotals({ cart }: { cart: CheckoutCart }) {
     return (
-        <dl className="grid gap-3 text-sm">
+        <dl className="grid gap-3 text-base">
             <div className="flex justify-between">
                 <dt>Subtotal</dt>
                 <dd>{cartMoney(cart.subtotal)}</dd>
@@ -182,14 +184,14 @@ export function CartCheckout({ cart }: { cart: CheckoutCart }) {
     return cart.canCheckout ? (
         <Link
             href={checkoutShow()}
-            className="block rounded-xl bg-[#ff5a00] px-5 py-3 text-center text-sm font-bold text-white hover:bg-orange-600"
+            className="block rounded-xl bg-[#ff5a00] px-5 py-3 text-center text-base font-bold text-white hover:bg-orange-600"
         >
             Checkout
         </Link>
     ) : (
         <button
             disabled
-            className="w-full rounded-xl bg-slate-200 px-5 py-3 text-sm font-bold text-slate-500"
+            className="w-full rounded-xl bg-slate-200 px-5 py-3 text-base font-bold text-slate-500"
         >
             {cart.items.length ? 'Update your cart to continue' : 'Checkout'}
         </button>

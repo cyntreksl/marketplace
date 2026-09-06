@@ -109,7 +109,7 @@ test('storefront listing pages share the category listing card', function () {
         ->toContain('<ListingCard listing={listing} />')
         ->toContain('w-[calc((100%-0.75rem)/2)]', 'lg:w-[calc((100%-3.75rem)/6)]')
         ->and($listingShow)
-        ->toContain('max-w-[82rem]', 'Related items', 'More from')
+        ->toContain('storefront-container', 'Related items', 'More from')
         ->toContain('grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6')
         ->not->toContain('You May Also Like', 'max-w-[96rem]')
         ->and(file_get_contents(resource_path('js/pages/storefront/watchlist/index.tsx')))
@@ -271,3 +271,49 @@ test('informational pages share categories for the compact storefront header', f
             ->where('categories.0.slug', $category->slug)
             ->where('categories.0.children.0.slug', $child->slug));
 })->with(['about', 'help', 'policies.shipping', 'legal.terms']);
+
+test('storefront and checkout pages use the home page gutters', function (string $component) {
+    $source = file_get_contents(resource_path('js/'.$component.'.tsx'));
+
+    expect($source)
+        ->toContain('storefront-container')
+        ->not->toContain('max-w-[90rem]', 'max-w-[96rem]', 'max-w-6xl');
+})->with([
+    'pages/storefront/home',
+    'pages/storefront/listings/index',
+    'pages/storefront/listings/show',
+    'pages/storefront/brands',
+    'pages/storefront/compare',
+    'pages/storefront/watchlist/index',
+    'pages/storefront/content/show',
+    'pages/storefront/order-tracking',
+    'pages/buyer/cart',
+    'pages/buyer/checkout',
+    'pages/buyer/payment',
+    'pages/buyer/review',
+    'pages/buyer/thank-you',
+    'components/storefront-layout',
+    'components/storefront-footer',
+]);
+
+test('storefront gutters retain the home page responsive dimensions', function () {
+    $stylesheet = file_get_contents(resource_path('css/app.css'));
+
+    expect($stylesheet)->toContain('@utility storefront-container {', 'mx-auto w-full max-w-[82rem] px-4', '@variant sm', '@apply px-6');
+});
+
+test('product details and checkout keep supporting text readable', function (string $component) {
+    $source = file_get_contents(resource_path('js/'.$component.'.tsx'));
+
+    expect($source)
+        ->not->toContain('text-[10px]', 'text-[11px]', 'text-xs')
+        ->toContain('text-sm');
+})->with([
+    'pages/storefront/listings/show',
+    'pages/buyer/checkout',
+    'pages/buyer/payment',
+    'pages/buyer/review',
+    'pages/buyer/thank-you',
+    'components/cart-contents',
+    'components/checkout-progress',
+]);

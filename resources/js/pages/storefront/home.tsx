@@ -312,7 +312,7 @@ export default function StorefrontHome({
             title="Sri Lanka’s marketplace for better deals"
             categories={categories}
         >
-            <main className="mx-auto max-w-[82rem] px-4 py-4 sm:px-6">
+            <main className="storefront-container py-4">
                 <HeroBanner slides={promotions.hero} />
 
                 <section

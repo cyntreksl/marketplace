@@ -30,7 +30,7 @@ export function CheckoutProgress({ current }: { current: CheckoutStep }) {
                                 aria-current={isActive ? 'step' : undefined}
                             >
                                 <span
-                                    className={`grid size-9 place-items-center rounded-full border text-xs font-black shadow-sm transition ${
+                                    className={`grid size-9 place-items-center rounded-full border text-sm font-black shadow-sm transition ${
                                         isActive
                                             ? 'border-[#ff5a00] bg-[#ff5a00] text-white shadow-orange-200'
                                             : isComplete
@@ -48,7 +48,7 @@ export function CheckoutProgress({ current }: { current: CheckoutStep }) {
                                     )}
                                 </span>
                                 <span
-                                    className={`text-xs font-bold ${
+                                    className={`text-sm font-bold ${
                                         isActive
                                             ? 'text-slate-950'
                                             : 'text-slate-600'

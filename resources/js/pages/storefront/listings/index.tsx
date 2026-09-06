@@ -160,7 +160,7 @@ export default function ListingsIndex({
             categories={categories}
             activeCategorySlugs={trail.map((category) => category.slug)}
         >
-            <main className="mx-auto max-w-[90rem] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+            <main className="storefront-container py-6 lg:py-8">
                 <StorefrontBreadcrumbs
                     items={breadcrumbItems(categoryContext)}
                 />
@@ -190,7 +190,7 @@ export default function ListingsIndex({
                                         </span>
                                     )}
                                 </div>
-                                <p className="mt-1 text-sm text-slate-500">
+                                <p className="mt-1 text-base text-slate-500">
                                     {listings.from && listings.to
                                         ? `Showing ${listings.from}–${listings.to} of ${listings.total} results`
                                         : 'No matching products'}
@@ -255,7 +255,7 @@ export default function ListingsIndex({
                                         onChange={(event) =>
                                             event.currentTarget.form?.requestSubmit()
                                         }
-                                        className="bg-transparent text-sm font-semibold text-slate-700 outline-none"
+                                        className="bg-transparent text-base font-semibold text-slate-700 outline-none"
                                     >
                                         <option value="newest">
                                             Sort by: Popularity
@@ -297,7 +297,7 @@ export default function ListingsIndex({
                                 <h3 className="mt-5 text-xl font-black text-slate-950">
                                     No products found
                                 </h3>
-                                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
+                                <p className="mx-auto mt-2 max-w-md text-base leading-7 text-slate-500">
                                     {categoryContext?.children.length
                                         ? 'This category is ready to browse. Explore a subcategory above or adjust your filters.'
                                         : 'Try a broader search, remove a filter, or explore another marketplace category.'}

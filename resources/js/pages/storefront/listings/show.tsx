@@ -32,6 +32,7 @@ import {
     RichTextContent,
     richTextPlainText,
 } from '@/components/rich-text-editor';
+import { StorefrontBreadcrumbs } from '@/components/storefront-breadcrumbs';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { useProductComparison } from '@/hooks/use-product-comparison';
 import { home, login } from '@/routes';
@@ -123,7 +124,7 @@ function Gallery({
                         />
                     </button>
                 ) : (
-                    <span className="text-sm text-slate-400">
+                    <span className="text-base text-slate-400">
                         Product image coming soon
                     </span>
                 )}
@@ -204,7 +205,7 @@ function OfferCountdown({ endsAt }: { endsAt: string }) {
             ].map((value, index) => (
                 <span
                     key={index}
-                    className="rounded border bg-white px-2 py-1 text-xs font-black"
+                    className="rounded border bg-white px-2 py-1 text-sm font-black"
                 >
                     {String(value).padStart(2, '0')}
                 </span>
@@ -372,48 +373,45 @@ export default function ListingShow({
             categories={categories}
             activeCategorySlugs={categoryTrail.map((item) => item.slug)}
         >
-            <main className="mx-auto max-w-[82rem] px-4 py-4 sm:px-6">
-                <nav
-                    className="mb-5 flex flex-wrap gap-2 text-[10px] text-slate-500"
-                    aria-label="Breadcrumb"
-                >
-                    <Link href={home()}>Home</Link>
-                    {categoryTrail.map((item) => (
-                        <span key={item.id}>
-                            ›{' '}
-                            <Link href={categoryShow(item.slug)}>
-                                {item.name}
-                            </Link>
-                        </span>
-                    ))}
-                    <span>› {listing.title}</span>
-                </nav>
+            <main className="storefront-container py-4">
+                <div className="mb-5">
+                    <StorefrontBreadcrumbs
+                        items={[
+                            { label: 'Home', href: home.url() },
+                            ...categoryTrail.map((item) => ({
+                                label: item.name,
+                                href: categoryShow.url(item.slug),
+                            })),
+                            { label: listing.title },
+                        ]}
+                    />
+                </div>
 
-                <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.75fr)_18rem]">
+                <div className="grid items-start gap-7 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_18rem]">
                     <Gallery
                         key={selectedVariant?.image?.cardUrl ?? 'base-gallery'}
                         listing={listing}
                         featuredImageUrl={selectedVariant?.image?.cardUrl}
                     />
-                    <section>
+                    <section className="min-w-0">
                         {listing.brand && (
                             <Link
                                 href={brandShow(listing.brand.slug)}
-                                className="text-xs font-black tracking-wider text-blue-700 uppercase"
+                                className="text-sm font-black tracking-wider text-blue-700 uppercase"
                             >
                                 {listing.brand.name}
                             </Link>
                         )}
-                        <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
+                        <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
                             {listing.title}
                         </h1>
-                        <p className="mt-1 text-xs text-slate-500">
+                        <p className="mt-1 text-sm text-slate-500">
                             {listing.productType === 'variant'
                                 ? listing.variants[0]?.sku
                                 : ''}{' '}
                             · {listing.condition}
                         </p>
-                        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
                             <span className="flex items-center gap-1 font-bold text-amber-500">
                                 <Star className="size-4 fill-current" />
                                 {listing.ratingAverage?.toFixed(1) ?? 'New'}
@@ -429,12 +427,12 @@ export default function ListingShow({
                             </button>
                         </div>
                         {listing.shortDescription && (
-                            <p className="mt-5 text-sm leading-6 text-slate-600">
+                            <p className="mt-5 text-base leading-6 text-slate-600">
                                 {listing.shortDescription}
                             </p>
                         )}
                         {specificationRows.length > 0 && (
-                            <ul className="mt-5 grid gap-3 text-xs text-slate-600">
+                            <ul className="mt-5 grid gap-3 text-sm text-slate-600">
                                 {specificationRows
                                     .slice(0, 4)
                                     .map(([name, value]) => (
@@ -450,7 +448,7 @@ export default function ListingShow({
                                     ))}
                             </ul>
                         )}
-                        <p className="mt-5 text-xs">
+                        <p className="mt-5 text-sm">
                             <span
                                 className={`font-bold ${isOutOfStock ? 'text-red-500' : 'text-emerald-600'}`}
                             >
@@ -465,7 +463,7 @@ export default function ListingShow({
                             <div className="mt-6 grid gap-4">
                                 {listing.variantOptions.map((option) => (
                                     <fieldset key={option.id}>
-                                        <legend className="text-xs font-bold">
+                                        <legend className="text-sm font-bold">
                                             {option.name}
                                         </legend>
                                         <div className="mt-2 flex flex-wrap gap-2">
@@ -482,7 +480,7 @@ export default function ListingShow({
                                                             }),
                                                         )
                                                     }
-                                                    className={`rounded-lg border px-4 py-2 text-xs font-bold ${selections[option.name] === value ? 'border-[#ff5a00] text-[#ff5a00] ring-1 ring-orange-100' : 'border-slate-200'}`}
+                                                    className={`rounded-lg border px-4 py-2 text-sm font-bold ${selections[option.name] === value ? 'border-[#ff5a00] text-[#ff5a00] ring-1 ring-orange-100' : 'border-slate-200'}`}
                                                 >
                                                     {value}
                                                 </button>
@@ -495,7 +493,7 @@ export default function ListingShow({
 
                         {listing.listingType === 'buy_now' && (
                             <div className="mt-6">
-                                <span className="text-xs font-bold">
+                                <span className="text-sm font-bold">
                                     Quantity
                                 </span>
                                 <div className="mt-2 flex w-max items-center rounded-lg border">
@@ -510,7 +508,7 @@ export default function ListingShow({
                                     >
                                         <Minus className="size-3" />
                                     </button>
-                                    <span className="grid w-10 place-items-center text-xs font-bold">
+                                    <span className="grid w-10 place-items-center text-sm font-bold">
                                         {quantity}
                                     </span>
                                     <button
@@ -534,7 +532,7 @@ export default function ListingShow({
                                     <button
                                         type="button"
                                         onClick={showOutOfStockMessage}
-                                        className="flex items-center justify-center gap-2 rounded-lg border border-red-300 bg-red-50 py-3 text-xs font-bold text-red-600"
+                                        className="flex items-center justify-center gap-2 rounded-lg border border-red-300 bg-red-50 py-3 text-sm font-bold text-red-600"
                                     >
                                         <ShoppingCart className="size-4" />
                                         Add to Cart
@@ -542,7 +540,7 @@ export default function ListingShow({
                                     <button
                                         type="button"
                                         onClick={showOutOfStockMessage}
-                                        className="rounded-lg bg-slate-400 py-3 text-xs font-bold text-white"
+                                        className="rounded-lg bg-slate-400 py-3 text-sm font-bold text-white"
                                     >
                                         Buy Now
                                     </button>
@@ -581,7 +579,7 @@ export default function ListingShow({
                                                 disabled={
                                                     processing || !canPurchase
                                                 }
-                                                className="flex items-center justify-center gap-2 rounded-lg border border-[#ff5a00] py-3 text-xs font-bold text-[#ff5a00] disabled:opacity-40"
+                                                className="flex items-center justify-center gap-2 rounded-lg border border-[#ff5a00] py-3 text-sm font-bold text-[#ff5a00] disabled:opacity-40"
                                             >
                                                 <ShoppingCart className="size-4" />
                                                 Add to Cart
@@ -592,7 +590,7 @@ export default function ListingShow({
                                                 disabled={
                                                     processing || !canPurchase
                                                 }
-                                                className="rounded-lg bg-[#ff5a00] py-3 text-xs font-bold text-white disabled:opacity-40"
+                                                className="rounded-lg bg-[#ff5a00] py-3 text-sm font-bold text-white disabled:opacity-40"
                                             >
                                                 Buy Now
                                             </button>
@@ -621,12 +619,12 @@ export default function ListingShow({
                                         }
                                         name="amount"
                                         placeholder="Your bid"
-                                        className="rounded-lg border px-3 text-sm"
+                                        className="rounded-lg border px-3 text-base"
                                     />
-                                    <button className="rounded-lg bg-[#ff5a00] px-5 py-3 text-xs font-bold text-white">
+                                    <button className="rounded-lg bg-[#ff5a00] px-5 py-3 text-sm font-bold text-white">
                                         Place Bid
                                     </button>
-                                    <p className="col-span-2 text-xs text-slate-500">
+                                    <p className="col-span-2 text-sm text-slate-500">
                                         Current bid{' '}
                                         {formatPrice(
                                             listing.auction.currentPrice,
@@ -641,7 +639,7 @@ export default function ListingShow({
                             )
                         )}
 
-                        <div className="mt-4 flex flex-wrap gap-5 text-xs text-slate-500">
+                        <div className="mt-4 flex flex-wrap gap-5 text-sm text-slate-500">
                             {auth.user ? (
                                 <Form
                                     {...(isWishlisted
@@ -684,14 +682,14 @@ export default function ListingShow({
                         </div>
                     </section>
 
-                    <aside className="overflow-hidden rounded-xl border shadow-sm">
+                    <aside className="overflow-hidden rounded-xl border shadow-sm lg:col-span-2 xl:col-span-1">
                         {activeCampaign && (
-                            <div className="bg-[#ff5a00] px-4 py-2 text-center text-xs font-bold text-white">
+                            <div className="bg-[#ff5a00] px-4 py-2 text-center text-sm font-bold text-white">
                                 Special Offer
                             </div>
                         )}
                         {activeCampaign && (
-                            <div className="flex items-center justify-between bg-orange-50 p-4 text-[10px]">
+                            <div className="flex items-center justify-between bg-orange-50 p-4 text-sm">
                                 <span>Offer ends in</span>
                                 <OfferCountdown
                                     endsAt={activeCampaign.endsAt}
@@ -699,11 +697,11 @@ export default function ListingShow({
                             </div>
                         )}
                         <div className="p-5">
-                            <div className="text-2xl font-black text-[#ff5a00]">
+                            <div className="text-3xl font-black text-[#ff5a00]">
                                 {formatPrice(displayedSellingPrice)}
                             </div>
                             {displayedMarketPrice && (
-                                <div className="mt-1 flex items-center gap-2 text-xs">
+                                <div className="mt-1 flex items-center gap-2 text-sm">
                                     <span className="text-slate-400 line-through">
                                         {formatPrice(displayedMarketPrice)}
                                     </span>
@@ -712,7 +710,7 @@ export default function ListingShow({
                                     </strong>
                                 </div>
                             )}
-                            <div className="mt-4 rounded-lg border p-3 text-[10px] text-slate-400">
+                            <div className="mt-4 rounded-lg border p-3 text-sm text-slate-400">
                                 Installment plans are currently unavailable.
                             </div>
                             <div className="mt-4 grid gap-4">
@@ -720,10 +718,10 @@ export default function ListingShow({
                                     <div key={title} className="flex gap-3">
                                         <Icon className="size-4 shrink-0 text-[#ff5a00]" />
                                         <span>
-                                            <strong className="block text-xs">
+                                            <strong className="block text-sm">
                                                 {title}
                                             </strong>
-                                            <span className="text-[10px] text-slate-500">
+                                            <span className="text-sm text-slate-500">
                                                 {copy}
                                             </span>
                                         </span>
@@ -731,7 +729,7 @@ export default function ListingShow({
                                 ))}
                             </div>
                             <div className="mt-5 border-t pt-4">
-                                <span className="flex items-center gap-2 text-xs">
+                                <span className="flex items-center gap-2 text-sm">
                                     <BadgeCheck className="size-7 text-blue-600" />
                                     <span>
                                         Sold by
@@ -748,7 +746,7 @@ export default function ListingShow({
                 </div>
 
                 <section className="mt-10">
-                    <div className="flex gap-6 overflow-x-auto border-b text-xs font-bold whitespace-nowrap">
+                    <div className="flex gap-6 overflow-x-auto border-b text-sm font-bold whitespace-nowrap">
                         {[
                             ['overview', 'Overview'],
                             ['specs', 'Specifications'],
@@ -773,7 +771,7 @@ export default function ListingShow({
                                         {listing.shortDescription ??
                                             'Product overview'}
                                     </h2>
-                                    <div className="mt-3 text-sm leading-7 text-slate-600">
+                                    <div className="mt-3 text-base leading-7 text-slate-600">
                                         <RichTextContent
                                             value={listing.description ?? ''}
                                         />
@@ -800,7 +798,7 @@ export default function ListingShow({
                                 {specificationRows.map(([name, value]) => (
                                     <div
                                         key={name}
-                                        className="grid grid-cols-2 border-b p-3 text-xs"
+                                        className="grid grid-cols-2 border-b p-3 text-sm"
                                     >
                                         <dt className="font-bold">{name}</dt>
                                         <dd className="text-slate-500">
@@ -826,17 +824,17 @@ export default function ListingShow({
                                             key={review.id}
                                             className="rounded-xl border p-4"
                                         >
-                                            <span className="text-xs font-bold">
+                                            <span className="text-sm font-bold">
                                                 {review.buyerName} ·{' '}
                                                 {review.rating}/5
                                             </span>
-                                            <p className="mt-2 text-sm text-slate-600">
+                                            <p className="mt-2 text-base text-slate-600">
                                                 {review.comment}
                                             </p>
                                         </article>
                                     ))
                                 ) : (
-                                    <p className="text-sm text-slate-400">
+                                    <p className="text-base text-slate-400">
                                         No reviews yet.
                                     </p>
                                 )}
@@ -851,15 +849,15 @@ export default function ListingShow({
                                                 key={question.id}
                                                 className="rounded-xl border p-4"
                                             >
-                                                <p className="text-sm font-bold">
+                                                <p className="text-base font-bold">
                                                     Q: {question.question}
                                                 </p>
                                                 {question.answer ? (
-                                                    <p className="mt-2 text-sm text-slate-600">
+                                                    <p className="mt-2 text-base text-slate-600">
                                                         A: {question.answer}
                                                     </p>
                                                 ) : (
-                                                    <p className="mt-2 text-xs text-amber-600">
+                                                    <p className="mt-2 text-sm text-amber-600">
                                                         Awaiting seller response
                                                         - visible only to you.
                                                     </p>
@@ -878,16 +876,16 @@ export default function ListingShow({
                                             minLength={10}
                                             name="question"
                                             placeholder="Ask the seller a question"
-                                            className="min-w-0 flex-1 rounded-lg border px-4 py-3 text-sm"
+                                            className="min-w-0 flex-1 rounded-lg border px-4 py-3 text-base"
                                         />
-                                        <button className="rounded-lg bg-slate-950 px-5 text-xs font-bold text-white">
+                                        <button className="rounded-lg bg-slate-950 px-5 text-sm font-bold text-white">
                                             Ask
                                         </button>
                                     </Form>
                                 ) : (
                                     <Link
                                         href={login()}
-                                        className="mt-4 inline-block text-xs font-bold text-[#ff5a00]"
+                                        className="mt-4 inline-block text-sm font-bold text-[#ff5a00]"
                                     >
                                         Sign in to ask a question
                                     </Link>
@@ -903,10 +901,10 @@ export default function ListingShow({
                                     >
                                         <Icon className="size-5 text-[#ff5a00]" />
                                         <span>
-                                            <strong className="block text-sm">
+                                            <strong className="block text-base">
                                                 {title}
                                             </strong>
-                                            <span className="text-xs text-slate-500">
+                                            <span className="text-sm text-slate-500">
                                                 {copy}
                                             </span>
                                         </span>
@@ -953,7 +951,7 @@ export default function ListingShow({
                                           })
                                         : listingsIndex()
                                 }
-                                className="ml-auto text-xs font-bold text-slate-500 transition hover:text-[#FF6D00]"
+                                className="ml-auto text-sm font-bold text-slate-500 transition hover:text-[#FF6D00]"
                             >
                                 View All
                             </Link>

@@ -80,8 +80,8 @@ export function StorefrontLayout({
     return (
         <div className="min-h-screen bg-white text-slate-950">
             <div className="bg-[#FF6D00] text-white">
-                <div className="mx-auto flex min-h-10 max-w-[82rem] items-center justify-between gap-4 overflow-x-auto px-4 text-xs whitespace-nowrap sm:px-6">
-                    <div className="flex min-w-0 items-center gap-3 font-medium sm:gap-6">
+                <div className="storefront-container flex min-h-10 items-center justify-between gap-4 overflow-x-auto text-xs whitespace-nowrap">
+                    <div className="flex shrink-0 items-center gap-3 font-medium sm:gap-6">
                         <span className="flex min-w-0 items-center">
                             Cash on Delivery
                         </span>
@@ -98,7 +98,7 @@ export function StorefrontLayout({
                             </span>
                         </Link>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex shrink-0 items-center gap-4">
                         <Link
                             href="/order-tracking"
                             className="flex items-center gap-1 hover:underline"
@@ -116,7 +116,7 @@ export function StorefrontLayout({
             </div>
 
             <header className="sticky top-0 z-40 border-b border-slate-100 bg-white">
-                <div className="mx-auto flex max-w-[82rem] items-center gap-2 px-4 py-3 sm:gap-3 sm:px-6 lg:gap-5">
+                <div className="storefront-container flex items-center gap-2 py-3 sm:gap-3 lg:gap-5">
                     <div className="lg:hidden">
                         <MobileStorefrontCategoryMenu {...categoryMenuProps} />
                     </div>
@@ -204,7 +204,7 @@ export function StorefrontLayout({
                 {isHomePage && (
                     <nav
                         aria-label="Storefront navigation"
-                        className="mx-auto flex max-w-[82rem] items-center gap-5 px-4 pb-2 sm:px-6"
+                        className="storefront-container flex items-center gap-5 pb-2"
                     >
                         <div className="hidden shrink-0 lg:block">
                             <DesktopStorefrontCategoryMenu

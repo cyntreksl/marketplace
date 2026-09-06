@@ -35,7 +35,7 @@ export default function Compare({
 
     return (
         <StorefrontLayout title="Compare products" categories={categories}>
-            <main className="mx-auto max-w-[96rem] px-4 py-8 sm:px-6">
+            <main className="storefront-container py-8">
                 <div className="flex items-center justify-between">
                     <div>
                         <p className="text-xs font-bold text-[#ff5a00]">

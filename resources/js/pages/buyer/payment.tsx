@@ -28,10 +28,10 @@ export default function BuyerPayment({
     return (
         <StorefrontLayout title="Payment">
             <Head title="Payment" />
-            <main className="mx-auto max-w-6xl px-4 py-7 sm:px-6">
+            <main className="storefront-container py-7">
                 <CheckoutProgress current="payment" />
                 <h1 className="mt-8 text-3xl font-black">Choose how to pay</h1>
-                <div className="mt-6 grid items-start gap-8 lg:grid-cols-[1fr_22rem]">
+                <div className="mt-6 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
                     <Form {...paymentStore.form()} className="grid gap-5">
                         {({ errors, processing }) => (
                             <>
@@ -49,7 +49,7 @@ export default function BuyerPayment({
                                         <CreditCard className="size-6 shrink-0 text-orange-600" />
                                         <span>
                                             <strong>Credit / Debit Card</strong>
-                                            <span className="mt-2 block text-sm text-slate-600">
+                                            <span className="mt-2 block text-base text-slate-600">
                                                 After reviewing your order,
                                                 you’ll continue to Stripe to pay
                                                 securely.
@@ -69,7 +69,7 @@ export default function BuyerPayment({
                                         <Banknote className="size-6 shrink-0 text-orange-600" />
                                         <span>
                                             <strong>Cash on Delivery</strong>
-                                            <span className="mt-2 block text-sm text-slate-600">
+                                            <span className="mt-2 block text-base text-slate-600">
                                                 Pay the full order total when
                                                 your delivery arrives.
                                             </span>
@@ -79,7 +79,7 @@ export default function BuyerPayment({
                                 {cart.paymentMethods.length === 0 && (
                                     <p
                                         role="alert"
-                                        className="text-sm text-red-600"
+                                        className="text-base text-red-600"
                                     >
                                         No payment method is available for this
                                         order. Please contact support.
@@ -89,7 +89,7 @@ export default function BuyerPayment({
                                     <p
                                         key={key}
                                         role="alert"
-                                        className="text-sm text-red-600"
+                                        className="text-base text-red-600"
                                     >
                                         {error}
                                     </p>
@@ -108,7 +108,7 @@ export default function BuyerPayment({
                                 </button>
                                 <Link
                                     href={checkoutShow()}
-                                    className="text-sm text-orange-600"
+                                    className="text-base text-orange-600"
                                 >
                                     Change delivery details
                                 </Link>
@@ -116,13 +116,13 @@ export default function BuyerPayment({
                         )}
                     </Form>
                     <aside className="grid gap-6 rounded-2xl border border-slate-200 p-6">
-                        <h2 className="text-lg font-bold">Order summary</h2>
+                        <h2 className="text-xl font-bold">Order summary</h2>
                         <CartTotals cart={cart} />
-                        <p className="text-sm text-slate-600">
+                        <p className="text-base text-slate-600">
                             Deliver to {shippingAddress.recipient_name},{' '}
                             {shippingAddress.city}
                         </p>
-                        <p className="flex gap-2 text-xs text-slate-500">
+                        <p className="flex gap-2 text-sm text-slate-500">
                             <ShieldCheck className="size-4" />
                             Your order total includes delivery.
                         </p>

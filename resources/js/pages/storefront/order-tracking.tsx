@@ -34,7 +34,7 @@ export default function OrderTracking({
 
     return (
         <StorefrontLayout title="Track your order" categories={categories}>
-            <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+            <main className="storefront-container py-12">
                 <div className="text-center">
                     <PackageSearch className="mx-auto size-10 text-[#ff5a00]" />
                     <h1 className="mt-4 text-3xl font-black">
