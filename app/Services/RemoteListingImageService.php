@@ -119,6 +119,67 @@ class RemoteListingImageService
         @unlink($upload->getPathname());
     }
 
+    /**
+     * @return array{upload: UploadedFile, crop: array{x: int, y: int, width: int, height: int}}
+     */
+    public function decodeBase64(string $payload, string $filename, string $field): array
+    {
+        if (preg_match('/\Adata:image\/(?:jpeg|png|webp);base64,(.+)\z/s', $payload, $matches) === 1) {
+            $payload = $matches[1];
+        }
+
+        $binary = base64_decode($payload, true);
+
+        if ($binary === false) {
+            throw ValidationException::withMessages([$field => 'The image content must be valid base64.']);
+        }
+
+        if ($binary === '' || strlen($binary) > self::MAX_BYTES) {
+            throw ValidationException::withMessages([$field => 'Each image must be a non-empty file no larger than 5 MB.']);
+        }
+
+        $temporaryPath = tempnam(sys_get_temp_dir(), 'mcp-listing-');
+
+        if ($temporaryPath === false || file_put_contents($temporaryPath, $binary) === false) {
+            throw ValidationException::withMessages([$field => 'The image could not be prepared for upload.']);
+        }
+
+        try {
+            $mimeType = (new \finfo(FILEINFO_MIME_TYPE))->file($temporaryPath);
+
+            if (! is_string($mimeType) || ! isset(self::EXTENSIONS[$mimeType])) {
+                throw ValidationException::withMessages([$field => 'Images must be JPEG, PNG, or WebP files.']);
+            }
+
+            $dimensions = @getimagesize($temporaryPath);
+
+            if ($dimensions === false || $dimensions[0] < 1 || $dimensions[1] < 1) {
+                throw ValidationException::withMessages([$field => 'The uploaded content is not a valid image.']);
+            }
+
+            if ($dimensions[0] * $dimensions[1] > self::MAX_PIXELS) {
+                throw ValidationException::withMessages([$field => 'The image dimensions are too large.']);
+            }
+
+            $squareSize = min($dimensions[0], $dimensions[1]);
+            $safeFilename = pathinfo($filename, PATHINFO_FILENAME).'.'.self::EXTENSIONS[$mimeType];
+
+            return [
+                'upload' => new UploadedFile($temporaryPath, $safeFilename, $mimeType, UPLOAD_ERR_OK, true),
+                'crop' => [
+                    'x' => (int) floor(($dimensions[0] - $squareSize) / 2),
+                    'y' => (int) floor(($dimensions[1] - $squareSize) / 2),
+                    'width' => $squareSize,
+                    'height' => $squareSize,
+                ],
+            ];
+        } catch (ValidationException $exception) {
+            @unlink($temporaryPath);
+
+            throw $exception;
+        }
+    }
+
     private function validatePublicHttpsUrl(string $url, string $field): void
     {
         $parts = parse_url($url);

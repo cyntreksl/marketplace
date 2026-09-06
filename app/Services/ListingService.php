@@ -113,6 +113,36 @@ class ListingService
         });
     }
 
+    /**
+     * @param  array<int, UploadedFile>  $images
+     * @param  array<int, array{x: int, y: int, width: int, height: int}>  $crops
+     */
+    public function addDraftImages(User $seller, int $listingId, array $images, array $crops): Listing
+    {
+        $profile = $this->sellerProfileFor($seller);
+
+        return DB::transaction(function () use ($seller, $profile, $listingId, $images, $crops): Listing {
+            $listing = $this->listings->findForSellerOrFail($profile, $listingId, lockForUpdate: true);
+
+            if (! in_array($listing->status, ['draft', 'changes_requested', 'rejected'], true)) {
+                throw new AuthorizationException('Only drafts and returned listings can be edited.');
+            }
+
+            if ($this->listings->mediaCount($listing) + count($images) > 5) {
+                throw ValidationException::withMessages([
+                    'images' => 'A product may have no more than five gallery images.',
+                ]);
+            }
+
+            $this->storeImages($listing, $images, $crops);
+            $this->auditLogs->record($seller, 'listing.draft_updated', $listing, after: [
+                'media_count' => $this->listings->mediaCount($listing),
+            ]);
+
+            return $listing->fresh() ?? $listing;
+        });
+    }
+
     public function submit(User $seller, int $listingId): Listing
     {
         $profile = $this->sellerProfileFor($seller);
