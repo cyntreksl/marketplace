@@ -4,11 +4,15 @@ namespace App\Mcp\Tools;
 
 use App\Models\Listing;
 use App\Models\User;
+use App\Rules\ValidGtin;
 use App\Services\ListingService;
 use App\Services\ListingVariantService;
+use App\Services\RemoteListingImageService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Http\UploadedFile;
 use Illuminate\JsonSchema\Types\Type;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -16,15 +20,22 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Title;
 use Laravel\Mcp\Server\Tool;
+use Laravel\Mcp\Server\Tools\Annotations\IsDestructive;
+use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
+use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('create-draft-product')]
 #[Title('Create Draft Product')]
-#[Description('Creates a new draft product listing for a seller in the marketplace. Supports both simple products and variant products (e.g. options for Size, Color). Automatically ensures SEO metadata (meta_title, meta_description) is populated. The product is strictly saved in draft status and is never published or submitted for review.')]
+#[Description('Creates a complete draft product listing with up to five public HTTPS gallery images, full product details, option-based variants, and optional per-variant images. Returns any missing review requirements. The product always remains a draft for manual seller review and is never submitted or published automatically.')]
+#[IsReadOnly(false)]
+#[IsDestructive(false)]
+#[IsOpenWorld]
 class CreateDraftProductTool extends Tool
 {
     public function __construct(
         private readonly ListingService $listings,
         private readonly ListingVariantService $variantService,
+        private readonly RemoteListingImageService $remoteImages,
     ) {}
 
     /**
@@ -42,9 +53,13 @@ class CreateDraftProductTool extends Tool
             return Response::error("User [{$seller->email}] does not have an associated seller profile.");
         }
 
-        $attributes = $this->prepareAttributes($request);
+        /** @var array<int, UploadedFile> $temporaryUploads */
+        $temporaryUploads = [];
 
         try {
+            $this->validateRequest($request, $seller);
+            $attributes = $this->prepareAttributes($request);
+            $this->attachRemoteImages($attributes, $request, $temporaryUploads);
             $listing = $this->listings->createDraft($seller, $attributes);
         } catch (ValidationException $e) {
             $messages = collect($e->validator->errors()->all())->implode(' ');
@@ -52,6 +67,10 @@ class CreateDraftProductTool extends Tool
             return Response::error("Validation failed: {$messages}");
         } catch (\Throwable $e) {
             return Response::error("Failed to create draft product: {$e->getMessage()}");
+        } finally {
+            foreach ($temporaryUploads as $upload) {
+                $this->remoteImages->removeTemporaryUpload($upload);
+            }
         }
 
         return Response::json($this->formatOutput($listing));
@@ -82,9 +101,11 @@ class CreateDraftProductTool extends Tool
                 ->description('Concise summary highlighting key selling points (maximum 160 characters). Useful for snippet previews and SEO.')
                 ->max(160),
             'description' => $schema->string()
-                ->description('Comprehensive product description. Can include HTML formatting or markdown (maximum 10,000 characters).'),
+                ->description('Comprehensive product description. Can include HTML formatting or markdown (maximum 10,000 characters).')
+                ->max(10000),
             'specifications_text' => $schema->string()
-                ->description('Technical specifications or product details formatted as text (e.g. "Material: 100% Cotton\nWeight: 200g\nDimensions: 10x20cm").'),
+                ->description('Technical specifications or product details formatted as text (e.g. "Material: 100% Cotton\nWeight: 200g\nDimensions: 10x20cm").')
+                ->max(10000),
             'condition' => $schema->string()
                 ->description('Physical condition of the item.')
                 ->enum(['new', 'used', 'refurbished'])
@@ -135,26 +156,46 @@ class CreateDraftProductTool extends Tool
             'meta_description' => $schema->string()
                 ->description('SEO meta description for SERP snippets (up to 160 characters). If omitted, automatically generated from short_description or description.')
                 ->max(160),
+            'image_urls' => $schema->array()
+                ->description('One to five direct public HTTPS image URLs. JPEG, PNG, and WebP are accepted up to 5 MB each. The first image becomes the cover and images are center-cropped to square.')
+                ->min(1)
+                ->max(5)
+                ->items($schema->string()->format('uri')->max(2048)),
+            'is_active' => $schema->boolean()
+                ->description('Whether the listing will be active after approval and publishing.')
+                ->default(true),
+            'is_featured' => $schema->boolean()
+                ->description('Seller merchandising flag for a featured product.')
+                ->default(false),
+            'is_best_seller' => $schema->boolean()
+                ->description('Seller merchandising flag for a best-seller product.')
+                ->default(false),
+            'is_new_arrival' => $schema->boolean()
+                ->description('Seller merchandising flag for a new-arrival product.')
+                ->default(false),
             'variant_options' => $schema->array()
                 ->description('Option groups for variant products (maximum 3 options, e.g. Color and Size).')
+                ->max(3)
                 ->items(
                     $schema->object([
-                        'name' => $schema->string()->description('Option dimension name, e.g. "Color", "Size", "Material"')->required(),
-                        'values' => $schema->array()->description('List of possible values, e.g. ["Red", "Blue"] or ["Small", "Medium"]')->items($schema->string())->required(),
+                        'name' => $schema->string()->description('Option dimension name, e.g. "Color", "Size", "Material"')->max(80)->required(),
+                        'values' => $schema->array()->description('List of possible values, e.g. ["Red", "Blue"] or ["Small", "Medium"]')->min(1)->items($schema->string()->max(100))->required(),
                     ])
                 ),
             'variants' => $schema->array()
                 ->description('Explicit variant combination matrix. Optional: if omitted for a variant product, all combinations will be generated automatically from variant_options using base price and stock.')
+                ->max(100)
                 ->items(
                     $schema->object([
-                        'selections' => $schema->array()->description('Selected value for each option dimension, in matching order, e.g. ["Red", "Medium"]')->items($schema->string())->required(),
-                        'sku' => $schema->string()->description('Specific SKU for this variant (optional, auto-generated if omitted)'),
+                        'selections' => $schema->array()->description('Selected value for each option dimension, in matching order, e.g. ["Red", "Medium"]')->max(3)->items($schema->string()->max(100))->required(),
+                        'sku' => $schema->string()->description('Specific SKU for this variant (optional, auto-generated if omitted)')->max(100),
                         'gtin' => $schema->string()->description('GTIN barcode for this variant (optional)'),
-                        'mpn' => $schema->string()->description('Manufacturer Part Number for this variant (optional)'),
+                        'mpn' => $schema->string()->description('Manufacturer Part Number for this variant (optional)')->max(100),
                         'selling_price' => $schema->number()->description('Selling price for this variant'),
                         'market_price' => $schema->number()->description('Original / compare price for this variant (must be > selling_price)'),
                         'stock_quantity' => $schema->integer()->description('Inventory count for this variant'),
                         'is_active' => $schema->boolean()->description('Whether this variant is active and available for purchase')->default(true),
+                        'image_url' => $schema->string()->description('Direct public HTTPS JPEG, PNG, or WebP image URL for this exact variant (optional, maximum 5 MB).')->format('uri')->max(2048),
                     ])
                 ),
         ];
@@ -215,6 +256,10 @@ class CreateDraftProductTool extends Tool
                 'warranty',
                 'low_stock_threshold',
                 'allow_backorders',
+                'is_active',
+                'is_featured',
+                'is_best_seller',
+                'is_new_arrival',
             ]),
             'title' => $title,
             'short_description' => filled($shortDesc) ? Str::squish((string) $shortDesc) : null,
@@ -226,10 +271,10 @@ class CreateDraftProductTool extends Tool
             'meta_title' => $metaTitle,
             'meta_description' => $metaDescription,
             'submit_for_review' => false,
-            'is_active' => true,
-            'is_featured' => false,
-            'is_best_seller' => false,
-            'is_new_arrival' => false,
+            'is_active' => filter_var($request->get('is_active', true), FILTER_VALIDATE_BOOL),
+            'is_featured' => filter_var($request->get('is_featured', false), FILTER_VALIDATE_BOOL),
+            'is_best_seller' => filter_var($request->get('is_best_seller', false), FILTER_VALIDATE_BOOL),
+            'is_new_arrival' => filter_var($request->get('is_new_arrival', false), FILTER_VALIDATE_BOOL),
         ];
 
         if ($productType === 'variant') {
@@ -268,7 +313,15 @@ class CreateDraftProductTool extends Tool
      */
     private function formatOutput(Listing $listing): array
     {
-        $listing->loadMissing(['category', 'brand', 'variants', 'variantOptions']);
+        $listing->loadMissing([
+            'category',
+            'brand',
+            'media',
+            'variants.image',
+            'variants.optionValues.option',
+            'variantOptions',
+        ]);
+        $missingRequirements = $this->missingReviewRequirements($listing);
 
         return [
             'id' => $listing->id,
@@ -286,8 +339,160 @@ class CreateDraftProductTool extends Tool
             'meta_title' => $listing->meta_title,
             'meta_description' => $listing->meta_description,
             'has_specifications' => filled($listing->specifications),
+            'images_count' => $listing->media->count(),
+            'images' => $listing->media->values()->map(fn ($media, int $index): array => [
+                'id' => $media->id,
+                'url' => $media->url,
+                'is_cover' => $index === 0,
+            ])->all(),
             'variants_count' => $listing->variants->count(),
-            'message' => "Draft {$listing->product_type} product created successfully with ID {$listing->id}. It remains in draft status until images and review submission are completed.",
+            'variants' => $listing->variants->map(fn ($variant): array => [
+                'id' => $variant->id,
+                'selections' => $variant->optionValues->sortBy('option.position')->mapWithKeys(
+                    fn ($value): array => [$value->option->name => $value->value],
+                )->all(),
+                'sku' => $variant->sku,
+                'gtin' => $variant->gtin,
+                'mpn' => $variant->mpn,
+                'selling_price' => $variant->selling_price,
+                'market_price' => $variant->market_price,
+                'stock_quantity' => $variant->stock_quantity,
+                'is_active' => $variant->is_active,
+                'image_url' => $variant->image?->url,
+            ])->all(),
+            'ready_for_review' => $missingRequirements === [],
+            'missing_review_requirements' => $missingRequirements,
+            'message' => $missingRequirements === []
+                ? "Draft {$listing->product_type} product created successfully with ID {$listing->id}. It is ready for the seller's final review, but has not been submitted or published."
+                : "Draft {$listing->product_type} product created successfully with ID {$listing->id}. Complete the reported requirements before final review and submission.",
         ];
+    }
+
+    private function validateRequest(Request $request, User $seller): void
+    {
+        $sellerProfileId = $seller->sellerProfile()->value('id');
+
+        $request->validate([
+            'seller_email' => ['nullable', 'email:rfc', 'max:255'],
+            'seller_id' => ['nullable', 'integer'],
+            'title' => ['required', 'string', 'max:160'],
+            'product_type' => ['required', Rule::in(['simple', 'variant'])],
+            'short_description' => ['nullable', 'string', 'max:160'],
+            'description' => ['nullable', 'string', 'max:10000'],
+            'specifications_text' => ['nullable', 'string', 'max:10000'],
+            'condition' => ['nullable', Rule::in(['new', 'used', 'refurbished'])],
+            'category_id' => ['nullable', 'integer'],
+            'brand_id' => ['nullable', 'integer', 'exists:brands,id', 'prohibits:brand_name'],
+            'brand_name' => ['nullable', 'string', 'max:160', 'prohibits:brand_id'],
+            'sku' => [
+                'nullable',
+                'string',
+                'max:100',
+                'regex:/\A[\x21-\x7E]+\z/',
+                Rule::unique('listings', 'sku')->where('seller_profile_id', $sellerProfileId),
+            ],
+            'barcode' => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('listings', 'barcode')->where('seller_profile_id', $sellerProfileId),
+            ],
+            'gtin' => [Rule::excludeIf($request->get('product_type') === 'variant'), 'nullable', new ValidGtin],
+            'mpn' => [Rule::excludeIf($request->get('product_type') === 'variant'), 'nullable', 'string', 'max:100'],
+            'model' => ['nullable', 'string', 'max:160'],
+            'selling_price' => ['nullable', 'numeric', 'min:1'],
+            'compare_price' => ['nullable', 'numeric', 'gt:selling_price'],
+            'stock_quantity' => ['nullable', 'integer', 'between:0,100000'],
+            'low_stock_threshold' => ['nullable', 'integer', 'between:0,100000'],
+            'allow_backorders' => ['nullable', 'boolean'],
+            'location' => ['nullable', 'string', 'max:120'],
+            'warranty' => ['nullable', 'string', 'max:500'],
+            'meta_title' => ['nullable', 'string', 'max:60'],
+            'meta_description' => ['nullable', 'string', 'max:160'],
+            'is_active' => ['nullable', 'boolean'],
+            'is_featured' => ['nullable', 'boolean'],
+            'is_best_seller' => ['nullable', 'boolean'],
+            'is_new_arrival' => ['nullable', 'boolean'],
+            'image_urls' => ['nullable', 'array', 'between:1,5'],
+            'image_urls.*' => ['required', 'string', 'url:https', 'max:2048', 'distinct'],
+            'variant_options' => ['nullable', 'array', 'max:3'],
+            'variant_options.*.name' => ['required', 'string', 'max:80'],
+            'variant_options.*.values' => ['required', 'array', 'min:1'],
+            'variant_options.*.values.*' => ['required', 'string', 'max:100', 'distinct'],
+            'variants' => ['nullable', 'array', 'max:100'],
+            'variants.*.selections' => ['required', 'array', 'max:3'],
+            'variants.*.selections.*' => ['required', 'string', 'max:100'],
+            'variants.*.sku' => ['nullable', 'string', 'max:100', 'regex:/\A[\x21-\x7E]+\z/'],
+            'variants.*.gtin' => ['nullable', new ValidGtin],
+            'variants.*.mpn' => ['nullable', 'string', 'max:100'],
+            'variants.*.selling_price' => ['nullable', 'numeric', 'min:1'],
+            'variants.*.market_price' => ['nullable', 'numeric', 'min:1'],
+            'variants.*.stock_quantity' => ['nullable', 'integer', 'between:0,100000'],
+            'variants.*.is_active' => ['nullable', 'boolean'],
+            'variants.*.image_url' => ['nullable', 'string', 'url:https', 'max:2048'],
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     * @param  array<int, UploadedFile>  $temporaryUploads
+     */
+    private function attachRemoteImages(array &$attributes, Request $request, array &$temporaryUploads): void
+    {
+        $imageUrls = $request->get('image_urls', []);
+
+        foreach (is_array($imageUrls) ? array_values($imageUrls) : [] as $index => $imageUrl) {
+            $download = $this->remoteImages->download((string) $imageUrl, "image_urls.{$index}");
+            $attributes['images'][] = $download['upload'];
+            $attributes['image_crops'][] = $download['crop'];
+            $temporaryUploads[] = $download['upload'];
+        }
+
+        $variants = $attributes['variants'] ?? [];
+
+        if (! is_array($variants)) {
+            return;
+        }
+
+        foreach ($variants as $index => &$variant) {
+            if (! is_array($variant) || ! filled($variant['image_url'] ?? null)) {
+                continue;
+            }
+
+            $download = $this->remoteImages->download((string) $variant['image_url'], "variants.{$index}.image_url");
+            $variant['image'] = $download['upload'];
+            $variant['image_crop'] = $download['crop'];
+            unset($variant['image_url']);
+            $temporaryUploads[] = $download['upload'];
+        }
+        unset($variant);
+
+        $attributes['variants'] = $variants;
+    }
+
+    /** @return array<int, string> */
+    private function missingReviewRequirements(Listing $listing): array
+    {
+        $requirements = [
+            'category' => $listing->category_id !== null,
+            'brand' => filled($listing->brand_id) || filled($listing->brand_name),
+            'sku' => filled($listing->sku),
+            'description' => filled($listing->description),
+            'condition' => filled($listing->condition),
+            'price' => $listing->price !== null && (float) $listing->price >= 1,
+            'product_image' => $listing->media->isNotEmpty(),
+        ];
+
+        if ($listing->product_type === 'variant') {
+            $requirements['variants'] = $listing->variants->isNotEmpty();
+            $requirements['variant_skus'] = $listing->variants->isNotEmpty()
+                && $listing->variants->every(fn ($variant): bool => filled($variant->sku));
+        }
+
+        return collect($requirements)
+            ->reject(fn (bool $isComplete): bool => $isComplete)
+            ->keys()
+            ->values()
+            ->all();
     }
 }

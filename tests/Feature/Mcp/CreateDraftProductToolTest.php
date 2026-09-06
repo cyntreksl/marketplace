@@ -2,11 +2,16 @@
 
 use App\Mcp\Servers\MarketplaceServer;
 use App\Mcp\Tools\CreateDraftProductTool;
+use App\Mcp\Tools\SearchProductCategoriesTool;
 use App\Models\Category;
 use App\Models\Listing;
 use App\Models\SellerProfile;
 use App\Models\User;
 use App\Services\ListingService;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 test('creates a simple draft product using seller_email and auto-generates seo tags', function () {
@@ -195,6 +200,7 @@ test('returns error when validation fails', function () {
 
     $response = MarketplaceServer::actingAs($seller->user)
         ->tool(CreateDraftProductTool::class, [
+            'title' => 'Invalid Product',
             'product_type' => 'simple',
         ]);
 
@@ -233,7 +239,162 @@ test('exports valid json schema for mcp tool discovery', function () {
             'product_type',
             'meta_title',
             'meta_description',
+            'image_urls',
             'variant_options',
             'variants',
+        ])
+        ->and($array['annotations'])->toMatchArray([
+            'readOnlyHint' => false,
+            'destructiveHint' => false,
+            'openWorldHint' => true,
         ]);
+});
+
+test('creates a review-ready simple draft with remote gallery images stored on r2', function () {
+    Storage::fake('r2');
+    Queue::fake();
+
+    $seller = SellerProfile::factory()->create();
+    $category = Category::factory()->create(['is_selectable' => true]);
+    $sourceImage = UploadedFile::fake()->image('product.png', 1200, 800);
+    $imageBody = file_get_contents($sourceImage->getPathname());
+
+    Http::fake([
+        'https://93.184.216.34/product.png' => Http::response($imageBody, 200, [
+            'Content-Type' => 'image/png',
+            'Content-Length' => strlen((string) $imageBody),
+        ]),
+    ]);
+
+    $response = MarketplaceServer::actingAs($seller->user)
+        ->tool(CreateDraftProductTool::class, [
+            'title' => 'Complete Product',
+            'product_type' => 'simple',
+            'description' => 'A complete description for review.',
+            'condition' => 'new',
+            'category_id' => $category->id,
+            'brand_name' => 'ProDeals',
+            'sku' => 'COMPLETE-001',
+            'selling_price' => 12000,
+            'stock_quantity' => 10,
+            'image_urls' => ['https://93.184.216.34/product.png'],
+        ]);
+
+    $response->assertOk()
+        ->assertSee(['"images_count":1', '"ready_for_review":true', 'final review']);
+
+    $listing = Listing::query()->where('sku', 'COMPLETE-001')->sole();
+    $media = $listing->media()->sole();
+
+    expect($listing->status)->toBe('draft')
+        ->and($media->disk)->toBe('r2')
+        ->and($media->crop_x)->toBe(200)
+        ->and($media->crop_y)->toBe(0)
+        ->and($media->crop_width)->toBe(800)
+        ->and($media->crop_height)->toBe(800);
+
+    Storage::disk('r2')->assertExists([$media->source_path, $media->path]);
+});
+
+test('stores a remote image for an exact product variant', function () {
+    Storage::fake('r2');
+    Queue::fake();
+
+    $seller = SellerProfile::factory()->create();
+    $sourceImage = UploadedFile::fake()->image('shirt.jpg', 900, 900);
+    $imageBody = file_get_contents($sourceImage->getPathname());
+
+    Http::fake([
+        'https://93.184.216.34/gallery.jpg' => Http::response($imageBody, 200, ['Content-Type' => 'image/jpeg']),
+        'https://93.184.216.34/red.jpg' => Http::response($imageBody, 200, ['Content-Type' => 'image/jpeg']),
+    ]);
+
+    $response = MarketplaceServer::actingAs($seller->user)
+        ->tool(CreateDraftProductTool::class, [
+            'title' => 'Image Variant Shirt',
+            'product_type' => 'variant',
+            'sku' => 'SHIRT-IMAGE',
+            'selling_price' => 4500,
+            'image_urls' => ['https://93.184.216.34/gallery.jpg'],
+            'variant_options' => [[
+                'name' => 'Color',
+                'values' => ['Red'],
+            ]],
+            'variants' => [[
+                'selections' => ['Red'],
+                'sku' => 'SHIRT-IMAGE-RED',
+                'selling_price' => 4500,
+                'stock_quantity' => 4,
+                'image_url' => 'https://93.184.216.34/red.jpg',
+            ]],
+        ]);
+
+    $response->assertOk()
+        ->assertSee(['"variants_count":1', '"image_url":']);
+
+    $variant = Listing::query()->where('sku', 'SHIRT-IMAGE')->sole()->variants()->sole();
+    $variantImage = $variant->image()->sole();
+
+    expect($variantImage->disk)->toBe('r2')
+        ->and($variantImage->type)->toBe('variant_image');
+
+    Storage::disk('r2')->assertExists([$variantImage->source_path, $variantImage->path]);
+    Http::assertSentCount(2);
+});
+
+test('rejects remote images hosted on private addresses before making a request', function () {
+    Http::preventStrayRequests();
+    $seller = SellerProfile::factory()->create();
+
+    $response = MarketplaceServer::actingAs($seller->user)
+        ->tool(CreateDraftProductTool::class, [
+            'title' => 'Unsafe Image Product',
+            'product_type' => 'simple',
+            'image_urls' => ['https://127.0.0.1/internal.png'],
+        ]);
+
+    $response->assertHasErrors(['Image URLs must resolve only to public internet addresses.']);
+
+    expect(Listing::query()->where('title', 'Unsafe Image Product')->exists())->toBeFalse();
+    Http::assertNothingSent();
+});
+
+test('rejects downloaded files that are not supported images', function () {
+    Http::fake([
+        'https://93.184.216.34/not-image.txt' => Http::response('not an image', 200, ['Content-Type' => 'text/plain']),
+    ]);
+    $seller = SellerProfile::factory()->create();
+
+    $response = MarketplaceServer::actingAs($seller->user)
+        ->tool(CreateDraftProductTool::class, [
+            'title' => 'Invalid Image Product',
+            'product_type' => 'simple',
+            'image_urls' => ['https://93.184.216.34/not-image.txt'],
+        ]);
+
+    $response->assertHasErrors(['Images must be JPEG, PNG, or WebP files.']);
+
+    expect(Listing::query()->where('title', 'Invalid Image Product')->exists())->toBeFalse();
+});
+
+test('suggests selectable category ids for product creation', function () {
+    config()->set('services.openai.api_key');
+    Category::factory()->create([
+        'name' => 'Mechanical Keyboards',
+        'slug' => 'mechanical-keyboards',
+        'is_selectable' => true,
+    ]);
+
+    MarketplaceServer::tool(SearchProductCategoriesTool::class, [
+        'title' => 'Mechanical keyboard',
+        'limit' => 3,
+    ])->assertOk()
+        ->assertSee(['"category_id":', 'Mechanical Keyboards']);
+
+    $tool = app(SearchProductCategoriesTool::class);
+
+    expect($tool->toArray()['annotations'])->toMatchArray([
+        'readOnlyHint' => true,
+        'openWorldHint' => true,
+    ]);
 });
