@@ -113,7 +113,7 @@ test('buyer checkout page renders the saved cart summary', function (): void {
         ->has('cart.items', 1));
 });
 
-test('buyer shipping details continue to the payment page', function (): void {
+test('buyer shipping details continue to the payment page', function (string $phone): void {
     $user = User::factory()->create();
     $cart = Cart::factory()->for($user, 'buyer')->create();
     $listing = Listing::factory()->create([
@@ -135,11 +135,12 @@ test('buyer shipping details continue to the payment page', function (): void {
         'address_line_two' => 'Apartment 5B',
         'city' => 'Colombo',
         'postal_code' => '00300',
-        'phone' => '0771234567',
+        'phone' => $phone,
     ]);
 
     $response->assertRedirect(route('checkout.payment.show'));
     $response->assertSessionHas('checkout.shipping_address.city', 'Colombo');
+    $response->assertSessionHas('checkout.shipping_address.phone', $phone);
     expect(CustomerOrder::query()->count())->toBe(0)
         ->and($cart->fresh()?->items)->toHaveCount(1);
 
@@ -151,7 +152,19 @@ test('buyer shipping details continue to the payment page', function (): void {
             ->has('cart.items', 1)
             ->where('shippingAddress.recipient_name', 'Saman Perera')
             ->where('shippingAddress.city', 'Colombo'));
-});
+})->with(['0771234567', '077 123 4567', '+94 (77) 123-4567']);
+
+test('checkout rejects invalid phone numbers without saving shipping details', function (string $phone): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->post(route('checkout.store'), [
+        'recipient_name' => 'Saman Perera',
+        'address_line_one' => '123, Galle Road',
+        'city' => 'Colombo',
+        'phone' => $phone,
+    ])->assertSessionHasErrors('phone')
+        ->assertSessionMissing('checkout.shipping_address');
+})->with(['abcdefghij', '077abc4567', '0771234567<script>', '07712', '1234567890123456', '077+1234567', '--- () ---']);
 
 test('buyer reviews and places an order before the checkout session and cart are cleared', function (): void {
     Notification::fake();

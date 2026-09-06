@@ -2,9 +2,7 @@ import { Form, Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
     BadgeCheck,
-    CircleHelp,
     Clock3,
-    Headphones,
     Home,
     LockKeyhole,
     NotebookPen,
@@ -85,11 +83,40 @@ function Field({
                 required={required}
                 name={name}
                 type={type}
+                inputMode={type === 'tel' ? 'tel' : undefined}
+                autoComplete={type === 'tel' ? 'tel' : undefined}
+                maxLength={type === 'tel' ? 30 : undefined}
+                pattern={
+                    type === 'tel'
+                        ? '\\+?(?=(?:[^0-9]*[0-9]){7,15}[^0-9]*$)[0-9 \\(\\)\\-]+'
+                        : undefined
+                }
+                title={
+                    type === 'tel'
+                        ? 'Enter 7 to 15 digits, with an optional country code, spaces, brackets or hyphens.'
+                        : undefined
+                }
+                onInput={
+                    type === 'tel'
+                        ? (event) => {
+                              event.currentTarget.value =
+                                  event.currentTarget.value
+                                      .replace(/[^0-9+ ()-]/g, '')
+                                      .replace(/(?!^)\+/g, '');
+                          }
+                        : undefined
+                }
+                aria-invalid={Boolean(error)}
+                aria-describedby={error ? `${name}-error` : undefined}
                 defaultValue={defaultValue}
                 placeholder={placeholder}
-                className={inputClassName}
+                className={`${inputClassName} scroll-mt-40`}
             />
-            {error && <span className="text-sm text-red-600">{error}</span>}
+            {error && (
+                <span id={`${name}-error`} className="text-sm text-red-600">
+                    {error}
+                </span>
+            )}
         </label>
     );
 }
@@ -113,7 +140,7 @@ function DeliveryOption({
         <label
             className={`relative flex items-center gap-3 rounded-lg border px-3.5 py-3 ${
                 disabled
-                    ? 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-55'
+                    ? 'cursor-not-allowed border-slate-200 bg-slate-50'
                     : 'cursor-pointer border-[#ff5a00] bg-orange-50/45'
             }`}
         >
@@ -133,12 +160,19 @@ function DeliveryOption({
                 <span className="block text-sm text-slate-500">
                     {description}
                 </span>
+                {disabled && (
+                    <span className="mt-1.5 inline-flex rounded-full bg-slate-200/70 px-2.5 py-1 text-sm font-semibold text-slate-600">
+                        Coming soon
+                    </span>
+                )}
             </span>
-            <span
-                className={`shrink-0 text-sm font-extrabold ${price === 'FREE' ? 'text-emerald-600' : 'text-slate-700'}`}
-            >
-                {price}
-            </span>
+            {!disabled && (
+                <span
+                    className={`shrink-0 text-sm font-extrabold ${price === 'FREE' ? 'text-emerald-600' : 'text-slate-700'}`}
+                >
+                    {price}
+                </span>
+            )}
         </label>
     );
 }
@@ -176,7 +210,7 @@ export default function BuyerCheckout({
     cart: CheckoutCart;
     shippingAddress: ShippingAddress | null;
 }) {
-    const { auth, marketplace } = usePage().props;
+    const { auth } = usePage().props;
     const itemPrice = (item: CheckoutCartItem): number =>
         Number(
             item.variant?.selling_price ??
@@ -188,7 +222,9 @@ export default function BuyerCheckout({
     return (
         <StorefrontLayout title="Checkout">
             <Head title="Checkout" />
-            <main className="storefront-container py-5 sm:py-7">
+            <main
+                className={`storefront-container pt-5 sm:pt-7 ${cart.items.length > 0 ? 'pb-44 lg:pb-7' : 'pb-7'}`}
+            >
                 <section className="rounded-xl bg-gradient-to-r from-[#fff8f3] via-[#fffaf6] to-[#fff5ed] px-5 py-5 sm:px-8">
                     <CheckoutProgress current="shipping" />
                     <p className="mt-5 flex items-center justify-center gap-2 text-center text-sm font-medium text-slate-600">
@@ -218,7 +254,15 @@ export default function BuyerCheckout({
                         </Link>
                     </section>
                 ) : (
-                    <Form {...checkoutStore.form()} className="mt-6">
+                    <Form
+                        {...checkoutStore.form()}
+                        className="mt-6"
+                        onError={(errors) => {
+                            document
+                                .getElementsByName(Object.keys(errors)[0])[0]
+                                ?.focus();
+                        }}
+                    >
                         {({ errors, processing }) => (
                             <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_23rem] xl:grid-cols-[minmax(0,1fr)_26rem]">
                                 <div className="grid gap-4">
@@ -251,6 +295,7 @@ export default function BuyerCheckout({
                                         <label className="mt-4 flex items-center gap-2 text-sm text-slate-600">
                                             <input
                                                 type="checkbox"
+                                                defaultChecked
                                                 className="size-4 rounded accent-[#ff5a00]"
                                             />
                                             Keep me updated on deals, offers and
@@ -338,16 +383,16 @@ export default function BuyerCheckout({
                                                 id="express"
                                                 icon={Clock3}
                                                 title="Islandwide Express Delivery"
-                                                description="Express delivery is coming soon"
-                                                price="UNAVAILABLE"
+                                                description="Faster delivery to your doorstep"
+                                                price=""
                                                 disabled
                                             />
                                             <DeliveryOption
                                                 id="pickup"
                                                 icon={Store}
                                                 title="Pick Up from ProDeals Store"
-                                                description="Store pickup is coming soon"
-                                                price="UNAVAILABLE"
+                                                description="Collect your order in store"
+                                                price=""
                                                 disabled
                                             />
                                         </div>
@@ -381,24 +426,23 @@ export default function BuyerCheckout({
                                                     type="radio"
                                                     name="billing_address"
                                                     defaultChecked
+                                                    disabled
                                                     className="size-4 accent-[#ff5a00]"
                                                 />
                                                 Same as shipping address
                                             </label>
-                                            <label className="flex cursor-not-allowed items-center gap-2 text-slate-400">
-                                                <input
-                                                    type="radio"
-                                                    name="billing_address"
-                                                    disabled
-                                                    className="size-4"
-                                                />
-                                                Use a different billing address
-                                            </label>
                                         </div>
+                                        <p className="mt-3 text-sm text-slate-500">
+                                            Your shipping details will be used
+                                            for your bill.
+                                        </p>
                                     </CheckoutSection>
                                 </div>
 
-                                <aside className="grid gap-4 lg:sticky lg:top-5">
+                                <aside
+                                    id="order-summary"
+                                    className="grid scroll-mt-36 gap-4 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:overflow-y-auto lg:overscroll-contain"
+                                >
                                     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_6px_24px_rgba(15,23,42,0.07)]">
                                         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4 sm:px-5">
                                             <h2 className="text-xl font-extrabold text-slate-950">
@@ -577,20 +621,42 @@ export default function BuyerCheckout({
                                                 </div>
                                             )}
 
-                                            <button
-                                                type="submit"
-                                                disabled={
-                                                    processing ||
-                                                    !cart.canCheckout
-                                                }
-                                                className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#ff5a00] px-4 text-base font-extrabold text-white shadow-[0_8px_20px_rgba(255,90,0,0.24)] transition hover:bg-[#eb5200] disabled:cursor-not-allowed disabled:opacity-60"
-                                            >
-                                                <LockKeyhole className="size-4" />
-                                                {processing
-                                                    ? 'Saving delivery...'
-                                                    : 'Continue to Payment'}
-                                                <ArrowRight className="ml-auto size-4" />
-                                            </button>
+                                            <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0_-4px_24px_rgba(15,23,42,0.10)] lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+                                                <div className="mb-2 flex items-center justify-between gap-3 lg:hidden">
+                                                    <div>
+                                                        <p className="text-sm text-slate-500">
+                                                            Total payable
+                                                        </p>
+                                                        <strong className="text-lg font-black text-slate-950">
+                                                            {formatPrice(
+                                                                Number(
+                                                                    cart.total,
+                                                                ),
+                                                            )}
+                                                        </strong>
+                                                    </div>
+                                                    <a
+                                                        href="#order-summary"
+                                                        className="rounded-md px-2 py-3 text-sm font-semibold text-[#ff5a00] underline underline-offset-4"
+                                                    >
+                                                        View summary
+                                                    </a>
+                                                </div>
+                                                <button
+                                                    type="submit"
+                                                    disabled={
+                                                        processing ||
+                                                        !cart.canCheckout
+                                                    }
+                                                    className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[#ff5a00] px-4 text-base font-extrabold text-white shadow-[0_8px_20px_rgba(255,90,0,0.24)] transition hover:bg-[#eb5200] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5a00] disabled:cursor-not-allowed disabled:opacity-60 lg:mt-4"
+                                                >
+                                                    <LockKeyhole className="size-4" />
+                                                    {processing
+                                                        ? 'Saving delivery...'
+                                                        : 'Continue to Payment'}
+                                                    <ArrowRight className="ml-auto size-4" />
+                                                </button>
+                                            </div>
                                             <p className="mt-3 flex items-center justify-center gap-1.5 text-sm text-slate-500">
                                                 <ShieldCheck className="size-3.5" />
                                                 Safe, secure and encrypted
@@ -615,22 +681,7 @@ export default function BuyerCheckout({
                                             title="Islandwide Delivery"
                                             description="Reliable delivery service across Sri Lanka."
                                         />
-                                        <TrustItem
-                                            icon={Headphones}
-                                            title="Need Help?"
-                                            description={
-                                                marketplace.support.phone
-                                                    ? `Call us on ${marketplace.support.phone}.`
-                                                    : 'Contact our support team for help.'
-                                            }
-                                        />
                                     </section>
-
-                                    <p className="flex items-center justify-center gap-1.5 text-sm text-slate-400">
-                                        <CircleHelp className="size-3.5" />
-                                        Questions? Our support team is ready to
-                                        help.
-                                    </p>
                                 </aside>
                             </div>
                         )}

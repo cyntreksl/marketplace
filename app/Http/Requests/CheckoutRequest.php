@@ -27,7 +27,17 @@ class CheckoutRequest extends FormRequest
             'address_line_two' => ['nullable', 'string', 'max:255'],
             'city' => ['required', 'string', 'max:120'],
             'postal_code' => ['nullable', 'string', 'max:20'],
-            'phone' => ['required', 'string', 'max:30'],
+            'phone' => ['required', 'string', 'max:30', 'regex:/^\+?(?=(?:[^0-9]*[0-9]){7,15}[^0-9]*$)[0-9 ()-]+$/'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'phone.regex' => 'Enter a valid phone number with 7 to 15 digits and an optional country code. Letters are not allowed.',
         ];
     }
 }
