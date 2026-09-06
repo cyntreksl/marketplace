@@ -1,4 +1,5 @@
 export type * from './auth';
+export type * from './buyer';
 export type * from './checkout';
 export type * from './marketplace';
 export type * from './navigation';

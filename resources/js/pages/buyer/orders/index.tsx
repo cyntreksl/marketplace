@@ -1,272 +1,172 @@
-import { Form, Head, Link } from '@inertiajs/react';
-import { Star } from 'lucide-react';
-import { store as storeReview } from '@/actions/App/Http/Controllers/BuyerReviewController';
-import { PortalLayout } from '@/components/portal-layout';
-import { show as cartShow } from '@/routes/cart';
-import { show as orderShow } from '@/routes/checkout/thank_you';
+import { Head, Link } from '@inertiajs/react';
+import { ArrowRight, PackageOpen, Store } from 'lucide-react';
+import { BuyerPageHeader } from '@/components/buyer-page-header';
+import { BuyerPagination } from '@/components/buyer-pagination';
+import { BuyerPortalLayout } from '@/components/buyer-portal-layout';
+import { BuyerStatusBadge } from '@/components/buyer-status-badge';
+import { Button } from '@/components/ui/button';
+import { index, show } from '@/routes/buyer/orders';
+import type { BuyerOrder, BuyerOrderStage, Paginated } from '@/types';
 
-type Order = {
-    number: string;
-    status: string;
-    total: string;
-    created_at: string;
-    seller_orders: {
-        number: string;
-        status: string;
-        delivered_at: string | null;
-        seller_profile: { store_name: string };
-        items: {
-            id: number;
-            title: string;
-            quantity: number;
-            unit_price: string;
-            variant_sku: string | null;
-            variant_options: Record<string, string> | null;
-            listing: { slug: string } | null;
-            review: { rating: number; comment: string | null } | null;
-        }[];
-    }[];
-    payments: { method: string; status: string }[];
-};
+type StageOption = { value: BuyerOrderStage; label: string };
 
-export default function BuyerOrders({ orders }: { orders: { data: Order[] } }) {
+function money(value: string): string {
+    return `LKR ${Number(value).toLocaleString('en-LK', { minimumFractionDigits: 2 })}`;
+}
+
+function date(value: string | null): string {
+    return value
+        ? new Intl.DateTimeFormat('en-LK', { dateStyle: 'medium' }).format(
+              new Date(value),
+          )
+        : '—';
+}
+
+export default function BuyerOrders({
+    orders,
+    counts,
+    stage,
+    stages,
+}: {
+    orders: Paginated<BuyerOrder>;
+    counts: Record<BuyerOrderStage, number>;
+    stage: BuyerOrderStage;
+    stages: StageOption[];
+}) {
     return (
-        <PortalLayout portal="buyer" title="Your orders">
-            <Head title="Your orders" />
-            <main className="mx-auto max-w-6xl">
-                <div className="flex items-end justify-between">
-                    <div>
-                        <p className="text-sm font-bold tracking-wider text-primary uppercase">
-                            Buyer portal
-                        </p>
-                        <h1 className="mt-2 text-4xl font-black">
-                            Your orders
-                        </h1>
-                    </div>
-                    <Link
-                        href={cartShow()}
-                        className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
-                    >
-                        View cart
-                    </Link>
-                </div>
-                <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
-                    {orders.data.length === 0 ? (
-                        <p className="p-12 text-center text-stone-500">
-                            No orders yet.
-                        </p>
-                    ) : (
-                        <ul className="divide-y divide-stone-200 dark:divide-stone-800">
-                            {orders.data.map((order) => (
-                                <li
-                                    key={order.number}
-                                    className="grid gap-3 p-5 sm:grid-cols-[1fr_auto]"
-                                >
+        <BuyerPortalLayout title="Orders">
+            <Head title="Orders" />
+            <div className="space-y-7">
+                <BuyerPageHeader
+                    eyebrow="Purchases"
+                    title="Your orders"
+                    description="Track every order, follow seller packages, and take action when a payment or delivery needs you."
+                />
+                <nav
+                    className="flex gap-2 overflow-x-auto pb-1"
+                    aria-label="Order stages"
+                >
+                    {stages.map((option) => (
+                        <Link
+                            key={option.value}
+                            href={index({
+                                query:
+                                    option.value === 'all'
+                                        ? {}
+                                        : { stage: option.value },
+                            })}
+                            preserveState
+                            className={`inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors ${stage === option.value ? 'border-orange-600 bg-orange-600 text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-orange-300 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300'}`}
+                        >
+                            {option.label}
+                            <span
+                                className={`rounded-full px-1.5 py-0.5 text-[0.7rem] ${stage === option.value ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800'}`}
+                            >
+                                {counts[option.value] ?? 0}
+                            </span>
+                        </Link>
+                    ))}
+                </nav>
+                {orders.data.length === 0 ? (
+                    <section className="grid min-h-72 place-items-center rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center dark:border-slate-700 dark:bg-slate-900">
+                        <div>
+                            <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300">
+                                <PackageOpen className="size-7" />
+                            </span>
+                            <h2 className="mt-4 text-lg font-bold">
+                                No orders in this view
+                            </h2>
+                            <p className="mt-1 text-sm text-slate-500">
+                                Orders will appear here as their status changes.
+                            </p>
+                        </div>
+                    </section>
+                ) : (
+                    <div className="grid gap-4">
+                        {orders.data.map((order) => (
+                            <article
+                                key={order.number}
+                                className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                            >
+                                <div className="flex flex-col gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800">
                                     <div>
-                                        <Link
-                                            href={orderShow(order.number)}
-                                            className="font-bold text-orange-600 hover:underline"
-                                        >
-                                            {order.number} — View order
-                                            {order.status === 'pending_payment'
-                                                ? ' / Pay'
-                                                : ''}
-                                        </Link>
-                                        <p className="mt-1 text-sm text-stone-500">
-                                            {order.seller_orders
-                                                .map(
-                                                    (sellerOrder) =>
-                                                        sellerOrder
-                                                            .seller_profile
-                                                            .store_name,
-                                                )
-                                                .join(', ')}
-                                        </p>
-                                        <p className="mt-1 text-sm text-stone-500">
-                                            Payment:{' '}
-                                            {order.payments[0]?.method.replace(
-                                                '_',
-                                                ' ',
-                                            )}{' '}
-                                            ·{' '}
-                                            {order.payments[0]?.status.replace(
-                                                '_',
-                                                ' ',
-                                            )}
-                                        </p>
-                                        <div className="mt-4 grid gap-3">
-                                            {order.seller_orders.flatMap(
-                                                (sellerOrder) =>
-                                                    sellerOrder.items.map(
-                                                        (item) => (
-                                                            <div
-                                                                key={item.id}
-                                                                className="rounded-xl bg-stone-50 p-4 dark:bg-stone-950"
-                                                            >
-                                                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                                                    <p className="text-sm font-black">
-                                                                        {
-                                                                            item.title
-                                                                        }{' '}
-                                                                        <span className="font-medium text-stone-500">
-                                                                            ×{' '}
-                                                                            {
-                                                                                item.quantity
-                                                                            }
-                                                                        </span>
-                                                                    </p>
-                                                                    {item.variant_options && (
-                                                                        <p className="mt-1 text-xs text-primary">
-                                                                            {Object.entries(
-                                                                                item.variant_options,
-                                                                            )
-                                                                                .map(
-                                                                                    ([
-                                                                                        name,
-                                                                                        value,
-                                                                                    ]) =>
-                                                                                        `${name}: ${value}`,
-                                                                                )
-                                                                                .join(
-                                                                                    ' · ',
-                                                                                )}
-                                                                            {item.variant_sku &&
-                                                                                ` · ${item.variant_sku}`}
-                                                                        </p>
-                                                                    )}
-                                                                    {item.review && (
-                                                                        <span className="flex items-center gap-1 text-xs font-black text-amber-600">
-                                                                            <Star className="size-3.5 fill-current" />{' '}
-                                                                            {
-                                                                                item
-                                                                                    .review
-                                                                                    .rating
-                                                                            }
-                                                                            /5
-                                                                            verified
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                {sellerOrder.delivered_at &&
-                                                                    !item.review && (
-                                                                        <Form
-                                                                            {...storeReview.form(
-                                                                                item.id,
-                                                                            )}
-                                                                            options={{
-                                                                                preserveScroll: true,
-                                                                            }}
-                                                                            className="mt-3 grid gap-2 sm:grid-cols-[8rem_1fr_auto]"
-                                                                        >
-                                                                            {({
-                                                                                processing,
-                                                                                errors,
-                                                                            }) => (
-                                                                                <>
-                                                                                    <label className="grid gap-1 text-xs font-bold">
-                                                                                        Rating
-                                                                                        <select
-                                                                                            name="rating"
-                                                                                            required
-                                                                                            className="rounded-lg border bg-white px-2 py-2 dark:bg-stone-900"
-                                                                                        >
-                                                                                            <option value="">
-                                                                                                Choose
-                                                                                            </option>
-                                                                                            {[
-                                                                                                5,
-                                                                                                4,
-                                                                                                3,
-                                                                                                2,
-                                                                                                1,
-                                                                                            ].map(
-                                                                                                (
-                                                                                                    rating,
-                                                                                                ) => (
-                                                                                                    <option
-                                                                                                        key={
-                                                                                                            rating
-                                                                                                        }
-                                                                                                        value={
-                                                                                                            rating
-                                                                                                        }
-                                                                                                    >
-                                                                                                        {
-                                                                                                            rating
-                                                                                                        }{' '}
-                                                                                                        stars
-                                                                                                    </option>
-                                                                                                ),
-                                                                                            )}
-                                                                                        </select>
-                                                                                    </label>
-                                                                                    <label className="grid gap-1 text-xs font-bold">
-                                                                                        Comment
-                                                                                        (optional)
-                                                                                        <input
-                                                                                            name="comment"
-                                                                                            maxLength={
-                                                                                                1000
-                                                                                            }
-                                                                                            className="rounded-lg border bg-white px-3 py-2 dark:bg-stone-900"
-                                                                                            placeholder="What should other buyers know?"
-                                                                                        />
-                                                                                    </label>
-                                                                                    <button
-                                                                                        disabled={
-                                                                                            processing
-                                                                                        }
-                                                                                        className="self-end rounded-lg bg-primary px-4 py-2 text-sm font-black text-primary-foreground disabled:opacity-50"
-                                                                                    >
-                                                                                        {processing
-                                                                                            ? 'Saving…'
-                                                                                            : 'Review'}
-                                                                                    </button>
-                                                                                    {Object.values(
-                                                                                        errors,
-                                                                                    ).map(
-                                                                                        (
-                                                                                            error,
-                                                                                        ) => (
-                                                                                            <p
-                                                                                                key={
-                                                                                                    error
-                                                                                                }
-                                                                                                className="text-xs text-red-600 sm:col-span-3"
-                                                                                            >
-                                                                                                {
-                                                                                                    error
-                                                                                                }
-                                                                                            </p>
-                                                                                        ),
-                                                                                    )}
-                                                                                </>
-                                                                            )}
-                                                                        </Form>
-                                                                    )}
-                                                            </div>
-                                                        ),
-                                                    ),
-                                            )}
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <Link
+                                                href={show(order.number)}
+                                                className="font-black text-slate-950 hover:text-orange-700 dark:text-white dark:hover:text-orange-300"
+                                            >
+                                                {order.number}
+                                            </Link>
+                                            <BuyerStatusBadge
+                                                status={order.stage}
+                                                label={order.stage_label}
+                                            />
                                         </div>
+                                        <p className="mt-1 text-xs text-slate-500">
+                                            Placed {date(order.created_at)}
+                                        </p>
                                     </div>
                                     <div className="sm:text-right">
                                         <p className="font-black">
-                                            LKR{' '}
-                                            {Number(
-                                                order.total,
-                                            ).toLocaleString()}
+                                            {money(order.total)}
                                         </p>
-                                        <span className="mt-2 inline-flex rounded-full bg-stone-100 px-3 py-1 text-xs font-bold capitalize dark:bg-stone-800">
-                                            {order.status.replace('_', ' ')}
-                                        </span>
+                                        <p className="text-xs text-slate-500">
+                                            {order.seller_orders.reduce(
+                                                (total, seller) =>
+                                                    total + seller.items.length,
+                                                0,
+                                            )}{' '}
+                                            products
+                                        </p>
                                     </div>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
-            </main>
-        </PortalLayout>
+                                </div>
+                                <div className="grid gap-4 px-5 py-4 md:grid-cols-[1fr_auto] md:items-center">
+                                    <div className="space-y-2">
+                                        {order.seller_orders.map(
+                                            (sellerOrder) => (
+                                                <div
+                                                    key={sellerOrder.number}
+                                                    className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300"
+                                                >
+                                                    <Store className="size-4 text-orange-600" />
+                                                    <span className="font-semibold">
+                                                        {sellerOrder.store_name}
+                                                    </span>
+                                                    <span className="text-slate-400">
+                                                        ·
+                                                    </span>
+                                                    <span>
+                                                        {
+                                                            sellerOrder.items
+                                                                .length
+                                                        }{' '}
+                                                        item
+                                                        {sellerOrder.items
+                                                            .length === 1
+                                                            ? ''
+                                                            : 's'}
+                                                    </span>
+                                                </div>
+                                            ),
+                                        )}
+                                    </div>
+                                    <Button
+                                        variant="outline"
+                                        className="rounded-xl"
+                                        asChild
+                                    >
+                                        <Link href={show(order.number)}>
+                                            View details{' '}
+                                            <ArrowRight className="size-4" />
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                )}
+                <BuyerPagination links={orders.links} />
+            </div>
+        </BuyerPortalLayout>
     );
 }
