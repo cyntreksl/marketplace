@@ -103,31 +103,66 @@ function SectionTitle({
     title,
     href,
     icon,
-    hasCarouselControls = false,
+    onScrollLeft,
+    onScrollRight,
 }: {
     title: string;
     href?: string;
     icon?: React.ReactNode;
-    hasCarouselControls?: boolean;
+    onScrollLeft?: () => void;
+    onScrollRight?: () => void;
 }) {
     return (
-        <div className="mb-3 flex items-center gap-2 border-b border-slate-100 pb-2">
-            <span className="h-0.5 w-6 bg-[#FF6D00]" />
-            {icon}
-            <h2 className="text-xl font-extrabold sm:text-2xl">{title}</h2>
-            {href && (
-                <Link
-                    href={href}
-                    className={`ml-auto shrink-0 text-sm font-semibold text-slate-500 hover:text-[#FF6D00] ${hasCarouselControls ? 'mr-20' : ''}`}
-                >
-                    View All
-                </Link>
-            )}
+        <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
+            <div className="flex items-center gap-2">
+                {icon}
+                <h2 className="text-xl font-extrabold sm:text-2xl">{title}</h2>
+            </div>
+            <div className="flex items-center gap-3">
+                {href && (
+                    <Link
+                        href={href}
+                        className="text-sm font-semibold text-slate-500 transition hover:text-[#FF6D00]"
+                    >
+                        View All
+                    </Link>
+                )}
+                {onScrollLeft && onScrollRight && (
+                    <div className="flex items-center gap-1">
+                        <button
+                            type="button"
+                            onClick={onScrollLeft}
+                            className="grid size-7 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-[#FF6D00] hover:text-[#FF6D00]"
+                            aria-label={`Scroll ${title} left`}
+                        >
+                            <ChevronLeft className="size-3" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onScrollRight}
+                            className="grid size-7 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-[#FF6D00] hover:text-[#FF6D00]"
+                            aria-label={`Scroll ${title} right`}
+                        >
+                            <ChevronRight className="size-3" />
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
 
-function ProductRow({ listings }: { listings: StorefrontListing[] }) {
+function ProductRow({
+    title,
+    href,
+    icon,
+    listings,
+}: {
+    title?: string;
+    href?: string;
+    icon?: React.ReactNode;
+    listings: StorefrontListing[];
+}) {
     const row = useRef<HTMLDivElement>(null);
     const scroll = (direction: number) =>
         row.current?.scrollBy({
@@ -137,14 +172,32 @@ function ProductRow({ listings }: { listings: StorefrontListing[] }) {
 
     if (listings.length === 0) {
         return (
-            <p className="rounded-xl border border-dashed p-6 text-center text-xs text-slate-600">
-                Products will appear here as the collection is curated.
-            </p>
+            <div>
+                {title && (
+                    <SectionTitle title={title} href={href} icon={icon} />
+                )}
+                <p className="rounded-xl border border-dashed p-6 text-center text-xs text-slate-600">
+                    Products will appear here as the collection is curated.
+                </p>
+            </div>
         );
     }
 
     return (
-        <div className="relative">
+        <div>
+            {title && (
+                <SectionTitle
+                    title={title}
+                    href={href}
+                    icon={icon}
+                    onScrollLeft={
+                        listings.length > 4 ? () => scroll(-1) : undefined
+                    }
+                    onScrollRight={
+                        listings.length > 4 ? () => scroll(1) : undefined
+                    }
+                />
+            )}
             <div
                 ref={row}
                 className="flex snap-x snap-mandatory [scrollbar-width:none] gap-3 overflow-x-auto pb-2"
@@ -158,24 +211,6 @@ function ProductRow({ listings }: { listings: StorefrontListing[] }) {
                     </div>
                 ))}
             </div>
-            {listings.length > 4 && (
-                <div className="absolute -top-11 right-0 flex gap-1">
-                    <button
-                        onClick={() => scroll(-1)}
-                        className="grid size-7 place-items-center rounded-full border bg-white"
-                        aria-label="Scroll products left"
-                    >
-                        <ChevronLeft className="size-3" />
-                    </button>
-                    <button
-                        onClick={() => scroll(1)}
-                        className="grid size-7 place-items-center rounded-full border bg-white"
-                        aria-label="Scroll products right"
-                    >
-                        <ChevronRight className="size-3" />
-                    </button>
-                </div>
-            )}
         </div>
     );
 }
@@ -254,8 +289,10 @@ function RecentlyViewed() {
 
     return (
         <section className="mt-7">
-            <SectionTitle title="Recently Viewed" />
-            <ProductRow listings={http.response?.listings ?? []} />
+            <ProductRow
+                title="Recently Viewed"
+                listings={http.response?.listings ?? []}
+            />
         </section>
     );
 }
@@ -307,15 +344,9 @@ export default function StorefrontHome({
                 </section>
 
                 <section className="mt-5">
-                    <SectionTitle
+                    <ProductRow
                         title="Featured Deals"
                         href="/collections/featured"
-                        hasCarouselControls={
-                            (featuredDeals.length ? featuredDeals : bestOffers)
-                                .length > 4
-                        }
-                    />
-                    <ProductRow
                         listings={
                             featuredDeals.length ? featuredDeals : bestOffers
                         }
@@ -401,12 +432,11 @@ export default function StorefrontHome({
                 )}
 
                 <section className="mt-6">
-                    <SectionTitle
+                    <ProductRow
                         title="New Arrivals"
                         href="/collections/new-arrivals"
-                        hasCarouselControls={newArrivals.length > 4}
+                        listings={newArrivals}
                     />
-                    <ProductRow listings={newArrivals} />
                 </section>
                 <RecentlyViewed />
             </main>
