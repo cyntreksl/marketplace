@@ -20,3 +20,6 @@ Guest carts live in the session and merge through durable cart_merges tokens; pr
 
 ## Keep the homepage hero as the selected single artwork
 The homepage hero is the selected home-deals-banner.png artwork, displayed without added text or gradients; legacy hero promotions must not override it. Secondary and flash-sale promotions remain scheduled. Version this static banner URL from its contents because the R2 custom domain can cache a missing object before upload.
+
+## Seller storefront privacy and branding publication
+Public stores and seller summaries must use SellerSummaryService's explicit allowlist and approved, active seller eligibility. Scope catalog filters and aggregate counts in repositories with Listing::publiclyVisible. Branding saves publish immediately; upload replacements to generated seller-specific R2 paths, persist successfully before deleting previous objects, and keep existing branding on failures.

@@ -33,6 +33,7 @@ class EloquentListingRepository implements ListingRepository
                     default => null,
                 };
             })
+            ->when($filters['seller_id'] ?? null, fn ($query, int $sellerId) => $query->where('listings.seller_profile_id', $sellerId))
             ->when($filters['search'] ?? null, fn ($query, string $search) => $query->where('listings.title', 'like', "%{$search}%"))
             ->when($filters['category'] ?? null, fn ($query, string $category) => $query->whereIn('listings.category_id', $this->catalog->activeDescendantIdsForSlug($category)))
             ->when($filters['brand'] ?? null, fn ($query, string $brand) => $query->whereHas('brand', fn ($query) => $query->where('slug', $brand)))

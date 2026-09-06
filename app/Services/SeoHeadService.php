@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Listing;
 use App\Models\ListingMedia;
+use App\Support\SeoText;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -210,7 +211,7 @@ class SeoHeadService
         }
 
         if (filled($listing->short_description)) {
-            return (string) $listing->short_description;
+            return $this->plainText((string) $listing->short_description);
         }
 
         $plainText = $this->plainText((string) $listing->description);
@@ -220,7 +221,7 @@ class SeoHeadService
 
     private function plainText(string $value): string
     {
-        return html_entity_decode(trim((string) preg_replace('/\s+/', ' ', strip_tags($value))), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return SeoText::plain($value);
     }
 
     /** @return array{string, int|null, int|null} */

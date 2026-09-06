@@ -218,7 +218,7 @@ export function CategoryArtworkUploader({
 
             <div className="grid gap-3 sm:grid-cols-[9rem_1fr] sm:items-stretch">
                 <div
-                    className={`relative overflow-hidden rounded-2xl bg-primary/10 ring-1 ring-primary/10 ${aspect === 1 ? 'aspect-square' : 'aspect-3/4'}`}
+                    className={`relative overflow-hidden rounded-2xl bg-primary/10 ring-1 ring-primary/10 ${aspect === 1 ? 'aspect-square' : aspect === 4 ? 'aspect-4/1' : 'aspect-3/4'}`}
                 >
                     {previewUrl ? (
                         sourceUrl && imageSize && crop ? (

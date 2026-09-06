@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\Repositories\CatalogRepository;
 use App\Contracts\Repositories\ListingRepository;
+use App\Contracts\Repositories\SellerStoreRepository;
 use DateTimeInterface;
 
 class SitemapService
@@ -11,11 +12,13 @@ class SitemapService
     public function __construct(
         private readonly ListingRepository $listings,
         private readonly CatalogRepository $catalog,
+        private readonly SellerStoreRepository $sellers,
     ) {}
 
     public function index(): string
     {
         $children = [
+            ['url' => route('sitemap.stores'), 'lastmod' => $this->sellers->sitemapStores()->max('updated_at')],
             ['url' => route('sitemap.static'), 'lastmod' => null],
             ['url' => route('sitemap.categories'), 'lastmod' => $this->catalog->sitemapCategories()->max('updated_at')],
             ['url' => route('sitemap.brands'), 'lastmod' => $this->catalog->sitemapBrands()->max('updated_at')],
@@ -58,6 +61,13 @@ class SitemapService
         return $this->urlSet($this->catalog->sitemapBrands()->map(fn ($brand): array => [
             'url' => route('brands.show', $brand->slug),
             'lastmod' => $brand->updated_at,
+        ]));
+    }
+
+    public function stores(): string
+    {
+        return $this->urlSet($this->sellers->sitemapStores()->map(fn ($seller): array => [
+            'url' => route('stores.show', $seller->slug), 'lastmod' => $seller->updated_at,
         ]));
     }
 

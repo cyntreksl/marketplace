@@ -52,6 +52,7 @@ import {
 import { edit as sellerOnboardingEdit } from '@/routes/seller/onboarding';
 import { index as sellerOrdersIndex } from '@/routes/seller/orders';
 import { index as sellerReturnsIndex } from '@/routes/seller/returns';
+import { edit as sellerStoreEdit } from '@/routes/seller/store';
 import { index as sellerWalletIndex } from '@/routes/seller/wallet';
 
 type Portal = 'admin' | 'seller' | 'buyer';
@@ -130,6 +131,12 @@ const portalDetails: Record<Portal, PortalDetails> = {
         label: 'Seller workspace',
         description: 'Manage your store',
         navigation: [
+            {
+                title: 'Store settings',
+                href: sellerStoreEdit(),
+                icon: Store,
+                group: 'Store',
+            },
             {
                 title: 'All Products',
                 href: sellerListingsIndex(),

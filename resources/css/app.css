@@ -233,3 +233,33 @@
         @apply px-6;
     }
 }
+
+@layer components {
+    .product-description {
+        white-space: normal;
+        overflow-wrap: anywhere;
+        text-align: left;
+    }
+    .product-description > :first-child {
+        margin-top: 0;
+    }
+    .product-description p {
+        margin-block: 0.75rem;
+    }
+    .product-description h2,
+    .product-description h3 {
+        margin-block: 1.5rem 0.75rem;
+        font-size: 1.125rem;
+        line-height: 1.5;
+        font-weight: 700;
+    }
+    .product-description ul,
+    .product-description ol {
+        margin-block: 0.75rem;
+        padding-left: 1.25rem;
+    }
+    .product-page :is(button, a, input, textarea):focus-visible {
+        outline: 2px solid #c2410c;
+        outline-offset: 4px;
+    }
+}

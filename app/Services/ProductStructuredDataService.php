@@ -6,6 +6,7 @@ use App\Models\Listing;
 use App\Models\ListingMedia;
 use App\Models\ListingVariant;
 use App\Rules\ValidGtin;
+use App\Support\SeoText;
 use Illuminate\Support\Str;
 
 class ProductStructuredDataService
@@ -335,7 +336,7 @@ class ProductStructuredDataService
     {
         $description = filled($listing->short_description) ? $listing->short_description : $listing->description;
 
-        return html_entity_decode(trim((string) preg_replace('/\s+/', ' ', strip_tags((string) $description))), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        return SeoText::plain((string) $description);
     }
 
     /** @return array<int, string> */

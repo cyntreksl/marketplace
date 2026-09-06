@@ -19,6 +19,7 @@ use App\Contracts\Repositories\PromotionRepository;
 use App\Contracts\Repositories\RefundRepository;
 use App\Contracts\Repositories\ReturnRequestRepository;
 use App\Contracts\Repositories\ReviewRepository;
+use App\Contracts\Repositories\SellerStoreRepository;
 use App\Contracts\Repositories\WatchlistRepository;
 use App\Couriers\ManualCourierAdapter;
 use App\Models\User;
@@ -38,6 +39,7 @@ use App\Repositories\EloquentPromotionRepository;
 use App\Repositories\EloquentRefundRepository;
 use App\Repositories\EloquentReturnRequestRepository;
 use App\Repositories\EloquentReviewRepository;
+use App\Repositories\EloquentSellerStoreRepository;
 use App\Repositories\EloquentWatchlistRepository;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -58,6 +60,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(SellerStoreRepository::class, EloquentSellerStoreRepository::class);
         $this->app->bind(AuctionRepository::class, EloquentAuctionRepository::class);
         $this->app->bind(CartRepository::class, EloquentCartRepository::class);
         $this->app->bind(CatalogRepository::class, EloquentCatalogRepository::class);

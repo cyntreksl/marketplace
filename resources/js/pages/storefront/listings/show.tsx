@@ -1,37 +1,27 @@
 import { Form, Link, usePage } from '@inertiajs/react';
 import {
-    BadgeCheck,
     Check,
-    ChevronLeft,
-    ChevronRight,
     GitCompareArrows,
     Heart,
-    Maximize2,
-    Minus,
-    PackageCheck,
-    Plus,
-    RotateCcw,
     Share2,
-    ShieldCheck,
-    ShoppingCart,
     Star,
     Truck,
-    X,
+    ShieldCheck,
+    RotateCcw,
+    CreditCard,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { store as placeBid } from '@/actions/App/Http/Controllers/AuctionBidController';
-import { store as addCartItem } from '@/actions/App/Http/Controllers/CartController';
-import { store as askQuestion } from '@/actions/App/Http/Controllers/ProductQuestionController';
 import {
     destroy as removeWish,
     store as addWish,
 } from '@/actions/App/Http/Controllers/WatchlistController';
 import { ListingCard } from '@/components/listing-card';
-import {
-    RichTextContent,
-    richTextPlainText,
-} from '@/components/rich-text-editor';
+import { ProductDetails } from '@/components/product-details';
+import { ProductGallery } from '@/components/product-gallery';
+import { ProductPurchase } from '@/components/product-purchase';
+import { SellerSummary } from '@/components/seller-summary';
 import { StorefrontBreadcrumbs } from '@/components/storefront-breadcrumbs';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { useProductComparison } from '@/hooks/use-product-comparison';
@@ -40,7 +30,10 @@ import { show as brandShow } from '@/routes/brands';
 import { show as categoryShow } from '@/routes/categories';
 import { index as listingsIndex } from '@/routes/listings';
 import { show as listingShow } from '@/routes/listings';
+import { shipping, returns } from '@/routes/policies';
+import { show as storeShow } from '@/routes/stores';
 import type {
+    PublicSellerSummary,
     StorefrontCategory,
     StorefrontCategoryNode,
     StorefrontListing,
@@ -61,124 +54,6 @@ type Policies = { returnWindowDays: number; codEnabled: boolean } | null;
 
 function formatPrice(value: string | null): string {
     return `Rs. ${Number(value ?? 0).toLocaleString('en-LK')}`;
-}
-
-function Gallery({
-    listing,
-    featuredImageUrl,
-}: {
-    listing: StorefrontListing;
-    featuredImageUrl?: string;
-}) {
-    const [index, setIndex] = useState(0);
-    const [fullscreen, setFullscreen] = useState(false);
-    const media = featuredImageUrl
-        ? [
-              {
-                  path: `variant-${featuredImageUrl}`,
-                  type: 'image',
-                  url: featuredImageUrl,
-                  thumbnailUrl: featuredImageUrl,
-                  cardUrl: featuredImageUrl,
-                  card2xUrl: featuredImageUrl,
-              },
-              ...listing.media.filter(
-                  (item) => item.cardUrl !== featuredImageUrl,
-              ),
-          ]
-        : listing.media;
-    const selected = media[index];
-    const move = (direction: number) =>
-        setIndex((index + direction + media.length) % media.length);
-
-    return (
-        <div className="grid gap-3 sm:grid-cols-[4.5rem_1fr]">
-            <div className="order-2 flex gap-2 overflow-x-auto sm:order-1 sm:flex-col">
-                {media.slice(0, 5).map((mediaItem, mediaIndex) => (
-                    <button
-                        key={mediaItem.path}
-                        onClick={() => setIndex(mediaIndex)}
-                        aria-label={`View image ${mediaIndex + 1}`}
-                        aria-pressed={index === mediaIndex}
-                        className={`size-16 shrink-0 overflow-hidden rounded-lg border bg-white p-1 ${index === mediaIndex ? 'border-[#ff5a00] ring-1 ring-orange-200' : 'border-slate-200'}`}
-                    >
-                        <img
-                            src={mediaItem.thumbnailUrl}
-                            alt=""
-                            className="size-full object-contain"
-                        />
-                    </button>
-                ))}
-            </div>
-            <div className="relative order-1 flex aspect-square items-center justify-center overflow-hidden rounded-xl border bg-white sm:order-2">
-                {selected ? (
-                    <button
-                        onClick={() => setFullscreen(true)}
-                        className="group size-full cursor-zoom-in overflow-hidden"
-                        aria-label="Open fullscreen gallery"
-                    >
-                        <img
-                            src={selected.url}
-                            alt={listing.title}
-                            className="size-full object-contain p-5 transition duration-300 group-hover:scale-125"
-                        />
-                    </button>
-                ) : (
-                    <span className="text-base text-slate-400">
-                        Product image coming soon
-                    </span>
-                )}
-                {selected && (
-                    <button
-                        onClick={() => setFullscreen(true)}
-                        className="absolute right-3 bottom-3 grid size-9 place-items-center rounded-full bg-white shadow"
-                        aria-label="Open fullscreen gallery"
-                    >
-                        <Maximize2 className="size-4" />
-                    </button>
-                )}
-            </div>
-            {fullscreen && selected && (
-                <div
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label="Product gallery"
-                    className="fixed inset-0 z-50 grid place-items-center bg-black/90 p-4"
-                >
-                    <button
-                        onClick={() => setFullscreen(false)}
-                        className="absolute top-5 right-5 grid size-10 place-items-center rounded-full bg-white"
-                        aria-label="Close gallery"
-                    >
-                        <X className="size-5" />
-                    </button>
-                    {media.length > 1 && (
-                        <>
-                            <button
-                                onClick={() => move(-1)}
-                                className="absolute left-4 grid size-10 place-items-center rounded-full bg-white"
-                                aria-label="Previous image"
-                            >
-                                <ChevronLeft />
-                            </button>
-                            <button
-                                onClick={() => move(1)}
-                                className="absolute right-4 grid size-10 place-items-center rounded-full bg-white"
-                                aria-label="Next image"
-                            >
-                                <ChevronRight />
-                            </button>
-                        </>
-                    )}
-                    <img
-                        src={selected.url}
-                        alt={listing.title}
-                        className="max-h-[90vh] max-w-[90vw] object-contain"
-                    />
-                </div>
-            )}
-        </div>
-    );
 }
 
 function OfferCountdown({ endsAt }: { endsAt: string }) {
@@ -227,6 +102,7 @@ export default function ListingShow({
     relatedListings,
     sellerListings,
     selectedVariantId,
+    sellerSummary,
 }: {
     listing: StorefrontListing;
     categories: StorefrontCategory[];
@@ -240,6 +116,7 @@ export default function ListingShow({
     relatedListings: StorefrontListing[];
     sellerListings: StorefrontListing[];
     selectedVariantId: number | null;
+    sellerSummary: PublicSellerSummary | null;
 }) {
     const { auth } = usePage().props;
     const comparison = useProductComparison();
@@ -250,7 +127,6 @@ export default function ListingShow({
     const [selections, setSelections] = useState<Record<string, string>>(
         initialVariant?.selections ?? {},
     );
-    const [activeTab, setActiveTab] = useState('overview');
     const selectedVariant = useMemo(
         () =>
             listing.variants.find((variant) =>
@@ -288,17 +164,17 @@ export default function ListingShow({
         listing.stockStatus === 'out_of_stock' ||
         (listing.productType === 'variant' &&
             selectedVariant?.stockQuantity === 0);
-    const showOutOfStockMessage = () => {
-        toast.error('This item is out of stock.');
-    };
-
     useEffect(() => {
         const url = listingShow.url(listing.slug, {
             query: selectedVariant
                 ? { variant: selectedVariant.id }
                 : undefined,
         });
-        window.history.replaceState(window.history.state, '', url);
+        window.history.replaceState(
+            window.history.state,
+            '',
+            url + window.location.hash,
+        );
     }, [listing.slug, selectedVariant]);
 
     useEffect(() => {
@@ -329,42 +205,59 @@ export default function ListingShow({
     const share = async () => {
         const data = { title: listing.title, url: window.location.href };
 
-        if (navigator.share) {
-            await navigator.share(data);
-        } else {
-            await navigator.clipboard.writeText(window.location.href);
+        try {
+            if (navigator.share) {
+                await navigator.share(data);
+            } else {
+                await navigator.clipboard.writeText(window.location.href);
+                toast.success('Product link copied.');
+            }
+        } catch (error) {
+            if (!(
+                error instanceof DOMException && error.name === 'AbortError'
+            )) {
+                toast.error('The product link could not be shared.');
+            }
         }
     };
 
-    const facts = [
-        [Truck, 'Islandwide Delivery', 'Delivery estimate unavailable'],
-        [
-            ShieldCheck,
-            listing.warranty ?? 'Warranty',
-            listing.warranty ?? 'Seller warranty applies',
-        ],
-        [
-            RotateCcw,
-            `${categoryPolicies?.returnWindowDays ?? 7} Days Easy Returns`,
-            'Conditions apply',
-        ],
-        [
-            PackageCheck,
-            categoryPolicies?.codEnabled
-                ? 'Cash on Delivery'
-                : 'Secure Payments',
-            categoryPolicies?.codEnabled
-                ? 'Available for eligible orders'
-                : 'COD unavailable',
-        ],
-    ] as const;
-    const specificationRows = [
-        ['Brand', listing.brand?.name ?? null],
-        ['Model', listing.model],
-        ['Category', listing.category?.name ?? null],
-        ['Condition', listing.condition],
-        ...Object.entries(listing.specifications),
-    ].filter(([, value]) => value !== null && value !== '');
+    const offerSummary = (
+        <div>
+            <p className="text-3xl font-black tracking-tight text-[#ff5a00]">
+                {formatPrice(displayedSellingPrice)}
+            </p>
+            {displayedMarketPrice &&
+                Number(displayedMarketPrice) >
+                    Number(displayedSellingPrice) && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                        <span className="text-slate-400 line-through">
+                            {formatPrice(displayedMarketPrice)}
+                        </span>
+                        <strong className="text-[#ff5a00]">
+                            {displayedDiscountPercentage}% OFF
+                        </strong>
+                    </div>
+                )}
+            {displayedDiscountPercentage !== null &&
+                displayedDiscountPercentage > 0 && (
+                    <p className="mt-2 text-sm font-semibold text-emerald-700">
+                        You save{' '}
+                        {formatPrice(
+                            String(
+                                Number(displayedMarketPrice) -
+                                    Number(displayedSellingPrice),
+                            ),
+                        )}
+                    </p>
+                )}
+            {activeCampaign && (
+                <div className="mt-4 grid gap-2 rounded-lg bg-orange-50 p-3 text-sm">
+                    <span>{activeCampaign.title} · Offer ends in</span>
+                    <OfferCountdown endsAt={activeCampaign.endsAt} />
+                </div>
+            )}
+        </div>
+    );
 
     return (
         <StorefrontLayout
@@ -373,7 +266,7 @@ export default function ListingShow({
             categories={categories}
             activeCategorySlugs={categoryTrail.map((item) => item.slug)}
         >
-            <main className="storefront-container py-4">
+            <main className="product-page storefront-container pt-5 pb-28 lg:pb-8">
                 <div className="mb-5">
                     <StorefrontBreadcrumbs
                         items={[
@@ -388,7 +281,7 @@ export default function ListingShow({
                 </div>
 
                 <div className="grid items-start gap-7 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_18rem]">
-                    <Gallery
+                    <ProductGallery
                         key={selectedVariant?.image?.cardUrl ?? 'base-gallery'}
                         listing={listing}
                         featuredImageUrl={selectedVariant?.image?.cardUrl}
@@ -397,20 +290,14 @@ export default function ListingShow({
                         {listing.brand && (
                             <Link
                                 href={brandShow(listing.brand.slug)}
-                                className="text-sm font-black tracking-wider text-blue-700 uppercase"
+                                className="text-sm font-bold tracking-wider text-blue-700 uppercase"
                             >
                                 {listing.brand.name}
                             </Link>
                         )}
-                        <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
+                        <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
                             {listing.title}
                         </h1>
-                        <p className="mt-1 text-sm text-slate-500">
-                            {listing.productType === 'variant'
-                                ? listing.variants[0]?.sku
-                                : ''}{' '}
-                            · {listing.condition}
-                        </p>
                         <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
                             <span className="flex items-center gap-1 font-bold text-amber-500">
                                 <Star className="size-4 fill-current" />
@@ -419,45 +306,48 @@ export default function ListingShow({
                             <span className="text-slate-400">
                                 ({listing.reviewCount} reviews)
                             </span>
-                            <button
-                                onClick={() => setActiveTab('qa')}
+                            <a
+                                href="#qa"
                                 className="text-slate-500 hover:text-[#ff5a00]"
                             >
                                 {questions.length} answered questions
-                            </button>
+                            </a>
                         </div>
                         {listing.shortDescription && (
                             <p className="mt-5 text-base leading-6 text-slate-600">
                                 {listing.shortDescription}
                             </p>
                         )}
-                        {specificationRows.length > 0 && (
-                            <ul className="mt-5 grid gap-3 text-sm text-slate-600">
-                                {specificationRows
-                                    .slice(0, 4)
-                                    .map(([name, value]) => (
-                                        <li key={name} className="flex gap-2">
-                                            <Check className="size-4 text-slate-400" />
-                                            <strong>{name}:</strong>{' '}
-                                            {name === 'Details'
-                                                ? richTextPlainText(
-                                                      String(value),
-                                                  )
-                                                : String(value)}
-                                        </li>
-                                    ))}
-                            </ul>
-                        )}
-                        <p className="mt-5 text-sm">
+                        <dl className="mt-5 grid gap-3 text-sm text-slate-600">
+                            {[
+                                ['Brand', listing.brand?.name],
+                                ['Model', listing.model],
+                                ['Category', listing.category?.name],
+                            ]
+                                .filter(([, value]) => Boolean(value))
+                                .map(([label, value]) => (
+                                    <div key={label} className="flex gap-2">
+                                        <Check className="size-4 shrink-0 text-slate-400" />
+                                        <dt className="font-bold">{label}:</dt>
+                                        <dd>{value}</dd>
+                                    </div>
+                                ))}
+                        </dl>
+                        <div className="mt-5 xl:hidden">{offerSummary}</div>
+                        <div className="mt-5 flex flex-wrap items-center gap-3 text-sm">
                             <span
-                                className={`font-bold ${isOutOfStock ? 'text-red-500' : 'text-emerald-600'}`}
+                                className={`font-bold ${isOutOfStock ? 'text-red-600' : 'text-emerald-600'}`}
                             >
-                                {isOutOfStock ? 'Out of stock' : 'In Stock'}
+                                {isOutOfStock
+                                    ? 'Out of stock'
+                                    : listing.stockStatus === 'backorder'
+                                      ? 'Available on backorder'
+                                      : 'In stock'}
                             </span>
-                            <span className="ml-2 text-slate-400">
-                                Ships when delivery is configured
+                            <span className="text-slate-500 capitalize">
+                                {listing.condition} condition
                             </span>
-                        </p>
+                        </div>
 
                         {listing.productType === 'variant' && (
                             <div className="mt-6 grid gap-4">
@@ -469,6 +359,11 @@ export default function ListingShow({
                                         <div className="mt-2 flex flex-wrap gap-2">
                                             {option.values.map((value) => (
                                                 <button
+                                                    aria-pressed={
+                                                        selections[
+                                                            option.name
+                                                        ] === value
+                                                    }
                                                     key={value}
                                                     type="button"
                                                     onClick={() =>
@@ -480,7 +375,7 @@ export default function ListingShow({
                                                             }),
                                                         )
                                                     }
-                                                    className={`rounded-lg border px-4 py-2 text-sm font-bold ${selections[option.name] === value ? 'border-[#ff5a00] text-[#ff5a00] ring-1 ring-orange-100' : 'border-slate-200'}`}
+                                                    className={`min-h-11 rounded-lg border px-4 py-2 text-sm font-bold ${selections[option.name] === value ? 'border-[#ff5a00] text-[#ff5a00] ring-1 ring-orange-100' : 'border-slate-200'}`}
                                                 >
                                                     {value}
                                                 </button>
@@ -491,113 +386,28 @@ export default function ListingShow({
                             </div>
                         )}
 
-                        {listing.listingType === 'buy_now' && (
-                            <div className="mt-6">
-                                <span className="text-sm font-bold">
-                                    Quantity
-                                </span>
-                                <div className="mt-2 flex w-max items-center rounded-lg border">
-                                    <button
-                                        onClick={() =>
-                                            setQuantity((value) =>
-                                                Math.max(1, value - 1),
-                                            )
-                                        }
-                                        className="grid size-9 place-items-center"
-                                        aria-label="Decrease quantity"
-                                    >
-                                        <Minus className="size-3" />
-                                    </button>
-                                    <span className="grid w-10 place-items-center text-sm font-bold">
-                                        {quantity}
-                                    </span>
-                                    <button
-                                        onClick={() =>
-                                            setQuantity((value) =>
-                                                Math.min(100, value + 1),
-                                            )
-                                        }
-                                        className="grid size-9 place-items-center"
-                                        aria-label="Increase quantity"
-                                    >
-                                        <Plus className="size-3" />
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
                         {listing.listingType === 'buy_now' ? (
-                            isOutOfStock ? (
-                                <div className="mt-5 grid grid-cols-2 gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={showOutOfStockMessage}
-                                        className="flex items-center justify-center gap-2 rounded-lg border border-red-300 bg-red-50 py-3 text-sm font-bold text-red-600"
-                                    >
-                                        <ShoppingCart className="size-4" />
-                                        Add to Cart
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={showOutOfStockMessage}
-                                        className="rounded-lg bg-slate-400 py-3 text-sm font-bold text-white"
-                                    >
-                                        Buy Now
-                                    </button>
-                                </div>
-                            ) : (
-                                <Form
-                                    {...addCartItem.form()}
-                                    className="mt-5 grid grid-cols-2 gap-2"
-                                    onError={(errors) =>
-                                        toast.error(
-                                            Object.values(errors)[0] ??
-                                                'This item could not be added to your cart.',
-                                        )
-                                    }
-                                >
-                                    {({ processing }) => (
-                                        <>
-                                            <input
-                                                type="hidden"
-                                                name="listing_id"
-                                                value={listing.id}
-                                            />
-                                            <input
-                                                type="hidden"
-                                                name="listing_variant_id"
-                                                value={
-                                                    selectedVariant?.id ?? ''
-                                                }
-                                            />
-                                            <input
-                                                type="hidden"
-                                                name="quantity"
-                                                value={quantity}
-                                            />
-                                            <button
-                                                disabled={
-                                                    processing || !canPurchase
-                                                }
-                                                className="flex items-center justify-center gap-2 rounded-lg border border-[#ff5a00] py-3 text-sm font-bold text-[#ff5a00] disabled:opacity-40"
-                                            >
-                                                <ShoppingCart className="size-4" />
-                                                Add to Cart
-                                            </button>
-                                            <button
-                                                name="buy_now"
-                                                value="1"
-                                                disabled={
-                                                    processing || !canPurchase
-                                                }
-                                                className="rounded-lg bg-[#ff5a00] py-3 text-sm font-bold text-white disabled:opacity-40"
-                                            >
-                                                Buy Now
-                                            </button>
-                                        </>
-                                    )}
-                                </Form>
-                            )
+                            <ProductPurchase
+                                listingId={listing.id}
+                                variantId={selectedVariant?.id}
+                                stockLimit={
+                                    listing.productType === 'variant'
+                                        ? (selectedVariant?.stockQuantity ??
+                                          100)
+                                        : listing.stockStatus === 'backorder'
+                                          ? 100
+                                          : listing.stockQuantity
+                                }
+                                quantity={quantity}
+                                setQuantity={setQuantity}
+                                canPurchase={canPurchase}
+                                isOutOfStock={isOutOfStock}
+                                needsVariant={
+                                    listing.productType === 'variant' &&
+                                    !selectedVariant
+                                }
+                                price={formatPrice(displayedSellingPrice)}
+                            />
                         ) : (
                             listing.auction && (
                                 <Form
@@ -680,248 +490,128 @@ export default function ListingShow({
                                 Share
                             </button>
                         </div>
+                        <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-200/70 pt-4 text-sm text-slate-600 xl:hidden">
+                            <Link
+                                href={shipping()}
+                                className="inline-flex min-h-8 items-center gap-2 hover:text-orange-700"
+                            >
+                                <Truck className="size-4 text-orange-600" />
+                                Shipping information
+                            </Link>
+                            {categoryPolicies?.codEnabled && (
+                                <span className="inline-flex items-center">
+                                    Cash on Delivery available
+                                </span>
+                            )}
+                        </div>
+                        {sellerSummary && (
+                            <div className="xl:hidden">
+                                <SellerSummary seller={sellerSummary} />
+                            </div>
+                        )}
                     </section>
-
-                    <aside className="overflow-hidden rounded-xl border shadow-sm lg:col-span-2 xl:col-span-1">
-                        {activeCampaign && (
-                            <div className="bg-[#ff5a00] px-4 py-2 text-center text-sm font-bold text-white">
-                                Special Offer
-                            </div>
-                        )}
-                        {activeCampaign && (
-                            <div className="flex items-center justify-between bg-orange-50 p-4 text-sm">
-                                <span>Offer ends in</span>
-                                <OfferCountdown
-                                    endsAt={activeCampaign.endsAt}
-                                />
-                            </div>
-                        )}
-                        <div className="p-5">
-                            <div className="text-3xl font-black text-[#ff5a00]">
-                                {formatPrice(displayedSellingPrice)}
-                            </div>
-                            {displayedMarketPrice && (
-                                <div className="mt-1 flex items-center gap-2 text-sm">
-                                    <span className="text-slate-400 line-through">
-                                        {formatPrice(displayedMarketPrice)}
-                                    </span>
-                                    <strong className="text-[#ff5a00]">
-                                        {displayedDiscountPercentage}% OFF
+                    <aside
+                        className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm xl:block"
+                        aria-label="Price and seller information"
+                    >
+                        {offerSummary}
+                        <div className="mt-5 grid gap-5 border-t border-slate-100 pt-5 text-sm">
+                            <div className="flex gap-3">
+                                <Truck className="size-4 shrink-0 text-[#ff5a00]" />
+                                <div>
+                                    <strong className="block">
+                                        Islandwide Delivery
                                     </strong>
+                                    <Link
+                                        href={shipping()}
+                                        className="mt-1 inline-block text-slate-500 underline underline-offset-4"
+                                    >
+                                        Delivery information
+                                    </Link>
+                                </div>
+                            </div>
+                            {listing.warranty && (
+                                <div className="flex gap-3">
+                                    <ShieldCheck className="size-4 shrink-0 text-[#ff5a00]" />
+                                    <div>
+                                        <strong className="block">
+                                            Warranty
+                                        </strong>
+                                        <p className="mt-1 text-slate-500">
+                                            {listing.warranty}
+                                        </p>
+                                    </div>
                                 </div>
                             )}
-                            <div className="mt-4 rounded-lg border p-3 text-sm text-slate-400">
-                                Installment plans are currently unavailable.
+                            <div className="flex gap-3">
+                                <RotateCcw className="size-4 shrink-0 text-[#ff5a00]" />
+                                <div>
+                                    <strong className="block">
+                                        {categoryPolicies?.returnWindowDays
+                                            ? `${categoryPolicies.returnWindowDays} Days Easy Returns`
+                                            : 'Returns policy'}
+                                    </strong>
+                                    <Link
+                                        href={returns()}
+                                        className="mt-1 inline-block text-slate-500 underline underline-offset-4"
+                                    >
+                                        Conditions apply
+                                    </Link>
+                                </div>
                             </div>
-                            <div className="mt-4 grid gap-4">
-                                {facts.map(([Icon, title, copy]) => (
-                                    <div key={title} className="flex gap-3">
-                                        <Icon className="size-4 shrink-0 text-[#ff5a00]" />
-                                        <span>
-                                            <strong className="block text-sm">
-                                                {title}
-                                            </strong>
-                                            <span className="text-sm text-slate-500">
-                                                {copy}
-                                            </span>
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="mt-5 border-t pt-4">
-                                <span className="flex items-center gap-2 text-sm">
-                                    <BadgeCheck className="size-7 text-blue-600" />
-                                    <span>
-                                        Sold by
-                                        <br />
-                                        <strong>
-                                            {listing.seller?.store_name ??
-                                                'Marketplace seller'}
-                                        </strong>
-                                    </span>
-                                </span>
+                            <div className="flex gap-3">
+                                <CreditCard className="size-4 shrink-0 text-[#ff5a00]" />
+                                <div>
+                                    <strong className="block">
+                                        {categoryPolicies?.codEnabled
+                                            ? 'Cash on Delivery'
+                                            : 'Secure payments'}
+                                    </strong>
+                                    <p className="mt-1 text-slate-500">
+                                        {categoryPolicies?.codEnabled
+                                            ? 'Available for eligible orders'
+                                            : 'Choose your method at checkout'}
+                                    </p>
+                                </div>
                             </div>
                         </div>
+                        {sellerSummary && (
+                            <SellerSummary seller={sellerSummary} compact />
+                        )}
                     </aside>
                 </div>
-
-                <section className="mt-10">
-                    <div className="flex gap-6 overflow-x-auto border-b text-sm font-bold whitespace-nowrap">
-                        {[
-                            ['overview', 'Overview'],
-                            ['specs', 'Specifications'],
-                            ['reviews', `Reviews (${reviews.length})`],
-                            ['qa', `Q&A (${questions.length})`],
-                            ['shipping', 'Shipping & Returns'],
-                        ].map(([id, label]) => (
-                            <button
-                                key={id}
-                                onClick={() => setActiveTab(id)}
-                                className={`border-b-2 px-2 py-3 ${activeTab === id ? 'border-[#ff5a00] text-[#ff5a00]' : 'border-transparent text-slate-500'}`}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
-                    <div className="py-6">
-                        {activeTab === 'overview' && (
-                            <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-                                <div>
-                                    <h2 className="text-xl font-black">
-                                        {listing.shortDescription ??
-                                            'Product overview'}
-                                    </h2>
-                                    <div className="mt-3 text-base leading-7 text-slate-600">
-                                        <RichTextContent
-                                            value={listing.description ?? ''}
-                                        />
-                                    </div>
-                                </div>
-                                {listing.media.length > 1 && (
-                                    <div className="grid grid-cols-2 gap-2 overflow-hidden rounded-xl">
-                                        {listing.media
-                                            .slice(1, 4)
-                                            .map((media, index) => (
-                                                <img
-                                                    key={media.path}
-                                                    src={media.url}
-                                                    alt={`${listing.title} detail ${index + 1}`}
-                                                    className={`size-full bg-white object-contain p-2 ${index === 0 ? 'row-span-2 min-h-64' : 'min-h-32'}`}
-                                                />
-                                            ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                        {activeTab === 'specs' && (
-                            <dl className="grid max-w-3xl sm:grid-cols-2">
-                                {specificationRows.map(([name, value]) => (
-                                    <div
-                                        key={name}
-                                        className="grid grid-cols-2 border-b p-3 text-sm"
-                                    >
-                                        <dt className="font-bold">{name}</dt>
-                                        <dd className="text-slate-500">
-                                            {name === 'Details' ? (
-                                                <RichTextContent
-                                                    value={String(value)}
-                                                />
-                                            ) : (
-                                                <span className="whitespace-pre-line">
-                                                    {String(value)}
-                                                </span>
-                                            )}
-                                        </dd>
-                                    </div>
-                                ))}
-                            </dl>
-                        )}
-                        {activeTab === 'reviews' && (
-                            <div className="grid gap-3">
-                                {reviews.length ? (
-                                    reviews.map((review) => (
-                                        <article
-                                            key={review.id}
-                                            className="rounded-xl border p-4"
-                                        >
-                                            <span className="text-sm font-bold">
-                                                {review.buyerName} ·{' '}
-                                                {review.rating}/5
-                                            </span>
-                                            <p className="mt-2 text-base text-slate-600">
-                                                {review.comment}
-                                            </p>
-                                        </article>
-                                    ))
-                                ) : (
-                                    <p className="text-base text-slate-400">
-                                        No reviews yet.
-                                    </p>
-                                )}
-                            </div>
-                        )}
-                        {activeTab === 'qa' && (
-                            <div className="max-w-3xl">
-                                <div className="grid gap-3">
-                                    {[...pendingQuestions, ...questions].map(
-                                        (question) => (
-                                            <article
-                                                key={question.id}
-                                                className="rounded-xl border p-4"
-                                            >
-                                                <p className="text-base font-bold">
-                                                    Q: {question.question}
-                                                </p>
-                                                {question.answer ? (
-                                                    <p className="mt-2 text-base text-slate-600">
-                                                        A: {question.answer}
-                                                    </p>
-                                                ) : (
-                                                    <p className="mt-2 text-sm text-amber-600">
-                                                        Awaiting seller response
-                                                        - visible only to you.
-                                                    </p>
-                                                )}
-                                            </article>
-                                        ),
-                                    )}
-                                </div>
-                                {auth.user ? (
-                                    <Form
-                                        {...askQuestion.form(listing.slug)}
-                                        className="mt-5 flex gap-2"
-                                    >
-                                        <input
-                                            required
-                                            minLength={10}
-                                            name="question"
-                                            placeholder="Ask the seller a question"
-                                            className="min-w-0 flex-1 rounded-lg border px-4 py-3 text-base"
-                                        />
-                                        <button className="rounded-lg bg-slate-950 px-5 text-sm font-bold text-white">
-                                            Ask
-                                        </button>
-                                    </Form>
-                                ) : (
-                                    <Link
-                                        href={login()}
-                                        className="mt-4 inline-block text-sm font-bold text-[#ff5a00]"
-                                    >
-                                        Sign in to ask a question
-                                    </Link>
-                                )}
-                            </div>
-                        )}
-                        {activeTab === 'shipping' && (
-                            <div className="grid max-w-3xl gap-4 sm:grid-cols-2">
-                                {facts.map(([Icon, title, copy]) => (
-                                    <div
-                                        key={title}
-                                        className="flex gap-3 rounded-xl border p-4"
-                                    >
-                                        <Icon className="size-5 text-[#ff5a00]" />
-                                        <span>
-                                            <strong className="block text-base">
-                                                {title}
-                                            </strong>
-                                            <span className="text-sm text-slate-500">
-                                                {copy}
-                                            </span>
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </section>
+                <ProductDetails
+                    listing={listing}
+                    reviews={reviews}
+                    questions={questions}
+                    pendingQuestions={pendingQuestions}
+                    categoryPolicies={categoryPolicies}
+                />
 
                 {sellerListings.length > 0 && (
                     <section className="mt-6">
-                        <div className="mb-3 border-b pb-2">
+                        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
                             <h2 className="text-lg font-black tracking-tight">
                                 More from{' '}
-                                {listing.seller?.store_name ?? 'this seller'}
+                                {sellerSummary ? (
+                                    <Link
+                                        href={storeShow(sellerSummary.slug)}
+                                        className="hover:text-orange-700"
+                                    >
+                                        {sellerSummary.store_name}
+                                    </Link>
+                                ) : (
+                                    'this seller'
+                                )}
                             </h2>
+                            {sellerSummary && (
+                                <Link
+                                    href={storeShow(sellerSummary.slug)}
+                                    className="inline-flex min-h-11 items-center text-sm font-bold text-orange-700"
+                                >
+                                    View store →
+                                </Link>
+                            )}
                         </div>
                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                             {sellerListings.map((sellerListing) => (

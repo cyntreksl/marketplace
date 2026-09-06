@@ -29,6 +29,7 @@ use App\Http\Controllers\SellerOnboardingController;
 use App\Http\Controllers\SellerOrderController;
 use App\Http\Controllers\SellerRegistrationController;
 use App\Http\Controllers\SellerReturnRequestController;
+use App\Http\Controllers\SellerStoreController;
 use App\Http\Controllers\SellerWalletController;
 use App\Http\Controllers\SeoDiscoveryController;
 use App\Http\Controllers\SiteManifestController;
@@ -180,3 +181,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 });
 
 require __DIR__.'/settings.php';
+
+Route::get('/stores/{seller:slug}', [SellerStoreController::class, 'show'])->name('stores.show');
+Route::middleware('auth')->group(function (): void {
+    Route::get('/seller/store', [SellerStoreController::class, 'edit'])->name('seller.store.edit');
+    Route::put('/seller/store', [SellerStoreController::class, 'update'])->name('seller.store.update');
+});
+Route::get('/sitemaps/stores.xml', [SeoDiscoveryController::class, 'stores'])->name('sitemap.stores');

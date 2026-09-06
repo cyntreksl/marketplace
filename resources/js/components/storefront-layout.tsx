@@ -115,7 +115,10 @@ export function StorefrontLayout({
                 </div>
             </div>
 
-            <header className="sticky top-0 z-40 border-b border-slate-100 bg-white">
+            <header
+                data-storefront-header
+                className="sticky top-0 z-40 border-b border-slate-100 bg-white"
+            >
                 <div className="storefront-container flex items-center gap-2 py-3 sm:gap-3 lg:gap-5">
                     <div className="lg:hidden">
                         <MobileStorefrontCategoryMenu {...categoryMenuProps} />

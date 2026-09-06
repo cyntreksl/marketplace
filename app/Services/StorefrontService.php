@@ -7,6 +7,7 @@ use App\Contracts\Repositories\ListingRepository;
 use App\Contracts\Repositories\ProductQuestionRepository;
 use App\Contracts\Repositories\PromotionRepository;
 use App\Contracts\Repositories\ReviewRepository;
+use App\Contracts\Repositories\SellerStoreRepository;
 use App\Contracts\Repositories\WatchlistRepository;
 use App\Models\Brand;
 use App\Models\Category;
@@ -26,6 +27,8 @@ class StorefrontService
         private readonly StaticMediaService $staticMedia,
         private readonly ProductQuestionRepository $questions,
         private readonly WatchlistRepository $watchlists,
+        private readonly SellerStoreRepository $sellers,
+        private readonly SellerSummaryService $sellerSummaries,
     ) {}
 
     /** @return array<string, mixed> */
@@ -204,6 +207,7 @@ class StorefrontService
             'seo' => $seo,
             'listing' => $this->listingData($listing, detailed: true),
             'selectedVariantId' => $selectedVariantId,
+            'sellerSummary' => $listing->sellerProfile === null ? null : $this->sellerSummaries->forSeller($this->sellers->findPublic($listing->sellerProfile->slug)),
             'reviews' => $this->reviews->forListing((int) $listing->id, 20)->map(fn ($review): array => [
                 'id' => $review->id,
                 'rating' => $review->rating,

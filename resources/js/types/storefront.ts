@@ -179,3 +179,13 @@ export type StorefrontBreadcrumbItem = {
     label: string;
     href?: string;
 };
+
+export type PublicSellerSummary = {
+    store_name: string;
+    slug: string;
+    logoUrl: string | null;
+    coverUrl: string | null;
+    about: string | null;
+    sellingSince: string | null;
+    productCount: number;
+};
