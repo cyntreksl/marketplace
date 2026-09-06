@@ -1,16 +1,11 @@
 import { Form, Link } from '@inertiajs/react';
 import {
     ArrowRight,
-    Clock3,
     Filter,
     LayoutGrid,
-    LaptopMinimal,
     PackageSearch,
     Search,
-    ShieldCheck,
-    Sparkles,
     Store,
-    Truck,
 } from 'lucide-react';
 import { ListingCard } from '@/components/listing-card';
 import { StorefrontBreadcrumbs } from '@/components/storefront-breadcrumbs';
@@ -172,12 +167,6 @@ export default function ListingsIndex({
 }) {
     const filterCount = activeFilterCount(filters);
     const pageTitle = categoryContext?.current.name ?? 'Smartphones';
-    const resultDescription = filters.search
-        ? `Search results for “${filters.search}”`
-        : categoryContext
-          ? `Explore approved listings in ${categoryContext.current.name}`
-          : 'Explore the latest smartphones from top brands. Best performance, cameras, and features - all at unbeatable prices.';
-    const totalResults = listings.total.toLocaleString('en-LK');
     const trail = categoryContext
         ? [...categoryContext.ancestors, categoryContext.current]
         : [];
@@ -192,103 +181,6 @@ export default function ListingsIndex({
                 <StorefrontBreadcrumbs
                     items={breadcrumbItems(categoryContext)}
                 />
-
-                <section className="mt-5 overflow-hidden rounded-[2rem] border border-orange-100 bg-gradient-to-r from-orange-50 via-orange-50/60 to-white shadow-[0_20px_60px_rgba(255,109,0,0.12)]">
-                    <div className="grid gap-6 px-5 py-6 lg:grid-cols-[1.25fr_0.85fr] lg:px-8 lg:py-7">
-                        <div className="space-y-5">
-                            <div className="inline-flex items-center gap-2 rounded-full bg-[#FF6D00] px-3 py-1.5 text-xs font-black tracking-[0.16em] text-white uppercase shadow-lg shadow-orange-200">
-                                <Sparkles className="size-3.5" />
-                                ProDeals.lk
-                            </div>
-                            <div>
-                                <p className="text-xs font-bold tracking-[0.22em] text-slate-500 uppercase">
-                                    Top brands, best prices
-                                </p>
-                                <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
-                                    {pageTitle}
-                                </h1>
-                                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                                    {resultDescription}
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-3">
-                                <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
-                                    <p className="text-xs font-semibold text-slate-500">
-                                        Showing
-                                    </p>
-                                    <p className="text-lg font-black text-slate-950">
-                                        {listings.from && listings.to
-                                            ? `${listings.from} - ${listings.to}`
-                                            : totalResults}
-                                    </p>
-                                </div>
-                                <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
-                                    <p className="text-xs font-semibold text-slate-500">
-                                        Total results
-                                    </p>
-                                    <p className="text-lg font-black text-slate-950">
-                                        {totalResults}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="rounded-[1.75rem] bg-white p-4 shadow-sm ring-1 ring-orange-100">
-                            <div className="mb-4 flex items-center justify-between">
-                                <div>
-                                    <p className="text-xs font-semibold tracking-[0.2em] text-slate-400 uppercase">
-                                        Search products
-                                    </p>
-                                    <p className="mt-1 text-sm font-bold text-slate-900">
-                                        Find the right phone quickly
-                                    </p>
-                                </div>
-                                <span className="grid size-11 place-items-center rounded-2xl bg-orange-50 text-[#FF6D00]">
-                                    <LaptopMinimal className="size-5" />
-                                </span>
-                            </div>
-                            <Form {...listingsIndex.form()}>
-                                <BrowseHiddenInputs
-                                    filters={filters}
-                                    omit={['search']}
-                                />
-                                <label className="relative block">
-                                    <span className="sr-only">
-                                        Search products
-                                    </span>
-                                    <Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-slate-400" />
-                                    <input
-                                        name="search"
-                                        defaultValue={filters.search ?? ''}
-                                        placeholder="Search for phones, laptops, TVs and more..."
-                                        className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pr-14 pl-12 text-sm text-slate-950 outline-none placeholder:text-slate-400 focus:border-[#FF6D00] focus:bg-white focus:ring-4 focus:ring-orange-100"
-                                    />
-                                    <button
-                                        type="submit"
-                                        className="absolute top-1.5 right-1.5 grid size-9 place-items-center rounded-xl bg-[#FF6D00] text-white transition hover:bg-[#e86100] focus-visible:ring-2 focus-visible:ring-[#FF6D00] focus-visible:outline-none"
-                                        aria-label="Search products"
-                                    >
-                                        <ArrowRight className="size-4" />
-                                    </button>
-                                </label>
-                            </Form>
-                            <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
-                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-3 py-1.5">
-                                    <ShieldCheck className="size-3.5 text-[#FF6D00]" />
-                                    Official warranty
-                                </span>
-                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-3 py-1.5">
-                                    <Truck className="size-3.5 text-[#FF6D00]" />
-                                    Islandwide delivery
-                                </span>
-                                <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-3 py-1.5">
-                                    <Clock3 className="size-3.5 text-[#FF6D00]" />
-                                    Easy returns
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
 
                 <CategoryStrip
                     categories={categories}
