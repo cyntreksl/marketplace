@@ -190,6 +190,8 @@ test('GTM noscript fallback is emitted only for a valid granting consent cookie'
 });
 
 test('robots permits crawling and declares the absolute sitemap URL', function () {
+    expect(public_path('robots.txt'))->not->toBeFile();
+
     $this->get(route('robots'))
         ->assertOk()
         ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
