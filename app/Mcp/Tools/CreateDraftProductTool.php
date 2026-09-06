@@ -281,7 +281,7 @@ class CreateDraftProductTool extends Tool
             'sale_price' => $listing->sale_price,
             'stock_quantity' => $listing->stock_quantity,
             'condition' => $listing->condition,
-            'brand' => $listing->brand?->name ?? $listing->brand_name,
+            'brand' => $listing->brand->name ?? $listing->brand_name,
             'category' => $listing->category?->name,
             'meta_title' => $listing->meta_title,
             'meta_description' => $listing->meta_description,
