@@ -12,8 +12,8 @@ use Laravel\Mcp\Server\Attributes\Version;
 use Laravel\Mcp\Server\Tool;
 
 #[Name('Marketplace')]
-#[Version('0.2.0')]
-#[Instructions('This server provides product management tools for the marketplace. Use search-product-categories when a selectable category ID is unknown, then use create-draft-product with complete product details. Use update-draft-product to attach public HTTPS images or base64 file contents to an existing draft. Creation and updates always stop at draft status so the seller can perform final review before submission or publishing.')]
+#[Version('0.3.0')]
+#[Instructions('This server provides product management tools for the marketplace. Use search-product-categories when a selectable category ID is unknown, then use create-draft-product with complete product details. When the user asks to generate a product image, pass a concise image_generation_prompt to create-draft-product so ProDeals generates and attaches it in the same call; do not call a separate image-generation tool first. Use update-draft-product only to attach images to a draft that already exists. Creation and updates always stop at draft status for seller review.')]
 class MarketplaceServer extends Server
 {
     /** @var array<int, class-string<Tool>> */

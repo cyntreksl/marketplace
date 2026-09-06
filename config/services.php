@@ -43,6 +43,10 @@ return [
             'content_model' => env('PRODUCT_CONTENT_SUGGESTION_MODEL', env('CATEGORY_SUGGESTION_MODEL', 'gpt-4o-mini')),
             'timeout' => (int) env('PRODUCT_CONTENT_SUGGESTION_TIMEOUT', env('CATEGORY_SUGGESTION_TIMEOUT', 6)),
         ],
+        'product_images' => [
+            'model' => env('PRODUCT_IMAGE_GENERATION_MODEL', 'gpt-image-2'),
+            'timeout' => (int) env('PRODUCT_IMAGE_GENERATION_TIMEOUT', 90),
+        ],
     ],
 
     'slack' => [

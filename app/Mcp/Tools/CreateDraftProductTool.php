@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Rules\ValidGtin;
 use App\Services\ListingService;
 use App\Services\ListingVariantService;
+use App\Services\ProductImageGenerationService;
 use App\Services\RemoteListingImageService;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Http\UploadedFile;
@@ -26,7 +27,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('create-draft-product')]
 #[Title('Create Draft Product')]
-#[Description('Creates a complete draft product listing with up to five public HTTPS gallery images, full product details, option-based variants, and optional per-variant images. Returns any missing review requirements. The product always remains a draft for manual seller review and is never submitted or published automatically.')]
+#[Description('Creates a complete draft product listing with details, variants, and up to five images. For a newly requested AI product photo, send image_generation_prompt so ProDeals generates and attaches it in this same call. Existing public HTTPS images or base64 image files are also accepted. Returns missing review requirements and always remains a draft.')]
 #[IsReadOnly(false)]
 #[IsDestructive(false)]
 #[IsOpenWorld]
@@ -36,6 +37,7 @@ class CreateDraftProductTool extends Tool
         private readonly ListingService $listings,
         private readonly ListingVariantService $variantService,
         private readonly RemoteListingImageService $remoteImages,
+        private readonly ProductImageGenerationService $imageGeneration,
     ) {}
 
     /**
@@ -59,7 +61,7 @@ class CreateDraftProductTool extends Tool
         try {
             $this->validateRequest($request, $seller);
             $attributes = $this->prepareAttributes($request);
-            $this->attachRemoteImages($attributes, $request, $temporaryUploads);
+            $this->attachImages($attributes, $request, $temporaryUploads);
             $listing = $this->listings->createDraft($seller, $attributes);
         } catch (ValidationException $e) {
             $messages = collect($e->validator->errors()->all())->implode(' ');
@@ -161,6 +163,17 @@ class CreateDraftProductTool extends Tool
                 ->min(1)
                 ->max(5)
                 ->items($schema->string()->format('uri')->max(2048)),
+            'image_files' => $schema->array()
+                ->description('JPEG, PNG, or WebP files supplied as base64 content. Use when an existing generated image has no public URL.')
+                ->min(1)
+                ->max(5)
+                ->items($schema->object([
+                    'filename' => $schema->string()->description('Original filename, including extension.')->max(255)->required(),
+                    'content_base64' => $schema->string()->description('Raw base64 file content or a data:image/...;base64 data URL. Maximum decoded size is 5 MB.')->max(7100000)->required(),
+                ])),
+            'image_generation_prompt' => $schema->string()
+                ->description('A concise prompt for one new product photo. ProDeals generates a fast square JPEG and attaches it as the cover during this create call. Use this instead of calling a separate image tool.')
+                ->max(2000),
             'is_active' => $schema->boolean()
                 ->description('Whether the listing will be active after approval and publishing.')
                 ->default(true),
@@ -415,6 +428,10 @@ class CreateDraftProductTool extends Tool
             'is_new_arrival' => ['nullable', 'boolean'],
             'image_urls' => ['nullable', 'array', 'between:1,5'],
             'image_urls.*' => ['required', 'string', 'url:https', 'max:2048', 'distinct'],
+            'image_files' => ['nullable', 'array', 'between:1,5'],
+            'image_files.*.filename' => ['required', 'string', 'max:255'],
+            'image_files.*.content_base64' => ['required', 'string', 'max:7100000'],
+            'image_generation_prompt' => ['nullable', 'string', 'max:2000'],
             'variant_options' => ['nullable', 'array', 'max:3'],
             'variant_options.*.name' => ['required', 'string', 'max:80'],
             'variant_options.*.values' => ['required', 'array', 'min:1'],
@@ -431,13 +448,23 @@ class CreateDraftProductTool extends Tool
             'variants.*.is_active' => ['nullable', 'boolean'],
             'variants.*.image_url' => ['nullable', 'string', 'url:https', 'max:2048'],
         ]);
+
+        $galleryImageCount = count((array) $request->get('image_urls', []))
+            + count((array) $request->get('image_files', []))
+            + (filled($request->get('image_generation_prompt')) ? 1 : 0);
+
+        if ($galleryImageCount > 5) {
+            throw ValidationException::withMessages([
+                'images' => 'Image URLs, image files, and the generated image may not total more than five gallery images.',
+            ]);
+        }
     }
 
     /**
      * @param  array<string, mixed>  $attributes
      * @param  array<int, UploadedFile>  $temporaryUploads
      */
-    private function attachRemoteImages(array &$attributes, Request $request, array &$temporaryUploads): void
+    private function attachImages(array &$attributes, Request $request, array &$temporaryUploads): void
     {
         $imageUrls = $request->get('image_urls', []);
 
@@ -446,6 +473,27 @@ class CreateDraftProductTool extends Tool
             $attributes['images'][] = $download['upload'];
             $attributes['image_crops'][] = $download['crop'];
             $temporaryUploads[] = $download['upload'];
+        }
+
+        foreach ((array) $request->get('image_files', []) as $index => $file) {
+            $prepared = $this->remoteImages->decodeBase64(
+                (string) ($file['content_base64'] ?? ''),
+                (string) ($file['filename'] ?? 'product-image'),
+                "image_files.{$index}.content_base64",
+            );
+            $attributes['images'][] = $prepared['upload'];
+            $attributes['image_crops'][] = $prepared['crop'];
+            $temporaryUploads[] = $prepared['upload'];
+        }
+
+        if (filled($request->get('image_generation_prompt'))) {
+            $generated = $this->imageGeneration->generate(
+                Str::squish((string) $request->get('image_generation_prompt')),
+                'image_generation_prompt',
+            );
+            $attributes['images'][] = $generated['upload'];
+            $attributes['image_crops'][] = $generated['crop'];
+            $temporaryUploads[] = $generated['upload'];
         }
 
         $variants = $attributes['variants'] ?? [];

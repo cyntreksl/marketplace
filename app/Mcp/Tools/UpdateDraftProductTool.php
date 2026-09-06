@@ -23,7 +23,7 @@ use Throwable;
 
 #[Name('update-draft-product')]
 #[Title('Update Draft Product')]
-#[Description('Adds gallery images to an existing draft product. Accepts public HTTPS URLs or base64-encoded JPEG, PNG, and WebP file contents, including data URLs. Images are stored on the configured R2 media disk. The product remains a draft and is never submitted or published automatically.')]
+#[Description('Adds gallery images to a draft product that already exists. Accepts public HTTPS URLs or base64-encoded JPEG, PNG, and WebP file contents, including data URLs. For a new product and a requested generated photo, use create-draft-product with image_generation_prompt instead. The product remains a draft.')]
 #[IsReadOnly(false)]
 #[IsDestructive(false)]
 #[IsOpenWorld]

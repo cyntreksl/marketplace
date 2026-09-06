@@ -8,6 +8,7 @@ use App\Models\Listing;
 use App\Models\SellerProfile;
 use App\Models\User;
 use App\Services\ListingService;
+use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
@@ -240,6 +241,8 @@ test('exports valid json schema for mcp tool discovery', function () {
             'meta_title',
             'meta_description',
             'image_urls',
+            'image_files',
+            'image_generation_prompt',
             'variant_options',
             'variants',
         ])
@@ -248,6 +251,100 @@ test('exports valid json schema for mcp tool discovery', function () {
             'destructiveHint' => false,
             'openWorldHint' => true,
         ]);
+});
+
+test('creates a draft and generates its product image in one tool call', function () {
+    Storage::fake('r2');
+    Queue::fake();
+    Http::preventStrayRequests();
+
+    config([
+        'services.openai.api_key' => 'test-openai-key',
+        'services.openai.product_images.model' => 'gpt-image-2',
+    ]);
+
+    $seller = SellerProfile::factory()->create();
+    $category = Category::factory()->create(['is_selectable' => true]);
+    $generatedImage = UploadedFile::fake()->image('generated.jpg', 1024, 1024);
+
+    Http::fake([
+        'https://api.openai.com/v1/images/generations' => Http::response([
+            'data' => [[
+                'b64_json' => base64_encode((string) file_get_contents($generatedImage->getPathname())),
+            ]],
+        ]),
+    ]);
+
+    $response = MarketplaceServer::actingAs($seller->user)
+        ->tool(CreateDraftProductTool::class, [
+            'title' => 'Printed Coffee Mug',
+            'product_type' => 'variant',
+            'description' => 'Printed coffee mugs in three colours.',
+            'condition' => 'new',
+            'category_id' => $category->id,
+            'brand_name' => 'ProDeals',
+            'sku' => 'MUG-PRINTED',
+            'selling_price' => 250,
+            'variant_options' => [[
+                'name' => 'Color',
+                'values' => ['Black', 'White', 'Red'],
+            ]],
+            'image_generation_prompt' => 'Studio product photo of black, white, and red printed coffee mugs on a clean background.',
+        ]);
+
+    $response->assertOk()
+        ->assertHasNoErrors()
+        ->assertSee(['"images_count":1', '"ready_for_review":true']);
+
+    $listing = Listing::query()->where('sku', 'MUG-PRINTED')->sole();
+    $media = $listing->media()->sole();
+
+    expect($listing->variants)->toHaveCount(3)
+        ->and($media->disk)->toBe('r2')
+        ->and($media->crop_width)->toBe(1024)
+        ->and($media->crop_height)->toBe(1024);
+
+    Storage::disk('r2')->assertExists([$media->source_path, $media->path]);
+
+    Http::assertSent(function (HttpRequest $request): bool {
+        return $request->url() === 'https://api.openai.com/v1/images/generations'
+            && $request['model'] === 'gpt-image-2'
+            && $request['quality'] === 'low'
+            && $request['size'] === '1024x1024'
+            && $request['output_format'] === 'jpeg'
+            && $request['output_compression'] === 80
+            && $request->hasHeader('Authorization', 'Bearer test-openai-key');
+    });
+});
+
+test('creates a draft with an existing base64 image in one tool call', function () {
+    Storage::fake('r2');
+    Queue::fake();
+
+    $seller = SellerProfile::factory()->create();
+    $sourceImage = UploadedFile::fake()->image('generated.png', 1200, 800);
+
+    $response = MarketplaceServer::actingAs($seller->user)
+        ->tool(CreateDraftProductTool::class, [
+            'title' => 'Generated Image Product',
+            'product_type' => 'simple',
+            'selling_price' => 250,
+            'image_files' => [[
+                'filename' => 'generated.png',
+                'content_base64' => base64_encode((string) file_get_contents($sourceImage->getPathname())),
+            ]],
+        ]);
+
+    $response->assertOk()
+        ->assertHasNoErrors()
+        ->assertSee(['"images_count":1']);
+
+    $media = Listing::query()->where('title', 'Generated Image Product')->sole()->media()->sole();
+
+    expect($media->crop_x)->toBe(200)
+        ->and($media->crop_y)->toBe(0)
+        ->and($media->crop_width)->toBe(800)
+        ->and($media->crop_height)->toBe(800);
 });
 
 test('creates a review-ready simple draft with remote gallery images stored on r2', function () {
