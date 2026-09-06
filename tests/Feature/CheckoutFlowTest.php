@@ -220,7 +220,8 @@ test('buyer reviews and places an order before the checkout session and cart are
     $response->assertSessionMissing('checkout');
 
     expect($cart->fresh()?->items()->count())->toBe(0)
-        ->and($order->number)->toMatch('/^PRO\d{6}$/');
+        ->and($order->number)->toMatch('/^PRO\d{6}$/')
+        ->and($order->billing_address)->toBe($order->shipping_address);
     $this->assertDatabaseHas('customer_orders', [
         'buyer_id' => $user->id,
         'status' => 'confirmed',
@@ -298,6 +299,77 @@ test('buyer can create a pending order with an online payment method', function 
         ->and($payment->method)->toBe($paymentMethod)
         ->and($payment->status)->toBe('pending');
 })->with(['stripe']);
+
+test('a different billing address survives checkout review and order confirmation', function (): void {
+    Notification::fake();
+    $user = User::factory()->create();
+    $cart = Cart::factory()->for($user, 'buyer')->create();
+    CartItem::factory()->for($cart)->create([
+        'listing_id' => Listing::factory()->create(['price' => 1000, 'sale_price' => null])->id,
+    ]);
+    $shipping = ['recipient_name' => 'Recipient', 'address_line_one' => '10 Main Road', 'city' => 'Colombo', 'phone' => '0771234567'];
+    $billing = ['recipient_name' => 'Accounts Department', 'address_line_one' => '20 Hill Road', 'address_line_two' => 'Office 2', 'city' => 'Kandy', 'postal_code' => '20000', 'phone' => '0811234567'];
+    $input = $shipping + ['billing_address' => 'different'];
+    foreach ($billing as $key => $value) {
+        $input['billing_'.$key] = $value;
+    }
+
+    $this->actingAs($user)->post(route('checkout.store'), $input)
+        ->assertSessionHasNoErrors()
+        ->assertSessionHas('checkout.billing_address', $billing)
+        ->assertSessionHas('checkout.shipping_address.city', 'Colombo');
+    $this->get(route('checkout.show'))->assertInertia(fn ($page) => $page
+        ->where('billingAddress', $billing)
+        ->where('shippingAddress.city', 'Colombo'));
+    $this->post(route('checkout.payment.store'), ['payment_method' => 'cod'])->assertSessionHasNoErrors();
+    $this->get(route('checkout.review.show'))->assertInertia(fn ($page) => $page->where('billingAddress', $billing));
+    $this->post(route('checkout.review.store'), checkoutReviewData())->assertSessionHasNoErrors();
+
+    $order = CustomerOrder::query()->whereBelongsTo($user, 'buyer')->sole();
+    expect($order->billing_address)->toBe($billing)
+        ->and($order->shipping_address['city'])->toBe('Colombo');
+    $this->get(route('checkout.thank_you.show', $order->number))->assertInertia(fn ($page) => $page
+        ->where('order.billingAddress', $billing)
+        ->where('order.billingSameAsShipping', false)
+        ->where('order.shippingAddress.city', 'Colombo'));
+});
+
+test('switching billing back to shipping clears the previous billing address', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->withSession(['checkout.billing_address' => ['city' => 'Kandy']])
+        ->post(route('checkout.store'), [
+            'recipient_name' => 'Recipient', 'address_line_one' => '10 Main Road', 'city' => 'Galle', 'phone' => '0771234567',
+            'billing_address' => 'shipping', 'billing_phone' => 'invalid ignored input',
+        ])->assertSessionHasNoErrors()
+        ->assertSessionMissing('checkout.billing_address')
+        ->assertSessionHas('checkout.shipping_address.city', 'Galle');
+});
+
+test('a different billing address requires valid name address city and phone', function (array $billingInput, array $errors): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->post(route('checkout.store'), [
+        'recipient_name' => 'Recipient', 'address_line_one' => '10 Main Road', 'city' => 'Colombo', 'phone' => '0771234567',
+        'billing_address' => 'different', ...$billingInput,
+    ])->assertSessionHasErrors($errors)
+        ->assertSessionMissing('checkout.shipping_address');
+})->with([
+    'missing billing details' => [[], ['billing_recipient_name', 'billing_address_line_one', 'billing_city', 'billing_phone']],
+    'invalid billing phone' => [[
+        'billing_recipient_name' => 'Accounts', 'billing_address_line_one' => '20 Hill Road', 'billing_city' => 'Kandy', 'billing_phone' => 'not a number',
+    ], ['billing_phone']],
+]);
+
+test('legacy orders still show their shipping address as billing', function (): void {
+    $user = User::factory()->create();
+    $order = CustomerOrder::factory()->for($user, 'buyer')->create(['billing_address' => null]);
+
+    $this->actingAs($user)->get(route('checkout.thank_you.show', $order->number))
+        ->assertInertia(fn ($page) => $page
+            ->where('order.billingAddress', $order->shipping_address)
+            ->where('order.billingSameAsShipping', true));
+});
 
 test('a buyer cannot view another buyers order confirmation', function (): void {
     $buyer = User::factory()->create();

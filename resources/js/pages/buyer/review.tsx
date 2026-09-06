@@ -156,15 +156,19 @@ function OrderItems({ cart }: { cart: CheckoutCart }) {
     );
 }
 
-function DeliveryDetails({
-    shippingAddress,
+function AddressDetails({
+    address,
+    title = 'Delivery Details',
+    isBilling = false,
 }: {
-    shippingAddress: ShippingAddress;
+    address: ShippingAddress;
+    title?: string;
+    isBilling?: boolean;
 }) {
     return (
         <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_3px_18px_rgba(15,23,42,0.04)]">
             <SectionHeading
-                title="Delivery Details"
+                title={title}
                 editHref={checkoutShow()}
                 editLabel="Change address"
             />
@@ -175,40 +179,42 @@ function DeliveryDetails({
                     </span>
                     <address className="text-sm leading-5 text-slate-600 not-italic">
                         <strong className="block text-base text-slate-950">
-                            {shippingAddress.recipient_name}
+                            {address.recipient_name}
                         </strong>
                         <span className="block">
-                            {shippingAddress.address_line_one}
+                            {address.address_line_one}
                         </span>
-                        {shippingAddress.address_line_two && (
+                        {address.address_line_two && (
                             <span className="block">
-                                {shippingAddress.address_line_two}
+                                {address.address_line_two}
                             </span>
                         )}
                         <span className="block">
-                            {shippingAddress.city}
-                            {shippingAddress.postal_code
-                                ? `, ${shippingAddress.postal_code}`
+                            {address.city}
+                            {address.postal_code
+                                ? `, ${address.postal_code}`
                                 : ''}
                         </span>
                         <span className="block">Sri Lanka</span>
                         <span className="mt-1 block font-semibold text-slate-700">
-                            {shippingAddress.phone}
+                            {address.phone}
                         </span>
                     </address>
                 </div>
-                <div className="flex items-start gap-3 rounded-lg bg-slate-50 p-4">
-                    <Truck className="mt-0.5 size-5 shrink-0 text-[#ff5a00]" />
-                    <span>
-                        <strong className="block text-sm text-slate-950">
-                            Islandwide Standard Delivery
-                        </strong>
-                        <span className="mt-1 block text-sm leading-5 text-slate-500">
-                            Delivery timing is confirmed after your order is
-                            placed.
+                {!isBilling && (
+                    <div className="flex items-start gap-3 rounded-lg bg-slate-50 p-4">
+                        <Truck className="mt-0.5 size-5 shrink-0 text-[#ff5a00]" />
+                        <span>
+                            <strong className="block text-sm text-slate-950">
+                                Islandwide Standard Delivery
+                            </strong>
+                            <span className="mt-1 block text-sm leading-5 text-slate-500">
+                                Delivery timing is confirmed after your order is
+                                placed.
+                            </span>
                         </span>
-                    </span>
-                </div>
+                    </div>
+                )}
             </div>
         </section>
     );
@@ -360,6 +366,7 @@ function OrderSummary({
 export default function BuyerReview({
     cart,
     shippingAddress,
+    billingAddress,
     paymentMethod,
     checkoutToken,
     reviewHash,
@@ -368,6 +375,7 @@ export default function BuyerReview({
     reviewHash: string;
     cart: CheckoutCart;
     shippingAddress: ShippingAddress;
+    billingAddress: ShippingAddress | null;
     paymentMethod: CheckoutPaymentMethod;
 }) {
     return (
@@ -412,8 +420,11 @@ export default function BuyerReview({
                     <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_23rem] xl:grid-cols-[minmax(0,1fr)_26rem]">
                         <div className="grid gap-5">
                             <OrderItems cart={cart} />
-                            <DeliveryDetails
-                                shippingAddress={shippingAddress}
+                            <AddressDetails address={shippingAddress} />
+                            <AddressDetails
+                                title="Billing Address"
+                                address={billingAddress ?? shippingAddress}
+                                isBilling
                             />
                             <PaymentDetails paymentMethod={paymentMethod} />
                             <section className="flex items-start gap-3 rounded-xl border border-emerald-100 bg-emerald-50/60 p-5 text-sm leading-5 text-emerald-900">

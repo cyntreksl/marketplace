@@ -16,9 +16,10 @@ use Illuminate\Support\Carbon;
  * @property numeric-string $shipping_total
  * @property numeric-string $total
  * @property array<string, string|null> $shipping_address
+ * @property array<string, string|null>|null $billing_address
  * @property Carbon|null $created_at
  */
-#[Fillable(['checkout_token', 'number', 'buyer_id', 'status', 'subtotal', 'shipping_total', 'total', 'shipping_address'])]
+#[Fillable(['checkout_token', 'number', 'buyer_id', 'status', 'subtotal', 'shipping_total', 'total', 'shipping_address', 'billing_address'])]
 class CustomerOrder extends Model
 {
     /** @use HasFactory<CustomerOrderFactory> */
@@ -26,7 +27,7 @@ class CustomerOrder extends Model
 
     protected function casts(): array
     {
-        return ['subtotal' => 'decimal:2', 'shipping_total' => 'decimal:2', 'total' => 'decimal:2', 'shipping_address' => 'array'];
+        return ['subtotal' => 'decimal:2', 'shipping_total' => 'decimal:2', 'total' => 'decimal:2', 'shipping_address' => 'array', 'billing_address' => 'array'];
     }
 
     /** @return BelongsTo<User, $this> */

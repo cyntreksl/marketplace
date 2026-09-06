@@ -47,11 +47,11 @@ function formatStatus(value: string): string {
 function AddressCard({
     title,
     address,
-    isBilling = false,
+    sameAsShipping = false,
 }: {
     title: string;
     address: ShippingAddress;
-    isBilling?: boolean;
+    sameAsShipping?: boolean;
 }) {
     return (
         <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_3px_18px_rgba(15,23,42,0.04)] sm:p-6">
@@ -63,7 +63,7 @@ function AddressCard({
                     <h2 className="text-xl font-extrabold text-slate-950">
                         {title}
                     </h2>
-                    {isBilling && (
+                    {sameAsShipping && (
                         <p className="mt-0.5 text-sm text-slate-500">
                             Same as shipping address
                         </p>
@@ -288,7 +288,7 @@ export default function BuyerThankYou({
                             <AddressCard
                                 title="Billing address"
                                 address={order.billingAddress}
-                                isBilling
+                                sameAsShipping={order.billingSameAsShipping}
                             />
                         </div>
                     </div>

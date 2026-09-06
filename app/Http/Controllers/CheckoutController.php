@@ -8,6 +8,7 @@ use App\Http\Requests\CheckoutRequest;
 use App\Http\Requests\PlaceOrderRequest;
 use App\Models\CustomerOrder;
 use App\Services\CartService;
+use App\Services\CheckoutAddressService;
 use App\Services\CheckoutPaymentService;
 use App\Services\CheckoutService;
 use Illuminate\Http\RedirectResponse;
@@ -26,6 +27,7 @@ class CheckoutController extends Controller
         private readonly CheckoutRepository $orders,
         private readonly CheckoutPaymentService $payments,
         private readonly CheckoutService $checkout,
+        private readonly CheckoutAddressService $addresses,
     ) {}
 
     public function show(Request $request): Response
@@ -35,19 +37,15 @@ class CheckoutController extends Controller
         return Inertia::render('buyer/checkout', [
             'cart' => $this->carts->summary($request),
             'shippingAddress' => $request->session()->get('checkout.shipping_address'),
+            'billingAddress' => $request->session()->get('checkout.billing_address'),
         ]);
     }
 
     public function store(CheckoutRequest $request): RedirectResponse
     {
-        $request->session()->put('checkout.shipping_address', [
-            'recipient_name' => $request->validated('recipient_name'),
-            'address_line_one' => $request->validated('address_line_one'),
-            'address_line_two' => $request->validated('address_line_two'),
-            'city' => $request->validated('city'),
-            'postal_code' => $request->validated('postal_code'),
-            'phone' => $request->validated('phone'),
-        ]);
+        foreach ($this->addresses->prepare($request->validated()) as $key => $address) {
+            $request->session()->put('checkout.'.$key, $address);
+        }
 
         return to_route('checkout.payment.show');
     }
@@ -102,6 +100,7 @@ class CheckoutController extends Controller
         return Inertia::render('buyer/review', [
             'checkoutToken' => $token,
             'reviewHash' => $this->checkout->reviewHash($cart),
+            'billingAddress' => $request->session()->get('checkout.billing_address'),
             'cart' => $cart,
             'shippingAddress' => $shippingAddress,
             'paymentMethod' => $paymentMethod,
@@ -127,7 +126,7 @@ class CheckoutController extends Controller
             return to_route('checkout.payment.show')->withErrors(['payment_method' => 'Choose a payment method before placing your order.']);
         }
 
-        $order = $this->checkout->checkout($request->user(), $paymentMethod, $shippingAddress, $request->validated('checkout_token'), $request->validated('review_hash'));
+        $order = $this->checkout->checkout($request->user(), $paymentMethod, $shippingAddress, $request->validated('checkout_token'), $request->validated('review_hash'), $request->session()->get('checkout.billing_address'));
         $request->session()->forget('checkout');
 
         if ($paymentMethod === 'stripe') {

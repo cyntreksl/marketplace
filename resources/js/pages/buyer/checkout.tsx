@@ -208,15 +208,20 @@ function TrustItem({
 export default function BuyerCheckout({
     cart,
     shippingAddress,
+    billingAddress = null,
 }: {
     cart: CheckoutCart;
     shippingAddress: ShippingAddress | null;
+    billingAddress?: ShippingAddress | null;
 }) {
     const { auth } = usePage().props;
     const summaryRef = useRef<HTMLElement>(null);
     const [summaryHeight, setSummaryHeight] = useState(0);
     const headerHeight = useStorefrontHeaderHeight();
     const hasItems = cart.items.length > 0;
+    const [billingMethod, setBillingMethod] = useState(
+        billingAddress ? 'different' : 'shipping',
+    );
 
     useEffect(() => {
         if (!summaryRef.current) {
@@ -440,22 +445,141 @@ export default function BuyerCheckout({
                                         number={5}
                                         title="Billing Address"
                                     >
-                                        <div className="flex flex-col gap-4 text-sm sm:flex-row sm:gap-10">
+                                        <div
+                                            role="radiogroup"
+                                            aria-label="Billing address options"
+                                            className="flex flex-col gap-4 text-sm sm:flex-row sm:gap-10"
+                                        >
                                             <label className="flex items-center gap-2 font-semibold text-slate-700">
                                                 <input
                                                     type="radio"
                                                     name="billing_address"
-                                                    defaultChecked
-                                                    disabled
+                                                    value="shipping"
+                                                    checked={
+                                                        billingMethod ===
+                                                        'shipping'
+                                                    }
+                                                    onChange={() =>
+                                                        setBillingMethod(
+                                                            'shipping',
+                                                        )
+                                                    }
                                                     className="size-4 accent-[#ff5a00]"
                                                 />
                                                 Same as shipping address
                                             </label>
+                                            <label className="flex cursor-pointer items-center gap-2 font-semibold text-slate-700">
+                                                <input
+                                                    type="radio"
+                                                    name="billing_address"
+                                                    value="different"
+                                                    checked={
+                                                        billingMethod ===
+                                                        'different'
+                                                    }
+                                                    onChange={() =>
+                                                        setBillingMethod(
+                                                            'different',
+                                                        )
+                                                    }
+                                                    className="size-4 accent-[#ff5a00]"
+                                                />
+                                                Use a different billing address
+                                            </label>
                                         </div>
-                                        <p className="mt-3 text-sm text-slate-500">
-                                            Your shipping details will be used
-                                            for your bill.
-                                        </p>
+                                        {billingMethod === 'shipping' && (
+                                            <p className="mt-3 text-sm text-slate-500">
+                                                Your shipping details will be
+                                                used for your bill.
+                                            </p>
+                                        )}
+                                        <fieldset
+                                            disabled={
+                                                billingMethod === 'shipping'
+                                            }
+                                            className={
+                                                billingMethod === 'shipping'
+                                                    ? 'hidden'
+                                                    : 'mt-5 grid gap-4 sm:grid-cols-2'
+                                            }
+                                        >
+                                            <legend className="sr-only">
+                                                Different billing address
+                                            </legend>
+                                            {(
+                                                [
+                                                    {
+                                                        key: 'recipient_name',
+                                                        label: 'Billing Full Name',
+                                                        required: true,
+                                                        wide: true,
+                                                    },
+                                                    {
+                                                        key: 'address_line_one',
+                                                        label: 'Billing Address Line 1',
+                                                        required: true,
+                                                        wide: true,
+                                                    },
+                                                    {
+                                                        key: 'address_line_two',
+                                                        label: 'Billing Address Line 2 (Optional)',
+                                                        required: false,
+                                                        wide: true,
+                                                    },
+                                                    {
+                                                        key: 'city',
+                                                        label: 'Billing City',
+                                                        required: true,
+                                                        wide: false,
+                                                    },
+                                                    {
+                                                        key: 'postal_code',
+                                                        label: 'Billing Postal Code',
+                                                        required: false,
+                                                        wide: false,
+                                                    },
+                                                    {
+                                                        key: 'phone',
+                                                        label: 'Billing Phone Number',
+                                                        required: true,
+                                                        wide: true,
+                                                    },
+                                                ] as const
+                                            ).map((field) => (
+                                                <div
+                                                    key={field.key}
+                                                    className={
+                                                        field.wide
+                                                            ? 'sm:col-span-2'
+                                                            : undefined
+                                                    }
+                                                >
+                                                    <Field
+                                                        label={field.label}
+                                                        name={`billing_${field.key}`}
+                                                        type={
+                                                            field.key ===
+                                                            'phone'
+                                                                ? 'tel'
+                                                                : 'text'
+                                                        }
+                                                        defaultValue={
+                                                            billingAddress?.[
+                                                                field.key
+                                                            ] ?? undefined
+                                                        }
+                                                        required={
+                                                            field.required
+                                                        }
+                                                        error={
+                                                            errors[
+                                                                `billing_${field.key}`
+                                                            ]
+                                                        }
+                                                    />
+                                                </div>
+                                            ))}
+                                        </fieldset>
                                     </CheckoutSection>
                                 </div>
 

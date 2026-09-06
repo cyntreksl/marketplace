@@ -65,6 +65,7 @@ export type CheckoutConfirmationOrder = {
     total: string;
     shippingAddress: ShippingAddress;
     billingAddress: ShippingAddress;
+    billingSameAsShipping: boolean;
     payment: {
         method: CheckoutPaymentMethod;
         status: string;

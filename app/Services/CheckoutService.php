@@ -27,11 +27,14 @@ class CheckoutService
         private readonly CartService $cartService,
     ) {}
 
-    /** @param array<string, string|null> $shippingAddress */
-    public function checkout(User $buyer, string $paymentMethod, array $shippingAddress, ?string $token = null, ?string $reviewHash = null): CustomerOrder
+    /**
+     * @param  array<string, string|null>  $shippingAddress
+     * @param  array<string, string|null>|null  $billingAddress
+     */
+    public function checkout(User $buyer, string $paymentMethod, array $shippingAddress, ?string $token = null, ?string $reviewHash = null, ?array $billingAddress = null): CustomerOrder
     {
         $created = false;
-        $order = DB::transaction(function () use ($buyer, $paymentMethod, $shippingAddress, $token, $reviewHash, &$created): CustomerOrder {
+        $order = DB::transaction(function () use ($buyer, $paymentMethod, $shippingAddress, $billingAddress, $token, $reviewHash, &$created): CustomerOrder {
             $cart = $this->repository->cart($buyer);
             if ($token !== null && ($existing = $this->repository->findSubmission($buyer, $token)) !== null) {
                 return $this->repository->details($existing);
@@ -113,6 +116,7 @@ class CheckoutService
                 'total' => (string) $total,
                 'shipping_total' => (string) $shippingTotal,
                 'shipping_address' => $shippingAddress,
+                'billing_address' => $billingAddress ?? $shippingAddress,
             ]);
 
             foreach ($cartItems->groupBy(fn (CartItem $item): int => $item->listing->seller_profile_id) as $sellerProfileId => $items) {
@@ -212,7 +216,8 @@ class CheckoutService
             'shippingTotal' => $customerOrder->shipping_total,
             'total' => $customerOrder->total,
             'shippingAddress' => $shippingAddress,
-            'billingAddress' => $shippingAddress,
+            'billingAddress' => $customerOrder->billing_address ?? $shippingAddress,
+            'billingSameAsShipping' => $customerOrder->billing_address === null || $customerOrder->billing_address === $shippingAddress,
             'payment' => $payment === null ? null : [
                 'method' => $payment->method,
                 'status' => $payment->status,

@@ -7,6 +7,8 @@ import { createServer } from 'vite';
 
 let server;
 let Checkout;
+let Review;
+let ThankYou;
 
 before(async () => {
     server = await createServer({
@@ -55,6 +57,12 @@ before(async () => {
     Checkout = (
         await server.ssrLoadModule('/resources/js/pages/buyer/checkout.tsx')
     ).default;
+    Review = (
+        await server.ssrLoadModule('/resources/js/pages/buyer/review.tsx')
+    ).default;
+    ThankYou = (
+        await server.ssrLoadModule('/resources/js/pages/buyer/thank-you.tsx')
+    ).default;
 });
 
 after(async () => {
@@ -74,10 +82,11 @@ const item = {
     },
 };
 
-function renderCheckout(overrides = {}) {
+function renderCheckout(overrides = {}, billingAddress = null) {
     return renderToStaticMarkup(
         createElement(Checkout, {
             shippingAddress: null,
+            billingAddress,
             cart: {
                 items: [item],
                 subtotal: '1000',
@@ -90,16 +99,43 @@ function renderCheckout(overrides = {}) {
     );
 }
 
-test('checkout defaults email offers on and locks billing to shipping', () => {
+test('checkout defaults billing to shipping and offers an editable alternative', () => {
     const html = renderCheckout();
     assert.match(html, /<input[^>]*type="checkbox"[^>]*checked=""/);
-    const billing = html.match(/<input[^>]*name="billing_address"[^>]*>/)[0];
-    assert.match(billing, /disabled=""/);
+    const billing = html.match(
+        /<input[^>]*name="billing_address"[^>]*value="shipping"[^>]*>/,
+    )[0];
+    assert.doesNotMatch(billing, /disabled=""/);
     assert.match(billing, /checked=""/);
-    assert.doesNotMatch(
-        html,
-        /Use a different billing address|Need Help\?|Questions\? Our support/,
+    assert.match(html, /Use a different billing address/);
+    assert.match(html, /<fieldset[^>]*disabled=""/);
+    assert.doesNotMatch(html, /Need Help\?|Questions\? Our support/);
+});
+
+test('a saved different billing address is selected and its fields are restored', () => {
+    const html = renderCheckout(
+        {},
+        {
+            recipient_name: 'Accounts Department',
+            address_line_one: '20 Hill Road',
+            address_line_two: null,
+            city: 'Kandy',
+            postal_code: '20000',
+            phone: '0811234567',
+        },
     );
+    const billing = html.match(
+        /<input[^>]*name="billing_address"[^>]*value="different"[^>]*>/,
+    )[0];
+
+    assert.match(billing, /checked=""/);
+    assert.doesNotMatch(html, /<fieldset[^>]*disabled=""/);
+    assert.match(
+        html,
+        /name="billing_recipient_name"[^>]*value="Accounts Department"/,
+    );
+    assert.match(html, /name="billing_city"[^>]*value="Kandy"/);
+    assert.match(html, /name="billing_phone"[^>]*value="0811234567"/);
 });
 
 test('unavailable delivery choices are disabled and clearly marked coming soon', () => {
@@ -161,4 +197,72 @@ test('the sticky summary ends after payment controls and has no internal scroll 
     assert.match(summary, /Continue to Payment/);
     assert.doesNotMatch(summary, /overflow-y-auto|max-h-|100% Secure Checkout/);
     assert.ok(html.indexOf('100% Secure Checkout') > html.indexOf('</aside>'));
+});
+
+test('review and confirmation show the chosen billing address without a misleading same-address label', () => {
+    const shippingAddress = {
+        recipient_name: 'Delivery Recipient',
+        address_line_one: '10 Main Road',
+        address_line_two: null,
+        city: 'Colombo',
+        postal_code: null,
+        phone: '0771234567',
+    };
+    const billingAddress = {
+        ...shippingAddress,
+        recipient_name: 'Accounts Department',
+        city: 'Kandy',
+    };
+    const review = renderToStaticMarkup(
+        createElement(Review, {
+            cart: {
+                items: [item],
+                subtotal: '1000',
+                shippingTotal: '600',
+                total: '1600',
+                canCheckout: true,
+            },
+            shippingAddress,
+            billingAddress,
+            paymentMethod: 'cod',
+            checkoutToken: 'test-token',
+            reviewHash: 'test-hash',
+        }),
+    );
+    const order = {
+        number: 'PRO123456',
+        status: 'confirmed',
+        placedAt: null,
+        subtotal: '1000',
+        shippingTotal: '600',
+        total: '1600',
+        items: [],
+        shippingAddress,
+        billingAddress,
+        billingSameAsShipping: false,
+        payment: null,
+    };
+    const confirmation = renderToStaticMarkup(
+        createElement(ThankYou, { order }),
+    );
+
+    for (const html of [review, confirmation]) {
+        assert.match(html, /Delivery Recipient/);
+        assert.match(html, /Accounts Department/);
+        assert.match(html, /Kandy/);
+        assert.doesNotMatch(html, /Same as shipping address/);
+    }
+
+    assert.match(
+        renderToStaticMarkup(
+            createElement(ThankYou, {
+                order: {
+                    ...order,
+                    billingAddress: shippingAddress,
+                    billingSameAsShipping: true,
+                },
+            }),
+        ),
+        /Same as shipping address/,
+    );
 });
