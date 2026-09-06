@@ -45,3 +45,19 @@ test('the storefront shares footer support and payment details', function () {
                 'Cash on delivery',
             ]));
 });
+
+test('the storefront footer keeps support details on support pages and shows a compact faq', function () {
+    $footer = file_get_contents(resource_path('js/components/storefront-footer.tsx'));
+
+    expect($footer)
+        ->toContain('Quick answers')
+        ->toContain('How do I track my order?')
+        ->toContain('Which payment methods are available?')
+        ->toContain('How do returns work?')
+        ->toContain('View all FAQs')
+        ->not->toContain('marketplace.support.email')
+        ->not->toContain('Eligible returns')
+        ->not->toContain('Fast Delivery')
+        ->and(substr_count($footer, '<details'))
+        ->toBe(1);
+});
