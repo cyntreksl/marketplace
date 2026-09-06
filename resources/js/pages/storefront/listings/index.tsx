@@ -1,14 +1,8 @@
 import { Form, Link } from '@inertiajs/react';
-import {
-    ArrowRight,
-    Filter,
-    LayoutGrid,
-    PackageSearch,
-    Search,
-    Store,
-} from 'lucide-react';
+import { Filter, LayoutGrid, PackageSearch, Search, Store } from 'lucide-react';
 import { ListingCard } from '@/components/listing-card';
 import { StorefrontBreadcrumbs } from '@/components/storefront-breadcrumbs';
+import { StorefrontCategoryArtwork } from '@/components/storefront-category-artwork';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { StorefrontListingFilters } from '@/components/storefront-listing-filters';
 import { StorefrontPagination } from '@/components/storefront-pagination';
@@ -109,42 +103,36 @@ function CategoryStrip({
     }
 
     return (
-        <section className="py-6">
-            <div className="mb-4 flex items-end justify-between gap-4">
-                <div>
-                    <p className="text-xs font-black tracking-[0.16em] text-[#FF6D00] uppercase">
-                        Browse categories
+        <section className="mt-6 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <div className="border-b border-slate-100 bg-slate-50/70 px-5 py-5 sm:px-7">
+                <p className="text-xs font-bold tracking-[0.16em] text-[#FF6D00] uppercase">
+                    Shop by category
+                </p>
+                <div className="mt-1 flex items-end justify-between gap-4">
+                    <h1 className="text-2xl font-black tracking-tight text-slate-950 sm:text-3xl">
+                        {categoryContext?.current.name ?? 'All departments'}
+                    </h1>
+                    <p className="hidden text-sm text-slate-500 sm:block">
+                        Explore related departments
                     </p>
-                    <h2 className="mt-1 text-xl font-black tracking-tight text-slate-950">
-                        {categoryContext
-                            ? `Explore ${categoryContext.current.name}`
-                            : 'Browse departments'}
-                    </h2>
                 </div>
             </div>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-7 px-5 py-7 sm:grid-cols-3 sm:px-7 lg:grid-cols-5 lg:gap-x-7">
                 {items.slice(0, 10).map(({ category, hasChildren }) => (
                     <Link
                         key={category.id}
                         href={categoryShow(category.slug)}
                         prefetch
-                        className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF6D00]/30 hover:shadow-lg hover:shadow-orange-100/40"
+                        aria-label={`${category.name}${hasChildren ? ', browse subcategories' : ''}`}
+                        className="group min-w-0 text-center focus-visible:rounded-2xl focus-visible:ring-2 focus-visible:ring-[#FF6D00] focus-visible:ring-offset-4 focus-visible:outline-none"
                     >
-                        <div className="flex items-start justify-between gap-3">
-                            <div>
-                                <p className="text-sm font-black text-slate-950 transition group-hover:text-[#FF6D00]">
-                                    {category.name}
-                                </p>
-                                <p className="mt-1 text-xs text-slate-500">
-                                    {hasChildren
-                                        ? 'Browse subcategories'
-                                        : 'View products'}
-                                </p>
-                            </div>
-                            <span className="grid size-8 place-items-center rounded-full bg-slate-50 text-slate-300 transition group-hover:bg-orange-50 group-hover:text-[#FF6D00]">
-                                <ArrowRight className="size-4" />
-                            </span>
-                        </div>
+                        <StorefrontCategoryArtwork
+                            category={category}
+                            className="mx-auto size-28 rounded-full bg-slate-100 ring-1 ring-slate-200 transition duration-300 group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-orange-100 group-hover:ring-[#FF6D00]/40 sm:size-32"
+                        />
+                        <h2 className="mx-auto mt-3 line-clamp-2 max-w-36 text-sm leading-5 font-bold text-slate-800 transition group-hover:text-[#FF6D00] sm:text-base">
+                            {category.name}
+                        </h2>
                     </Link>
                 ))}
             </div>
