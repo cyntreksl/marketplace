@@ -187,6 +187,7 @@ jobs:
           done
 
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" 'cd /var/www/prodeals/current && php8.4 artisan inertia:check-ssr'
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" 'ss -ltn | grep -q "127.0.0.1:13714"'
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl status prodeals-worker | grep -q RUNNING'
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" '! ss -ltn | grep -q "127.0.0.1:13714"'
 

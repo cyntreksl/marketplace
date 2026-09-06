@@ -8,6 +8,7 @@ test('production deployment is gated and uses atomic releases', function () {
     $ssrInstaller = file_get_contents(base_path('.github/deploy/install-web-ssr.sh'));
     $ssrService = file_get_contents(base_path('.github/deploy/prodeals-ssr.service'));
     $serverBootstrap = file_get_contents(base_path('.github/deploy/bootstrap-server.sh'));
+    $viteConfiguration = file_get_contents(base_path('vite.config.ts'));
     $buildEnvironment = file_get_contents(base_path('.env.example'));
     $composer = json_decode(file_get_contents(base_path('composer.json')), true, flags: JSON_THROW_ON_ERROR);
 
@@ -28,6 +29,7 @@ test('production deployment is gated and uses atomic releases', function () {
         ->toContain('worker_release_id')
         ->toContain('rollback-to')
         ->toContain('inertia:check-ssr')
+        ->toContain('ss -ltn | grep -q "127.0.0.1:13714"')
         ->toContain('sudo systemctl restart prodeals-ssr')
         ->toContain('sudo supervisorctl status prodeals-worker')
         ->toContain('Online Shopping &amp; Auctions in Sri Lanka')
@@ -58,6 +60,9 @@ test('production deployment is gated and uses atomic releases', function () {
 
     expect($serverBootstrap)
         ->toContain('/usr/bin/supervisorctl status prodeals-worker');
+
+    expect($viteConfiguration)
+        ->toContain("host: '127.0.0.1'");
 });
 
 test('production service configuration keeps queue timeout below retry interval', function () {
