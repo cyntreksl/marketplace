@@ -24,7 +24,7 @@ use Throwable;
 
 #[Name('update-draft-product')]
 #[Title('Update Draft Product')]
-#[Description('Updates the title, short description, description, specifications, or warranty of an existing draft product and optionally adds gallery images. Supply only fields to change; omitted fields are preserved. Use specifications_text for specifications. Images accept public HTTPS URLs or base64-encoded JPEG, PNG, and WebP file contents, including data URLs. For a new product and a requested generated photo, use create-draft-product with image_generation_prompt instead. This never creates a duplicate, submits, or publishes the product.')]
+#[Description('Updates the title, short description, description, specifications, or warranty of an existing draft product and optionally adds gallery images. Supply only fields to change; omitted fields are preserved. SEO meta_title and meta_description are generated when missing and refreshed when their source product content changes; explicit SEO overrides take precedence. Use specifications_text for specifications. Images accept public HTTPS URLs or base64-encoded JPEG, PNG, and WebP file contents, including data URLs. For a new product and a requested generated photo, use create-draft-product with image_generation_prompt instead. This never creates a duplicate, submits, or publishes the product.')]
 #[IsReadOnly(false)]
 #[IsDestructive(true)]
 #[IsOpenWorld]
@@ -79,6 +79,8 @@ class UpdateDraftProductTool extends Tool
             'description' => $schema->string()->nullable()->description('Replacement product description. Pass null to clear; omit to preserve.')->max(10000),
             'specifications_text' => $schema->string()->nullable()->description('Replacement specifications as text, such as "Material: Cotton\nWeight: 200g". Replaces all existing specifications. Pass null to clear; omit to preserve.')->max(10000),
             'warranty' => $schema->string()->nullable()->description('Replacement warranty period and coverage. Pass null to clear; omit to preserve.')->max(500),
+            'meta_title' => $schema->string()->nullable()->description('Optional SEO title override. Automatically generated when missing or when the product title changes. Pass null to regenerate.')->max(60),
+            'meta_description' => $schema->string()->nullable()->description('Optional SEO description override. Automatically generated when missing or when the product title or descriptions change. Pass null to regenerate.')->max(160),
             'image_urls' => $schema->array()
                 ->description('Direct public HTTPS JPEG, PNG, or WebP image URLs. URLs and uploaded files combined may not take the product above five gallery images.')
                 ->min(1)
@@ -126,6 +128,8 @@ class UpdateDraftProductTool extends Tool
             'description' => ['sometimes', 'nullable', 'string', 'max:10000'],
             'specifications_text' => ['sometimes', 'nullable', 'string', 'max:10000'],
             'warranty' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'meta_title' => ['sometimes', 'nullable', 'string', 'max:60'],
+            'meta_description' => ['sometimes', 'nullable', 'string', 'max:160'],
             'image_urls' => ['nullable', 'array', 'between:1,5'],
             'image_urls.*' => ['required', 'string', 'url:https', 'max:2048', 'distinct'],
             'image_files' => ['nullable', 'array', 'between:1,5'],
@@ -140,7 +144,7 @@ class UpdateDraftProductTool extends Tool
             throw ValidationException::withMessages(['images' => 'No more than five images may be added at once.']);
         }
 
-        $attributes = Arr::only($validated, ['title', 'short_description', 'description', 'specifications_text', 'warranty']);
+        $attributes = Arr::only($validated, ['title', 'short_description', 'description', 'specifications_text', 'warranty', 'meta_title', 'meta_description']);
 
         if ($attributes === [] && $imageCount === 0) {
             throw ValidationException::withMessages(['listing_id' => 'Provide at least one field to update or an image to add.']);
@@ -208,6 +212,8 @@ class UpdateDraftProductTool extends Tool
         return [
             'id' => $listing->id,
             'status' => $listing->status,
+            'meta_title' => $listing->meta_title,
+            'meta_description' => $listing->meta_description,
             'images_count' => $listing->media->count(),
             'images' => $listing->media->values()->map(fn ($media, int $index): array => [
                 'id' => $media->id,

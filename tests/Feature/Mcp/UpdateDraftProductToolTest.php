@@ -41,6 +41,8 @@ test('adds a generated image file to an existing draft and stores it on r2', fun
     $media = $listing->media()->sole();
 
     expect($listing->fresh()->status)->toBe('draft')
+        ->and($listing->fresh()->meta_title)->not->toBeEmpty()
+        ->and($listing->fresh()->meta_description)->not->toBeEmpty()
         ->and($media->disk)->toBe('r2')
         ->and($media->crop_x)->toBe(200)
         ->and($media->crop_y)->toBe(0)
@@ -117,6 +119,8 @@ test('exports partial content updates and image uploads for mcp discovery', func
             'description',
             'specifications_text',
             'warranty',
+            'meta_title',
+            'meta_description',
         ])
         ->and($array['inputSchema']['required'])->toBe(['listing_id'])
         ->and($array['annotations'])->toMatchArray([
@@ -173,6 +177,8 @@ test('preserves omitted product fields and relations during a single field updat
         'product_type' => 'variant',
         'specifications' => ['Memory' => '16 GB', 'Storage' => '512 GB'],
         'warranty' => 'Original warranty',
+        'meta_title' => 'Original SEO title',
+        'meta_description' => 'Original SEO description',
     ]);
     $media = ListingMedia::factory()->for($listing)->create(['disk' => 'r2']);
     $variant = ListingVariant::factory()->for($listing)->create();
@@ -191,6 +197,10 @@ test('preserves omitted product fields and relations during a single field updat
     $changedFields = ['updated_at', $field === 'specifications_text' ? 'specifications' : $field];
     if ($field === 'title') {
         $changedFields[] = 'slug';
+        $changedFields[] = 'meta_title';
+    }
+    if (in_array($field, ['title', 'short_description', 'description'], true)) {
+        $changedFields[] = 'meta_description';
     }
 
     expect(Arr::except($listing->getAttributes(), $changedFields))->toBe(Arr::except($before, $changedFields))
@@ -256,6 +266,9 @@ test('rejects invalid or empty content updates without changing the draft', func
     'long specifications' => [['specifications_text' => str_repeat('a', 10001)]],
     'long warranty' => [['warranty' => str_repeat('a', 501)]],
     'wrong type' => [['description' => ['invalid']]],
+    'long SEO title' => [['meta_title' => str_repeat('a', 61)]],
+    'long SEO description' => [['meta_description' => str_repeat('a', 161)]],
+    'invalid SEO type' => [['meta_description' => ['invalid']]],
 ]);
 
 test('denies text updates to other sellers even with an explicit seller id', function () {
@@ -319,4 +332,58 @@ test('keeps slugs unique when changing a draft title', function () {
     ])->assertHasNoErrors();
 
     expect($listing->fresh()->slug)->toBe('updated-product-2');
+});
+
+test('refreshes seo using the saved product content and explicit overrides', function (array $changes, string $expectedTitle, string $expectedDescription) {
+    $seller = SellerProfile::factory()->create();
+    $listing = Listing::factory()->create([
+        'seller_profile_id' => $seller->id,
+        'status' => 'draft',
+        'title' => 'Original product',
+        'short_description' => 'Original summary',
+        'description' => '<p>Original full description</p>',
+        'meta_title' => 'Custom SEO title',
+        'meta_description' => 'Custom SEO description',
+    ]);
+
+    MarketplaceServer::actingAs($seller->user)->tool(UpdateDraftProductTool::class, [
+        'listing_id' => $listing->id,
+        ...$changes,
+    ])->assertHasNoErrors()->assertSee(['"meta_title":', '"meta_description":']);
+
+    $listing->refresh();
+    expect($listing->meta_title)->toBe($expectedTitle)
+        ->and($listing->meta_description)->toBe($expectedDescription);
+})->with([
+    'title change uses saved summary' => [['title' => 'New product'], 'New product', 'Original summary'],
+    'summary change' => [['short_description' => '<p>New &amp; improved</p>'], 'Custom SEO title', 'New & improved'],
+    'description change uses saved summary' => [['description' => 'New full description'], 'Custom SEO title', 'Original summary'],
+    'clear summary uses saved description' => [['short_description' => null], 'Custom SEO title', 'Original full description'],
+    'clear both descriptions uses title' => [['short_description' => null, 'description' => null], 'Custom SEO title', 'Original product'],
+    'explicit overrides' => [['title' => 'New product', 'meta_title' => 'Chosen title', 'meta_description' => 'Chosen description'], 'Chosen title', 'Chosen description'],
+    'seo only update' => [['meta_title' => 'Chosen title', 'meta_description' => 'Chosen description'], 'Chosen title', 'Chosen description'],
+    'explicit regeneration' => [['meta_title' => null, 'meta_description' => null], 'Original product', 'Original summary'],
+    'unrelated update preserves custom seo' => [['warranty' => 'Two years'], 'Custom SEO title', 'Custom SEO description'],
+    'unchanged source preserves custom seo' => [['title' => 'Original product'], 'Custom SEO title', 'Custom SEO description'],
+]);
+
+test('fills missing seo metadata on an unrelated draft update', function () {
+    $seller = SellerProfile::factory()->create();
+    $listing = Listing::factory()->create([
+        'seller_profile_id' => $seller->id,
+        'status' => 'draft',
+        'title' => 'Portable Workstation',
+        'short_description' => null,
+        'description' => '<p>Fast &amp; light</p>',
+        'meta_title' => null,
+        'meta_description' => '',
+    ]);
+
+    MarketplaceServer::actingAs($seller->user)->tool(UpdateDraftProductTool::class, [
+        'listing_id' => $listing->id,
+        'warranty' => 'Two years',
+    ])->assertHasNoErrors();
+
+    expect($listing->fresh()->meta_title)->toBe('Portable Workstation')
+        ->and($listing->fresh()->meta_description)->toBe('Fast & light');
 });

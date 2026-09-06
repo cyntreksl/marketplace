@@ -495,3 +495,22 @@ test('suggests selectable category ids for product creation', function () {
         'openWorldHint' => true,
     ]);
 });
+
+test('generates seo metadata for minimal and html product content', function (array $content, string $expectedDescription) {
+    $seller = SellerProfile::factory()->create();
+
+    MarketplaceServer::actingAs($seller->user)->tool(CreateDraftProductTool::class, [
+        'title' => 'Portable Workstation',
+        'product_type' => 'simple',
+        'selling_price' => 25000,
+        ...$content,
+    ])->assertHasNoErrors();
+
+    $listing = Listing::query()->sole();
+    expect($listing->meta_title)->toBe('Portable Workstation')
+        ->and($listing->meta_description)->toBe($expectedDescription);
+})->with([
+    'title only' => [[], 'Portable Workstation'],
+    'empty summary' => [['short_description' => '', 'description' => '<p>Fast &amp; light</p><p>All day battery</p>'], 'Fast & light All day battery'],
+    'html summary' => [['short_description' => '<p>Fast &amp; light</p>', 'description' => 'Full description'], 'Fast & light'],
+]);

@@ -5,6 +5,7 @@ namespace App\Mcp\Tools;
 use App\Models\Listing;
 use App\Models\User;
 use App\Rules\ValidGtin;
+use App\Services\ListingSeoMetadataService;
 use App\Services\ListingService;
 use App\Services\ListingVariantService;
 use App\Services\ProductImageGenerationService;
@@ -27,7 +28,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('create-draft-product')]
 #[Title('Create Draft Product')]
-#[Description('Creates a complete draft product listing with details, variants, and up to five images. For a newly requested AI product photo, send image_generation_prompt so ProDeals generates and attaches it in this same call. Existing public HTTPS images or base64 image files are also accepted. Returns missing review requirements and always remains a draft.')]
+#[Description('Creates a complete draft product listing with details, variants, and up to five images. For a newly requested AI product photo, send image_generation_prompt so ProDeals generates and attaches it in this same call. Existing public HTTPS images or base64 image files are also accepted. Automatically generates meta_title and meta_description from product content unless explicit SEO text is supplied. Returns missing review requirements and always remains a draft.')]
 #[IsReadOnly(false)]
 #[IsDestructive(false)]
 #[IsOpenWorld]
@@ -38,6 +39,7 @@ class CreateDraftProductTool extends Tool
         private readonly ListingVariantService $variantService,
         private readonly RemoteListingImageService $remoteImages,
         private readonly ProductImageGenerationService $imageGeneration,
+        private readonly ListingSeoMetadataService $seoMetadata,
     ) {}
 
     /**
@@ -156,7 +158,7 @@ class CreateDraftProductTool extends Tool
                 ->description('SEO title tag for search engines (up to 60 characters). If omitted, automatically derived from the product title.')
                 ->max(60),
             'meta_description' => $schema->string()
-                ->description('SEO meta description for SERP snippets (up to 160 characters). If omitted, automatically generated from short_description or description.')
+                ->description('SEO meta description for SERP snippets (up to 160 characters). If omitted, automatically generated from short_description, description, or the product title.')
                 ->max(160),
             'image_urls' => $schema->array()
                 ->description('One to five direct public HTTPS image URLs. JPEG, PNG, and WebP are accepted up to 5 MB each. The first image becomes the cover and images are center-cropped to square.')
@@ -243,16 +245,6 @@ class CreateDraftProductTool extends Tool
         $desc = $request->get('description');
         $productType = (string) $request->get('product_type', 'simple');
 
-        // Ensure SEO metadata is always populated
-        $metaTitle = filled($request->get('meta_title'))
-            ? Str::limit(Str::squish((string) $request->get('meta_title')), 60, '')
-            : Str::limit($title, 60, '');
-
-        $rawDescription = strip_tags((string) ($shortDesc ?? $desc ?? ''));
-        $metaDescription = filled($request->get('meta_description'))
-            ? Str::limit(Str::squish((string) $request->get('meta_description')), 160, '')
-            : Str::limit(Str::squish($rawDescription), 160, '');
-
         $attributes = [
             ...$request->all([
                 'category_id',
@@ -281,8 +273,7 @@ class CreateDraftProductTool extends Tool
             'selling_price' => $request->get('selling_price'),
             'compare_price' => $request->get('compare_price'),
             'stock_quantity' => (int) $request->get('stock_quantity', 0),
-            'meta_title' => $metaTitle,
-            'meta_description' => $metaDescription,
+            ...$this->seoMetadata->generate($title, $shortDesc, $desc, $request->get('meta_title'), $request->get('meta_description')),
             'submit_for_review' => false,
             'is_active' => filter_var($request->get('is_active', true), FILTER_VALIDATE_BOOL),
             'is_featured' => filter_var($request->get('is_featured', false), FILTER_VALIDATE_BOOL),

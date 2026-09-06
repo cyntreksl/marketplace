@@ -24,6 +24,7 @@ class ListingService
         private readonly AuditLogService $auditLogs,
         private readonly ListingImageService $images,
         private readonly ListingVariantService $variants,
+        private readonly ListingSeoMetadataService $seoMetadata,
     ) {}
 
     /**
@@ -148,6 +149,19 @@ class ListingService
             }
 
             $listing->fill($changes);
+            $titleChanged = $listing->isDirty('title');
+            $descriptionChanged = $listing->isDirty(['title', 'short_description', 'description']);
+            $listing->fill($this->seoMetadata->generate(
+                $listing->title,
+                $listing->short_description,
+                $listing->description,
+                array_key_exists('meta_title', $attributes)
+                    ? $attributes['meta_title']
+                    : ($titleChanged ? null : $listing->meta_title),
+                array_key_exists('meta_description', $attributes)
+                    ? $attributes['meta_description']
+                    : ($descriptionChanged ? null : $listing->meta_description),
+            ));
             $this->listings->save($listing);
             $this->storeImages($listing, $images, $crops);
             $this->auditLogs->record($seller, 'listing.draft_updated', $listing, $before, [
