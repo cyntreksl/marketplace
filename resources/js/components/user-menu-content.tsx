@@ -14,9 +14,10 @@ import type { User } from '@/types';
 
 type Props = {
     user: User;
+    settingsHref?: ReturnType<typeof edit>;
 };
 
-export function UserMenuContent({ user }: Props) {
+export function UserMenuContent({ user, settingsHref = edit() }: Props) {
     const cleanup = useMobileNavigation();
 
     const handleLogout = () => {
@@ -36,7 +37,7 @@ export function UserMenuContent({ user }: Props) {
                 <DropdownMenuItem asChild>
                     <Link
                         className="block w-full cursor-pointer"
-                        href={edit()}
+                        href={settingsHref}
                         prefetch
                         onClick={cleanup}
                     >

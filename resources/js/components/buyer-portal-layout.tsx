@@ -38,10 +38,11 @@ import { index as paymentsIndex } from '@/routes/buyer/payments';
 import { index as returnsIndex } from '@/routes/buyer/returns';
 import { edit as settingsEdit } from '@/routes/buyer/settings/profile';
 import { show as cartShow } from '@/routes/cart';
+import type { Auth } from '@/types';
 
 type BuyerRoute = ReturnType<typeof dashboard>;
 type PageProps = {
-    auth: { user: { name: string; avatar?: string } };
+    auth: Auth;
     commerce: { cart_quantity: number };
 };
 
@@ -251,7 +252,10 @@ export function BuyerPortalLayout({
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-56" align="end">
-                                <UserMenuContent user={auth.user as never} />
+                                <UserMenuContent
+                                    user={auth.user}
+                                    settingsHref={settingsEdit()}
+                                />
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
