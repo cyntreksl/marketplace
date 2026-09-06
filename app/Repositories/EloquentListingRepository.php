@@ -240,7 +240,7 @@ class EloquentListingRepository implements ListingRepository
 
     public function mediaForMigration(): LazyCollection
     {
-        return ListingMedia::withTrashed()->lazyById();
+        return ListingMedia::query()->lazyById();
     }
 
     public function mediaCount(Listing $listing): int

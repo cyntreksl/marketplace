@@ -87,6 +87,24 @@ test('the media migration copies every runtime image and updates disk ownership 
     Storage::disk('r2')->assertExists($paths);
 });
 
+test('the media migration ignores deleted media with removed storage objects', function () {
+    configureMediaMigrationDisks();
+    $listingMedia = ListingMedia::factory()->create([
+        'disk' => 'public',
+        'path' => 'listings/replaced/main.webp',
+        'source_path' => 'listings/replaced/source.webp',
+        'variants' => null,
+    ]);
+    $listingMedia->delete();
+
+    $this->artisan('media:migrate-to-r2')
+        ->expectsOutputToContain('Media migration completed')
+        ->assertSuccessful();
+
+    expect(ListingMedia::withTrashed()->findOrFail($listingMedia->id)->disk)->toBe('public');
+    Storage::disk('r2')->assertMissing([$listingMedia->path, $listingMedia->source_path]);
+});
+
 test('a missing source object fails without moving its database record', function () {
     configureMediaMigrationDisks();
     $listingMedia = ListingMedia::factory()->create([
