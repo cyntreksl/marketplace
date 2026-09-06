@@ -58,9 +58,21 @@ test('card checkout redirects to hosted payment and duplicate placement reuses t
     fakeStripeCheckout();
     $this->post(route('checkout.review.store'), $review)->assertRedirect('https://checkout.stripe.com/c/pay/cs_test_checkout');
     $order = CustomerOrder::sole();
+    $payment = Payment::sole();
     $this->post(route('checkout.review.store'), $review)->assertRedirect(route('checkout.thank_you.show', $order->number));
     expect(CustomerOrder::count())->toBe(1)->and(Payment::count())->toBe(1)->and($listing->fresh()->reserved_quantity)->toBe(2)->and($order->total)->toBe('2600.00')->and($order->shipping_total)->toBe('600.00');
-    Http::assertSent(fn ($request) => $request->hasHeader('Idempotency-Key') && $request['line_items'][0]['price_data']['unit_amount'] === 260000 && $request['payment_method_types'] === ['card']);
+    Http::assertSent(fn ($request) => $request->hasHeader('Idempotency-Key')
+        && $request['line_items'][0]['price_data']['unit_amount'] === 260000
+        && $request['payment_method_types'] === ['card']
+        && $request['customer_email'] === $buyer->email
+        && $request['client_reference_id'] === (string) $order->id
+        && $request['metadata'] === [
+            'payment_id' => (string) $payment->id,
+            'customer_order_id' => (string) $order->id,
+            'order_number' => $order->number,
+            'buyer_id' => (string) $buyer->id,
+        ]
+        && $request['payment_intent_data']['metadata'] === $request['metadata']);
 });
 
 test('verified card payment confirms seller orders and notifies once', function (): void {

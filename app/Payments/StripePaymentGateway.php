@@ -12,6 +12,14 @@ class StripePaymentGateway implements PaymentGateway
 {
     public function createPayment(Payment $payment): array
     {
+        $order = $payment->customerOrder;
+        $metadata = [
+            'payment_id' => (string) $payment->id,
+            'customer_order_id' => (string) $order->id,
+            'order_number' => $order->number,
+            'buyer_id' => (string) $order->buyer_id,
+        ];
+
         $response = Http::asForm()
             ->withBasicAuth((string) config('services.stripe.secret'), '')
             ->withHeader('Idempotency-Key', $payment->idempotency_key)
@@ -23,15 +31,16 @@ class StripePaymentGateway implements PaymentGateway
                     'price_data' => [
                         'currency' => 'lkr',
                         'unit_amount' => BigDecimal::of($payment->amount)->multipliedBy(100)->toInt(),
-                        'product_data' => ['name' => 'Order '.$payment->customerOrder->number.' (including delivery)'],
+                        'product_data' => ['name' => 'Order '.$order->number.' (including delivery)'],
                     ],
                     'quantity' => 1,
                 ]],
-                'client_reference_id' => (string) $payment->customer_order_id,
-                'metadata' => ['payment_id' => (string) $payment->id],
-                'payment_intent_data' => ['metadata' => ['payment_id' => (string) $payment->id]],
-                'success_url' => route('checkout.card.return', $payment->customerOrder->number),
-                'cancel_url' => route('checkout.thank_you.show', $payment->customerOrder->number),
+                'customer_email' => $order->buyer->email,
+                'client_reference_id' => (string) $order->id,
+                'metadata' => $metadata,
+                'payment_intent_data' => ['metadata' => $metadata],
+                'success_url' => route('checkout.card.return', $order->number),
+                'cancel_url' => route('checkout.thank_you.show', $order->number),
             ])->throw()->json();
 
         return ['reference' => $response['id'], 'redirect_url' => $response['url'], 'expires_at' => $response['expires_at']];
