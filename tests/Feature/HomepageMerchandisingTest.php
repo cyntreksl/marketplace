@@ -119,7 +119,7 @@ test('homepage output filters curated listings and uses the reference-first coll
         ->toContain('bg-[#FF6D00]')
         ->toContain('LKR · Sri Lankan Rupee')
         ->toContain('All Categories')
-        ->toContain('Call to Order');
+        ->toContain('Become a Seller');
 });
 
 test('homepage starts with the single home deals banner', function () {

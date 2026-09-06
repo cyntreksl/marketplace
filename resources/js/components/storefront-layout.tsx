@@ -5,7 +5,6 @@ import {
     Heart,
     MapPin,
     PackageSearch,
-    Phone,
     Search,
     UserRound,
 } from 'lucide-react';
@@ -202,32 +201,18 @@ export function StorefrontLayout({
                             <CountBadge count={commerce.wishlist_count} />
                         </Link>
                         <CartDrawer />
-                        {marketplace.support.phone ? (
-                            <a
-                                href={`tel:${marketplace.support.phone}`}
-                                className="hidden items-center gap-2 rounded-full border border-slate-200 py-1.5 pr-4 pl-1.5 text-xs font-bold shadow-sm xl:flex"
-                            >
-                                <span className="grid size-8 place-items-center rounded-full bg-[#FF6D00] text-white">
-                                    <Phone className="size-4" />
-                                </span>
-                                <span>
-                                    <span className="block">
-                                        {marketplace.support.phone}
-                                    </span>
-                                    <span className="block text-[9px] font-medium text-slate-500">
-                                        Call to Order
-                                    </span>
-                                </span>
-                            </a>
-                        ) : (
-                            <button
-                                disabled
-                                title="Call-to-order is not configured"
-                                className="hidden cursor-not-allowed rounded-full border px-4 py-2 text-xs text-slate-400 xl:block"
-                            >
-                                Call to Order
-                            </button>
-                        )}
+                        <Link
+                            href={
+                                auth.is_seller
+                                    ? sellerListingsIndex()
+                                    : sellerRegister()
+                            }
+                            className="hidden items-center rounded-full bg-[#FF6D00] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#e86100] sm:inline-flex"
+                        >
+                            {auth.is_seller
+                                ? 'Seller Portal'
+                                : 'Become a Seller'}
+                        </Link>
                     </div>
                 </div>
 
@@ -272,18 +257,6 @@ export function StorefrontLayout({
                         >
                             Business Deals
                         </button>
-                        <Link
-                            href={
-                                auth.is_seller
-                                    ? sellerListingsIndex()
-                                    : sellerRegister()
-                            }
-                            className="rounded-full bg-[#FF6D00] px-4 py-2 text-white transition hover:bg-[#e86100]"
-                        >
-                            {auth.is_seller
-                                ? 'Seller Portal'
-                                : 'Become a Seller'}
-                        </Link>
                     </div>
                     <Form {...listingsIndex.form()} className="mt-3 md:hidden">
                         <label className="flex h-10 rounded-lg border border-slate-200">
