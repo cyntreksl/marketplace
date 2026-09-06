@@ -943,7 +943,6 @@ export default function ListingShow({
                                     <ListingCard
                                         key={related.id}
                                         listing={related}
-                                        compact
                                     />
                                 ))}
                             </>

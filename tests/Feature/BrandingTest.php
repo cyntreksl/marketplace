@@ -84,6 +84,24 @@ test('portal controls use semantic colors and consistent corner radii', function
         ->not->toContain('rounded-full bg-amber-400');
 });
 
+test('storefront listing pages share the category listing card', function () {
+    $listingCard = file_get_contents(resource_path('js/components/listing-card.tsx'));
+    $categoryListings = file_get_contents(resource_path('js/pages/storefront/listings/index.tsx'));
+    $home = file_get_contents(resource_path('js/pages/storefront/home.tsx'));
+
+    expect($listingCard)
+        ->toContain('export function ListingCard({ listing }: { listing: StorefrontListing })')
+        ->toContain('Official warranty')
+        ->toContain('Islandwide delivery')
+        ->and($categoryListings)
+        ->toContain("import { ListingCard } from '@/components/listing-card';")
+        ->toContain('<ListingCard')
+        ->not->toContain('function ListingTile')
+        ->and($home)
+        ->toContain("import { ListingCard } from '@/components/listing-card';")
+        ->toContain('<ListingCard listing={listing} />');
+});
+
 test('seller product form keeps listing inputs conditional and chip based', function () {
     $sellerProductForm = file_get_contents(resource_path('js/components/seller-product-form.tsx'));
 
