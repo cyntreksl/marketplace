@@ -4,7 +4,7 @@ import {
     update,
 } from '@/actions/App/Http/Controllers/SellerListingController';
 import type { CategoryOption } from '@/components/category-picker';
-import { PortalLayout } from '@/components/portal-layout';
+import { SellerPortalLayout } from '@/components/seller-portal-layout';
 import { SellerProductForm } from '@/components/seller-product-form';
 import type { SellerProductFormListing } from '@/components/seller-product-form';
 
@@ -22,7 +22,7 @@ export default function EditSellerListing({
     sellerStatus: string;
 }) {
     return (
-        <PortalLayout portal="seller" title="Edit Product">
+        <SellerPortalLayout title="Edit product">
             <Head title="Edit Product" />
             <main className="mx-auto max-w-[1480px]">
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
@@ -56,6 +56,6 @@ export default function EditSellerListing({
                     canSubmit={['approved', 'active'].includes(sellerStatus)}
                 />
             </main>
-        </PortalLayout>
+        </SellerPortalLayout>
     );
 }

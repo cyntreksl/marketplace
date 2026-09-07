@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { store } from '@/actions/App/Http/Controllers/SellerListingController';
-import { PortalLayout } from '@/components/portal-layout';
+import { SellerPortalLayout } from '@/components/seller-portal-layout';
 import { SellerProductForm } from '@/components/seller-product-form';
 
 type Brand = { id: number; name: string };
@@ -13,7 +13,7 @@ export default function CreateSellerListing({
     sellerStatus: string;
 }) {
     return (
-        <PortalLayout portal="seller" title="Add New Product">
+        <SellerPortalLayout title="Add new product">
             <Head title="Add New Product" />
             <main className="mx-auto max-w-[1480px]">
                 <SellerProductForm
@@ -23,6 +23,6 @@ export default function CreateSellerListing({
                     canSubmit={['approved', 'active'].includes(sellerStatus)}
                 />
             </main>
-        </PortalLayout>
+        </SellerPortalLayout>
     );
 }

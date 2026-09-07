@@ -54,15 +54,29 @@ class EloquentProductQuestionRepository implements ProductQuestionRepository
         return $question;
     }
 
-    public function queueFor(User $user, int $perPage = 20): LengthAwarePaginator
+    /**
+     * @param  array{q?: string, status?: string}  $filters
+     * @return LengthAwarePaginator<int, ProductQuestion>
+     */
+    public function queueFor(User $user, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $isOperationsUser = $user->roles()->whereIn('name', [Role::Admin, Role::SuperAdmin])->exists();
         $sellerProfileId = $user->sellerProfile()->value('id');
 
-        return ProductQuestion::query()
+        $query = ProductQuestion::query()
             ->with(['listing:id,title,slug,seller_profile_id', 'asker:id,name', 'answerer:id,name'])
-            ->when(! $isOperationsUser, fn ($query) => $query->whereHas('listing', fn ($listingQuery) => $listingQuery->where('seller_profile_id', $sellerProfileId)))
-            ->latest()
-            ->paginate($perPage);
+            ->when(! $isOperationsUser, fn ($query) => $query->whereHas('listing', fn ($listingQuery) => $listingQuery->where('seller_profile_id', $sellerProfileId)));
+        if (($filters['status'] ?? 'all') === 'answered') {
+            $query->whereNotNull('answered_at');
+        } elseif (($filters['status'] ?? 'all') === 'unanswered') {
+            $query->whereNull('answered_at');
+        }
+        if ($search = trim((string) ($filters['q'] ?? ''))) {
+            $query->where(fn ($query) => $query->where('question', 'like', "%{$search}%")->orWhereHas('listing', fn ($listing) => $listing->where('title', 'like', "%{$search}%")));
+        }
+
+        return $query->latest()
+            ->paginate($perPage)
+            ->withQueryString();
     }
 }

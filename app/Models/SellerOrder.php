@@ -14,10 +14,12 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property Carbon|null $ready_to_ship_at
+ * @property Carbon|null $processing_at
+ * @property Carbon|null $shipped_at
  * @property Carbon|null $completed_at
  * @property Carbon|null $delivered_at
  */
-#[Fillable(['number', 'customer_order_id', 'seller_profile_id', 'status', 'subtotal', 'shipping_charge', 'seller_earnings', 'ready_to_ship_at', 'completed_at', 'delivered_at'])]
+#[Fillable(['number', 'customer_order_id', 'seller_profile_id', 'status', 'subtotal', 'shipping_charge', 'seller_earnings', 'processing_at', 'ready_to_ship_at', 'shipped_at', 'completed_at', 'delivered_at'])]
 class SellerOrder extends Model
 {
     /** @use HasFactory<SellerOrderFactory> */
@@ -25,7 +27,7 @@ class SellerOrder extends Model
 
     protected function casts(): array
     {
-        return ['subtotal' => 'decimal:2', 'shipping_charge' => 'decimal:2', 'seller_earnings' => 'decimal:2', 'ready_to_ship_at' => 'datetime', 'completed_at' => 'datetime', 'delivered_at' => 'datetime'];
+        return ['subtotal' => 'decimal:2', 'shipping_charge' => 'decimal:2', 'seller_earnings' => 'decimal:2', 'processing_at' => 'datetime', 'ready_to_ship_at' => 'datetime', 'shipped_at' => 'datetime', 'completed_at' => 'datetime', 'delivered_at' => 'datetime'];
     }
 
     /** @return BelongsTo<CustomerOrder, $this> */

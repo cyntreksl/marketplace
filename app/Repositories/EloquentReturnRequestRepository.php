@@ -35,12 +35,23 @@ class EloquentReturnRequestRepository implements ReturnRequestRepository
             ->withQueryString();
     }
 
-    public function sellerRequests(User $seller): LengthAwarePaginator
+    /**
+     * @param  array{q?: string, status?: string}  $filters
+     * @return LengthAwarePaginator<int, ReturnRequest>
+     */
+    public function sellerRequests(User $seller, array $filters = []): LengthAwarePaginator
     {
-        return ReturnRequest::query()
+        $query = ReturnRequest::query()
             ->whereHas('orderItem.sellerOrder.sellerProfile', fn ($query) => $query->where('user_id', $seller->id))
-            ->with(['buyer:id,name,email', 'orderItem:id,seller_order_id,title,unit_price', 'orderItem.sellerOrder:id,number,seller_profile_id', 'orderItem.sellerOrder.sellerProfile:id,store_name', 'refund'])
-            ->latest()
+            ->with(['buyer:id,name,email', 'orderItem:id,seller_order_id,title,unit_price', 'orderItem.sellerOrder:id,number,seller_profile_id', 'orderItem.sellerOrder.sellerProfile:id,store_name', 'refund']);
+        if (($filters['status'] ?? 'all') !== 'all') {
+            $query->where('status', $filters['status']);
+        }
+        if ($search = trim((string) ($filters['q'] ?? ''))) {
+            $query->where(fn ($query) => $query->whereHas('buyer', fn ($buyer) => $buyer->where('name', 'like', "%{$search}%"))->orWhereHas('orderItem', fn ($item) => $item->where('title', 'like', "%{$search}%")->orWhereHas('sellerOrder', fn ($order) => $order->where('number', 'like', "%{$search}%"))));
+        }
+
+        return $query->latest()
             ->paginate(20)
             ->withQueryString();
     }

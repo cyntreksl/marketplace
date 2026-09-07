@@ -1,20 +1,16 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import { Plus, Search } from 'lucide-react';
 import {
     create,
     destroy,
     edit,
     show,
 } from '@/actions/App/Http/Controllers/SellerListingController';
-import { PortalLayout } from '@/components/portal-layout';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-    DialogTrigger,
-} from '@/components/ui/dialog';
+import { SellerPageHeader } from '@/components/seller-page-header';
+import { SellerPagination } from '@/components/seller-pagination';
+import { SellerPortalLayout } from '@/components/seller-portal-layout';
+import { index } from '@/routes/seller/listings';
+import type { SellerPaginator } from '@/types';
 
 type Listing = {
     id: number;
@@ -23,7 +19,6 @@ type Listing = {
     model: string | null;
     status: string;
     moderation_reason: string | null;
-    listing_type: string;
     product_type: 'simple' | 'variant';
     price: string | null;
     has_orders: boolean;
@@ -31,248 +26,212 @@ type Listing = {
     brand: { name: string } | null;
     brand_name: string | null;
     category: { name: string } | null;
-    auction: { status: string; ends_at: string } | null;
 };
+type Filters = { q: string; status: string; sort: string };
+const editable = ['draft', 'changes_requested', 'rejected'];
 
-const editableStatuses = ['draft', 'changes_requested', 'rejected'];
+function Actions({ listing }: { listing: Listing }) {
+    return (
+        <div className="flex flex-wrap gap-2">
+            {editable.includes(listing.status) && (
+                <Link
+                    href={edit(listing.id)}
+                    className="min-h-10 rounded-xl border px-3 py-2 text-xs font-bold"
+                >
+                    Edit
+                </Link>
+            )}
+            <Link
+                href={show(listing.id)}
+                className="min-h-10 rounded-xl border px-3 py-2 text-xs font-bold"
+            >
+                View
+            </Link>
+            {listing.status !== 'archived' && (
+                <Form {...destroy.form(listing.id)}>
+                    <button className="min-h-10 rounded-xl border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700">
+                        {listing.has_orders ? 'Archive' : 'Remove'}
+                    </button>
+                </Form>
+            )}
+        </div>
+    );
+}
 
 export default function SellerListings({
     sellerStatus,
     listings,
+    filters,
 }: {
     sellerStatus: string;
-    listings: { data: Listing[] };
+    listings: SellerPaginator<Listing>;
+    filters: Filters;
 }) {
     return (
-        <PortalLayout portal="seller" title="Products">
+        <SellerPortalLayout title="Products">
             <Head title="Products" />
-            <main className="mx-auto max-w-7xl">
-                <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-                    <div>
-                        <p className="text-sm font-bold tracking-wider text-primary uppercase">
-                            Seller portal
-                        </p>
-                        <h1 className="mt-2 text-4xl font-black">Products</h1>
-                        <p className="mt-2 text-stone-600 dark:text-stone-300">
-                            Account status:{' '}
-                            <span className="font-bold capitalize">
-                                {sellerStatus.replace('_', ' ')}
-                            </span>
-                        </p>
-                    </div>
-                    <Link
-                        href={create()}
-                        className="rounded-xl bg-primary px-5 py-3 text-center font-bold text-primary-foreground"
-                    >
-                        Add New Product
-                    </Link>
-                </div>
-
+            <div className="space-y-6">
+                <SellerPageHeader
+                    title="Products"
+                    description={`Manage inventory, pricing, moderation, and listing health. Account status: ${sellerStatus.replaceAll('_', ' ')}.`}
+                    actions={
+                        <Link
+                            href={create()}
+                            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
+                        >
+                            <Plus className="size-4" /> Add product
+                        </Link>
+                    }
+                />
                 {sellerStatus !== 'approved' && sellerStatus !== 'active' && (
-                    <p className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:bg-amber-950/40 dark:text-amber-100">
+                    <p className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:bg-amber-950/40 dark:text-amber-100">
                         You can prepare drafts now. Your account must be
-                        approved before you submit a product for review.
+                        approved before submission.
                     </p>
                 )}
-
-                <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm dark:border-stone-800 dark:bg-stone-900">
-                    {listings.data.length === 0 ? (
-                        <div className="p-12 text-center text-stone-500">
-                            No products yet. Add your first item when you are
-                            ready.
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[70rem] text-left text-sm">
-                                <thead className="border-b border-stone-200 bg-stone-50 text-xs tracking-wider text-stone-500 uppercase dark:border-stone-800 dark:bg-stone-950 dark:text-stone-400">
-                                    <tr>
-                                        <th className="px-5 py-4 font-bold">
-                                            Name
-                                        </th>
-                                        <th className="px-4 py-4 font-bold">
-                                            SKU
-                                        </th>
-                                        <th className="px-4 py-4 font-bold">
-                                            Model
-                                        </th>
-                                        <th className="px-4 py-4 font-bold">
-                                            Category
-                                        </th>
-                                        <th className="px-4 py-4 font-bold">
-                                            Brand
-                                        </th>
-                                        <th className="px-4 py-4 font-bold">
-                                            Type
-                                        </th>
-                                        <th className="px-4 py-4 font-bold">
-                                            Status
-                                        </th>
-                                        <th className="px-5 py-4 text-right font-bold">
-                                            Actions
-                                        </th>
+                <Form
+                    {...index.form()}
+                    className="grid gap-3 rounded-2xl border bg-white p-4 sm:grid-cols-[minmax(0,1fr)_12rem_11rem_auto] dark:bg-slate-900"
+                    options={{ preserveScroll: true, preserveState: true }}
+                >
+                    <label className="relative">
+                        <Search className="absolute top-3 left-3 size-4 text-slate-400" />
+                        <span className="sr-only">Search products</span>
+                        <input
+                            name="q"
+                            defaultValue={filters.q}
+                            placeholder="Product name or SKU"
+                            maxLength={100}
+                            className="min-h-11 w-full rounded-xl border bg-transparent pr-3 pl-10"
+                        />
+                    </label>
+                    <select
+                        name="status"
+                        defaultValue={filters.status}
+                        className="min-h-11 rounded-xl border bg-transparent px-3"
+                    >
+                        <option value="all">All statuses</option>
+                        <option value="draft">Draft</option>
+                        <option value="pending_review">Pending review</option>
+                        <option value="approved">Approved</option>
+                        <option value="changes_requested">
+                            Changes requested
+                        </option>
+                        <option value="rejected">Rejected</option>
+                        <option value="archived">Archived</option>
+                    </select>
+                    <select
+                        name="sort"
+                        defaultValue={filters.sort}
+                        className="min-h-11 rounded-xl border bg-transparent px-3"
+                    >
+                        <option value="newest">Newest first</option>
+                        <option value="oldest">Oldest first</option>
+                        <option value="title">Title A–Z</option>
+                    </select>
+                    <button className="min-h-11 rounded-xl bg-slate-950 px-5 text-sm font-bold text-white dark:bg-white dark:text-slate-950">
+                        Apply
+                    </button>
+                </Form>
+                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <div className="hidden md:block">
+                        <table className="w-full table-fixed text-left text-sm">
+                            <thead className="bg-slate-50 text-xs text-slate-500 uppercase dark:bg-slate-950">
+                                <tr>
+                                    <th className="w-[28%] px-5 py-3">
+                                        Product
+                                    </th>
+                                    <th className="w-[15%] px-4 py-3">
+                                        SKU / model
+                                    </th>
+                                    <th className="w-[18%] px-4 py-3">
+                                        Category
+                                    </th>
+                                    <th className="w-[13%] px-4 py-3">Type</th>
+                                    <th className="w-[12%] px-4 py-3">
+                                        Status
+                                    </th>
+                                    <th className="w-[14%] px-5 py-3">
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                {listings.data.map((listing) => (
+                                    <tr key={listing.id}>
+                                        <td className="px-5 py-4">
+                                            <p className="truncate font-bold">
+                                                {listing.title ??
+                                                    'Untitled product'}
+                                            </p>
+                                            <p className="truncate text-xs text-slate-500">
+                                                {listing.brand?.name ??
+                                                    listing.brand_name ??
+                                                    'No brand'}
+                                            </p>
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <p>{listing.sku ?? '—'}</p>
+                                            <p className="text-xs text-slate-500">
+                                                {listing.model ?? 'No model'}
+                                            </p>
+                                        </td>
+                                        <td className="truncate px-4 py-4">
+                                            {listing.category?.name ??
+                                                'Uncategorised'}
+                                        </td>
+                                        <td className="px-4 py-4 capitalize">
+                                            {listing.product_type}
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <span className="rounded-full bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-700 capitalize dark:bg-orange-500/15 dark:text-orange-300">
+                                                {listing.status.replaceAll(
+                                                    '_',
+                                                    ' ',
+                                                )}
+                                            </span>
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <Actions listing={listing} />
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-stone-200 dark:divide-stone-800">
-                                    {listings.data.map((listing) => {
-                                        const canEdit =
-                                            editableStatuses.includes(
-                                                listing.status,
-                                            );
-                                        const canRemove =
-                                            listing.status !== 'archived';
-
-                                        return (
-                                            <tr
-                                                key={listing.id}
-                                                className="transition-colors hover:bg-stone-50/80 dark:hover:bg-stone-800/40"
-                                            >
-                                                <td className="max-w-72 px-5 py-4 align-top">
-                                                    <p className="font-bold text-stone-950 dark:text-stone-50">
-                                                        {listing.title ??
-                                                            'Untitled product'}
-                                                    </p>
-                                                    {listing.moderation_reason && (
-                                                        <p className="mt-1 line-clamp-2 text-xs text-amber-700 dark:text-amber-300">
-                                                            Review note:{' '}
-                                                            {
-                                                                listing.moderation_reason
-                                                            }
-                                                        </p>
-                                                    )}
-                                                </td>
-                                                <td className="px-4 py-4 align-top font-medium text-stone-600 dark:text-stone-300">
-                                                    {listing.sku ?? '-'}
-                                                </td>
-                                                <td className="px-4 py-4 align-top text-stone-600 dark:text-stone-300">
-                                                    {listing.model ?? '-'}
-                                                </td>
-                                                <td className="px-4 py-4 align-top text-stone-600 dark:text-stone-300">
-                                                    {listing.category?.name ??
-                                                        'Uncategorised'}
-                                                </td>
-                                                <td className="px-4 py-4 align-top text-stone-600 dark:text-stone-300">
-                                                    {listing.brand?.name ??
-                                                        listing.brand_name ??
-                                                        '-'}
-                                                </td>
-                                                <td className="px-4 py-4 align-top">
-                                                    <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold dark:bg-stone-800">
-                                                        {listing.product_type ===
-                                                        'variant'
-                                                            ? 'Config'
-                                                            : 'Simple'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-4 align-top">
-                                                    <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary capitalize">
-                                                        {listing.status.replace(
-                                                            '_',
-                                                            ' ',
-                                                        )}
-                                                    </span>
-                                                </td>
-                                                <td className="px-5 py-4 align-top">
-                                                    <div className="flex justify-end gap-2">
-                                                        {canEdit ? (
-                                                            <Link
-                                                                href={edit(
-                                                                    listing.id,
-                                                                )}
-                                                                className="rounded-lg border border-stone-300 px-3 py-2 text-xs font-bold transition hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800"
-                                                            >
-                                                                Edit
-                                                            </Link>
-                                                        ) : (
-                                                            <button
-                                                                disabled
-                                                                title="Only draft or returned products can be edited"
-                                                                className="cursor-not-allowed rounded-lg border border-stone-200 px-3 py-2 text-xs font-bold text-stone-400 dark:border-stone-800 dark:text-stone-600"
-                                                            >
-                                                                Edit
-                                                            </button>
-                                                        )}
-                                                        <Link
-                                                            href={show(
-                                                                listing.id,
-                                                            )}
-                                                            className="rounded-lg border border-stone-300 px-3 py-2 text-xs font-bold transition hover:bg-stone-100 dark:border-stone-700 dark:hover:bg-stone-800"
-                                                        >
-                                                            View
-                                                        </Link>
-                                                        {canRemove ? (
-                                                            <Dialog>
-                                                                <DialogTrigger
-                                                                    asChild
-                                                                >
-                                                                    <button className="rounded-lg border border-red-300 px-3 py-2 text-xs font-bold text-red-700 transition hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40">
-                                                                        {listing.has_orders
-                                                                            ? 'Archive'
-                                                                            : 'Remove'}
-                                                                    </button>
-                                                                </DialogTrigger>
-                                                                <DialogContent>
-                                                                    <DialogTitle>
-                                                                        {listing.has_orders
-                                                                            ? 'Archive listing'
-                                                                            : 'Remove listing'}
-                                                                    </DialogTitle>
-                                                                    <DialogDescription>
-                                                                        {listing.has_orders
-                                                                            ? 'This listing has orders, so it will be archived and hidden from the public marketplace. Its order history will remain available.'
-                                                                            : 'This listing has no orders. Removing it will hide it from the public marketplace and remove it from your listings.'}
-                                                                    </DialogDescription>
-                                                                    <DialogFooter className="gap-2">
-                                                                        <DialogClose
-                                                                            asChild
-                                                                        >
-                                                                            <button className="rounded-xl border border-stone-300 px-4 py-2 text-sm font-bold dark:border-stone-700">
-                                                                                Cancel
-                                                                            </button>
-                                                                        </DialogClose>
-                                                                        <Form
-                                                                            {...destroy.form(
-                                                                                listing.id,
-                                                                            )}
-                                                                        >
-                                                                            {({
-                                                                                processing,
-                                                                            }) => (
-                                                                                <button
-                                                                                    disabled={
-                                                                                        processing
-                                                                                    }
-                                                                                    className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
-                                                                                >
-                                                                                    {processing
-                                                                                        ? 'Working...'
-                                                                                        : listing.has_orders
-                                                                                          ? 'Archive listing'
-                                                                                          : 'Remove listing'}
-                                                                                </button>
-                                                                            )}
-                                                                        </Form>
-                                                                    </DialogFooter>
-                                                                </DialogContent>
-                                                            </Dialog>
-                                                        ) : (
-                                                            <button
-                                                                disabled
-                                                                className="cursor-not-allowed rounded-lg border border-stone-200 px-3 py-2 text-xs font-bold text-stone-400 dark:border-stone-800 dark:text-stone-600"
-                                                            >
-                                                                Remove
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="divide-y md:hidden">
+                        {listings.data.map((listing) => (
+                            <article key={listing.id} className="p-4">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p className="font-black">
+                                            {listing.title ??
+                                                'Untitled product'}
+                                        </p>
+                                        <p className="text-xs text-slate-500">
+                                            {listing.sku ?? 'No SKU'} ·{' '}
+                                            {listing.category?.name ??
+                                                'Uncategorised'}
+                                        </p>
+                                    </div>
+                                    <span className="rounded-full bg-orange-100 px-2.5 py-1 text-xs font-bold text-orange-700 capitalize">
+                                        {listing.status.replaceAll('_', ' ')}
+                                    </span>
+                                </div>
+                                <div className="mt-4">
+                                    <Actions listing={listing} />
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                    {listings.data.length === 0 && (
+                        <p className="p-12 text-center text-sm text-slate-500">
+                            No products match these filters.
+                        </p>
                     )}
-                </div>
-            </main>
-        </PortalLayout>
+                    <SellerPagination paginator={listings} />
+                </section>
+            </div>
+        </SellerPortalLayout>
     );
 }

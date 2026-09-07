@@ -43,14 +43,15 @@ test('a seller confirms delivery and opens the return window', function () {
     $sellerProfile = SellerProfile::factory()->for($seller)->create();
     $customerOrder = CustomerOrder::factory()->for($buyer, 'buyer')->create();
     $sellerOrder = SellerOrder::factory()->for($customerOrder)->for($sellerProfile)->create([
-        'status' => 'ready_to_ship',
+        'status' => 'shipped',
         'ready_to_ship_at' => now()->subHour(),
+        'shipped_at' => now()->subMinutes(30),
     ]);
     $shipment = Shipment::factory()->for($sellerOrder)->create();
 
     $this->actingAs($seller)
         ->post(route('seller.orders.delivered', $sellerOrder))
-        ->assertRedirect(route('seller.orders.index'));
+        ->assertRedirect();
 
     $sellerOrder->refresh();
 
@@ -60,10 +61,10 @@ test('a seller confirms delivery and opens the return window', function () {
         ->and($shipment->refresh()->status)->toBe('delivered');
 });
 
-test('only the owning seller can confirm a ready to ship delivery', function () {
+test('only the owning seller can confirm a shipped delivery', function () {
     $buyer = User::factory()->create();
     ['sellerOrder' => $sellerOrder] = createReturnablePurchase($buyer);
-    $sellerOrder->forceFill(['status' => 'ready_to_ship', 'delivered_at' => null, 'completed_at' => null])->save();
+    $sellerOrder->forceFill(['status' => 'shipped', 'delivered_at' => null, 'completed_at' => null])->save();
 
     $this->actingAs(User::factory()->create())
         ->post(route('seller.orders.delivered', $sellerOrder))

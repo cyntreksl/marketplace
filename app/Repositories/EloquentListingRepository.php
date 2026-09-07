@@ -250,17 +250,33 @@ class EloquentListingRepository implements ListingRepository
             ->get();
     }
 
-    public function paginateForSeller(SellerProfile $seller, int $perPage = 15): LengthAwarePaginator
+    /**
+     * @param  array{q?: string, status?: string, sort?: string}  $filters
+     * @return LengthAwarePaginator<int, Listing>
+     */
+    public function paginateForSeller(SellerProfile $seller, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        return $seller->listings()
+        $query = $seller->listings()
             ->with([
                 'auction:id,listing_id,status,starts_at,ends_at',
                 'brand:id,name',
                 'category:id,name',
             ])
-            ->withExists(['orderItems as has_orders'])
-            ->latest()
-            ->paginate($perPage)
+            ->withExists(['orderItems as has_orders']);
+
+        if ($search = trim((string) ($filters['q'] ?? ''))) {
+            $query->where(fn (Builder $query): Builder => $query->where('title', 'like', "%{$search}%")->orWhere('sku', 'like', "%{$search}%"));
+        }
+        if (($filters['status'] ?? 'all') !== 'all') {
+            $query->where('status', $filters['status']);
+        }
+        match ($filters['sort'] ?? 'newest') {
+            'oldest' => $query->oldest(),
+            'title' => $query->orderBy('title'),
+            default => $query->latest(),
+        };
+
+        return $query->paginate($perPage)
             ->withQueryString();
     }
 

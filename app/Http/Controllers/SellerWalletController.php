@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePayoutRequest;
-use App\Services\SellerLedgerService;
+use App\Services\SellerPortalService;
 use App\Services\SettlementService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,15 +12,9 @@ use Inertia\Response;
 
 class SellerWalletController extends Controller
 {
-    public function index(Request $request, SellerLedgerService $ledger): Response
+    public function index(Request $request, SellerPortalService $portal): Response
     {
-        $seller = $request->user()->sellerProfile()->firstOrFail();
-
-        return Inertia::render('seller/wallet', [
-            'availableBalance' => $ledger->availableBalance($seller),
-            'entries' => $seller->ledgerEntries()->latest()->paginate(20)->withQueryString(),
-            'payouts' => $seller->payoutRequests()->latest()->get(),
-        ]);
+        return Inertia::render('seller/wallet', $portal->wallet($request->user()));
     }
 
     public function store(StorePayoutRequest $request, SettlementService $settlements): RedirectResponse

@@ -40,3 +40,43 @@ test('cookie preferences use a compact icon at the bottom left', async () => {
     assert.match(consentManager, /size-10/);
     assert.doesNotMatch(consentManager, /lg:left-/);
 });
+
+test('seller data views provide desktop tables and mobile cards with pagination', async () => {
+    const orders = await readFile(
+        resourcePath('pages/seller/orders/index.tsx'),
+        'utf8',
+    );
+    const products = await readFile(
+        resourcePath('pages/seller/listings/index.tsx'),
+        'utf8',
+    );
+    const pagination = await readFile(
+        resourcePath('components/seller-pagination.tsx'),
+        'utf8',
+    );
+
+    for (const view of [orders, products]) {
+        assert.match(view, /<table/);
+        assert.match(view, /md:hidden|lg:hidden/);
+        assert.match(view, /SellerPagination/);
+    }
+
+    assert.match(pagination, /preserveScroll/);
+    assert.match(pagination, /preserveState/);
+    assert.match(pagination, /Previous/);
+    assert.match(pagination, /Next/);
+});
+
+test('seller order details expose an accessible journey and contextual actions', async () => {
+    const detail = await readFile(
+        resourcePath('pages/seller/orders/show.tsx'),
+        'utf8',
+    );
+
+    assert.match(detail, /Order journey/);
+    assert.match(detail, /Courier name/);
+    assert.match(detail, /Tracking number/);
+    assert.match(detail, /processing\.form/);
+    assert.match(detail, /shipped\.form/);
+    assert.match(detail, /delivered\.form/);
+});

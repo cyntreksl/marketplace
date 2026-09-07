@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Contracts\Repositories\CatalogRepository;
 use App\Http\Requests\ListingContentSuggestionRequest;
+use App\Http\Requests\SellerListingIndexRequest;
 use App\Http\Requests\StoreListingRequest;
 use App\Http\Requests\SubmitListingRequest;
 use App\Http\Requests\UpdateListingRequest;
@@ -25,9 +26,9 @@ class SellerListingController extends Controller
         private readonly ListingService $listings,
     ) {}
 
-    public function index(Request $request): Response
+    public function index(SellerListingIndexRequest $request): Response
     {
-        return Inertia::render('seller/listings/index', $this->listings->sellerIndex($request->user()));
+        return Inertia::render('seller/listings/index', $this->listings->sellerIndex($request->user(), $request->validated()));
     }
 
     public function create(Request $request): Response

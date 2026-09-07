@@ -163,7 +163,7 @@ test('homepage exposes the seller portal state for seller accounts', function ()
         );
 
     expect(file_get_contents(resource_path('js/components/storefront-layout.tsx')))
-        ->toContain('sellerListingsIndex()')
+        ->toContain('sellerDashboard()')
         ->toContain('sellerRegister()')
         ->toContain("'Seller Portal'")
         ->toContain("'Become a Seller'");

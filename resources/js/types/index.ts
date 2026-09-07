@@ -3,5 +3,6 @@ export type * from './buyer';
 export type * from './checkout';
 export type * from './marketplace';
 export type * from './navigation';
+export type * from './seller';
 export type * from './storefront';
 export type * from './ui';

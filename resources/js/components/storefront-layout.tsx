@@ -18,8 +18,10 @@ import { StorefrontFooter } from '@/components/storefront-footer';
 import { home, login } from '@/routes';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
 import { index as listingsIndex } from '@/routes/listings';
-import { register as sellerRegister } from '@/routes/seller';
-import { index as sellerListingsIndex } from '@/routes/seller/listings';
+import {
+    dashboard as sellerDashboard,
+    register as sellerRegister,
+} from '@/routes/seller';
 
 export type { StorefrontCategory } from '@/components/storefront-category-menu';
 
@@ -193,7 +195,7 @@ export function StorefrontLayout({
                         <Link
                             href={
                                 auth.is_seller
-                                    ? sellerListingsIndex()
+                                    ? sellerDashboard()
                                     : sellerRegister()
                             }
                             className="hidden items-center rounded-full bg-[#FF6D00] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#e86100] xl:inline-flex"

@@ -21,5 +21,9 @@ interface ProductQuestionRepository
     public function save(ProductQuestion $question): ProductQuestion;
 
     /** @return LengthAwarePaginator<int, ProductQuestion> */
-    public function queueFor(User $user, int $perPage = 20): LengthAwarePaginator;
+    /**
+     * @param  array{q?: string, status?: string}  $filters
+     * @return LengthAwarePaginator<int, ProductQuestion>
+     */
+    public function queueFor(User $user, array $filters = [], int $perPage = 20): LengthAwarePaginator;
 }

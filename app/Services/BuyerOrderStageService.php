@@ -18,15 +18,16 @@ class BuyerOrderStageService
             return BuyerOrderStage::ToPay;
         }
 
-        if ($order->sellerOrders->contains('status', 'paid')) {
-            return BuyerOrderStage::Processing;
-        }
-
         if ($order->sellerOrders->isNotEmpty()
             && $order->sellerOrders->every(fn (SellerOrder $sellerOrder): bool => $sellerOrder->status === 'completed')) {
             return BuyerOrderStage::Completed;
         }
 
-        return BuyerOrderStage::Shipped;
+        if ($order->sellerOrders->isNotEmpty()
+            && $order->sellerOrders->every(fn (SellerOrder $sellerOrder): bool => in_array($sellerOrder->status, ['shipped', 'completed'], true))) {
+            return BuyerOrderStage::Shipped;
+        }
+
+        return BuyerOrderStage::Processing;
     }
 }

@@ -123,11 +123,11 @@ class EloquentBuyerPortalRepository implements BuyerPortalRepository
             BuyerOrderStage::ToPay => $query->where('status', 'pending_payment'),
             BuyerOrderStage::Processing => $query
                 ->where('status', 'confirmed')
-                ->whereHas('sellerOrders', fn (Builder $query): Builder => $query->where('status', 'paid')),
+                ->whereHas('sellerOrders', fn (Builder $query): Builder => $query->whereIn('status', ['paid', 'processing', 'ready_to_ship'])),
             BuyerOrderStage::Shipped => $query
                 ->where('status', 'confirmed')
-                ->whereDoesntHave('sellerOrders', fn (Builder $query): Builder => $query->whereIn('status', ['paid', 'pending_payment']))
-                ->whereHas('sellerOrders', fn (Builder $query): Builder => $query->where('status', 'ready_to_ship')),
+                ->whereHas('sellerOrders', fn (Builder $query): Builder => $query->where('status', 'shipped'))
+                ->whereDoesntHave('sellerOrders', fn (Builder $query): Builder => $query->whereNotIn('status', ['shipped', 'completed'])),
             BuyerOrderStage::Completed => $query
                 ->where('status', 'confirmed')
                 ->whereHas('sellerOrders')

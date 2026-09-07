@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Notifications\BuyerOrderStatusNotification;
 use App\Notifications\NewReturnRequestNotification;
 use App\Notifications\OrderAcknowledgmentNotification;
 use App\Notifications\PaymentConfirmedNotification;
@@ -115,6 +116,13 @@ test('every transactional notification has consistent branded content', function
         '/seller/orders',
         'Payment status: Card payment confirmed.',
     ],
+    'buyer order shipped' => [
+        fn (): BuyerOrderStatusNotification => new BuyerOrderStatusNotification('PRO000234', 'SO-260906-ABC12345', 'shipped'),
+        'Order shipped: SO-260906-ABC12345',
+        'View order',
+        '/buyer/orders/PRO000234',
+        'Seller order SO-260906-ABC12345 is on its way.',
+    ],
     'return decision' => [
         fn (): ReturnDecisionNotification => new ReturnDecisionNotification(42, 'Travel Backpack', 'rejected', 'The item is outside the return window.'),
         'Return request rejected: Travel Backpack',
@@ -146,6 +154,7 @@ test('the branded email inventory covers every application notification', functi
         ->all();
 
     $coveredClasses = collect([
+        BuyerOrderStatusNotification::class,
         NewReturnRequestNotification::class,
         OrderAcknowledgmentNotification::class,
         PaymentConfirmedNotification::class,

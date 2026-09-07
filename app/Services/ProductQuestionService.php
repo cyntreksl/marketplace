@@ -40,11 +40,14 @@ class ProductQuestionService
         return $this->questions->save($question);
     }
 
-    /** @return LengthAwarePaginator<int, ProductQuestion> */
-    public function queueFor(User $user): LengthAwarePaginator
+    /**
+     * @param  array{q?: string, status?: string}  $filters
+     * @return LengthAwarePaginator<int, ProductQuestion>
+     */
+    public function queueFor(User $user, array $filters = []): LengthAwarePaginator
     {
         abort_unless($user->sellerProfile()->exists() || $user->roles()->whereIn('name', [Role::Admin, Role::SuperAdmin])->exists(), 403);
 
-        return $this->questions->queueFor($user);
+        return $this->questions->queueFor($user, $filters);
     }
 }

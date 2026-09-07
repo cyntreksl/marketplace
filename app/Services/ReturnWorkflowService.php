@@ -41,10 +41,13 @@ class ReturnWorkflowService
         return $this->returns->buyerRequests($buyer)->through(fn (ReturnRequest $returnRequest): array => $this->serializeRequest($returnRequest));
     }
 
-    /** @return LengthAwarePaginator<int, non-empty-array<string, mixed>> */
-    public function sellerRequests(User $seller): LengthAwarePaginator
+    /**
+     * @param  array{q?: string, status?: string}  $filters
+     * @return LengthAwarePaginator<int, non-empty-array<string, mixed>>
+     */
+    public function sellerRequests(User $seller, array $filters = []): LengthAwarePaginator
     {
-        return $this->returns->sellerRequests($seller)->through(fn (ReturnRequest $returnRequest): array => [
+        return $this->returns->sellerRequests($seller, $filters)->through(fn (ReturnRequest $returnRequest): array => [
             ...$this->serializeRequest($returnRequest),
             'buyer' => [
                 'name' => $returnRequest->buyer->name,

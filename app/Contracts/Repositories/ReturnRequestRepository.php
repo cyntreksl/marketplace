@@ -18,7 +18,11 @@ interface ReturnRequestRepository
     public function buyerRequests(User $buyer): LengthAwarePaginator;
 
     /** @return LengthAwarePaginator<int, ReturnRequest> */
-    public function sellerRequests(User $seller): LengthAwarePaginator;
+    /**
+     * @param  array{q?: string, status?: string}  $filters
+     * @return LengthAwarePaginator<int, ReturnRequest>
+     */
+    public function sellerRequests(User $seller, array $filters = []): LengthAwarePaginator;
 
     public function lockOrderItemForBuyer(int $orderItemId, User $buyer): ?OrderItem;
 

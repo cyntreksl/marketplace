@@ -30,13 +30,18 @@ function createPaidSellerOrder(SellerProfile $seller): SellerOrder
     return $seller->sellerOrders()->sole();
 }
 
-test('a seller can mark a paid order ready to ship and receive a manual tracking number', function () {
+test('a seller can process and dispatch a paid order with a manual tracking number', function () {
     $seller = SellerProfile::factory()->create();
     $sellerOrder = createPaidSellerOrder($seller);
 
-    $this->actingAs($seller->user)->post(route('seller.orders.ready', $sellerOrder), ['courier_name' => 'City Express'])->assertRedirect();
+    $this->actingAs($seller->user)->post(route('seller.orders.processing', $sellerOrder))->assertRedirect();
+    $this->actingAs($seller->user)->post(route('seller.orders.ready', $sellerOrder))->assertRedirect();
+    $this->actingAs($seller->user)->post(route('seller.orders.shipped', $sellerOrder), ['courier_name' => 'City Express'])->assertRedirect();
 
-    expect($sellerOrder->refresh()->status)->toBe('ready_to_ship')
+    expect($sellerOrder->refresh()->status)->toBe('shipped')
+        ->and($sellerOrder->processing_at)->not->toBeNull()
+        ->and($sellerOrder->ready_to_ship_at)->not->toBeNull()
+        ->and($sellerOrder->shipped_at)->not->toBeNull()
         ->and($sellerOrder->shipment->courier_name)->toBe('City Express')
         ->and($sellerOrder->shipment->tracking_number)->toStartWith('MAN-');
 });

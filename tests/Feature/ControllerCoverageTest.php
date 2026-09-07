@@ -65,7 +65,7 @@ test('a seller can access each workspace screen', function () {
             ->component('seller/wallet')
             ->where('availableBalance', '0')
             ->has('entries.data', 0)
-            ->has('payouts', 0));
+            ->has('payouts.data', 0));
 });
 
 test('the seller product form limits HTTP asset preload headers', function () {

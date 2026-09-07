@@ -51,7 +51,7 @@ test('seller is redirected to the seller portal after email verification', funct
     $this->actingAs($seller)
         ->withSession(['url.intended' => route('cart.show')])
         ->get($verificationUrl)
-        ->assertRedirect(route('seller.listings.index', ['verified' => 1], absolute: false));
+        ->assertRedirect(route('seller.dashboard', ['verified' => 1], absolute: false));
 
     expect($seller->fresh()->hasVerifiedEmail())->toBeTrue();
 });

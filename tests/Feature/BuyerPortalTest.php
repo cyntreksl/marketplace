@@ -40,7 +40,7 @@ test('order stages classify mixed seller fulfilment deterministically', function
     $buyer = User::factory()->create();
     $toPay = buyerOrderWithPackages($buyer, 'pending_payment', ['pending_payment']);
     $processing = buyerOrderWithPackages($buyer, 'confirmed', ['paid', 'ready_to_ship']);
-    $shipped = buyerOrderWithPackages($buyer, 'confirmed', ['ready_to_ship', 'completed']);
+    $shipped = buyerOrderWithPackages($buyer, 'confirmed', ['shipped', 'completed']);
     $completed = buyerOrderWithPackages($buyer, 'confirmed', ['completed', 'completed']);
     $archived = buyerOrderWithPackages($buyer, 'expired', ['expired']);
 

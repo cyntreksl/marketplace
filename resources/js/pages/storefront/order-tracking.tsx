@@ -13,6 +13,10 @@ type TrackingResult = {
             number: string;
             seller: string;
             status: string;
+            processingAt: string | null;
+            readyAt: string | null;
+            shippedAt: string | null;
+            deliveredAt: string | null;
             courier: string | null;
             trackingNumber: string | null;
             shipmentStatus: string | null;
@@ -131,6 +135,39 @@ export default function OrderTracking({
                                                 {shipment.trackingNumber}
                                             </p>
                                         )}
+                                        <ol className="mt-4 grid gap-2 border-l border-slate-200 pl-4 text-xs">
+                                            {[
+                                                [
+                                                    'Processing',
+                                                    shipment.processingAt,
+                                                ],
+                                                [
+                                                    'Ready to ship',
+                                                    shipment.readyAt,
+                                                ],
+                                                ['Shipped', shipment.shippedAt],
+                                                [
+                                                    'Delivered',
+                                                    shipment.deliveredAt,
+                                                ],
+                                            ].map(([label, at]) => (
+                                                <li
+                                                    key={label}
+                                                    className={
+                                                        at
+                                                            ? 'text-slate-700'
+                                                            : 'text-slate-400'
+                                                    }
+                                                >
+                                                    <span className="font-bold">
+                                                        {label}
+                                                    </span>{' '}
+                                                    {at
+                                                        ? `· ${new Date(at).toLocaleString()}`
+                                                        : '· Not yet recorded'}
+                                                </li>
+                                            ))}
+                                        </ol>
                                         {shipment.history.length > 0 && (
                                             <ol className="mt-3 grid gap-2 border-l pl-4 text-xs text-slate-500">
                                                 {shipment.history.map(

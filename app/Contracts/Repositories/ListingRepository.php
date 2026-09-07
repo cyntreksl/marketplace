@@ -72,7 +72,11 @@ interface ListingRepository
     public function otherListingsFromSeller(Listing $listing, int $limit = 6): Collection;
 
     /** @return LengthAwarePaginator<int, Listing> */
-    public function paginateForSeller(SellerProfile $seller, int $perPage = 15): LengthAwarePaginator;
+    /**
+     * @param  array{q?: string, status?: string, sort?: string}  $filters
+     * @return LengthAwarePaginator<int, Listing>
+     */
+    public function paginateForSeller(SellerProfile $seller, array $filters = [], int $perPage = 20): LengthAwarePaginator;
 
     public function save(Listing $listing): Listing;
 

@@ -1,7 +1,10 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { store } from '@/actions/App/Http/Controllers/SellerWalletController';
-import { PortalLayout } from '@/components/portal-layout';
+import { SellerPageHeader } from '@/components/seller-page-header';
+import { SellerPagination } from '@/components/seller-pagination';
+import { SellerPortalLayout } from '@/components/seller-portal-layout';
 import { index as ordersIndex } from '@/routes/seller/orders';
+import type { SellerPaginator } from '@/types';
 
 type Entry = {
     id: number;
@@ -23,13 +26,13 @@ export default function SellerWallet({
     payouts,
 }: {
     availableBalance: string;
-    entries: { data: Entry[] };
-    payouts: Payout[];
+    entries: SellerPaginator<Entry>;
+    payouts: SellerPaginator<Payout>;
 }) {
     return (
-        <PortalLayout portal="seller" title="Seller wallet">
+        <SellerPortalLayout title="Wallet">
             <Head title="Seller wallet" />
-            <main className="mx-auto max-w-7xl">
+            <main>
                 <Link
                     href={ordersIndex()}
                     className="text-sm font-bold text-primary"
@@ -38,47 +41,87 @@ export default function SellerWallet({
                 </Link>
                 <div className="mt-4 grid gap-6 lg:grid-cols-[1fr_22rem]">
                     <section>
-                        <p className="text-sm font-bold tracking-wider text-primary uppercase">
-                            Seller wallet
-                        </p>
-                        <h1 className="mt-2 text-4xl font-black">
-                            LKR {Number(availableBalance).toLocaleString()}
-                        </h1>
-                        <p className="mt-2 text-stone-500">
-                            Available balance. Holds and pending settlements are
-                            excluded.
-                        </p>
+                        <SellerPageHeader
+                            eyebrow="Seller wallet"
+                            title={`LKR ${Number(availableBalance).toLocaleString()}`}
+                            description="Available balance. Holds and pending settlements are excluded."
+                        />
                         <div className="mt-8 overflow-hidden rounded-2xl border border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900">
                             {entries.data.length === 0 ? (
                                 <p className="p-10 text-center text-stone-500">
                                     No ledger entries yet.
                                 </p>
                             ) : (
-                                <ul className="divide-y divide-stone-200 dark:divide-stone-800">
-                                    {entries.data.map((entry) => (
-                                        <li
-                                            key={entry.id}
-                                            className="flex items-center justify-between gap-3 p-4"
-                                        >
-                                            <div>
-                                                <p className="font-semibold">
-                                                    {entry.reason}
+                                <>
+                                    <table className="hidden w-full table-fixed text-left text-sm md:table">
+                                        <thead className="bg-slate-50 text-xs text-slate-500 uppercase dark:bg-slate-950">
+                                            <tr>
+                                                <th className="w-1/2 px-5 py-3">
+                                                    Transaction
+                                                </th>
+                                                <th className="px-4 py-3">
+                                                    Type
+                                                </th>
+                                                <th className="px-4 py-3">
+                                                    Status
+                                                </th>
+                                                <th className="px-5 py-3 text-right">
+                                                    Amount
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                            {entries.data.map((entry) => (
+                                                <tr key={entry.id}>
+                                                    <td className="px-5 py-4 font-semibold">
+                                                        {entry.reason}
+                                                    </td>
+                                                    <td className="px-4 py-4 capitalize">
+                                                        {entry.type.replaceAll(
+                                                            '_',
+                                                            ' ',
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-4 capitalize">
+                                                        {entry.status}
+                                                    </td>
+                                                    <td className="px-5 py-4 text-right font-bold">
+                                                        LKR{' '}
+                                                        {Number(
+                                                            entry.amount,
+                                                        ).toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    <ul className="divide-y divide-stone-200 md:hidden dark:divide-stone-800">
+                                        {entries.data.map((entry) => (
+                                            <li
+                                                key={entry.id}
+                                                className="flex items-center justify-between gap-3 p-4"
+                                            >
+                                                <div>
+                                                    <p className="font-semibold">
+                                                        {entry.reason}
+                                                    </p>
+                                                    <p className="text-sm text-stone-500 capitalize">
+                                                        {entry.type} ·{' '}
+                                                        {entry.status}
+                                                    </p>
+                                                </div>
+                                                <p className="font-bold">
+                                                    LKR{' '}
+                                                    {Number(
+                                                        entry.amount,
+                                                    ).toLocaleString()}
                                                 </p>
-                                                <p className="text-sm text-stone-500 capitalize">
-                                                    {entry.type} ·{' '}
-                                                    {entry.status}
-                                                </p>
-                                            </div>
-                                            <p className="font-bold">
-                                                LKR{' '}
-                                                {Number(
-                                                    entry.amount,
-                                                ).toLocaleString()}
-                                            </p>
-                                        </li>
-                                    ))}
-                                </ul>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </>
                             )}
+                            <SellerPagination paginator={entries} />
                         </div>
                     </section>
                     <aside className="h-max rounded-2xl bg-stone-100 p-5 dark:bg-stone-900">
@@ -120,7 +163,7 @@ export default function SellerWallet({
                         </Form>
                         <h3 className="mt-8 font-bold">Recent requests</h3>
                         <ul className="mt-3 grid gap-2 text-sm">
-                            {payouts.map((payout) => (
+                            {payouts.data.map((payout) => (
                                 <li
                                     key={payout.id}
                                     className="flex justify-between"
@@ -135,9 +178,10 @@ export default function SellerWallet({
                                 </li>
                             ))}
                         </ul>
+                        <SellerPagination paginator={payouts} />
                     </aside>
                 </div>
             </main>
-        </PortalLayout>
+        </SellerPortalLayout>
     );
 }

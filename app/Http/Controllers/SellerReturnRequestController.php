@@ -3,20 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\DecideReturnRequestRequest;
+use App\Http\Requests\SellerReturnIndexRequest;
 use App\Models\ReturnRequest;
 use App\ReturnStatus;
 use App\Services\ReturnWorkflowService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class SellerReturnRequestController extends Controller
 {
-    public function index(Request $request, ReturnWorkflowService $returns): Response
+    public function index(SellerReturnIndexRequest $request, ReturnWorkflowService $returns): Response
     {
         return Inertia::render('seller/returns/index', [
-            'returns' => $returns->sellerRequests($request->user()),
+            'returns' => $returns->sellerRequests($request->user(), $request->validated()),
+            'filters' => ['q' => $request->validated('q', ''), 'status' => $request->validated('status', 'all')],
         ]);
     }
 

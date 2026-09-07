@@ -3,7 +3,7 @@ import { ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import { update } from '@/actions/App/Http/Controllers/SellerStoreController';
 import { CategoryArtworkUploader } from '@/components/category-artwork-uploader';
-import { PortalLayout } from '@/components/portal-layout';
+import { SellerPortalLayout } from '@/components/seller-portal-layout';
 import { show as storeShow } from '@/routes/stores';
 import type { PublicSellerSummary } from '@/types';
 
@@ -16,7 +16,7 @@ export default function StoreSettings({
     const [removeCover, setRemoveCover] = useState(false);
 
     return (
-        <PortalLayout portal="seller" title="Store settings">
+        <SellerPortalLayout title="Storefront">
             <main className="mx-auto max-w-4xl">
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
                     <div>
@@ -167,6 +167,6 @@ export default function StoreSettings({
                     )}
                 </Form>
             </main>
-        </PortalLayout>
+        </SellerPortalLayout>
     );
 }

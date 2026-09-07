@@ -23,7 +23,7 @@ class EmailVerificationResponse implements VerifyEmailResponse
         $user = $request->user();
 
         if ($user->roles()->whereIn('name', [Role::IndividualSeller, Role::BusinessSeller])->exists()) {
-            return to_route('seller.listings.index', ['verified' => 1]);
+            return to_route('seller.dashboard', ['verified' => 1]);
         }
 
         return redirect()->intended(Fortify::redirects('email-verification').'?verified=1');

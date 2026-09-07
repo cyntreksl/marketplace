@@ -28,15 +28,17 @@ class ListingService
     ) {}
 
     /**
-     * @return array{sellerStatus: string, listings: LengthAwarePaginator<int, Listing>}
+     * @param  array{q?: string, status?: string, sort?: string}  $filters
+     * @return array{sellerStatus: string, listings: LengthAwarePaginator<int, Listing>, filters: array{q: string, status: string, sort: string}}
      */
-    public function sellerIndex(User $seller): array
+    public function sellerIndex(User $seller, array $filters = []): array
     {
         $profile = $this->sellerProfileFor($seller);
 
         return [
             'sellerStatus' => $profile->status,
-            'listings' => $this->listings->paginateForSeller($profile),
+            'listings' => $this->listings->paginateForSeller($profile, $filters),
+            'filters' => ['q' => $filters['q'] ?? '', 'status' => $filters['status'] ?? 'all', 'sort' => $filters['sort'] ?? 'newest'],
         ];
     }
 

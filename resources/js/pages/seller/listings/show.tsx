@@ -15,8 +15,8 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { edit } from '@/actions/App/Http/Controllers/SellerListingController';
-import { PortalLayout } from '@/components/portal-layout';
 import { RichTextContent } from '@/components/rich-text-editor';
+import { SellerPortalLayout } from '@/components/seller-portal-layout';
 import { show as storefrontProduct } from '@/routes/listings';
 import { index as productsIndex } from '@/routes/seller/listings';
 
@@ -244,10 +244,7 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
     const specifications = listing.specifications ?? {};
 
     return (
-        <PortalLayout
-            portal="seller"
-            title={listing.title ?? 'Product details'}
-        >
+        <SellerPortalLayout title={listing.title ?? 'Product details'}>
             <Head title={listing.title ?? 'Product details'} />
             <main className="mx-auto max-w-[1480px]">
                 <Link
@@ -677,6 +674,6 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
                     </aside>
                 </div>
             </main>
-        </PortalLayout>
+        </SellerPortalLayout>
     );
 }

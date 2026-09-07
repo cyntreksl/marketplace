@@ -29,6 +29,7 @@ use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\ProductQuestionController;
 use App\Http\Controllers\ProductQuestionQueueController;
 use App\Http\Controllers\ReturnEvidenceController;
+use App\Http\Controllers\SellerDashboardController;
 use App\Http\Controllers\SellerListingController;
 use App\Http\Controllers\SellerOnboardingController;
 use App\Http\Controllers\SellerOrderController;
@@ -118,9 +119,13 @@ Route::middleware('auth')->prefix('seller')->name('seller.')->group(function ():
 });
 
 Route::middleware(['auth', 'verified'])->prefix('seller')->name('seller.')->group(function (): void {
+    Route::get('/', SellerDashboardController::class)->name('dashboard');
     Route::get('/orders', [SellerOrderController::class, 'index'])->name('orders.index');
-    Route::post('/orders/{sellerOrder}/ready', [SellerOrderController::class, 'ready'])->name('orders.ready');
-    Route::post('/orders/{sellerOrder}/delivered', [SellerOrderController::class, 'delivered'])->name('orders.delivered');
+    Route::get('/orders/{sellerOrder:number}', [SellerOrderController::class, 'show'])->name('orders.show');
+    Route::post('/orders/{sellerOrder:number}/processing', [SellerOrderController::class, 'processing'])->name('orders.processing');
+    Route::post('/orders/{sellerOrder:number}/ready', [SellerOrderController::class, 'ready'])->name('orders.ready');
+    Route::post('/orders/{sellerOrder:number}/shipped', [SellerOrderController::class, 'shipped'])->name('orders.shipped');
+    Route::post('/orders/{sellerOrder:number}/delivered', [SellerOrderController::class, 'delivered'])->name('orders.delivered');
     Route::get('/returns', [SellerReturnRequestController::class, 'index'])->name('returns.index');
     Route::patch('/returns/{returnRequest}', [SellerReturnRequestController::class, 'update'])->name('returns.update');
     Route::get('/wallet', [SellerWalletController::class, 'index'])->name('wallet.index');
