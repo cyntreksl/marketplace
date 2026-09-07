@@ -205,5 +205,7 @@ test('synthetic command requires a temporary code and never displays credentials
         ->assertSuccessful();
 
     expect($gateway->event?->name)->toBe('ViewContent')
+        ->and($gateway->event?->userData['em'][0])->toBe(hash('sha256', 'meta-test@prodeals.lk'))
+        ->and(json_encode($gateway->event?->toArray(), JSON_THROW_ON_ERROR))->not->toContain('meta-test@prodeals.lk')
         ->and($gateway->testEventCode)->toBe('TEST123');
 });

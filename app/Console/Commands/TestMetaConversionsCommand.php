@@ -39,7 +39,11 @@ class TestMetaConversionsCommand extends Command
             id: 'Test:'.Str::uuid(),
             occurredAt: now()->getTimestamp(),
             sourceUrl: $sourceUrl,
-            userData: ['client_user_agent' => 'ProDeals Meta Conversions deployment verification'],
+            userData: [
+                'client_user_agent' => 'ProDeals Meta Conversions deployment verification',
+                'em' => [hash('sha256', 'meta-test@prodeals.lk')],
+                'external_id' => [hash('sha256', 'prodeals-deployment-verification')],
+            ],
             customData: [
                 'currency' => 'LKR',
                 'value' => '1.00',
