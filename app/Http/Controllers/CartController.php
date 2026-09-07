@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AddCartItemRequest;
 use App\Http\Requests\UpdateCartItemRequest;
 use App\Services\CartService;
+use App\Services\MetaConversionsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -12,7 +13,10 @@ use Inertia\Response;
 
 class CartController extends Controller
 {
-    public function __construct(private readonly CartService $carts) {}
+    public function __construct(
+        private readonly CartService $carts,
+        private readonly MetaConversionsService $metaConversions,
+    ) {}
 
     public function show(Request $request): Response
     {
@@ -21,7 +25,8 @@ class CartController extends Controller
 
     public function store(AddCartItemRequest $request): RedirectResponse
     {
-        $this->carts->add($request, (int) $request->validated('listing_id'), $request->validated('listing_variant_id') === null ? null : (int) $request->validated('listing_variant_id'), (int) $request->validated('quantity'));
+        $addedItem = $this->carts->add($request, (int) $request->validated('listing_id'), $request->validated('listing_variant_id') === null ? null : (int) $request->validated('listing_variant_id'), (int) $request->validated('quantity'));
+        $this->metaConversions->trackAddToCart($request, $addedItem);
         if ($request->validated('buy_now', false)) {
             return to_route('checkout.show');
         }

@@ -12,6 +12,7 @@ use App\Services\CartService;
 use App\Services\CheckoutAddressService;
 use App\Services\CheckoutPaymentService;
 use App\Services\CheckoutService;
+use App\Services\MetaConversionsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -30,6 +31,7 @@ class CheckoutController extends Controller
         private readonly CheckoutService $checkout,
         private readonly CheckoutAddressService $checkoutAddresses,
         private readonly BuyerAddressService $buyerAddresses,
+        private readonly MetaConversionsService $metaConversions,
     ) {}
 
     public function show(Request $request): Response
@@ -47,8 +49,11 @@ class CheckoutController extends Controller
             $billingAddress = $this->buyerAddresses->selected($request->user(), null, 'billing')?->snapshot();
         }
 
+        $cart = $this->carts->summary($request);
+        $this->metaConversions->trackInitiateCheckout($request, $cart);
+
         return Inertia::render('buyer/checkout', [
-            'cart' => $this->carts->summary($request),
+            'cart' => $cart,
             'shippingAddress' => $shippingAddress,
             'billingAddress' => $billingAddress,
             'savedAddresses' => $this->buyerAddresses->all($request->user()),
@@ -160,7 +165,15 @@ class CheckoutController extends Controller
             return to_route('checkout.payment.show')->withErrors(['payment_method' => 'Choose a payment method before placing your order.']);
         }
 
-        $order = $this->checkout->checkout($request->user(), $paymentMethod, $shippingAddress, $request->validated('checkout_token'), $request->validated('review_hash'), $request->session()->get('checkout.billing_address'));
+        $order = $this->checkout->checkout(
+            $request->user(),
+            $paymentMethod,
+            $shippingAddress,
+            $request->validated('checkout_token'),
+            $request->validated('review_hash'),
+            $request->session()->get('checkout.billing_address'),
+            $this->metaConversions->captureAttribution($request),
+        );
         $request->session()->forget('checkout');
 
         if ($paymentMethod === 'stripe') {

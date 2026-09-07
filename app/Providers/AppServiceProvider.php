@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\CourierAdapter;
+use App\Contracts\MetaConversionsGateway;
 use App\Contracts\PaymentGateway;
 use App\Contracts\Repositories\AuctionRepository;
 use App\Contracts\Repositories\BuyerAddressRepository;
@@ -47,6 +48,7 @@ use App\Repositories\EloquentReturnRequestRepository;
 use App\Repositories\EloquentReviewRepository;
 use App\Repositories\EloquentSellerStoreRepository;
 use App\Repositories\EloquentWatchlistRepository;
+use App\Services\MetaConversionsApiService;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -90,6 +92,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(CheckoutRepository::class, EloquentCheckoutRepository::class);
         $this->app->bind(MarketplaceSettingRepository::class, EloquentMarketplaceSettingRepository::class);
         $this->app->bind(CourierAdapter::class, ManualCourierAdapter::class);
+        $this->app->bind(MetaConversionsGateway::class, MetaConversionsApiService::class);
     }
 
     /**

@@ -21,6 +21,7 @@ class CheckoutPaymentService
         private readonly PaymentGateway $gateway,
         private readonly SellerOrderNotificationService $sellerOrderNotifications,
         private readonly PaymentAttemptService $attempts,
+        private readonly MetaConversionsService $metaConversions,
     ) {}
 
     public function start(CustomerOrder $order): ?string
@@ -124,7 +125,9 @@ class CheckoutPaymentService
     /** @param array<string, mixed> $session */
     private function apply(int $paymentId, array $session): void
     {
-        DB::transaction(function () use ($paymentId, $session): void {
+        $confirmedOrder = null;
+
+        DB::transaction(function () use ($paymentId, $session, &$confirmedOrder): void {
             $payment = $this->orders->lockPayment($paymentId);
             abort_unless(
                 (string) data_get($session, 'metadata.payment_id') === (string) $payment->id
@@ -144,10 +147,15 @@ class CheckoutPaymentService
                 $this->orders->confirm($payment->customerOrder);
                 $payment->customerOrder->buyer->notify(new PaymentConfirmedNotification($payment->customerOrder->number, $payment->amount));
                 $this->sellerOrderNotifications->notifyReady($payment->customerOrder, $payment->method);
+                $confirmedOrder = $payment->customerOrder;
             } elseif (($session['status'] ?? '') === 'expired' && ($session['payment_status'] ?? '') === 'unpaid') {
                 $this->expire($payment->id);
             }
         });
+
+        if ($confirmedOrder !== null) {
+            $this->metaConversions->trackPurchase($confirmedOrder);
+        }
     }
 
     private function expire(int $paymentId): void

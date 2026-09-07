@@ -1,5 +1,7 @@
 <?php
 
+use App\Contracts\MetaConversionsGateway;
+use App\Jobs\SendMetaPurchase;
 use App\Models\CustomerOrder;
 use App\Models\Listing;
 use App\Models\Payment;
@@ -8,9 +10,11 @@ use App\Models\User;
 use App\Notifications\OrderAcknowledgmentNotification;
 use App\Notifications\PaymentConfirmedNotification;
 use App\Notifications\SellerOrderReadyNotification;
+use App\Support\MetaConversionEvent;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Testing\TestResponse;
 
 beforeEach(function (): void {
@@ -84,15 +88,23 @@ test('card checkout redirects to hosted payment and duplicate placement reuses t
 });
 
 test('verified card payment confirms seller orders and notifies once', function (): void {
+    config([
+        'services.meta_conversions.enabled' => true,
+        'services.meta_conversions.pixel_id' => '2154698912092970',
+        'services.meta_conversions.access_token' => 'test-access-token',
+    ]);
+    Queue::fake();
     [, $listing, $review] = prepareCardOrder();
     $seller = $listing->sellerProfile->user;
     fakeStripeCheckout();
     $this->post(route('checkout.review.store'), $review);
+    Queue::assertNotPushed(SendMetaPurchase::class);
     Notification::assertNotSentTo($seller, SellerOrderReadyNotification::class);
     $payment = Payment::sole();
     fakeStripeCheckout('paid');
     sendStripeEvent($payment)->assertNoContent();
     sendStripeEvent($payment)->assertNoContent();
+    Queue::assertPushed(SendMetaPurchase::class, 1);
     $this->get(route('checkout.card.return', $payment->customerOrder->number))->assertRedirect();
     expect($payment->fresh()->status)->toBe('paid')->and($payment->fresh()->provider_reference)->toBe('pi_test_paid')->and($payment->customerOrder->fresh()->status)->toBe('confirmed')->and($payment->customerOrder->sellerOrders()->sole()->status)->toBe('paid')->and($listing->fresh()->reserved_quantity)->toBe(2);
     expect($payment->attempts()->sole()->status->value)->toBe('succeeded');
@@ -103,6 +115,31 @@ test('verified card payment confirms seller orders and notifies once', function 
         && $notification->sellerSubtotal === '2000.00'
         && $notification->paymentMethod === 'stripe');
     Notification::assertSentTimes(SellerOrderReadyNotification::class, 1);
+});
+
+test('verified card payment remains successful during a Meta outage', function (): void {
+    config([
+        'services.meta_conversions.enabled' => true,
+        'services.meta_conversions.pixel_id' => '2154698912092970',
+        'services.meta_conversions.access_token' => 'test-access-token',
+    ]);
+    app()->instance(MetaConversionsGateway::class, new class implements MetaConversionsGateway
+    {
+        public function send(MetaConversionEvent $event, ?string $testEventCode = null): void
+        {
+            throw new RuntimeException('Simulated Meta outage');
+        }
+    });
+    [, , $review] = prepareCardOrder();
+    fakeStripeCheckout();
+    $this->post(route('checkout.review.store'), $review);
+    $payment = Payment::sole();
+    fakeStripeCheckout('paid');
+
+    sendStripeEvent($payment)->assertNoContent();
+
+    expect($payment->fresh()->status)->toBe('paid')
+        ->and($payment->customerOrder->fresh()->status)->toBe('confirmed');
 });
 
 test('canceled or declined card checkout remains retryable without a new order', function (): void {

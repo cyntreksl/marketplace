@@ -27,16 +27,18 @@ class CheckoutService
         private readonly CartService $cartService,
         private readonly SellerOrderNotificationService $sellerOrderNotifications,
         private readonly PaymentAttemptService $paymentAttempts,
+        private readonly MetaConversionsService $metaConversions,
     ) {}
 
     /**
      * @param  array<string, string|null>  $shippingAddress
      * @param  array<string, string|null>|null  $billingAddress
+     * @param  array<string, string|null>|null  $metaAttribution
      */
-    public function checkout(User $buyer, string $paymentMethod, array $shippingAddress, ?string $token = null, ?string $reviewHash = null, ?array $billingAddress = null): CustomerOrder
+    public function checkout(User $buyer, string $paymentMethod, array $shippingAddress, ?string $token = null, ?string $reviewHash = null, ?array $billingAddress = null, ?array $metaAttribution = null): CustomerOrder
     {
         $created = false;
-        $order = DB::transaction(function () use ($buyer, $paymentMethod, $shippingAddress, $billingAddress, $token, $reviewHash, &$created): CustomerOrder {
+        $order = DB::transaction(function () use ($buyer, $paymentMethod, $shippingAddress, $billingAddress, $metaAttribution, $token, $reviewHash, &$created): CustomerOrder {
             $cart = $this->repository->cart($buyer);
             if ($token !== null && ($existing = $this->repository->findSubmission($buyer, $token)) !== null) {
                 return $this->repository->details($existing);
@@ -119,6 +121,7 @@ class CheckoutService
                 'shipping_total' => (string) $shippingTotal,
                 'shipping_address' => $shippingAddress,
                 'billing_address' => $billingAddress ?? $shippingAddress,
+                'meta_attribution' => $metaAttribution,
             ]);
 
             foreach ($cartItems->groupBy(fn (CartItem $item): int => $item->listing->seller_profile_id) as $sellerProfileId => $items) {
@@ -186,6 +189,7 @@ class CheckoutService
 
             if ($paymentMethod === 'cod') {
                 $this->sellerOrderNotifications->notifyReady($order, $paymentMethod);
+                $this->metaConversions->trackPurchase($order);
             }
         }
 

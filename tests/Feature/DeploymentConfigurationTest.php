@@ -68,15 +68,34 @@ test('production deployment is gated and uses atomic releases', function () {
 test('production service configuration keeps queue timeout below retry interval', function () {
     $environment = file_get_contents(base_path('.github/deploy/production.env.example'));
     $supervisor = file_get_contents(base_path('.github/deploy/supervisor-prodeals.conf'));
+    $metaWorkflow = file_get_contents(base_path('.github/workflows/configure-meta-conversions.yml'));
+    $metaConfiguration = file_get_contents(base_path('.github/deploy/sync-meta-conversions.sh'));
 
     expect($environment)
         ->toContain('DB_QUEUE_RETRY_AFTER=90')
         ->toContain('MYSQL_ATTR_SSL_CA=/etc/ssl/certs/aws-rds-global-bundle.pem')
         ->toContain('MEDIA_DISK=r2')
         ->toContain('R2_PUBLIC_URL=https://media.prodeals.lk')
+        ->toContain('META_CONVERSIONS_ENABLED=false')
+        ->toContain('META_CONVERSIONS_API_VERSION=v25.0')
         ->and($supervisor)
         ->toContain('--timeout=75')
-        ->toContain('user=deploy');
+        ->toContain('user=deploy')
+        ->and($metaWorkflow)
+        ->toContain('secrets.META_CONVERSIONS_ACCESS_TOKEN')
+        ->toContain('vars.META_CONVERSIONS_ENABLED')
+        ->toContain('vars.META_CONVERSIONS_PIXEL_ID')
+        ->toContain('for host in "$WEB_HOST" "$WORKER_HOST"')
+        ->toContain('meta:conversions:test --test-event-code=-')
+        ->toContain('sudo systemctl restart php8.4-fpm')
+        ->toContain('sudo supervisorctl restart prodeals-worker')
+        ->not->toContain('echo "$META_CONVERSIONS_ACCESS_TOKEN"')
+        ->and($metaConfiguration)
+        ->toContain('META_CONVERSIONS_ACCESS_TOKEN=/d')
+        ->toContain('mktemp "${shared_dir}/.env.meta.XXXXXX"')
+        ->toContain('mv -f -- "$temporary_file" "$environment_file"')
+        ->toContain('rollback_configuration')
+        ->toContain('php8.4 artisan config:cache');
 });
 
 test('trusted proxy headers preserve secure urls behind Cloudflare', function () {

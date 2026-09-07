@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\CustomerOrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,9 +18,11 @@ use Illuminate\Support\Carbon;
  * @property numeric-string $total
  * @property array<string, string|null> $shipping_address
  * @property array<string, string|null>|null $billing_address
+ * @property array<string, string|null>|null $meta_attribution
  * @property Carbon|null $created_at
  */
-#[Fillable(['checkout_token', 'number', 'buyer_id', 'status', 'subtotal', 'shipping_total', 'total', 'shipping_address', 'billing_address'])]
+#[Fillable(['checkout_token', 'number', 'buyer_id', 'status', 'subtotal', 'shipping_total', 'total', 'shipping_address', 'billing_address', 'meta_attribution'])]
+#[Hidden(['meta_attribution'])]
 class CustomerOrder extends Model
 {
     /** @use HasFactory<CustomerOrderFactory> */
@@ -27,7 +30,7 @@ class CustomerOrder extends Model
 
     protected function casts(): array
     {
-        return ['subtotal' => 'decimal:2', 'shipping_total' => 'decimal:2', 'total' => 'decimal:2', 'shipping_address' => 'array', 'billing_address' => 'array'];
+        return ['subtotal' => 'decimal:2', 'shipping_total' => 'decimal:2', 'total' => 'decimal:2', 'shipping_address' => 'array', 'billing_address' => 'array', 'meta_attribution' => 'encrypted:array'];
     }
 
     /** @return BelongsTo<User, $this> */

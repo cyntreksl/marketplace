@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\RecentlyViewedListingsRequest;
 use App\Http\Requests\StorefrontBrowseRequest;
+use App\Services\MetaConversionsService;
 use App\Services\StorefrontService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -15,6 +16,7 @@ class StorefrontController extends Controller
 {
     public function __construct(
         private readonly StorefrontService $storefront,
+        private readonly MetaConversionsService $metaConversions,
     ) {}
 
     public function home(): Response
@@ -67,12 +69,14 @@ class StorefrontController extends Controller
     public function show(Request $request, string $listing): Response
     {
         $variantId = filter_var($request->query('variant'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-
-        return Inertia::render('storefront/listings/show', $this->storefront->listingDetailsData(
+        $details = $this->storefront->listingDetailsData(
             $listing,
             $request->user(),
             $variantId === false ? null : $variantId,
-        ));
+        );
+        $this->metaConversions->trackViewContent($request, $details['listing'], $details['selectedVariantId']);
+
+        return Inertia::render('storefront/listings/show', $details);
     }
 
     public function recent(RecentlyViewedListingsRequest $request): JsonResponse

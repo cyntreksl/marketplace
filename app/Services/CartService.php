@@ -109,9 +109,10 @@ class CartService
         }
     }
 
-    public function add(Request $request, int $listingId, ?int $variantId, int $quantity): void
+    /** @return array<string, mixed> */
+    public function add(Request $request, int $listingId, ?int $variantId, int $quantity): array
     {
-        DB::transaction(function () use ($request, $listingId, $variantId, $quantity): void {
+        return DB::transaction(function () use ($request, $listingId, $variantId, $quantity): array {
             if ($request->user() !== null) {
                 $this->carts->lock($request->user());
             }
@@ -131,6 +132,8 @@ class CartService
                     $request->session()->put('guest_cart_token', (string) Str::uuid());
                 }
             }
+
+            return $this->summarize([array_replace($entry, ['quantity' => $quantity])])['items'][0];
         });
     }
 

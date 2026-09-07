@@ -65,4 +65,11 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    'meta_conversions' => [
+        'enabled' => filter_var(env('META_CONVERSIONS_ENABLED', false), FILTER_VALIDATE_BOOL),
+        'pixel_id' => env('META_CONVERSIONS_PIXEL_ID'),
+        'access_token' => env('META_CONVERSIONS_ACCESS_TOKEN'),
+        'api_version' => env('META_CONVERSIONS_API_VERSION', 'v25.0'),
+    ],
+
 ];

@@ -1,0 +1,111 @@
+name: configure-meta-conversions
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_test_event:
+        description: Send a synthetic event with the temporary Meta Test Event Code
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://prodeals.lk
+    concurrency:
+      group: prodeals-production
+      cancel-in-progress: false
+    env:
+      WEB_HOST: ${{ secrets.WEB_HOST }}
+      WORKER_HOST: ${{ secrets.WORKER_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      META_CONVERSIONS_ENABLED: ${{ vars.META_CONVERSIONS_ENABLED }}
+      META_CONVERSIONS_PIXEL_ID: ${{ vars.META_CONVERSIONS_PIXEL_ID }}
+      META_CONVERSIONS_ACCESS_TOKEN: ${{ secrets.META_CONVERSIONS_ACCESS_TOKEN }}
+      META_CONVERSIONS_API_VERSION: v25.0
+      META_CONVERSIONS_TEST_EVENT_CODE: ${{ secrets.META_CONVERSIONS_TEST_EVENT_CODE }}
+      TRANSACTION_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+
+    steps:
+      - name: Checkout configuration tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          install -m 600 /dev/null "$HOME/.ssh/id_ed25519"
+          install -m 600 /dev/null "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+
+      - name: Atomically configure web and worker
+        run: |
+          set -Eeuo pipefail
+
+          ssh_options=(-o BatchMode=yes -o StrictHostKeyChecking=yes)
+          remote_script="/tmp/prodeals-sync-meta-conversions.sh"
+
+          encode() {
+            printf '%s' "$1" | base64 | tr -d '\n'
+          }
+
+          configuration_payload() {
+            printf '%s\n' \
+              "$(encode "$META_CONVERSIONS_ENABLED")" \
+              "$(encode "$META_CONVERSIONS_PIXEL_ID")" \
+              "$(encode "$META_CONVERSIONS_ACCESS_TOKEN")" \
+              "$(encode "$META_CONVERSIONS_API_VERSION")"
+          }
+
+          rollback() {
+            exit_code="$?"
+            trap - ERR
+            set +e
+            for host in "$WEB_HOST" "$WORKER_HOST"; do
+              ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "${remote_script} rollback ${TRANSACTION_ID}"
+            done
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" 'sudo systemctl restart php8.4-fpm && sudo systemctl restart prodeals-ssr'
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl restart prodeals-worker'
+            exit "$exit_code"
+          }
+
+          trap rollback ERR
+
+          for host in "$WEB_HOST" "$WORKER_HOST"; do
+            scp "${ssh_options[@]}" .github/deploy/sync-meta-conversions.sh "${DEPLOY_USER}@${host}:${remote_script}"
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "chmod 700 ${remote_script}"
+            configuration_payload | ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "${remote_script} apply ${TRANSACTION_ID}"
+          done
+
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" 'sudo systemctl restart php8.4-fpm && sudo systemctl restart prodeals-ssr'
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl restart prodeals-worker'
+
+          for host in "$WEB_HOST" "$WORKER_HOST"; do
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "cd /var/www/prodeals/current && php8.4 -r 'require \"vendor/autoload.php\"; \$app = require \"bootstrap/app.php\"; \$app->make(Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap(); exit(config(\"services.meta_conversions.pixel_id\") && config(\"services.meta_conversions.access_token\") && config(\"services.meta_conversions.api_version\") === \"v25.0\" ? 0 : 1);'"
+          done
+
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" 'ss -ltn | grep -q "127.0.0.1:13714"'
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl status prodeals-worker | grep -q RUNNING'
+          curl --fail --silent --show-error --retry 10 --retry-delay 3 --retry-all-errors https://prodeals.lk/up
+
+          if [[ "${{ inputs.run_test_event }}" == "true" ]]; then
+            test -n "$META_CONVERSIONS_TEST_EVENT_CODE"
+            printf '%s\n' "$META_CONVERSIONS_TEST_EVENT_CODE" | ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" 'cd /var/www/prodeals/current && php8.4 artisan meta:conversions:test --test-event-code=- --no-interaction'
+          fi
+
+          for host in "$WEB_HOST" "$WORKER_HOST"; do
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "${remote_script} commit ${TRANSACTION_ID} && rm -f ${remote_script}"
+          done
+
+          trap - ERR
