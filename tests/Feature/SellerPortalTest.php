@@ -11,6 +11,7 @@ use App\Models\SellerLedgerEntry;
 use App\Models\SellerOrder;
 use App\Models\SellerProfile;
 use App\Notifications\BuyerOrderStatusNotification;
+use App\Services\SellerPortalService;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -42,6 +43,17 @@ test('seller dashboard shows scoped business metrics', function () {
             ->component('seller/overview')
             ->where('metrics.orders_needing_action', 1)
             ->where('metrics.ready_to_dispatch', 1));
+});
+
+test('seller dashboard activity serializes recent orders without lazy loading', function () {
+    $profile = SellerProfile::factory()->create();
+    $order = sellerOrderForPortal($profile, ['status' => 'paid']);
+
+    $activity = app(SellerPortalService::class)->activity($profile->user);
+
+    expect($activity['recent_orders'])->toHaveCount(1)
+        ->and($activity['recent_orders'][0]['number'])->toBe($order->number)
+        ->and($activity['recent_orders'][0]['shipment'])->toBeNull();
 });
 
 test('seller orders are owner scoped searchable filterable and paginated', function () {

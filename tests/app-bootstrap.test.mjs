@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -39,4 +39,13 @@ test('the React refresh transform does not import and initialize the app twice',
         await server.close();
         await rm(cacheDir, { recursive: true, force: true });
     }
+});
+
+test('shared portal pages opt out of the authenticated app shell', async () => {
+    const app = await readFile(
+        fileURLToPath(new URL('../resources/js/app.tsx', import.meta.url)),
+        'utf8',
+    );
+
+    assert.match(app, /case name\.startsWith\('shared\/'\):/);
 });

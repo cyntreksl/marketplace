@@ -67,6 +67,39 @@ test('seller data views provide desktop tables and mobile cards with pagination'
     assert.match(pagination, /Next/);
 });
 
+test('seller profile pages share the portal header and avoid nested main landmarks', async () => {
+    const storefront = await readFile(
+        resourcePath('pages/seller/store.tsx'),
+        'utf8',
+    );
+    const businessProfile = await readFile(
+        resourcePath('pages/seller/onboarding.tsx'),
+        'utf8',
+    );
+    const questions = await readFile(
+        resourcePath('pages/shared/product-questions.tsx'),
+        'utf8',
+    );
+    const artworkUploader = await readFile(
+        resourcePath('components/category-artwork-uploader.tsx'),
+        'utf8',
+    );
+
+    for (const view of [storefront, businessProfile, questions]) {
+        assert.match(view, /SellerPageHeader/);
+        assert.doesNotMatch(view, /<main/);
+    }
+
+    assert.match(storefront, /<div className="space-y-6">/);
+    assert.match(businessProfile, /<div className="space-y-6">/);
+    assert.doesNotMatch(storefront, /mx-auto max-w-/);
+    assert.doesNotMatch(businessProfile, /mx-auto max-w-/);
+    assert.match(questions, /No customer questions found/);
+    assert.match(artworkUploader, /const isWideArtwork = aspect >= 3/);
+    assert.match(artworkUploader, /sm:grid-cols-\[18rem_minmax\(0,1fr\)\]/);
+    assert.match(artworkUploader, /sm:grid-cols-\[9rem_minmax\(0,1fr\)\]/);
+});
+
 test('seller order details expose an accessible journey and contextual actions', async () => {
     const detail = await readFile(
         resourcePath('pages/seller/orders/show.tsx'),
@@ -79,4 +112,15 @@ test('seller order details expose an accessible journey and contextual actions',
     assert.match(detail, /processing\.form/);
     assert.match(detail, /shipped\.form/);
     assert.match(detail, /delivered\.form/);
+});
+
+test('seller overview constrains long low-stock product titles', async () => {
+    const overview = await readFile(
+        resourcePath('pages/seller/overview.tsx'),
+        'utf8',
+    );
+
+    assert.match(overview, /className="grid min-w-0 gap-5"/);
+    assert.match(overview, /className="min-w-0 truncate font-semibold"/);
+    assert.match(overview, /className="shrink-0 text-rose-600"/);
 });

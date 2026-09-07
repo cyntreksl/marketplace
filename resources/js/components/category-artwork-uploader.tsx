@@ -11,6 +11,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
 export type ArtworkCrop = {
     x: number;
@@ -206,6 +207,7 @@ export function CategoryArtworkUploader({
 
     const previewUrl = sourceUrl ?? existingUrl;
     const error = clientError ?? imageError ?? cropError;
+    const isWideArtwork = aspect >= 3;
 
     return (
         <div className="grid gap-3">
@@ -216,9 +218,23 @@ export function CategoryArtworkUploader({
                 </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-[9rem_1fr] sm:items-stretch">
+            <div
+                className={cn(
+                    'grid gap-3',
+                    isWideArtwork
+                        ? 'sm:grid-cols-[18rem_minmax(0,1fr)] sm:items-start'
+                        : 'sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-stretch',
+                )}
+            >
                 <div
-                    className={`relative overflow-hidden rounded-2xl bg-primary/10 ring-1 ring-primary/10 ${aspect === 1 ? 'aspect-square' : aspect === 4 ? 'aspect-4/1' : 'aspect-3/4'}`}
+                    className={cn(
+                        'relative w-full min-w-0 overflow-hidden rounded-2xl bg-primary/10 ring-1 ring-primary/10',
+                        aspect === 1
+                            ? 'aspect-square'
+                            : aspect === 4
+                              ? 'aspect-4/1'
+                              : 'aspect-3/4',
+                    )}
                 >
                     {previewUrl ? (
                         sourceUrl && imageSize && crop ? (
@@ -251,7 +267,12 @@ export function CategoryArtworkUploader({
                     onDragOver={(event) => event.preventDefault()}
                     onDragLeave={() => setIsDragging(false)}
                     onDrop={onDrop}
-                    className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed p-5 text-center transition ${isDragging ? 'border-primary bg-primary/10' : 'border-slate-300 bg-white hover:border-primary/60 hover:bg-primary/5 dark:border-slate-700 dark:bg-slate-900'}`}
+                    className={cn(
+                        'flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed p-5 text-center transition',
+                        isDragging
+                            ? 'border-primary bg-primary/10'
+                            : 'border-slate-300 bg-white hover:border-primary/60 hover:bg-primary/5 dark:border-slate-700 dark:bg-slate-900',
+                    )}
                 >
                     <UploadCloud className="size-6 text-primary" />
                     <span className="mt-2 text-sm font-black">

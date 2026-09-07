@@ -113,7 +113,7 @@ class EloquentSellerPortalRepository implements SellerPortalRepository
 
     public function recentOrders(User $seller, int $limit): Collection
     {
-        return $this->orderQuery($seller)->with(['customerOrder:id,number,buyer_id,shipping_address', 'customerOrder.buyer:id,name', 'items:id,seller_order_id,title,quantity'])->latest()->limit($limit)->get();
+        return $this->orderQuery($seller)->with(['customerOrder:id,number,buyer_id,shipping_address', 'customerOrder.buyer:id,name', 'items:id,seller_order_id,title,quantity', 'shipment:id,seller_order_id,courier_name,tracking_number,status'])->latest()->limit($limit)->get();
     }
 
     public function lowStockProducts(User $seller, int $limit): Collection

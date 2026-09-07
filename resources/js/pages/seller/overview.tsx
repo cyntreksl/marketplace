@@ -150,7 +150,7 @@ export default function SellerOverview({
                     }
                 >
                     <div className="grid gap-5 xl:grid-cols-3">
-                        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2 dark:border-slate-800 dark:bg-slate-900">
+                        <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-2 dark:border-slate-800 dark:bg-slate-900">
                             <div className="flex items-center justify-between">
                                 <h2 className="text-lg font-black">
                                     Recent orders
@@ -199,8 +199,8 @@ export default function SellerOverview({
                                 )}
                             </div>
                         </section>
-                        <div className="grid gap-5">
-                            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <div className="grid min-w-0 gap-5">
+                            <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                                 <div className="flex items-center justify-between">
                                     <h2 className="font-black">Low stock</h2>
                                     <Link
@@ -216,12 +216,12 @@ export default function SellerOverview({
                                             <li key={item.id}>
                                                 <Link
                                                     href={listingShow(item.id)}
-                                                    className="flex justify-between gap-3 text-sm"
+                                                    className="flex min-w-0 justify-between gap-3 text-sm"
                                                 >
-                                                    <span className="truncate font-semibold">
+                                                    <span className="min-w-0 truncate font-semibold">
                                                         {item.title}
                                                     </span>
-                                                    <span className="text-rose-600">
+                                                    <span className="shrink-0 text-rose-600">
                                                         {
                                                             item.available_quantity
                                                         }{' '}
@@ -239,7 +239,7 @@ export default function SellerOverview({
                                     )}
                                 </ul>
                             </section>
-                            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                            <section className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
                                 <div className="flex items-center justify-between">
                                     <h2 className="flex items-center gap-2 font-black">
                                         <HelpCircle className="size-4" />{' '}
