@@ -1,3 +1,4 @@
+import { Cookie } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
     readConsent,
@@ -54,9 +55,11 @@ export function ConsentManager() {
             <button
                 type="button"
                 onClick={() => setManaging(true)}
-                className="fixed bottom-3 left-3 z-50 rounded-full border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 shadow-lg hover:border-orange-400 hover:text-orange-700 lg:left-[292px]"
+                aria-label="Cookie preferences"
+                title="Cookie preferences"
+                className="fixed bottom-3 left-3 z-50 grid size-10 place-items-center rounded-full border border-slate-300 bg-white text-slate-700 shadow-lg transition-colors hover:border-orange-400 hover:text-orange-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
             >
-                Cookie preferences
+                <Cookie className="size-5" aria-hidden />
             </button>
         );
     }

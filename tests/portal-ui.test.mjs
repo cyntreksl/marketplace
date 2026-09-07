@@ -28,11 +28,15 @@ test('shared profile settings display email as non-editable information', async 
     assert.match(profile, /Email address cannot be changed\./);
 });
 
-test('cookie preferences clear the desktop buyer portal sidebar', async () => {
+test('cookie preferences use a compact icon at the bottom left', async () => {
     const consentManager = await readFile(
         resourcePath('components/consent-manager.tsx'),
         'utf8',
     );
 
-    assert.match(consentManager, /lg:left-\[292px\]/);
+    assert.match(consentManager, /aria-label="Cookie preferences"/);
+    assert.match(consentManager, /<Cookie className="size-5" aria-hidden \/>/);
+    assert.match(consentManager, /fixed bottom-3 left-3/);
+    assert.match(consentManager, /size-10/);
+    assert.doesNotMatch(consentManager, /lg:left-/);
 });
