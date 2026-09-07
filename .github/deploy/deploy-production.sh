@@ -25,8 +25,7 @@ fi
 
 readonly remote_artifact="/tmp/prodeals-${RELEASE_ID}.tar.gz"
 readonly deployment_started_at="$SECONDS"
-readonly runtime_parent="${RUNNER_TEMP:-/tmp}"
-readonly runtime_dir="$(mktemp -d "${runtime_parent}/prodeals-deploy.XXXXXX")"
+readonly runtime_dir="$(mktemp -d /tmp/prodeals.XXXXXX)"
 readonly control_path="${runtime_dir}/ssh-%C"
 readonly -a hosts=("$WEB_HOST" "$WORKER_HOST")
 readonly -a ssh_options=(

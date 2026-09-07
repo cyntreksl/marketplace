@@ -31,6 +31,7 @@ test('production deployment is gated and uses atomic releases', function () {
         ->toContain('@php artisan test --compact --parallel --coverage --min=80')
         ->and($deploymentScript)
         ->toContain('ControlMaster=auto')
+        ->toContain('mktemp -d /tmp/prodeals.XXXXXX')
         ->toContain("run_stage 'Upload and prepare releases' run_on_hosts prepare_release")
         ->toContain("run_stage 'Activate releases' run_on_hosts activate_release")
         ->toContain("run_stage 'Clean old releases' run_on_hosts cleanup_release")
