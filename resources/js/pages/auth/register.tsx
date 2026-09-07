@@ -125,6 +125,8 @@ export default function Register({ passwordRules }: Props) {
                         </div>
 
                         <Link
+                            hidden
+                            style={{ display: 'none' }}
                             href={sellerRegister()}
                             className="group flex min-h-16 items-center gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-3.5 text-left transition-colors hover:border-primary/40 hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none"
                         >

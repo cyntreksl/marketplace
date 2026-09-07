@@ -118,6 +118,8 @@ test('homepage output filters curated listings and uses the reference-first coll
         ->toContain('Big tech. Bigger savings.')
         ->and($storefrontLayout)
         ->toContain('bg-[#FF6D00]')
+        ->toContain('hidden={isHomePage}')
+        ->toContain("style={isHomePage ? { display: 'none' } : undefined}")
         ->toContain('Become a Seller');
 });
 

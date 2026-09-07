@@ -193,6 +193,8 @@ export function StorefrontLayout({
                         </Link>
                         <CartDrawer />
                         <Link
+                            hidden={isHomePage}
+                            style={isHomePage ? { display: 'none' } : undefined}
                             href={
                                 auth.is_seller
                                     ? sellerDashboard()

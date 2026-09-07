@@ -20,6 +20,13 @@ test('registration screen can be rendered', function () {
         );
 });
 
+test('registration screen keeps the seller registration link hidden', function () {
+    $registerComponent = file_get_contents(resource_path('js/pages/auth/register.tsx'));
+
+    expect($registerComponent)
+        ->toMatch('/<Link\s+hidden\s+style=\{\{ display: \'none\' \}\}\s+href=\{sellerRegister\(\)\}/');
+});
+
 test('new users can register', function () {
     $response = $this->post(route('register.store'), [
         'name' => 'Test User',
