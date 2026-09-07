@@ -31,6 +31,18 @@ test('social profile placeholders stay unconfigured until real links are supplie
     expect(array_filter(config('marketplace.social_urls')))->toBeEmpty();
 });
 
+test('cookie disclosures explain Meta click attribution separately from optional Pixel consent', function () {
+    $documents = file_get_contents(resource_path('js/content/marketplace-documents.ts'));
+    $consentManager = file_get_contents(resource_path('js/components/consent-manager.tsx'));
+
+    expect($documents)
+        ->toContain('stores the latest formatted identifier in the _fbc cookie for up to 90 days')
+        ->toContain('Apart from the _fbc click-attribution cookie described above')
+        ->and($consentManager)
+        ->toContain('Visits from Meta ads may store a click')
+        ->toContain('attribution cookie for up to 90 days');
+});
+
 test('the storefront shares footer support and payment details', function () {
     $this->get(route('home'))
         ->assertOk()

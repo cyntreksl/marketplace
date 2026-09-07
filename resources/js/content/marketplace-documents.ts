@@ -528,7 +528,7 @@ export const marketplaceDocuments: Record<string, MarketplaceDocument> = {
         eyebrow: 'Legal',
         title: 'Cookie policy',
         summary:
-            'ProDeals.lk uses required storage for security and optional analytics or marketing technologies only after your consent.',
+            'ProDeals.lk uses required storage for security, records attribution when a Meta ad links to us, and loads optional analytics or marketing technologies only after your consent.',
         sections: [
             {
                 id: 'what-they-are',
@@ -539,7 +539,7 @@ export const marketplaceDocuments: Record<string, MarketplaceDocument> = {
             },
             {
                 id: 'cookies-we-use',
-                title: 'Required cookies and storage',
+                title: 'Required and click-attribution storage',
                 paragraphs: [
                     'The marketplace uses a session cookie to keep signed-in activity connected, CSRF/XSRF protection to defend form submissions, and an appearance preference to remember light, dark, or system mode. Authentication and security features may use related short-lived browser storage as required.',
                 ],
@@ -548,13 +548,14 @@ export const marketplaceDocuments: Record<string, MarketplaceDocument> = {
                     'Security and CSRF protection: required to validate trusted requests.',
                     'Appearance preference: remembers a display choice requested by the user.',
                     'Consent preference: stores your versioned analytics and marketing choices for up to one year.',
+                    'Meta click attribution: when a Meta ad includes a click ID in its link, stores the latest formatted identifier in the _fbc cookie for up to 90 days so related marketplace events can be attributed to that ad.',
                 ],
             },
             {
                 id: 'optional-technologies',
                 title: 'Optional analytics and marketing',
                 paragraphs: [
-                    'If you grant analytics consent, Google Analytics 4 and Microsoft Clarity may measure page use, product discovery, checkout progress, and purchases so we can improve the marketplace. If you grant marketing consent, Meta Pixel may measure campaign performance. These providers can set their own cookies only after the relevant permission is granted.',
+                    'If you grant analytics consent, Google Analytics 4 and Microsoft Clarity may measure page use, product discovery, checkout progress, and purchases so we can improve the marketplace. If you grant marketing consent, Meta Pixel may measure campaign performance and set its browser identifier cookie. Apart from the _fbc click-attribution cookie described above, these optional providers can set their own cookies only after the relevant permission is granted.',
                     'Google Tag Manager loads only after analytics or marketing consent. Rejecting all prevents the tag manager and optional vendors from loading. We do not send names, email addresses, phone numbers, postal addresses, or other direct personal details in analytics events.',
                 ],
             },

@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Middleware\AddSearchRobotHeaders;
+use App\Http\Middleware\CaptureMetaClickId;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Services\MetaClickIdService;
 use App\Support\TrackingConsent;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -20,11 +22,17 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
         $middleware->validateCsrfTokens(except: ['webhooks/stripe']);
 
-        $middleware->encryptCookies(except: ['sidebar_state', TrackingConsent::COOKIE_NAME]);
+        $middleware->encryptCookies(except: [
+            'sidebar_state',
+            TrackingConsent::COOKIE_NAME,
+            MetaClickIdService::COOKIE_NAME,
+            MetaClickIdService::BROWSER_COOKIE_NAME,
+        ]);
 
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,
+            CaptureMetaClickId::class,
             AddSearchRobotHeaders::class,
             AddLinkHeadersForPreloadedAssets::using(5),
         ]);

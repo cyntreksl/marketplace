@@ -22,6 +22,7 @@ class MetaConversionsService
     public function __construct(
         private readonly MetaConversionsGateway $gateway,
         private readonly CustomerOrderRepository $orders,
+        private readonly MetaClickIdService $clickIds,
     ) {}
 
     public function isEnabled(): bool
@@ -123,18 +124,11 @@ class MetaConversionsService
             return null;
         }
 
-        $fbc = $this->bounded($request->cookie('_fbc'));
-        $fbclid = $this->bounded($request->query('fbclid'));
-
-        if ($fbc === null && $fbclid !== null && preg_match('/^[A-Za-z0-9._-]+$/', $fbclid) === 1) {
-            $fbc = 'fb.1.'.now()->getTimestampMs().'.'.$fbclid;
-        }
-
         return [
             'client_ip_address' => $request->ip(),
             'client_user_agent' => $this->bounded($request->userAgent()),
-            'fbp' => $this->bounded($request->cookie('_fbp')),
-            'fbc' => $fbc,
+            'fbp' => $this->bounded($request->cookie(MetaClickIdService::BROWSER_COOKIE_NAME)),
+            'fbc' => $this->clickIds->value($request),
             'source_url' => $request->fullUrl(),
         ];
     }

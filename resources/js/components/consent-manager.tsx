@@ -80,7 +80,8 @@ export function ConsentManager() {
             <p className="mt-2 text-base leading-6 text-slate-600">
                 Required cookies keep ProDeals secure. With your permission,
                 analytics helps us improve shopping and marketing helps measure
-                relevant campaigns.
+                relevant campaigns. Visits from Meta ads may store a click
+                attribution cookie for up to 90 days.
             </p>
 
             {managing && (

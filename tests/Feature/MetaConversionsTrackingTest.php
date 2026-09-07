@@ -24,16 +24,30 @@ beforeEach(function (): void {
 test('valid public listing views queue ViewContent while crawlers and prefetches do not', function (): void {
     Queue::fake();
     $listing = Listing::factory()->create(['price' => '2500.00', 'sale_price' => null]);
+    $this->travelTo('2026-09-07 12:34:56');
+    config(['session.domain' => 'prodeals.lk']);
+    $clickId = 'AbC_def-123.XyZ';
+    $expectedFbc = 'fb.1.'.now()->getTimestampMs().'.'.$clickId;
 
-    $this->withHeader('User-Agent', 'Mozilla/5.0')
-        ->get(route('listings.show', $listing->slug).'?fbclid=click_123')
-        ->assertOk();
+    $response = $this->withHeader('User-Agent', 'Mozilla/5.0')
+        ->get(route('listings.show', $listing->slug).'?fbclid='.$clickId)
+        ->assertOk()
+        ->assertPlainCookie('_fbc', $expectedFbc)
+        ->assertCookieNotExpired('_fbc');
 
-    Queue::assertPushed(SendMetaConversion::class, function (SendMetaConversion $job) use ($listing): bool {
+    $cookie = $response->getCookie('_fbc', false);
+    expect($cookie?->getExpiresTime())->toBe(now()->addDays(90)->timestamp)
+        ->and($cookie?->getPath())->toBe('/')
+        ->and($cookie?->getDomain())->toBe('prodeals.lk')
+        ->and($cookie?->isSecure())->toBeTrue()
+        ->and($cookie?->isHttpOnly())->toBeFalse()
+        ->and($cookie?->getSameSite())->toBe('lax');
+
+    Queue::assertPushed(SendMetaConversion::class, function (SendMetaConversion $job) use ($expectedFbc, $listing): bool {
         return $job->event->name === 'ViewContent'
             && $job->event->customData['content_ids'] === [(string) $listing->id]
             && $job->event->customData['value'] === '2500.00'
-            && str_starts_with($job->event->userData['fbc'], 'fb.1.')
+            && $job->event->userData['fbc'] === $expectedFbc
             && ! array_key_exists('fbclid', $job->event->userData);
     });
 
@@ -43,17 +57,73 @@ test('valid public listing views queue ViewContent while crawlers and prefetches
     Queue::assertNothingPushed();
 });
 
+test('existing Meta cookies remain plaintext and an unchanged click id is not reset', function (): void {
+    Queue::fake();
+    $listing = Listing::factory()->create();
+    $fbc = 'fb.1.1788775200123.Existing.Click-ID';
+    $fbp = 'fb.1.1788775200123.1116446470';
+
+    $this->withUnencryptedCookies(['_fbc' => $fbc, '_fbp' => $fbp])
+        ->withHeader('User-Agent', 'Mozilla/5.0')
+        ->get(route('listings.show', $listing->slug).'?fbclid=Existing.Click-ID')
+        ->assertOk()
+        ->assertCookieMissing('_fbc');
+
+    Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => $job->event->userData['fbc'] === $fbc
+        && $job->event->userData['fbp'] === $fbp);
+});
+
+test('a newer Meta click replaces stored attribution and preserves case', function (): void {
+    Queue::fake();
+    $listing = Listing::factory()->create();
+    $this->travelTo('2026-09-07 13:00:00');
+    $existingFbc = 'fb.1.1788775200123.OldClick';
+    $newClickId = 'NewClick_AbC-123';
+    $expectedFbc = 'fb.1.'.now()->getTimestampMs().'.'.$newClickId;
+
+    $this->withUnencryptedCookie('_fbc', $existingFbc)
+        ->withHeader('User-Agent', 'Mozilla/5.0')
+        ->get(route('listings.show', $listing->slug).'?fbclid='.$newClickId)
+        ->assertOk()
+        ->assertPlainCookie('_fbc', $expectedFbc);
+
+    Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => $job->event->userData['fbc'] === $expectedFbc);
+});
+
+test('invalid Meta click ids and ordinary traffic do not create attribution cookies', function (mixed $clickId): void {
+    $url = route('home');
+
+    if ($clickId !== null) {
+        $url .= '?'.http_build_query(['fbclid' => $clickId]);
+    }
+
+    $this->get($url)
+        ->assertOk()
+        ->assertCookieMissing('_fbc');
+})->with([
+    'no Meta click' => null,
+    'unsafe characters' => 'bad click!',
+    'oversized value' => str_repeat('A', 501),
+    'non-scalar value' => [['click-id']],
+]);
+
 test('successful cart additions queue the added quantity and invalid mutations do not', function (): void {
     Queue::fake();
     $listing = Listing::factory()->create(['price' => '1000.00', 'sale_price' => null, 'stock_quantity' => 5]);
+    $fbc = 'fb.1.1788775200123.CartClick';
+    $fbp = 'fb.1.1788775200123.1116446470';
 
-    $this->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 2])->assertSessionHasNoErrors();
+    $this->withUnencryptedCookies(['_fbc' => $fbc, '_fbp' => $fbp])
+        ->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 2])
+        ->assertSessionHasNoErrors();
     $this->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 1])->assertSessionHasNoErrors();
 
     Queue::assertPushed(SendMetaConversion::class, 2);
     Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => $job->event->name === 'AddToCart'
         && $job->event->customData['contents'][0]['quantity'] === 1
-        && $job->event->customData['value'] === '1000.00');
+        && $job->event->customData['value'] === '1000.00'
+        && $job->event->userData['fbc'] === $fbc
+        && $job->event->userData['fbp'] === $fbp);
 
     Queue::fake();
     $this->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 100])->assertSessionHasErrors('quantity');
@@ -68,10 +138,12 @@ test('checkout queues only for a non-empty valid cart and disabled tracking is s
     Queue::assertNothingPushed();
 
     $listing = Listing::factory()->create();
+    $fbc = 'fb.1.1788775200123.CheckoutClick';
     $this->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 1]);
     Queue::fake();
-    $this->get(route('checkout.show'))->assertOk();
-    Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => $job->event->name === 'InitiateCheckout');
+    $this->withUnencryptedCookie('_fbc', $fbc)->get(route('checkout.show'))->assertOk();
+    Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => $job->event->name === 'InitiateCheckout'
+        && $job->event->userData['fbc'] === $fbc);
 
     config(['services.meta_conversions.enabled' => false]);
     Queue::fake();
@@ -83,9 +155,11 @@ test('confirmed COD orders queue Purchase and store attribution encrypted', func
     Queue::fake();
     $buyer = User::factory()->create(['email' => 'buyer@example.com', 'name' => 'Buyer Person']);
     $listing = Listing::factory()->create(['price' => '1000.00', 'sale_price' => null]);
+    $fbc = 'fb.1.1788775200123.PurchaseClick';
+    $fbp = 'fb.1.1788775200123.1116446470';
 
     $this->actingAs($buyer)
-        ->withCookie('_fbp', 'fb.1.123.browser')
+        ->withUnencryptedCookies(['_fbc' => $fbc, '_fbp' => $fbp])
         ->withHeader('User-Agent', 'Checkout Browser')
         ->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 2]);
     $this->post(route('checkout.store'), [
@@ -99,16 +173,17 @@ test('confirmed COD orders queue Purchase and store attribution encrypted', func
     $review = checkoutReviewData();
     Queue::fake();
 
-    $this->withCookie('_fbp', 'fb.1.123.browser')
-        ->withHeader('User-Agent', 'Checkout Browser')
+    $this->withHeader('User-Agent', 'Checkout Browser')
         ->post(route('checkout.review.store'), $review)
         ->assertRedirect();
 
     $order = CustomerOrder::sole();
     $rawAttribution = DB::table('customer_orders')->where('id', $order->id)->value('meta_attribution');
-    expect($order->fresh()->meta_attribution['fbp'])->toBe('fb.1.123.browser')
+    expect($order->fresh()->meta_attribution['fbc'])->toBe($fbc)
+        ->and($order->fresh()->meta_attribution['fbp'])->toBe($fbp)
         ->and($rawAttribution)->not->toContain('Checkout Browser')
-        ->and($rawAttribution)->not->toContain('fb.1.123.browser');
+        ->and($rawAttribution)->not->toContain($fbc)
+        ->and($rawAttribution)->not->toContain($fbp);
     Queue::assertPushed(SendMetaPurchase::class, 1);
 });
 
@@ -116,8 +191,11 @@ test('Purchase uses a stable event id hashes PII and clears accepted attribution
     Queue::fake();
     $buyer = User::factory()->create(['email' => 'buyer@example.com', 'name' => 'Buyer Person']);
     $listing = Listing::factory()->create(['price' => '1000.00', 'sale_price' => null]);
+    $fbc = 'fb.1.1788775200123.CompletedPurchaseClick';
 
-    $this->actingAs($buyer)->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 1]);
+    $this->actingAs($buyer)
+        ->withUnencryptedCookie('_fbc', $fbc)
+        ->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 1]);
     $this->post(route('checkout.store'), [
         'recipient_name' => 'Buyer Person',
         'address_line_one' => '10 Main Road',
@@ -148,6 +226,7 @@ test('Purchase uses a stable event id hashes PII and clears accepted attribution
         ->and($gateway->event?->customData['order_id'])->toBe($order->number)
         ->and($gateway->event?->userData['em'][0])->toBe(hash('sha256', 'buyer@example.com'))
         ->and($gateway->event?->userData['ph'][0])->toBe(hash('sha256', '94771234567'))
+        ->and($gateway->event?->userData['fbc'])->toBe($fbc)
         ->and($serialized)->not->toContain('buyer@example.com')
         ->and($serialized)->not->toContain('0771234567')
         ->and($order->fresh()->meta_attribution)->toBeNull();
