@@ -5,8 +5,6 @@ use App\Models\CartItem;
 use App\Models\Listing;
 use App\Models\MarketplaceSetting;
 use App\Models\User;
-use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 test('guests can manage a cart with authoritative totals and no account', function (): void {
@@ -63,22 +61,19 @@ test('shipping is configurable and COD eligibility includes delivery', function 
     $this->get(route('cart.show'))->assertInertia(fn ($page) => $page->where('cart.shippingTotal', '750.00')->where('cart.total', '50250.00')->where('cart.paymentMethods', []));
 });
 
-test('unverified customers can manage carts but cannot checkout', function (): void {
+test('unverified customers can continue through checkout', function (): void {
     $this->actingAs(User::factory()->unverified()->create());
     $listing = Listing::factory()->create();
     $this->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 1, 'buy_now' => true])->assertRedirect(route('checkout.show'));
-    $this->get(route('checkout.show'))->assertRedirect(route('verification.notice'));
+    $this->get(route('checkout.show'))->assertInertia(fn ($page) => $page->has('cart.items', 1));
 });
 
-test('guest checkout survives login and email verification', function (): void {
-    Notification::fake();
+test('guest checkout survives login without requiring email verification', function (): void {
     $buyer = User::factory()->unverified()->create(['two_factor_secret' => null, 'two_factor_confirmed_at' => null]);
     $listing = Listing::factory()->create();
     $this->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 1, 'buy_now' => true])->assertRedirect(route('checkout.show'));
     $this->get(route('checkout.show'))->assertRedirect(route('login'));
     $this->post(route('login'), ['email' => $buyer->email, 'password' => 'password'])->assertRedirect(route('checkout.show'));
-    $this->get(route('checkout.show'))->assertRedirect(route('verification.notice'));
-    $this->get(URL::temporarySignedRoute('verification.verify', now()->addMinutes(10), ['id' => $buyer->id, 'hash' => sha1($buyer->email)]))->assertRedirect(route('checkout.show'));
     $this->get(route('checkout.show'))->assertInertia(fn ($page) => $page->has('cart.items', 1));
 });
 

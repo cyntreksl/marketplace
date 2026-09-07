@@ -1,7 +1,9 @@
 import { Form, Head, usePage } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
+import { CircleAlert } from 'lucide-react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -91,27 +93,38 @@ export default function Profile({
 
                             {mustVerifyEmail &&
                                 auth.user.email_verified_at === null && (
-                                    <div>
-                                        <p className="-mt-4 text-sm text-muted-foreground">
-                                            Your email address is unverified.{' '}
+                                    <Alert
+                                        className="border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200"
+                                        data-test="email-verification-needed"
+                                    >
+                                        <CircleAlert />
+                                        <AlertTitle>
+                                            Email verification needed
+                                        </AlertTitle>
+                                        <AlertDescription className="text-amber-800 dark:text-amber-300">
+                                            <p>
+                                                You can continue using ProDeals,
+                                                but please verify your email
+                                                address.{' '}
+                                            </p>
                                             <Link
                                                 href={send()}
                                                 as="button"
-                                                className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
+                                                className="font-medium text-amber-950 underline underline-offset-4 dark:text-amber-200"
                                             >
-                                                Click here to re-send the
-                                                verification email.
+                                                Resend verification email
                                             </Link>
-                                        </p>
 
-                                        {status ===
-                                            'verification-link-sent' && (
-                                            <div className="mt-2 text-sm font-medium text-green-600">
-                                                A new verification link has been
-                                                sent to your email address.
-                                            </div>
-                                        )}
-                                    </div>
+                                            {status ===
+                                                'verification-link-sent' && (
+                                                <p className="font-medium text-green-700 dark:text-green-400">
+                                                    A new verification link has
+                                                    been sent to your email
+                                                    address.
+                                                </p>
+                                            )}
+                                        </AlertDescription>
+                                    </Alert>
                                 )}
 
                             <div className="flex items-center gap-4">

@@ -3,12 +3,23 @@
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Routing\Route as LaravelRoute;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Laravel\Fortify\Features;
 
 beforeEach(function () {
     $this->skipUnlessFortifyHas(Features::emailVerification());
+});
+
+test('application routes do not require email verification', function () {
+    $routesRequiringVerification = collect(app('router')->getRoutes())
+        ->filter(fn (LaravelRoute $route): bool => in_array('verified', $route->gatherMiddleware(), true))
+        ->map(fn (LaravelRoute $route): string => $route->getName() ?? $route->uri())
+        ->values()
+        ->all();
+
+    expect($routesRequiringVerification)->toBeEmpty();
 });
 
 test('email verification screen can be rendered', function () {

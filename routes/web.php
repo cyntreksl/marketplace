@@ -99,7 +99,7 @@ Route::get('/categories/{category}', [StorefrontController::class, 'category'])-
 Route::get('/seller/register', [SellerRegistrationController::class, 'create'])->middleware('guest')->name('seller.register');
 
 Route::post('/auctions/{auction}/bids', [AuctionBidController::class, 'store'])
-    ->middleware(['auth', 'verified', 'throttle:auction-bids'])
+    ->middleware(['auth', 'throttle:auction-bids'])
     ->name('auctions.bids.store');
 
 Route::middleware('auth')->prefix('seller')->name('seller.')->group(function (): void {
@@ -118,7 +118,7 @@ Route::middleware('auth')->prefix('seller')->name('seller.')->group(function ():
     Route::post('/listings/submit', [SellerListingController::class, 'submit'])->name('listings.submit');
 });
 
-Route::middleware(['auth', 'verified'])->prefix('seller')->name('seller.')->group(function (): void {
+Route::middleware('auth')->prefix('seller')->name('seller.')->group(function (): void {
     Route::get('/', SellerDashboardController::class)->name('dashboard');
     Route::get('/orders', [SellerOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{sellerOrder:number}', [SellerOrderController::class, 'show'])->name('orders.show');
@@ -138,7 +138,7 @@ Route::patch('/cart/items/{item}', [CartController::class, 'update'])->block()->
 Route::delete('/cart/items/{item}', [CartController::class, 'destroy'])->block()->name('cart.items.destroy');
 Route::post('/webhooks/stripe', [CheckoutPaymentController::class, 'webhook'])->name('webhooks.stripe');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware('auth')->group(function () {
     Route::post('/checkout/orders/{customerOrder:number}/pay', [CheckoutPaymentController::class, 'retry'])->name('checkout.card.retry');
     Route::get('/checkout/orders/{customerOrder:number}/return', [CheckoutPaymentController::class, 'returned'])->name('checkout.card.return');
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
@@ -181,7 +181,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('returns.evidence.show');
 });
 
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function (): void {
+Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/homepage', [AdminHomepageController::class, 'index'])->name('homepage.index');
     Route::put('/homepage/categories', [AdminHomepageController::class, 'updateCategories'])->name('homepage.categories.update');

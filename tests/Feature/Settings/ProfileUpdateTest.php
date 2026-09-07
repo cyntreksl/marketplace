@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Inertia\Testing\AssertableInertia as Assert;
 
 test('profile page is displayed', function () {
     $user = User::factory()->create();
@@ -11,6 +12,21 @@ test('profile page is displayed', function () {
 
     $response->assertOk();
 });
+
+test('unverified users can open profile settings and are prompted to verify', function (string $routeName, string $component) {
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user)
+        ->get(route($routeName))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component($component)
+            ->where('mustVerifyEmail', true)
+            ->where('auth.user.email_verified_at', null));
+})->with([
+    'seller profile' => ['profile.edit', 'settings/profile'],
+    'buyer profile' => ['buyer.settings.profile.edit', 'buyer/settings/profile'],
+]);
 
 test('profile information can be updated', function () {
     $user = User::factory()->create();

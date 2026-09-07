@@ -28,12 +28,13 @@ function buyerOrderWithPackages(User $buyer, string $customerStatus, array $pack
     return $order;
 }
 
-test('buyer routes require authentication and email verification', function () {
+test('buyer routes require authentication but allow unverified users', function () {
     $this->get(route('buyer.dashboard'))->assertRedirect(route('login'));
 
     $unverified = User::factory()->unverified()->create();
     $this->actingAs($unverified)->get(route('buyer.orders.index'))
-        ->assertRedirect(route('verification.notice'));
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('buyer/orders/index'));
 });
 
 test('order stages classify mixed seller fulfilment deterministically', function () {
