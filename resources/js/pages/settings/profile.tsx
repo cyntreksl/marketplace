@@ -35,7 +35,7 @@ export default function Profile({
                 <Heading
                     variant="small"
                     title="Profile"
-                    description="Update your name and email address"
+                    description="Update your name and review your email address"
                 />
 
                 <Form
@@ -74,18 +74,19 @@ export default function Profile({
                                 <Input
                                     id="email"
                                     type="email"
-                                    className="mt-1 block w-full"
+                                    className="mt-1 block w-full disabled:cursor-not-allowed disabled:opacity-70"
                                     defaultValue={auth.user.email}
-                                    name="email"
-                                    required
+                                    disabled
                                     autoComplete="username"
-                                    placeholder="Email address"
+                                    aria-describedby="email-restriction"
                                 />
 
-                                <InputError
-                                    className="mt-2"
-                                    message={errors.email}
-                                />
+                                <p
+                                    id="email-restriction"
+                                    className="text-sm text-muted-foreground"
+                                >
+                                    Email address cannot be changed.
+                                </p>
                             </div>
 
                             {mustVerifyEmail &&

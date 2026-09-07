@@ -17,6 +17,21 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        return $this->profileRules($this->user()->id);
+        return [
+            'name' => $this->nameRules(),
+            'email' => ['prohibited'],
+        ];
+    }
+
+    /**
+     * Get the validation error messages for the request.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'email.prohibited' => __('Email address cannot be changed.'),
+        ];
     }
 }

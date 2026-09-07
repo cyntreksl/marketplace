@@ -19,7 +19,6 @@ test('profile information can be updated', function () {
         ->actingAs($user)
         ->patch(route('profile.update'), [
             'name' => 'Test User',
-            'email' => 'test@example.com',
         ]);
 
     $response
@@ -29,26 +28,29 @@ test('profile information can be updated', function () {
     $user->refresh();
 
     expect($user->name)->toBe('Test User');
-    expect($user->email)->toBe('test@example.com');
-    expect($user->email_verified_at)->toBeNull();
+    expect($user->email_verified_at)->not->toBeNull();
 });
 
-test('email verification status is unchanged when the email address is unchanged', function () {
+test('email address changes are rejected by profile update endpoints', function (string $routeName) {
     $user = User::factory()->create();
+    $originalEmail = $user->email;
 
     $response = $this
         ->actingAs($user)
-        ->patch(route('profile.update'), [
+        ->patch(route($routeName), [
             'name' => 'Test User',
-            'email' => $user->email,
+            'email' => 'changed@example.com',
         ]);
 
     $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect(route('profile.edit'));
+        ->assertSessionHasErrors('email');
 
-    expect($user->refresh()->email_verified_at)->not->toBeNull();
-});
+    expect($user->refresh()->email)->toBe($originalEmail)
+        ->and($user->name)->not->toBe('Test User');
+})->with([
+    'seller portal' => 'profile.update',
+    'buyer portal' => 'buyer.settings.profile.update',
+]);
 
 test('user can delete their account', function () {
     $user = User::factory()->create();

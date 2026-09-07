@@ -15,6 +15,19 @@ test('shared profile settings do not offer account deletion', async () => {
     assert.doesNotMatch(profile, /DeleteUser|Delete account/);
 });
 
+test('shared profile settings display email as non-editable information', async () => {
+    const profile = await readFile(
+        resourcePath('pages/settings/profile.tsx'),
+        'utf8',
+    );
+    const emailInput = profile.match(/<Input\s+id="email"[\s\S]*?\/>/)?.[0];
+
+    assert.ok(emailInput);
+    assert.match(emailInput, /disabled/);
+    assert.doesNotMatch(emailInput, /name="email"/);
+    assert.match(profile, /Email address cannot be changed\./);
+});
+
 test('cookie preferences clear the desktop buyer portal sidebar', async () => {
     const consentManager = await readFile(
         resourcePath('components/consent-manager.tsx'),
