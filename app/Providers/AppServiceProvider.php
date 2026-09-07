@@ -58,6 +58,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Inertia\ExceptionResponse;
+use Inertia\Inertia;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -96,8 +98,30 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureExceptionRendering();
         $this->configureMailNotifications();
         $this->configureRateLimiting();
+    }
+
+    /**
+     * Render safe, branded error responses for browser requests.
+     */
+    protected function configureExceptionRendering(): void
+    {
+        Inertia::handleExceptionsUsing(function (ExceptionResponse $response): ?ExceptionResponse {
+            if (
+                config('app.debug')
+                || $response->statusCode() < 400
+                || $response->request->is('api/*')
+                || $response->request->expectsJson()
+            ) {
+                return null;
+            }
+
+            return $response->render('errors/http-error', [
+                'status' => $response->statusCode(),
+            ]);
+        });
     }
 
     /**

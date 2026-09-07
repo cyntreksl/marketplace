@@ -30,6 +30,7 @@ createInertiaApp({
             case name.startsWith('admin/'):
             case name.startsWith('buyer/'):
             case name.startsWith('seller/'):
+            case name.startsWith('errors/'):
                 return SeoLayout;
             case name.startsWith('auth/'):
                 return [SeoLayout, AuthLayout];
