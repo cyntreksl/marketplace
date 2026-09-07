@@ -247,13 +247,18 @@ export function SellerProductForm({
     brands,
     listing,
     canSubmit,
+    cancelHref,
+    mode = 'seller',
 }: {
     form: FormDefinition;
     initialCategory: CategoryOption | null;
     brands: Brand[];
     listing?: SellerProductFormListing;
     canSubmit: boolean;
+    cancelHref?: string;
+    mode?: 'admin' | 'seller';
 }) {
+    const isAdmin = mode === 'admin';
     const [selectedCategory, setSelectedCategory] =
         useState<CategoryOption | null>(initialCategory);
     const [isDraggingImages, setIsDraggingImages] = useState(false);
@@ -2372,31 +2377,41 @@ export function SellerProductForm({
                 )}
                 <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
                     <Link
-                        href={productsIndex()}
+                        href={cancelHref ?? productsIndex()}
                         className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-300 px-6 text-sm font-bold transition hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
                     >
                         Cancel
                     </Link>
                     <div className="grid gap-3 sm:flex">
-                        <button
-                            type="button"
-                            disabled={form.processing}
-                            onClick={() => submit(false)}
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-primary px-6 text-sm font-bold text-primary transition hover:bg-primary/5 disabled:opacity-50"
-                        >
-                            <Save className="size-4" /> Save as Draft
-                        </button>
+                        {!isAdmin && (
+                            <button
+                                type="button"
+                                disabled={form.processing}
+                                onClick={() => submit(false)}
+                                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-primary px-6 text-sm font-bold text-primary transition hover:bg-primary/5 disabled:opacity-50"
+                            >
+                                <Save className="size-4" /> Save as Draft
+                            </button>
+                        )}
                         <button
                             type="submit"
                             disabled={form.processing || !canSubmit}
                             className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-7 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                            <Send className="size-4" />
-                            {form.processing ? 'Saving…' : 'Submit for Review'}
+                            {isAdmin ? (
+                                <Save className="size-4" />
+                            ) : (
+                                <Send className="size-4" />
+                            )}
+                            {form.processing
+                                ? 'Saving…'
+                                : isAdmin
+                                  ? 'Save product changes'
+                                  : 'Submit for Review'}
                         </button>
                     </div>
                 </div>
-                {!canSubmit && (
+                {!isAdmin && !canSubmit && (
                     <p className="border-t border-slate-200 px-4 py-2 text-center text-xs text-slate-500 dark:border-slate-700">
                         You may save drafts now. Submission unlocks after your
                         seller account is approved.

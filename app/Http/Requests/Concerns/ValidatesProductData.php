@@ -20,7 +20,9 @@ trait ValidatesProductData
         $publishing = $this->boolean('submit_for_review');
         $requiredForPublishing = Rule::requiredIf($publishing);
         $listing = $this->route('listing');
-        $sellerProfileId = $this->user()?->sellerProfile()->value('id');
+        $sellerProfileId = $listing instanceof Listing
+            ? $listing->seller_profile_id
+            : $this->user()?->sellerProfile()->value('id');
         $uniqueSku = Rule::unique('listings', 'sku')->where('seller_profile_id', $sellerProfileId);
         $uniqueBarcode = Rule::unique('listings', 'barcode')->where('seller_profile_id', $sellerProfileId);
 

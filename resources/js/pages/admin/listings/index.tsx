@@ -1,5 +1,6 @@
-import { Form, Head, Link } from '@inertiajs/react';
-import { update } from '@/actions/App/Http/Controllers/AdminListingController';
+import { Head, Link } from '@inertiajs/react';
+import { ArrowRight, ImageIcon } from 'lucide-react';
+import { show } from '@/actions/App/Http/Controllers/AdminListingController';
 import { PortalLayout } from '@/components/portal-layout';
 import { dashboard } from '@/routes/admin';
 
@@ -8,7 +9,11 @@ type Listing = {
     title: string | null;
     status: string;
     listing_type: string;
+    short_description: string | null;
+    price: string | null;
+    sale_price: string | null;
     moderation_reason: string | null;
+    media: { id: number; url: string }[];
     seller_profile: { store_name: string };
     category: { name: string } | null;
     seo_score: SeoScore;
@@ -46,10 +51,21 @@ export default function AdminListings({
                     {listings.data.map((listing) => (
                         <article
                             key={listing.id}
-                            className="grid gap-4 rounded-2xl border border-stone-200 bg-white p-5 lg:grid-cols-[1fr_auto] dark:border-stone-800 dark:bg-stone-900"
+                            className="grid gap-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:grid-cols-[8rem_minmax(0,1fr)_auto] dark:border-slate-800 dark:bg-slate-900"
                         >
+                            <div className="flex aspect-square items-center justify-center overflow-hidden rounded-xl bg-slate-50 dark:bg-slate-950">
+                                {listing.media[0] ? (
+                                    <img
+                                        src={listing.media[0].url}
+                                        alt=""
+                                        className="size-full object-contain p-3"
+                                    />
+                                ) : (
+                                    <ImageIcon className="size-8 text-slate-300" />
+                                )}
+                            </div>
                             <div>
-                                <p className="font-bold">
+                                <p className="text-lg font-black">
                                     {listing.title ?? 'Untitled product'}
                                 </p>
                                 <p className="mt-1 text-sm text-stone-500">
@@ -61,6 +77,11 @@ export default function AdminListings({
                                     Current status:{' '}
                                     {listing.status.replace('_', ' ')}
                                 </p>
+                                {listing.short_description && (
+                                    <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                                        {listing.short_description}
+                                    </p>
+                                )}
                                 <details className="mt-4 rounded-xl bg-stone-50 p-3 dark:bg-stone-950">
                                     <summary className="cursor-pointer text-sm font-bold">
                                         SEO readiness: {listing.seo_score.score}
@@ -92,51 +113,12 @@ export default function AdminListings({
                                     </ul>
                                 </details>
                             </div>
-                            <Form
-                                {...update.form(listing.id)}
-                                className="grid gap-2 sm:grid-cols-[11rem_1fr_auto]"
+                            <Link
+                                href={show(listing.id)}
+                                className="inline-flex h-11 items-center justify-center gap-2 self-center rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20"
                             >
-                                {({ processing }) => (
-                                    <>
-                                        <select
-                                            name="status"
-                                            defaultValue={listing.status}
-                                            className="rounded-lg border bg-transparent p-2"
-                                        >
-                                            <option value="approved">
-                                                Approve
-                                            </option>
-                                            <option value="changes_requested">
-                                                Request changes
-                                            </option>
-                                            <option value="rejected">
-                                                Reject
-                                            </option>
-                                            <option value="suspended">
-                                                Suspend
-                                            </option>
-                                            <option value="archived">
-                                                Archive
-                                            </option>
-                                        </select>
-                                        <input
-                                            required
-                                            name="reason"
-                                            defaultValue={
-                                                listing.moderation_reason ?? ''
-                                            }
-                                            placeholder="Decision reason"
-                                            className="rounded-lg border bg-transparent p-2"
-                                        />
-                                        <button
-                                            disabled={processing}
-                                            className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
-                                        >
-                                            Save
-                                        </button>
-                                    </>
-                                )}
-                            </Form>
+                                Review details <ArrowRight className="size-4" />
+                            </Link>
                         </article>
                     ))}
                 </div>

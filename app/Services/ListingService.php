@@ -115,6 +115,33 @@ class ListingService
         });
     }
 
+    /** @param array<string, mixed> $attributes */
+    public function updateForModeration(User $actor, Listing $listing, array $attributes): Listing
+    {
+        return DB::transaction(function () use ($actor, $listing, $attributes): Listing {
+            $listing = $this->listings->findForAdminOrFail($listing->id, lockForUpdate: true);
+            $before = $listing->getAttributes();
+
+            $listing->forceFill([
+                ...$this->productAttributes($attributes, $listing),
+                'is_best_offer' => false,
+            ]);
+            $this->listings->save($listing);
+            $listing->auction()->delete();
+            $this->images->remove($listing, array_map('intval', $attributes['removed_media_ids'] ?? []));
+            $this->variants->synchronize($listing, $attributes);
+            $this->synchronizeVariantSummary($listing);
+
+            if ($attributes['images'] ?? []) {
+                $this->storeImages($listing, $attributes['images'], $attributes['image_crops']);
+            }
+
+            $this->auditLogs->record($actor, 'listing.details_updated_by_admin', $listing, $before, $listing->getAttributes());
+
+            return $listing;
+        });
+    }
+
     /**
      * @param  array<string, mixed>  $attributes
      * @param  array<int, UploadedFile>  $images

@@ -191,6 +191,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/sellers', [AdminSellerController::class, 'index'])->name('sellers.index');
     Route::patch('/sellers/{seller}', [AdminSellerController::class, 'update'])->name('sellers.update');
     Route::get('/listings', [AdminListingController::class, 'index'])->name('listings.index');
+    Route::get('/listings/{listing}/edit', [AdminListingController::class, 'edit'])->name('listings.edit');
+    Route::get('/listings/{listing}', [AdminListingController::class, 'show'])->name('listings.show');
+    Route::put('/listings/{listing}', [AdminListingController::class, 'updateDetails'])->name('listings.details.update');
     Route::patch('/listings/{listing}', [AdminListingController::class, 'update'])->name('listings.update');
     Route::get('/catalog/categories', [AdminCategoryController::class, 'index'])->name('categories.index');
     Route::get('/catalog/categories/children', [AdminCategoryBrowseController::class, 'children'])->name('categories.children');

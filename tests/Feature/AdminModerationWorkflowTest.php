@@ -2,7 +2,9 @@
 
 use App\Models\AuditLog;
 use App\Models\Brand;
+use App\Models\Category;
 use App\Models\Listing;
+use App\Models\ListingMedia;
 use App\Models\Role;
 use App\Models\SellerProfile;
 use App\Models\User;
@@ -24,6 +26,99 @@ test('an operations admin can approve sellers and listings with an audit trail',
 
 test('a buyer cannot access operational moderation queues', function () {
     $this->actingAs(User::factory()->create())->get(route('admin.sellers.index'))->assertForbidden();
+});
+
+test('an operations admin can inspect every product detail before moderation', function () {
+    $admin = User::factory()->create();
+    $admin->roles()->attach(Role::factory()->create(['name' => Role::Admin, 'label' => 'Administrator']));
+    $listing = Listing::factory()->create([
+        'status' => 'pending_review',
+        'title' => 'Studio monitor speakers',
+        'description' => '<p>Matched pair for accurate monitoring.</p>',
+        'specifications' => ['Details' => '<table><tbody><tr><th>Power</th><td>100W</td></tr></tbody></table>'],
+        'approved_at' => null,
+    ]);
+    $media = ListingMedia::factory()->for($listing)->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.listings.show', $listing))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/listings/show')
+            ->where('listing.id', $listing->id)
+            ->where('listing.title', 'Studio monitor speakers')
+            ->where('listing.description', '<p>Matched pair for accurate monitoring.</p>')
+            ->where('listing.specifications.Details', '<table><tbody><tr><th>Power</th><td>100W</td></tr></tbody></table>')
+            ->where('listing.seller_profile.store_name', $listing->sellerProfile->store_name)
+            ->where('listing.media.0.id', $media->id)
+            ->has('listing.seo_score.checks'));
+
+    $this->actingAs($admin)
+        ->get(route('admin.listings.edit', $listing))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/listings/edit')
+            ->where('listing.id', $listing->id)
+            ->where('selectedCategory.id', $listing->category_id)
+            ->has('brands'));
+});
+
+test('an operations admin can edit complete product details without changing moderation status', function () {
+    $admin = User::factory()->create();
+    $admin->roles()->attach(Role::factory()->create(['name' => Role::Admin, 'label' => 'Administrator']));
+    $category = Category::factory()->create(['commission_percentage' => 12]);
+    $listing = Listing::factory()->create([
+        'status' => 'pending_review',
+        'approved_at' => null,
+    ]);
+    ListingMedia::factory()->for($listing)->create();
+    $description = '<p>Updated description with a comparison table.</p><table><tbody><tr><th>Finish</th><td>Black</td></tr></tbody></table>';
+    $specifications = '<table><thead><tr><th>Feature</th><th>Value</th></tr></thead><tbody><tr><td>Power</td><td>100W</td></tr></tbody></table>';
+
+    $this->actingAs($admin)
+        ->put(route('admin.listings.details.update', $listing), [
+            'category_id' => $category->id,
+            'brand_id' => $listing->brand_id,
+            'sku' => 'ADMIN-EDIT-001',
+            'title' => 'Updated studio monitor speakers',
+            'description' => $description,
+            'specifications_text' => $specifications,
+            'condition' => 'new',
+            'product_type' => 'simple',
+            'stock_quantity' => 8,
+            'selling_price' => '42000.00',
+            'compare_price' => '45000.00',
+            'low_stock_threshold' => 2,
+            'allow_backorders' => false,
+            'is_active' => true,
+            'is_featured' => false,
+            'is_best_seller' => false,
+            'is_new_arrival' => false,
+            'variant_options' => [],
+            'variants' => [],
+            'images' => [],
+            'image_crops' => [],
+            'removed_media_ids' => [],
+        ])
+        ->assertRedirect(route('admin.listings.show', $listing, absolute: false))
+        ->assertSessionHasNoErrors();
+
+    expect($listing->refresh())
+        ->status->toBe('pending_review')
+        ->title->toBe('Updated studio monitor speakers')
+        ->description->toBe($description)
+        ->specifications->toBe(['Details' => $specifications])
+        ->commission_percentage->toBe('12.00')
+        ->and(AuditLog::query()->where('action', 'listing.details_updated_by_admin')->exists())->toBeTrue();
+});
+
+test('a buyer cannot view or edit an admin listing review', function () {
+    $buyer = User::factory()->create();
+    $listing = Listing::factory()->create(['status' => 'pending_review']);
+
+    $this->actingAs($buyer)->get(route('admin.listings.show', $listing))->assertForbidden();
+    $this->actingAs($buyer)->get(route('admin.listings.edit', $listing))->assertForbidden();
+    $this->actingAs($buyer)->put(route('admin.listings.details.update', $listing), [])->assertForbidden();
 });
 
 test('an operations admin cannot approve a listing that was not submitted for review', function () {

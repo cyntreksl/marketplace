@@ -25,4 +25,12 @@ class AdminListingService
                 return $listing;
             });
     }
+
+    public function product(int $listingId): Listing
+    {
+        $listing = $this->listings->findDetailedForAdminOrFail($listingId);
+        $listing->setAttribute('seo_score', $this->seoScores->score($listing));
+
+        return $listing;
+    }
 }

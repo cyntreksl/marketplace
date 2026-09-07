@@ -356,6 +356,29 @@ class EloquentListingRepository implements ListingRepository
             ->findOrFail($listingId);
     }
 
+    public function findForAdminOrFail(int $listingId, bool $lockForUpdate = false): Listing
+    {
+        return Listing::query()
+            ->when($lockForUpdate, fn (Builder $query) => $query->lockForUpdate())
+            ->findOrFail($listingId);
+    }
+
+    public function findDetailedForAdminOrFail(int $listingId): Listing
+    {
+        return Listing::query()
+            ->with([
+                'auction',
+                'brand:id,name,slug',
+                'category',
+                'media',
+                'sellerProfile:id,store_name,status',
+                'variantOptions.values',
+                'variants.image',
+                'variants.optionValues.option',
+            ])
+            ->findOrFail($listingId);
+    }
+
     public function delete(Listing $listing): void
     {
         $listing->delete();

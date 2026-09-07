@@ -106,5 +106,9 @@ interface ListingRepository
 
     public function findDetailedForSellerOrFail(SellerProfile $seller, int $listingId): Listing;
 
+    public function findForAdminOrFail(int $listingId, bool $lockForUpdate = false): Listing;
+
+    public function findDetailedForAdminOrFail(int $listingId): Listing;
+
     public function delete(Listing $listing): void;
 }
