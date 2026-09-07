@@ -24,12 +24,24 @@ test('new users can register', function () {
     $response = $this->post(route('register.store'), [
         'name' => 'Test User',
         'email' => 'test@example.com',
-        'password' => 'password',
-        'password_confirmation' => 'password',
+        'password' => 'short',
+        'password_confirmation' => 'short',
     ]);
 
     $this->assertAuthenticated();
     $response->assertRedirect(route('home', absolute: false));
+});
+
+test('passwords shorter than five characters are rejected', function () {
+    $response = $this->post(route('register.store'), [
+        'name' => 'Test User',
+        'email' => 'test@example.com',
+        'password' => 'four',
+        'password_confirmation' => 'four',
+    ]);
+
+    $response->assertSessionHasErrors('password');
+    $this->assertGuest();
 });
 
 test('seller registration screen can be rendered', function () {
