@@ -29,7 +29,8 @@ test('valid public listing views queue ViewContent while crawlers and prefetches
     $clickId = 'AbC_def-123.XyZ';
     $expectedFbc = 'fb.1.'.now()->getTimestampMs().'.'.$clickId;
 
-    $response = $this->withHeader('User-Agent', 'Mozilla/5.0')
+    $response = $this->withServerVariables(['HTTPS' => 'on'])
+        ->withHeader('User-Agent', 'Mozilla/5.0')
         ->get(route('listings.show', $listing->slug).'?fbclid='.$clickId)
         ->assertOk()
         ->assertPlainCookie('_fbc', $expectedFbc)
