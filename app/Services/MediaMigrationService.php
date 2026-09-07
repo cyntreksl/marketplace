@@ -37,7 +37,7 @@ class MediaMigrationService
             'static_copied' => 0,
         ];
 
-        $this->listings->mediaForMigration()->each(function (ListingMedia $media) use ($fallbackSourceDisk, $destinationDisk, $dryRun, &$stats): void {
+        $this->listings->mediaForMigration($fallbackSourceDisk, $destinationDisk)->each(function (ListingMedia $media) use ($fallbackSourceDisk, $destinationDisk, $dryRun, &$stats): void {
             $sourceDisk = $media->disk ?: $fallbackSourceDisk;
             $paths = collect([
                 $media->path,
@@ -52,12 +52,12 @@ class MediaMigrationService
             }
         });
 
-        $this->catalog->categoryArtworkForMigration()->each(function (Category $category) use ($fallbackSourceDisk, $destinationDisk, $dryRun, &$stats): void {
+        $this->catalog->categoryArtworkForMigration($fallbackSourceDisk, $destinationDisk)->each(function (Category $category) use ($fallbackSourceDisk, $destinationDisk, $dryRun, &$stats): void {
             $this->copyCategoryArtwork($category, 'image_path', 'image_disk', $fallbackSourceDisk, $destinationDisk, $dryRun, $stats);
             $this->copyCategoryArtwork($category, 'banner_image_path', 'banner_image_disk', $fallbackSourceDisk, $destinationDisk, $dryRun, $stats);
         });
 
-        $this->promotions->forMediaMigration()->each(function (Promotion $promotion) use ($fallbackSourceDisk, $destinationDisk, $dryRun, &$stats): void {
+        $this->promotions->forMediaMigration($fallbackSourceDisk, $destinationDisk)->each(function (Promotion $promotion) use ($fallbackSourceDisk, $destinationDisk, $dryRun, &$stats): void {
             $sourceDisk = $promotion->image_disk ?: $fallbackSourceDisk;
             $this->copyStorageObject($sourceDisk, $destinationDisk, $promotion->image_path, $dryRun, $stats);
         });
@@ -105,7 +105,7 @@ class MediaMigrationService
         return DB::transaction(function () use ($fallbackSourceDisk, $destinationDisk): int {
             $updated = 0;
 
-            $this->listings->mediaForMigration()->each(function (ListingMedia $media) use ($fallbackSourceDisk, $destinationDisk, &$updated): void {
+            $this->listings->mediaForMigration($fallbackSourceDisk, $destinationDisk)->each(function (ListingMedia $media) use ($fallbackSourceDisk, $destinationDisk, &$updated): void {
                 if (($media->disk ?: $fallbackSourceDisk) === $destinationDisk) {
                     return;
                 }
@@ -115,7 +115,7 @@ class MediaMigrationService
                 $updated++;
             });
 
-            $this->catalog->categoryArtworkForMigration()->each(function (Category $category) use ($fallbackSourceDisk, $destinationDisk, &$updated): void {
+            $this->catalog->categoryArtworkForMigration($fallbackSourceDisk, $destinationDisk)->each(function (Category $category) use ($fallbackSourceDisk, $destinationDisk, &$updated): void {
                 $changed = false;
 
                 foreach ([
@@ -138,7 +138,7 @@ class MediaMigrationService
                 }
             });
 
-            $this->promotions->forMediaMigration()->each(function (Promotion $promotion) use ($fallbackSourceDisk, $destinationDisk, &$updated): void {
+            $this->promotions->forMediaMigration($fallbackSourceDisk, $destinationDisk)->each(function (Promotion $promotion) use ($fallbackSourceDisk, $destinationDisk, &$updated): void {
                 if (($promotion->image_disk ?: $fallbackSourceDisk) === $destinationDisk) {
                     return;
                 }

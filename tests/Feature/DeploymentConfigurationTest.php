@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 
 test('production deployment is gated and uses atomic releases', function () {
     $workflow = file_get_contents(base_path('.github/workflows/tests.yml'));
+    $deploymentScript = file_get_contents(base_path('.github/deploy/deploy-production.sh'));
     $releaseScript = file_get_contents(base_path('.github/deploy/remote-release.sh'));
     $ssrInstaller = file_get_contents(base_path('.github/deploy/install-web-ssr.sh'));
     $ssrService = file_get_contents(base_path('.github/deploy/prodeals-ssr.service'));
@@ -13,26 +14,37 @@ test('production deployment is gated and uses atomic releases', function () {
     $composer = json_decode(file_get_contents(base_path('composer.json')), true, flags: JSON_THROW_ON_ERROR);
 
     expect($workflow)
-        ->toContain('needs: ci')
+        ->toContain('needs: [ci, package]')
         ->toContain("vars.PRODUCTION_DEPLOY_ENABLED == 'true'")
         ->toContain('environment:')
         ->toContain('group: prodeals-production')
-        ->toContain('curl --fail')
-        ->toContain('https://prodeals.lk/mcp/marketplace')
-        ->toContain('"method":"initialize"')
+        ->toContain('- parallel:')
+        ->toContain('cache: npm')
+        ->toContain('npm ci')
+        ->toContain('bash .github/deploy/deploy-production.sh artifact/prodeals-release.tar.gz')
         ->toContain('VITE_TINYMCE_API_KEY: ${{ secrets.TINYMCE_API_KEY }}')
         ->toContain('npm run build:ssr')
         ->toContain('test -f bootstrap/ssr/app.js')
         ->toContain('npm prune --omit=dev')
         ->toContain('node_modules/@inertiajs/react')
+        ->and($composer['scripts']['test:coverage'])
+        ->toContain('@php artisan test --compact --parallel --coverage --min=80')
+        ->and($deploymentScript)
+        ->toContain('ControlMaster=auto')
+        ->toContain("run_stage 'Upload and prepare releases' run_on_hosts prepare_release")
+        ->toContain("run_stage 'Activate releases' run_on_hosts activate_release")
+        ->toContain("run_stage 'Clean old releases' run_on_hosts cleanup_release")
         ->toContain('web_release_id')
         ->toContain('worker_release_id')
         ->toContain('rollback-to')
+        ->toContain("run_stage 'Run database and media migrations' run_migrations")
         ->toContain('inertia:check-ssr')
-        ->toContain('ss -ltn | grep -q "127.0.0.1:13714"')
+        ->toContain('127.0.0.1:13714')
         ->toContain('sudo systemctl restart prodeals-ssr')
         ->toContain('sudo supervisorctl status prodeals-worker')
         ->toContain('Online Shopping &amp; Auctions in Sri Lanka')
+        ->toContain('https://prodeals.lk/mcp/marketplace')
+        ->toContain('"method":"initialize"')
         ->and($buildEnvironment)
         ->toContain('VITE_TINYMCE_API_KEY=')
         ->and($composer['require'])

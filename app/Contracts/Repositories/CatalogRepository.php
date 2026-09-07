@@ -62,7 +62,7 @@ interface CatalogRepository
     public function saveCategory(Category $category): Category;
 
     /** @return LazyCollection<int, Category> */
-    public function categoryArtworkForMigration(): LazyCollection;
+    public function categoryArtworkForMigration(string $fallbackSourceDisk, string $destinationDisk): LazyCollection;
 
     public function categoryActivationRoot(Category $category): Category;
 

@@ -218,12 +218,33 @@ class EloquentCatalogRepository implements CatalogRepository
         return $category;
     }
 
-    public function categoryArtworkForMigration(): LazyCollection
+    public function categoryArtworkForMigration(string $fallbackSourceDisk, string $destinationDisk): LazyCollection
     {
+        $whereDiskNeedsMigration = function (Builder $query, string $diskColumn) use ($fallbackSourceDisk, $destinationDisk): Builder {
+            if ($fallbackSourceDisk === $destinationDisk) {
+                return $query
+                    ->whereNotNull($diskColumn)
+                    ->where($diskColumn, '!=', '')
+                    ->where($diskColumn, '!=', $destinationDisk);
+            }
+
+            return $query->where(fn (Builder $query): Builder => $query
+                ->whereNull($diskColumn)
+                ->orWhere($diskColumn, '!=', $destinationDisk));
+        };
+
         return Category::withTrashed()
-            ->where(fn (Builder $query): Builder => $query
-                ->whereNotNull('image_path')
-                ->orWhereNotNull('banner_image_path'))
+            ->where(function (Builder $query) use ($whereDiskNeedsMigration): void {
+                $query
+                    ->where(function (Builder $query) use ($whereDiskNeedsMigration): void {
+                        $query->whereNotNull('image_path')->where('image_path', '!=', '');
+                        $whereDiskNeedsMigration($query, 'image_disk');
+                    })
+                    ->orWhere(function (Builder $query) use ($whereDiskNeedsMigration): void {
+                        $query->whereNotNull('banner_image_path')->where('banner_image_path', '!=', '');
+                        $whereDiskNeedsMigration($query, 'banner_image_disk');
+                    });
+            })
             ->lazyById();
     }
 

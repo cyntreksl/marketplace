@@ -3,6 +3,7 @@
 use App\Models\Category;
 use App\Models\ListingMedia;
 use App\Models\Promotion;
+use App\Services\MediaMigrationService;
 use App\Services\StaticMediaService;
 use Illuminate\Support\Facades\Storage;
 
@@ -85,6 +86,69 @@ test('the media migration copies every runtime image and updates disk ownership 
 
     $this->artisan('media:migrate-to-r2')->assertSuccessful();
     Storage::disk('r2')->assertExists($paths);
+});
+
+test('the media migration only inspects runtime records outside the destination disk', function () {
+    configureMediaMigrationDisks();
+    $legacyMedia = ListingMedia::factory()->create([
+        'disk' => 'public',
+        'path' => 'listings/legacy/main.webp',
+        'source_path' => 'listings/legacy/source.webp',
+        'variants' => null,
+    ]);
+    $destinationMedia = ListingMedia::factory()->create([
+        'disk' => 'r2',
+        'path' => 'listings/migrated/main.webp',
+        'source_path' => 'listings/migrated/source.webp',
+        'variants' => null,
+    ]);
+    $destinationCategory = Category::factory()->create([
+        'image_path' => 'categories/migrated/image.webp',
+        'image_disk' => 'r2',
+        'banner_image_path' => 'categories/migrated/banner.webp',
+        'banner_image_disk' => 'r2',
+    ]);
+    $destinationPromotion = Promotion::factory()->create([
+        'image_path' => 'promotions/migrated/banner.webp',
+        'image_disk' => 'r2',
+    ]);
+    Storage::disk('public')->put($legacyMedia->path, 'legacy-main');
+    Storage::disk('public')->put($legacyMedia->source_path, 'legacy-source');
+
+    $stats = app(MediaMigrationService::class)->migrate('public', 'r2', false);
+
+    expect($stats)
+        ->toMatchArray([
+            'examined' => count(StaticMediaService::ASSETS) + 2,
+            'copied' => count(StaticMediaService::ASSETS) + 2,
+            'skipped' => 0,
+            'records_updated' => 1,
+            'static_copied' => count(StaticMediaService::ASSETS),
+        ])
+        ->and($legacyMedia->fresh()->disk)->toBe('r2')
+        ->and($destinationMedia->fresh()->disk)->toBe('r2')
+        ->and($destinationCategory->fresh()->image_disk)->toBe('r2')
+        ->and($destinationCategory->fresh()->banner_image_disk)->toBe('r2')
+        ->and($destinationPromotion->fresh()->image_disk)->toBe('r2');
+    Storage::disk('r2')->assertExists([$legacyMedia->path, $legacyMedia->source_path]);
+    Storage::disk('r2')->assertMissing([
+        $destinationMedia->path,
+        $destinationMedia->source_path,
+        $destinationCategory->image_path,
+        $destinationCategory->banner_image_path,
+        $destinationPromotion->image_path,
+    ]);
+
+    $secondRun = app(MediaMigrationService::class)->migrate('public', 'r2', false);
+
+    expect($secondRun)
+        ->toMatchArray([
+            'examined' => count(StaticMediaService::ASSETS),
+            'copied' => 0,
+            'skipped' => count(StaticMediaService::ASSETS),
+            'records_updated' => 0,
+            'static_copied' => 0,
+        ]);
 });
 
 test('the media migration ignores deleted media with removed storage objects', function () {

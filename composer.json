@@ -84,7 +84,7 @@
         ],
         "test:coverage": [
             "@php artisan config:clear --ansi",
-            "@php artisan test --coverage --min=80"
+            "@php artisan test --compact --parallel --coverage --min=80"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

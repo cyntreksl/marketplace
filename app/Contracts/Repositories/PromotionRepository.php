@@ -22,5 +22,5 @@ interface PromotionRepository
     public function delete(Promotion $promotion): void;
 
     /** @return LazyCollection<int, Promotion> */
-    public function forMediaMigration(): LazyCollection;
+    public function forMediaMigration(string $fallbackSourceDisk, string $destinationDisk): LazyCollection;
 }

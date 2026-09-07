@@ -296,9 +296,21 @@ class EloquentListingRepository implements ListingRepository
         return $media;
     }
 
-    public function mediaForMigration(): LazyCollection
+    public function mediaForMigration(string $fallbackSourceDisk, string $destinationDisk): LazyCollection
     {
-        return ListingMedia::query()->lazyById();
+        return ListingMedia::query()
+            ->when(
+                $fallbackSourceDisk === $destinationDisk,
+                fn (Builder $query): Builder => $query
+                    ->whereNotNull('disk')
+                    ->where('disk', '!=', '')
+                    ->where('disk', '!=', $destinationDisk),
+                fn (Builder $query): Builder => $query
+                    ->where(fn (Builder $query): Builder => $query
+                        ->whereNull('disk')
+                        ->orWhere('disk', '!=', $destinationDisk)),
+            )
+            ->lazyById();
     }
 
     public function mediaCount(Listing $listing): int

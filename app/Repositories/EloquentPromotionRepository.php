@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Contracts\Repositories\PromotionRepository;
 use App\Models\Promotion;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\LazyCollection;
 
@@ -56,10 +57,22 @@ class EloquentPromotionRepository implements PromotionRepository
         $promotion->delete();
     }
 
-    public function forMediaMigration(): LazyCollection
+    public function forMediaMigration(string $fallbackSourceDisk, string $destinationDisk): LazyCollection
     {
         return Promotion::query()
             ->whereNotNull('image_path')
+            ->where('image_path', '!=', '')
+            ->when(
+                $fallbackSourceDisk === $destinationDisk,
+                fn (Builder $query): Builder => $query
+                    ->whereNotNull('image_disk')
+                    ->where('image_disk', '!=', '')
+                    ->where('image_disk', '!=', $destinationDisk),
+                fn (Builder $query): Builder => $query
+                    ->where(fn (Builder $query): Builder => $query
+                        ->whereNull('image_disk')
+                        ->orWhere('image_disk', '!=', $destinationDisk)),
+            )
             ->lazyById();
     }
 }

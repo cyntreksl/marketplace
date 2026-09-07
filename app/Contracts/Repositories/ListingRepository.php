@@ -89,7 +89,7 @@ interface ListingRepository
     public function saveMedia(ListingMedia $media): ListingMedia;
 
     /** @return LazyCollection<int, ListingMedia> */
-    public function mediaForMigration(): LazyCollection;
+    public function mediaForMigration(string $fallbackSourceDisk, string $destinationDisk): LazyCollection;
 
     public function mediaCount(Listing $listing): int;
 
