@@ -109,9 +109,11 @@ class AppServiceProvider extends ServiceProvider
     protected function configureExceptionRendering(): void
     {
         Inertia::handleExceptionsUsing(function (ExceptionResponse $response): ?ExceptionResponse {
+            $status = $response->statusCode();
+
             if (
-                config('app.debug')
-                || $response->statusCode() < 400
+                $status < 400
+                || (config('app.debug') && $status >= 500)
                 || $response->request->is('api/*')
                 || $response->request->expectsJson()
             ) {
@@ -119,7 +121,7 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return $response->render('errors/http-error', [
-                'status' => $response->statusCode(),
+                'status' => $status,
             ]);
         });
     }

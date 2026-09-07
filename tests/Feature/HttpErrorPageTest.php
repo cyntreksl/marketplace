@@ -54,6 +54,24 @@ test('unknown error statuses use the branded fallback page', function () {
             ->where('status', 520));
 });
 
+test('client errors use the branded page when debug mode is enabled', function () {
+    config()->set('app.debug', true);
+
+    $this->get('/_test/http-error/404')
+        ->assertNotFound()
+        ->assertInertia(fn ($page) => $page
+            ->component('errors/http-error')
+            ->where('status', 404));
+});
+
+test('server errors keep the detailed exception page when debug mode is enabled', function () {
+    config()->set('app.debug', true);
+
+    $this->get('/_test/http-error/500')
+        ->assertServerError()
+        ->assertDontSee('Something went off track');
+});
+
 test('JSON exceptions keep their JSON response', function () {
     $this->getJson('/_test/http-error/404')
         ->assertNotFound()
