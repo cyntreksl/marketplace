@@ -23,6 +23,7 @@ use App\Contracts\Repositories\PromotionRepository;
 use App\Contracts\Repositories\RefundRepository;
 use App\Contracts\Repositories\ReturnRequestRepository;
 use App\Contracts\Repositories\ReviewRepository;
+use App\Contracts\Repositories\SearchEventRepository;
 use App\Contracts\Repositories\SellerPortalRepository;
 use App\Contracts\Repositories\SellerStoreRepository;
 use App\Contracts\Repositories\WatchlistRepository;
@@ -47,6 +48,7 @@ use App\Repositories\EloquentPromotionRepository;
 use App\Repositories\EloquentRefundRepository;
 use App\Repositories\EloquentReturnRequestRepository;
 use App\Repositories\EloquentReviewRepository;
+use App\Repositories\EloquentSearchEventRepository;
 use App\Repositories\EloquentSellerPortalRepository;
 use App\Repositories\EloquentSellerStoreRepository;
 use App\Repositories\EloquentWatchlistRepository;
@@ -73,6 +75,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(SellerStoreRepository::class, EloquentSellerStoreRepository::class);
+        $this->app->bind(SearchEventRepository::class, EloquentSearchEventRepository::class);
         $this->app->bind(SellerPortalRepository::class, EloquentSellerPortalRepository::class);
         $this->app->bind(BuyerAddressRepository::class, EloquentBuyerAddressRepository::class);
         $this->app->bind(BuyerPortalRepository::class, EloquentBuyerPortalRepository::class);

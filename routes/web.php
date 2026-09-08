@@ -8,6 +8,7 @@ use App\Http\Controllers\AdminHomepageController;
 use App\Http\Controllers\AdminListingController;
 use App\Http\Controllers\AdminPromotionController;
 use App\Http\Controllers\AdminReturnController;
+use App\Http\Controllers\AdminSearchInsightsController;
 use App\Http\Controllers\AdminSellerController;
 use App\Http\Controllers\AdminTaxonomyController;
 use App\Http\Controllers\AuctionBidController;
@@ -183,6 +184,7 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/search-insights', AdminSearchInsightsController::class)->name('search-insights.index');
     Route::get('/homepage', [AdminHomepageController::class, 'index'])->name('homepage.index');
     Route::put('/homepage/categories', [AdminHomepageController::class, 'updateCategories'])->name('homepage.categories.update');
     Route::patch('/homepage/listings/{listing}', [AdminHomepageController::class, 'updateListing'])->name('homepage.listings.update');

@@ -8,6 +8,7 @@ import {
     Package,
     Plus,
     RotateCcw,
+    Search,
     Tags,
     ShoppingBag,
     Store,
@@ -40,6 +41,7 @@ import { index as adminCategoriesIndex } from '@/routes/admin/categories';
 import { index as adminHomepageIndex } from '@/routes/admin/homepage';
 import { index as adminListingsIndex } from '@/routes/admin/listings';
 import { index as adminReturnsIndex } from '@/routes/admin/returns';
+import { index as adminSearchInsightsIndex } from '@/routes/admin/search-insights';
 import { index as adminSellersIndex } from '@/routes/admin/sellers';
 import { index as adminTaxonomyIndex } from '@/routes/admin/taxonomy';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
@@ -87,6 +89,12 @@ const portalDetails: Record<Portal, PortalDetails> = {
                 title: 'Homepage',
                 href: adminHomepageIndex(),
                 icon: PanelsTopLeft,
+                group: 'Dashboard',
+            },
+            {
+                title: 'Search insights',
+                href: adminSearchInsightsIndex(),
+                icon: Search,
                 group: 'Dashboard',
             },
             {

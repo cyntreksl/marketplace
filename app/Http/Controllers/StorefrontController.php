@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\RecentlyViewedListingsRequest;
 use App\Http\Requests\StorefrontBrowseRequest;
 use App\Services\MetaConversionsService;
+use App\Services\SearchAnalyticsService;
 use App\Services\StorefrontService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -17,6 +18,7 @@ class StorefrontController extends Controller
     public function __construct(
         private readonly StorefrontService $storefront,
         private readonly MetaConversionsService $metaConversions,
+        private readonly SearchAnalyticsService $searchAnalytics,
     ) {}
 
     public function home(): Response
@@ -43,27 +45,46 @@ class StorefrontController extends Controller
             }
         }
 
-        return Inertia::render('storefront/listings/index', $this->storefront->listingIndexData($filters));
+        $data = $this->storefront->listingIndexData($filters);
+        $this->searchAnalytics->track($request, $filters, 'listings', $data['listings']->total());
+
+        return Inertia::render('storefront/listings/index', $data);
     }
 
     public function category(StorefrontBrowseRequest $request, string $category): Response
     {
-        return Inertia::render('storefront/listings/index', $this->storefront->categoryData($category, $request->filters()));
+        $filters = $request->filters();
+        $data = $this->storefront->categoryData($category, $filters);
+        $this->searchAnalytics->track($request, [...$filters, 'category' => $category], 'category', $data['listings']->total());
+
+        return Inertia::render('storefront/listings/index', $data);
     }
 
     public function brand(StorefrontBrowseRequest $request, string $brand): Response
     {
-        return Inertia::render('storefront/listings/index', $this->storefront->brandData($brand, $request->filters()));
+        $filters = $request->filters();
+        $data = $this->storefront->brandData($brand, $filters);
+        $this->searchAnalytics->track($request, [...$filters, 'brand' => $brand], 'brand', $data['listings']->total());
+
+        return Inertia::render('storefront/listings/index', $data);
     }
 
     public function collection(StorefrontBrowseRequest $request, string $collection): Response
     {
-        return Inertia::render('storefront/listings/index', $this->storefront->collectionData($collection, $request->filters()));
+        $filters = $request->filters();
+        $data = $this->storefront->collectionData($collection, $filters);
+        $this->searchAnalytics->track($request, [...$filters, 'collection' => $collection], 'collection', $data['listings']->total());
+
+        return Inertia::render('storefront/listings/index', $data);
     }
 
     public function auctions(StorefrontBrowseRequest $request): Response
     {
-        return Inertia::render('storefront/listings/index', $this->storefront->auctionData($request->filters()));
+        $filters = $request->filters();
+        $data = $this->storefront->auctionData($filters);
+        $this->searchAnalytics->track($request, [...$filters, 'listing_type' => 'auction'], 'auctions', $data['listings']->total());
+
+        return Inertia::render('storefront/listings/index', $data);
     }
 
     public function show(Request $request, string $listing): Response
