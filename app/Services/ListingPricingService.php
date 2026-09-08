@@ -7,22 +7,26 @@ use App\Models\ListingVariant;
 
 class ListingPricingService
 {
-    /** @return array{unitPrice: string, tier: 'retail'|'wholesale', minimumQuantity: int}|null */
+    /** @return array{unitPrice: string, tier: 'retail'|'wholesale', minimumQuantity: int, appliedTierMinimumQuantity: int|null}|null */
     public function forQuantity(Listing $listing, ?ListingVariant $variant, int $quantity): ?array
     {
-        $wholesalePrice = $variant === null ? $listing->wholesale_price : $variant->wholesale_price;
-        $wholesaleMinimum = $variant === null ? $listing->wholesale_min_quantity : $variant->wholesale_min_quantity;
+        $wholesaleTiers = ($variant === null ? $listing->wholesalePriceTiers : $variant->wholesalePriceTiers)
+            ->sortBy('minimum_quantity')
+            ->values();
+        $firstWholesaleTier = $wholesaleTiers->first();
+        $appliedWholesaleTier = $wholesaleTiers
+            ->filter(fn ($tier): bool => $quantity >= $tier->minimum_quantity)
+            ->last();
 
         if (
             $listing->is_wholesale_enabled
-            && $wholesalePrice !== null
-            && $wholesaleMinimum !== null
-            && $quantity >= $wholesaleMinimum
+            && $appliedWholesaleTier !== null
         ) {
             return [
-                'unitPrice' => (string) $wholesalePrice,
+                'unitPrice' => (string) $appliedWholesaleTier->unit_price,
                 'tier' => 'wholesale',
-                'minimumQuantity' => (int) $wholesaleMinimum,
+                'minimumQuantity' => $listing->is_retail_enabled ? 1 : (int) $firstWholesaleTier->minimum_quantity,
+                'appliedTierMinimumQuantity' => (int) $appliedWholesaleTier->minimum_quantity,
             ];
         }
 
@@ -40,12 +44,14 @@ class ListingPricingService
             'unitPrice' => $retailPrice,
             'tier' => 'retail',
             'minimumQuantity' => 1,
+            'appliedTierMinimumQuantity' => null,
         ];
     }
 
     public function wholesaleMinimum(Listing $listing, ?ListingVariant $variant): ?int
     {
-        $minimum = $variant === null ? $listing->wholesale_min_quantity : $variant->wholesale_min_quantity;
+        $minimum = ($variant === null ? $listing->wholesalePriceTiers : $variant->wholesalePriceTiers)
+            ->min('minimum_quantity');
 
         return $listing->is_wholesale_enabled && $minimum !== null ? (int) $minimum : null;
     }

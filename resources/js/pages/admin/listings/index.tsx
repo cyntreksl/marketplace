@@ -270,14 +270,15 @@ export default function AdminListings({
                                         )}
                                         {listing.is_wholesale_enabled && (
                                             <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-700">
-                                                Wholesale · LKR{' '}
+                                                From LKR{' '}
                                                 {Number(
                                                     listing.wholesale_price ??
                                                         0,
                                                 ).toLocaleString('en-LK')}{' '}
-                                                · MOQ{' '}
+                                                /unit ·{' '}
                                                 {listing.wholesale_min_quantity ??
                                                     '—'}
+                                                + units
                                             </span>
                                         )}
                                     </div>

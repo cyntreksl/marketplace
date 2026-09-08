@@ -49,6 +49,8 @@ class EloquentListingVariantRepository implements ListingVariantRepository
                 'mpn' => $variantData['mpn'],
                 'selling_price' => $variantData['selling_price'],
                 'market_price' => $variantData['market_price'],
+                'wholesale_price' => $variantData['wholesale_price'],
+                'wholesale_min_quantity' => $variantData['wholesale_min_quantity'],
                 'stock_quantity' => $variantData['stock_quantity'],
                 'is_active' => $variantData['is_active'],
                 'position' => $position,

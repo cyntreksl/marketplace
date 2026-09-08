@@ -81,6 +81,14 @@ class Listing extends Model
         return $this->hasMany(ListingVariant::class)->orderBy('position');
     }
 
+    /** @return HasMany<WholesalePriceTier, $this> */
+    public function wholesalePriceTiers(): HasMany
+    {
+        return $this->hasMany(WholesalePriceTier::class)
+            ->whereNull('listing_variant_id')
+            ->orderBy('minimum_quantity');
+    }
+
     /** @return HasOne<Auction, $this> */
     public function auction(): HasOne
     {

@@ -18,12 +18,24 @@ class EloquentCartRepository implements CartRepository
             $cart->restore();
         }
 
-        return $cart->load(['items.listing.media', 'items.listing.sellerProfile', 'items.variant.optionValues.option']);
+        return $cart->load([
+            'items.listing.media',
+            'items.listing.sellerProfile',
+            'items.listing.wholesalePriceTiers',
+            'items.variant.optionValues.option',
+            'items.variant.wholesalePriceTiers',
+        ]);
     }
 
     public function listings(array $ids): Collection
     {
-        return Listing::query()->directlyVisible()->with(['media', 'sellerProfile', 'variants.optionValues.option'])->whereIn('id', $ids)->get()->keyBy('id');
+        return Listing::query()->directlyVisible()->with([
+            'media',
+            'sellerProfile',
+            'wholesalePriceTiers',
+            'variants.optionValues.option',
+            'variants.wholesalePriceTiers',
+        ])->whereIn('id', $ids)->get()->keyBy('id');
     }
 
     public function merge(User $buyer, array $items, string $token): void

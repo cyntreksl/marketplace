@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['listing_id', 'seller_profile_id', 'combination_key', 'sku', 'gtin', 'mpn', 'selling_price', 'market_price', 'wholesale_price', 'wholesale_min_quantity', 'stock_quantity', 'reserved_quantity', 'is_active', 'position'])]
@@ -67,5 +68,12 @@ class ListingVariant extends Model
     public function image(): HasOne
     {
         return $this->hasOne(ListingMedia::class);
+    }
+
+    /** @return HasMany<WholesalePriceTier, $this> */
+    public function wholesalePriceTiers(): HasMany
+    {
+        return $this->hasMany(WholesalePriceTier::class, 'listing_variant_id')
+            ->orderBy('minimum_quantity');
     }
 }

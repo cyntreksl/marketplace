@@ -17,19 +17,24 @@ class EloquentCheckoutRepository implements CheckoutRepository
     public function cart(User $buyer): Cart
     {
         $cart = Cart::query()->where('buyer_id', $buyer->id)->lockForUpdate()->firstOrFail();
-        $cart->setRelation('items', $cart->items()->with(['listing.sellerProfile', 'variant.optionValues.option'])->orderBy('listing_id')->orderBy('listing_variant_id')->lockForUpdate()->get());
+        $cart->setRelation('items', $cart->items()->with([
+            'listing.sellerProfile',
+            'listing.wholesalePriceTiers',
+            'variant.optionValues.option',
+            'variant.wholesalePriceTiers',
+        ])->orderBy('listing_id')->orderBy('listing_variant_id')->lockForUpdate()->get());
 
         return $cart;
     }
 
     public function listing(int $id): Listing
     {
-        return Listing::query()->directlyVisible()->lockForUpdate()->findOrFail($id);
+        return Listing::query()->directlyVisible()->with('wholesalePriceTiers')->lockForUpdate()->findOrFail($id);
     }
 
     public function variant(int $id): ?ListingVariant
     {
-        return ListingVariant::query()->with('optionValues.option')->lockForUpdate()->find($id);
+        return ListingVariant::query()->with(['optionValues.option', 'wholesalePriceTiers'])->lockForUpdate()->find($id);
     }
 
     public function findSubmission(User $buyer, string $token): ?CustomerOrder

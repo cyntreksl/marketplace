@@ -107,6 +107,7 @@ class CheckoutService
                 $item['unitPrice'] = $lockedPricing['unitPrice'];
                 $item['pricingTier'] = $lockedPricing['tier'];
                 $item['minimumQuantity'] = $lockedPricing['minimumQuantity'];
+                $item['appliedTierMinimumQuantity'] = $lockedPricing['appliedTierMinimumQuantity'];
 
                 return $item;
             }, $summary['items']);
@@ -248,7 +249,14 @@ class CheckoutService
     /** @param array<string, mixed> $summary */
     public function reviewHash(array $summary): string
     {
-        $items = array_map(fn (array $item): array => [$item['listing_id'], $item['listing_variant_id'], $item['quantity'], $item['unitPrice'], $item['pricingTier'] ?? null], $summary['items']);
+        $items = array_map(fn (array $item): array => [
+            $item['listing_id'],
+            $item['listing_variant_id'],
+            $item['quantity'],
+            $item['unitPrice'],
+            $item['pricingTier'] ?? null,
+            $item['appliedTierMinimumQuantity'] ?? null,
+        ], $summary['items']);
         sort($items);
 
         return hash('sha256', json_encode([$items, $summary['subtotal'], $summary['shippingTotal'], $summary['total']], JSON_THROW_ON_ERROR));
@@ -264,7 +272,7 @@ class CheckoutService
         return $this->priceForQuantity($listing, $variant, $quantity)['unitPrice'];
     }
 
-    /** @return array{unitPrice: string, tier: 'retail'|'wholesale', minimumQuantity: int} */
+    /** @return array{unitPrice: string, tier: 'retail'|'wholesale', minimumQuantity: int, appliedTierMinimumQuantity: int|null} */
     private function priceForQuantity(Listing $listing, ?ListingVariant $variant, int $quantity): array
     {
         $price = $this->pricing->forQuantity($listing, $variant, $quantity);

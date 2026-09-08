@@ -77,7 +77,10 @@ function CartLine({ item }: { item: CheckoutCartItem }) {
                 </p>
                 {item.pricingTier === 'wholesale' && (
                     <span className="mt-2 inline-flex rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-700">
-                        Wholesale pricing · MOQ {item.minimumQuantity}
+                        Wholesale price ·{' '}
+                        {item.appliedTierMinimumQuantity ??
+                            item.minimumQuantity}
+                        + tier
                     </span>
                 )}
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3">

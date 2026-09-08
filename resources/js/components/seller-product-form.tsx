@@ -56,6 +56,14 @@ type ListingMedia = { id: number; path: string; url: string };
 type ListingImageCrop = { x: number; y: number; width: number; height: number };
 type ListingImageSize = { width: number; height: number };
 type VariantOption = { name: string; values: string[] };
+type WholesaleTierInput = {
+    minimum_quantity: number | '';
+    unit_price: string;
+};
+type StoredWholesaleTier = {
+    minimum_quantity: number;
+    unit_price: string;
+};
 type VariantRow = {
     selections: string[];
     sku: string;
@@ -63,8 +71,7 @@ type VariantRow = {
     mpn: string;
     selling_price: string;
     market_price: string;
-    wholesale_price: string;
-    wholesale_min_quantity: number | '';
+    wholesale_tiers: WholesaleTierInput[];
     stock_quantity: number | '';
     is_active: boolean;
     image: File | null;
@@ -99,6 +106,7 @@ type StoredVariant = {
     market_price: string | null;
     wholesale_price: string | null;
     wholesale_min_quantity: number | null;
+    wholesale_price_tiers: StoredWholesaleTier[];
     stock_quantity: number;
     is_active: boolean;
     position: number;
@@ -139,6 +147,32 @@ const CATEGORY_SUGGESTION_MINIMUM_TITLE_LENGTH = 4;
 const SEO_META_TITLE_MAXIMUM_LENGTH = 60;
 const SEO_META_DESCRIPTION_MAXIMUM_LENGTH = 160;
 
+function initialWholesaleTiers(
+    tiers: StoredWholesaleTier[] | undefined,
+    minimumQuantity: number | null | undefined,
+    unitPrice: string | null | undefined,
+): WholesaleTierInput[] {
+    if (tiers && tiers.length > 0) {
+        return [...tiers]
+            .sort(
+                (first, second) =>
+                    first.minimum_quantity - second.minimum_quantity,
+            )
+            .map((tier) => ({ ...tier }));
+    }
+
+    if (minimumQuantity !== null && minimumQuantity !== undefined) {
+        return [
+            {
+                minimum_quantity: minimumQuantity,
+                unit_price: unitPrice ?? '',
+            },
+        ];
+    }
+
+    return [{ minimum_quantity: 2, unit_price: '' }];
+}
+
 function requestWasCancelled(caught: unknown): boolean {
     return (
         caught instanceof Error &&
@@ -177,6 +211,7 @@ export type SellerProductFormListing = {
     is_wholesale_enabled: boolean;
     wholesale_price: string | null;
     wholesale_min_quantity: number | null;
+    wholesale_price_tiers?: StoredWholesaleTier[];
     meta_title: string | null;
     meta_description: string | null;
     media?: ListingMedia[];
@@ -206,8 +241,7 @@ type ProductFormData = {
     compare_price: string;
     is_retail_enabled: boolean;
     is_wholesale_enabled: boolean;
-    wholesale_price: string;
-    wholesale_min_quantity: number | '';
+    wholesale_tiers: WholesaleTierInput[];
     low_stock_threshold: number | '';
     allow_backorders: boolean;
     is_active: boolean;
@@ -342,8 +376,11 @@ export function SellerProductForm({
                     mpn: variant.mpn ?? '',
                     selling_price: variant.selling_price ?? '',
                     market_price: variant.market_price ?? '',
-                    wholesale_price: variant.wholesale_price ?? '',
-                    wholesale_min_quantity: variant.wholesale_min_quantity ?? 2,
+                    wholesale_tiers: initialWholesaleTiers(
+                        variant.wholesale_price_tiers,
+                        variant.wholesale_min_quantity,
+                        variant.wholesale_price,
+                    ),
                     stock_quantity: variant.stock_quantity,
                     is_active: variant.is_active,
                     image: null,
@@ -384,10 +421,11 @@ export function SellerProductForm({
             listing?.is_retail_enabled ?? defaultChannel === 'retail',
         is_wholesale_enabled:
             listing?.is_wholesale_enabled ?? defaultChannel === 'wholesale',
-        wholesale_price: listing?.wholesale_price ?? '',
-        wholesale_min_quantity:
-            listing?.wholesale_min_quantity ??
-            (defaultChannel === 'wholesale' ? 2 : ''),
+        wholesale_tiers: initialWholesaleTiers(
+            listing?.wholesale_price_tiers,
+            listing?.wholesale_min_quantity,
+            listing?.wholesale_price,
+        ),
         low_stock_threshold: listing?.low_stock_threshold ?? 0,
         allow_backorders: listing?.allow_backorders ?? false,
         is_active: listing?.is_active ?? true,
@@ -465,8 +503,7 @@ export function SellerProductForm({
     const productType = form.data.product_type;
     const baseSku = form.data.sku;
     const baseSellingPrice = form.data.selling_price;
-    const baseWholesalePrice = form.data.wholesale_price;
-    const baseWholesaleMinimum = form.data.wholesale_min_quantity;
+    const baseWholesaleTiers = form.data.wholesale_tiers;
     const baseStockQuantity = form.data.stock_quantity;
     const setFormData = form.setData;
 
@@ -500,11 +537,9 @@ export function SellerProductForm({
                 stock_quantity: existing?.stock_quantity ?? 0,
                 selling_price: existing?.selling_price ?? baseSellingPrice,
                 market_price: existing?.market_price ?? '',
-                wholesale_price:
-                    existing?.wholesale_price ?? baseWholesalePrice,
-                wholesale_min_quantity:
-                    existing?.wholesale_min_quantity ??
-                    (baseWholesaleMinimum || 2),
+                wholesale_tiers:
+                    existing?.wholesale_tiers ??
+                    baseWholesaleTiers.map((tier) => ({ ...tier })),
                 is_active: existing?.is_active ?? true,
                 image: existing?.image ?? null,
                 image_crop: existing?.image_crop ?? null,
@@ -531,8 +566,7 @@ export function SellerProductForm({
     }, [
         baseSku,
         baseSellingPrice,
-        baseWholesalePrice,
-        baseWholesaleMinimum,
+        baseWholesaleTiers,
         baseStockQuantity,
         combinations,
         productType,
@@ -1150,8 +1184,7 @@ export function SellerProductForm({
                 mpn: variant.mpn,
                 selling_price: variant.selling_price,
                 market_price: variant.market_price,
-                wholesale_price: variant.wholesale_price,
-                wholesale_min_quantity: variant.wholesale_min_quantity,
+                wholesale_tiers: variant.wholesale_tiers,
                 stock_quantity: variant.stock_quantity,
                 is_active: variant.is_active,
                 image: variant.image,
@@ -1230,12 +1263,15 @@ export function SellerProductForm({
                                         is_wholesale_enabled:
                                             channel === 'wholesale' ||
                                             channel === 'both',
-                                        wholesale_min_quantity:
-                                            channel === 'retail'
-                                                ? ''
-                                                : form.data
-                                                      .wholesale_min_quantity ||
-                                                  2,
+                                        wholesale_tiers:
+                                            form.data.wholesale_tiers.length > 0
+                                                ? form.data.wholesale_tiers
+                                                : [
+                                                      {
+                                                          minimum_quantity: 2,
+                                                          unit_price: '',
+                                                      },
+                                                  ],
                                     });
                                     form.clearErrors(
                                         'is_retail_enabled',
@@ -1619,67 +1655,22 @@ export function SellerProductForm({
                                         </>
                                     )}
                                     {form.data.is_wholesale_enabled && (
-                                        <>
-                                            <Field
-                                                label="Wholesale Price (LKR)"
-                                                error={errorFor(
-                                                    'wholesale_price',
-                                                )}
-                                                required
-                                            >
-                                                <MoneyInput
-                                                    value={
-                                                        form.data
-                                                            .wholesale_price
-                                                    }
-                                                    onChange={(value) =>
-                                                        setField(
-                                                            'wholesale_price',
-                                                            value,
-                                                        )
-                                                    }
-                                                    error={errorFor(
-                                                        'wholesale_price',
-                                                    )}
-                                                    ariaLabel="Wholesale price in LKR"
-                                                />
-                                            </Field>
-                                            <Field
-                                                label="Wholesale minimum quantity"
-                                                error={errorFor(
-                                                    'wholesale_min_quantity',
-                                                )}
-                                                required
-                                            >
-                                                <input
-                                                    type="number"
-                                                    min="2"
-                                                    max="100000"
-                                                    value={
-                                                        form.data
-                                                            .wholesale_min_quantity
-                                                    }
-                                                    onChange={(event) =>
-                                                        setField(
-                                                            'wholesale_min_quantity',
-                                                            event.target
-                                                                .value === ''
-                                                                ? ''
-                                                                : Number(
-                                                                      event
-                                                                          .target
-                                                                          .value,
-                                                                  ),
-                                                        )
-                                                    }
-                                                    className={inputClass(
-                                                        errorFor(
-                                                            'wholesale_min_quantity',
-                                                        ),
-                                                    )}
-                                                />
-                                            </Field>
-                                        </>
+                                        <div className="md:col-span-3">
+                                            <WholesaleTierEditor
+                                                tiers={
+                                                    form.data.wholesale_tiers
+                                                }
+                                                onChange={(tiers) =>
+                                                    setField(
+                                                        'wholesale_tiers',
+                                                        tiers,
+                                                    )
+                                                }
+                                                errorFor={errorFor}
+                                                fieldPrefix="wholesale_tiers"
+                                                label="Wholesale quantity pricing"
+                                            />
+                                        </div>
                                     )}
                                     <Field
                                         label="Stock Quantity"
@@ -1999,14 +1990,10 @@ export function SellerProductForm({
                                                     </th>
                                                     {form.data
                                                         .is_wholesale_enabled && (
-                                                        <>
-                                                            <th className="w-40 px-4 py-3">
-                                                                Wholesale price
-                                                            </th>
-                                                            <th className="w-36 px-4 py-3">
-                                                                Wholesale MOQ
-                                                            </th>
-                                                        </>
+                                                        <th className="min-w-[28rem] px-4 py-3">
+                                                            Wholesale quantity
+                                                            pricing
+                                                        </th>
                                                     )}
                                                     <th className="w-36 px-4 py-3">
                                                         Stock
@@ -2238,67 +2225,30 @@ export function SellerProductForm({
                                                                 </td>
                                                                 {form.data
                                                                     .is_wholesale_enabled && (
-                                                                    <>
-                                                                        <td className="px-4 py-3">
-                                                                            <MoneyInput
-                                                                                ariaLabel={`${variant.selections.join(' / ')} wholesale price`}
-                                                                                value={
-                                                                                    variant.wholesale_price
-                                                                                }
-                                                                                onChange={(
-                                                                                    value,
-                                                                                ) =>
-                                                                                    updateVariant(
-                                                                                        index,
-                                                                                        {
-                                                                                            wholesale_price:
-                                                                                                value,
-                                                                                        },
-                                                                                    )
-                                                                                }
-                                                                                error={errorFor(
-                                                                                    `variants.${index}.wholesale_price`,
-                                                                                )}
-                                                                            />
-                                                                        </td>
-                                                                        <td className="px-4 py-3">
-                                                                            <input
-                                                                                aria-label={`${variant.selections.join(' / ')} wholesale minimum quantity`}
-                                                                                type="number"
-                                                                                min="2"
-                                                                                max="100000"
-                                                                                value={
-                                                                                    variant.wholesale_min_quantity
-                                                                                }
-                                                                                onChange={(
-                                                                                    event,
-                                                                                ) =>
-                                                                                    updateVariant(
-                                                                                        index,
-                                                                                        {
-                                                                                            wholesale_min_quantity:
-                                                                                                event
-                                                                                                    .target
-                                                                                                    .value ===
-                                                                                                ''
-                                                                                                    ? ''
-                                                                                                    : Number(
-                                                                                                          event
-                                                                                                              .target
-                                                                                                              .value,
-                                                                                                      ),
-                                                                                        },
-                                                                                    )
-                                                                                }
-                                                                                className={inputClass(
-                                                                                    errorFor(
-                                                                                        `variants.${index}.wholesale_min_quantity`,
-                                                                                    ),
-                                                                                    'h-10',
-                                                                                )}
-                                                                            />
-                                                                        </td>
-                                                                    </>
+                                                                    <td className="px-4 py-3 align-top">
+                                                                        <WholesaleTierEditor
+                                                                            tiers={
+                                                                                variant.wholesale_tiers
+                                                                            }
+                                                                            onChange={(
+                                                                                tiers,
+                                                                            ) =>
+                                                                                updateVariant(
+                                                                                    index,
+                                                                                    {
+                                                                                        wholesale_tiers:
+                                                                                            tiers,
+                                                                                    },
+                                                                                )
+                                                                            }
+                                                                            errorFor={
+                                                                                errorFor
+                                                                            }
+                                                                            fieldPrefix={`variants.${index}.wholesale_tiers`}
+                                                                            label={`${variant.selections.join(' / ')} wholesale tiers`}
+                                                                            compact
+                                                                        />
+                                                                    </td>
                                                                 )}
                                                                 <td className="px-4 py-3">
                                                                     <input
@@ -3169,6 +3119,167 @@ function ChipValueInput({
                     className="h-8 min-w-36 flex-1 bg-transparent px-1 text-sm outline-none placeholder:text-slate-400"
                 />
             </div>
+        </div>
+    );
+}
+
+function WholesaleTierEditor({
+    compact = false,
+    errorFor,
+    fieldPrefix,
+    label,
+    onChange,
+    tiers,
+}: {
+    compact?: boolean;
+    errorFor: (field: string) => string | undefined;
+    fieldPrefix: string;
+    label: string;
+    onChange: (tiers: WholesaleTierInput[]) => void;
+    tiers: WholesaleTierInput[];
+}) {
+    const editor = (
+        <div className="grid gap-3">
+            {tiers.map((tier, index) => {
+                const quantityField = `${fieldPrefix}.${index}.minimum_quantity`;
+                const priceField = `${fieldPrefix}.${index}.unit_price`;
+
+                return (
+                    <div
+                        key={index}
+                        className="grid items-start gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)_2.75rem]"
+                    >
+                        <div>
+                            <span className="mb-1 block text-xs font-semibold text-slate-500">
+                                Quantity from
+                            </span>
+                            <input
+                                aria-label={`${label} quantity ${index + 1}`}
+                                type="number"
+                                min="2"
+                                max="100000"
+                                value={tier.minimum_quantity}
+                                onChange={(event) =>
+                                    onChange(
+                                        tiers.map((row, rowIndex) =>
+                                            rowIndex === index
+                                                ? {
+                                                      ...row,
+                                                      minimum_quantity:
+                                                          event.target.value ===
+                                                          ''
+                                                              ? ''
+                                                              : Number(
+                                                                    event.target
+                                                                        .value,
+                                                                ),
+                                                  }
+                                                : row,
+                                        ),
+                                    )
+                                }
+                                className={inputClass(errorFor(quantityField))}
+                            />
+                            {errorFor(quantityField) && (
+                                <ErrorText>{errorFor(quantityField)}</ErrorText>
+                            )}
+                        </div>
+                        <div>
+                            <span className="mb-1 block text-xs font-semibold text-slate-500">
+                                Unit price (LKR)
+                            </span>
+                            <MoneyInput
+                                ariaLabel={`${label} unit price ${index + 1}`}
+                                value={tier.unit_price}
+                                onChange={(unitPrice) =>
+                                    onChange(
+                                        tiers.map((row, rowIndex) =>
+                                            rowIndex === index
+                                                ? {
+                                                      ...row,
+                                                      unit_price: unitPrice,
+                                                  }
+                                                : row,
+                                        ),
+                                    )
+                                }
+                                error={errorFor(priceField)}
+                            />
+                            {errorFor(priceField) && (
+                                <ErrorText>{errorFor(priceField)}</ErrorText>
+                            )}
+                        </div>
+                        <button
+                            type="button"
+                            disabled={tiers.length === 1}
+                            onClick={() =>
+                                onChange(
+                                    tiers.filter(
+                                        (_, rowIndex) => rowIndex !== index,
+                                    ),
+                                )
+                            }
+                            aria-label={`Remove ${label} tier ${index + 1}`}
+                            className="mt-6 inline-flex size-11 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:border-red-200 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30 dark:border-slate-700"
+                        >
+                            <Trash2 className="size-4" />
+                        </button>
+                    </div>
+                );
+            })}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-slate-500">
+                    Add up to 3 tiers. Higher quantities must use the same or a
+                    lower price.
+                </p>
+                <button
+                    type="button"
+                    disabled={tiers.length >= 3}
+                    onClick={() => {
+                        const previous = tiers[tiers.length - 1];
+                        const previousMinimum = Number(
+                            previous?.minimum_quantity || 1,
+                        );
+
+                        onChange([
+                            ...tiers,
+                            {
+                                minimum_quantity: Math.min(
+                                    100000,
+                                    previousMinimum + 1,
+                                ),
+                                unit_price: previous?.unit_price ?? '',
+                            },
+                        ]);
+                    }}
+                    className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-primary/25 px-3 text-xs font-bold text-primary transition hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                    <Plus className="size-3.5" /> Add price tier
+                </button>
+            </div>
+            {errorFor(fieldPrefix) && (
+                <ErrorText>{errorFor(fieldPrefix)}</ErrorText>
+            )}
+        </div>
+    );
+
+    if (compact) {
+        return (
+            <details className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/50">
+                <summary className="cursor-pointer text-sm font-bold text-slate-700 dark:text-slate-200">
+                    {tiers.length} price {tiers.length === 1 ? 'tier' : 'tiers'}
+                </summary>
+                <div className="mt-3">{editor}</div>
+            </details>
+        );
+    }
+
+    return (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
+            <h3 className="mb-3 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                {label} <span className="text-red-500">*</span>
+            </h3>
+            {editor}
         </div>
     );
 }

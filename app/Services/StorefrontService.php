@@ -14,6 +14,7 @@ use App\Models\Category;
 use App\Models\Listing;
 use App\Models\ProductQuestion;
 use App\Models\User;
+use App\Models\WholesalePriceTier;
 use Illuminate\Support\Collection;
 
 class StorefrontService
@@ -377,7 +378,13 @@ class StorefrontService
         $selectedVariantId = $listing->variants
             ->where('is_active', true)
             ->firstWhere('id', $requestedVariantId)?->id;
+        if ($selectedVariantId === null && $channel === 'wholesale' && $listing->product_type === 'variant') {
+            $selectedVariantId = $listing->variants->where('is_active', true)->first()?->id;
+        }
         $selectedVariant = $listing->variants->firstWhere('id', $selectedVariantId);
+        $initialWholesaleQuantity = $selectedVariant === null
+            ? $listing->wholesalePriceTiers->min('minimum_quantity')
+            : $selectedVariant->wholesalePriceTiers->min('minimum_quantity');
 
         return [
             'head' => $this->seo->tags($seo),
@@ -387,9 +394,7 @@ class StorefrontService
             'purchaseContext' => [
                 'channel' => $channel,
                 'initialQuantity' => $channel === 'wholesale'
-                    ? max(2, (int) ($selectedVariantId === null
-                        ? ($listing->wholesale_min_quantity ?? 2)
-                        : ($selectedVariant->wholesale_min_quantity ?? 2)))
+                    ? max(2, (int) ($initialWholesaleQuantity ?? 2))
                     : 1,
             ],
             'sellerSummary' => $listing->sellerProfile === null ? null : $this->sellerSummaries->forSeller($this->sellers->findPublic($listing->sellerProfile->slug)),
@@ -495,6 +500,9 @@ class StorefrontService
             'wholesaleEnabled' => $listing->is_wholesale_enabled,
             'wholesalePrice' => $listing->wholesale_price,
             'wholesaleMinimumQuantity' => $listing->wholesale_min_quantity,
+            'wholesaleTiers' => $detailed
+                ? $this->wholesaleTierData($listing->wholesalePriceTiers)
+                : [],
             'discountPercentage' => $this->discountPercentage($listing),
             'ratingAverage' => $listing->getAttribute('rating_average') === null ? null : round((float) $listing->getAttribute('rating_average'), 1),
             'reviewCount' => (int) $listing->getAttribute('reviews_count'),
@@ -545,6 +553,7 @@ class StorefrontService
                     'marketPrice' => $variant->market_price,
                     'wholesalePrice' => $variant->wholesale_price,
                     'wholesaleMinimumQuantity' => $variant->wholesale_min_quantity,
+                    'wholesaleTiers' => $this->wholesaleTierData($variant->wholesalePriceTiers),
                     'selectionKey' => $variant->combination_key,
                     'selections' => $variant->optionValues->sortBy(fn ($value) => $value->option->position)->mapWithKeys(fn ($value): array => [$value->option->name => $value->value]),
                     'stockQuantity' => $variant->availableQuantity(),
@@ -555,6 +564,21 @@ class StorefrontService
                 ])->values()
                 : [],
         ];
+    }
+
+    /** @param Collection<int, WholesalePriceTier> $tiers
+     * @return array<int, array{minimumQuantity: int, unitPrice: string}>
+     */
+    private function wholesaleTierData(Collection $tiers): array
+    {
+        return $tiers
+            ->sortBy('minimum_quantity')
+            ->map(fn ($tier): array => [
+                'minimumQuantity' => (int) $tier->minimum_quantity,
+                'unitPrice' => (string) $tier->unit_price,
+            ])
+            ->values()
+            ->all();
     }
 
     /** @param array<string, mixed> $data

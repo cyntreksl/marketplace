@@ -69,6 +69,7 @@ test('listing details include an empty media collection and category trail', fun
     $listing->setRelation('auction', null);
     $listing->setRelation('variantOptions', collect());
     $listing->setRelation('variants', collect());
+    $listing->setRelation('wholesalePriceTiers', collect());
 
     $listingRepository = Mockery::mock(ListingRepository::class, function (MockInterface $mock) use ($listing): void {
         $mock->shouldReceive('findPublicBySlug')->once()->with('modern-laptop')->andReturn($listing);

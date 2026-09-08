@@ -65,8 +65,10 @@ class EloquentListingRepository implements ListingRepository
                 'sellerProfile.user:id,name',
                 'auction.bids.buyer:id,name',
                 'variantOptions.values',
+                'wholesalePriceTiers',
                 'variants.optionValues.option',
                 'variants.image',
+                'variants.wholesalePriceTiers',
             ])
             ->where('slug', $slug)
             ->firstOrFail();
@@ -205,6 +207,8 @@ class EloquentListingRepository implements ListingRepository
                 'media:id,listing_id,disk,path,type,sort_order,variant_version,variants,processing_status',
                 'sellerProfile:id,store_name',
                 'variants:id,listing_id,gtin,mpn,selling_price,stock_quantity,reserved_quantity,is_active',
+                'wholesalePriceTiers',
+                'variants.wholesalePriceTiers',
             ])
             ->when($filters['review_only'] ?? false, fn (Builder $query): Builder => $query->whereIn('status', ['pending_review', 'changes_requested', 'rejected', 'suspended']))
             ->when($search !== '', fn (Builder $query): Builder => $query->where(function (Builder $query) use ($search): void {
@@ -397,8 +401,10 @@ class EloquentListingRepository implements ListingRepository
                 'category',
                 'media',
                 'variantOptions.values',
+                'wholesalePriceTiers',
                 'variants.image',
                 'variants.optionValues.option',
+                'variants.wholesalePriceTiers',
             ])
             ->findOrFail($listingId);
     }
@@ -420,8 +426,10 @@ class EloquentListingRepository implements ListingRepository
                 'media',
                 'sellerProfile:id,store_name,status',
                 'variantOptions.values',
+                'wholesalePriceTiers',
                 'variants.image',
                 'variants.optionValues.option',
+                'variants.wholesalePriceTiers',
             ])
             ->findOrFail($listingId);
     }

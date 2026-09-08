@@ -74,6 +74,7 @@ class CartService
                 'quantity' => $entry['quantity'],
                 'unitPrice' => $price ?? '0.00',
                 'pricingTier' => $pricing['tier'] ?? null,
+                'appliedTierMinimumQuantity' => $pricing['appliedTierMinimumQuantity'] ?? null,
                 'minimumQuantity' => $pricing['minimumQuantity'] ?? ($listing === null ? 1 : ($this->pricing->wholesaleMinimum($listing, $variant) ?? 1)),
                 'total' => (string) $lineTotal,
                 'error' => $error,

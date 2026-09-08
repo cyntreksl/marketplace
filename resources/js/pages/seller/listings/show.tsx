@@ -30,6 +30,10 @@ type VariantOption = {
     name: string;
     values: { id: number; value: string }[];
 };
+type WholesalePriceTier = {
+    minimum_quantity: number;
+    unit_price: string;
+};
 
 type ListingVariant = {
     id: number;
@@ -40,6 +44,7 @@ type ListingVariant = {
     market_price: string | null;
     wholesale_price: string | null;
     wholesale_min_quantity: number | null;
+    wholesale_price_tiers: WholesalePriceTier[];
     stock_quantity: number;
     reserved_quantity: number;
     is_active: boolean;
@@ -84,6 +89,7 @@ type Listing = {
     is_wholesale_enabled: boolean;
     wholesale_price: string | null;
     wholesale_min_quantity: number | null;
+    wholesale_price_tiers: WholesalePriceTier[];
     commission_percentage: string | null;
     meta_title: string | null;
     meta_description: string | null;
@@ -174,6 +180,22 @@ function DetailRow({
                 {label}
             </dt>
             <dd className="text-sm font-semibold sm:text-right">{value}</dd>
+        </div>
+    );
+}
+
+function WholesaleTierList({ tiers }: { tiers: WholesalePriceTier[] }) {
+    return (
+        <div className="grid gap-1 text-sm">
+            {tiers.map((tier) => (
+                <div
+                    key={tier.minimum_quantity}
+                    className="flex justify-between gap-3"
+                >
+                    <span>{tier.minimum_quantity}+ units</span>
+                    <strong>{formatPrice(tier.unit_price)} / unit</strong>
+                </div>
+            ))}
         </div>
     );
 }
@@ -530,6 +552,18 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
                                                         {formatPrice(
                                                             variant.selling_price,
                                                         )}
+                                                        {listing.is_wholesale_enabled &&
+                                                            variant
+                                                                .wholesale_price_tiers
+                                                                .length > 0 && (
+                                                                <div className="mt-2 border-t border-slate-100 pt-2 dark:border-slate-800">
+                                                                    <WholesaleTierList
+                                                                        tiers={
+                                                                            variant.wholesale_price_tiers
+                                                                        }
+                                                                    />
+                                                                </div>
+                                                            )}
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         {variant.stock_quantity -
@@ -570,21 +604,30 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
                                     }
                                 />
                                 {listing.is_wholesale_enabled && (
-                                    <>
-                                        <DetailRow
-                                            label="Wholesale price"
-                                            value={formatPrice(
-                                                listing.wholesale_price,
-                                            )}
-                                        />
-                                        <DetailRow
-                                            label="Wholesale MOQ"
-                                            value={
-                                                listing.wholesale_min_quantity ??
-                                                'Not set'
-                                            }
-                                        />
-                                    </>
+                                    <DetailRow
+                                        label="Wholesale tiers"
+                                        value={
+                                            listing.wholesale_price_tiers
+                                                .length > 0 ? (
+                                                <WholesaleTierList
+                                                    tiers={
+                                                        listing.wholesale_price_tiers
+                                                    }
+                                                />
+                                            ) : (
+                                                <>
+                                                    From{' '}
+                                                    {formatPrice(
+                                                        listing.wholesale_price,
+                                                    )}{' '}
+                                                    at{' '}
+                                                    {listing.wholesale_min_quantity ??
+                                                        '—'}
+                                                    + units
+                                                </>
+                                            )
+                                        }
+                                    />
                                 )}
                                 <DetailRow
                                     label="Commission"

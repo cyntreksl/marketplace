@@ -96,12 +96,17 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
 
                 <div className="mt-2 flex flex-col gap-1">
                     <p className="text-[clamp(1rem,12cqi,1.5rem)] leading-8 font-bold tracking-tight break-words text-slate-950">
+                        {isWholesale && listing.effectivePrice && 'From '}
                         <ListingPrice value={listing.effectivePrice} />
+                        {isWholesale && listing.effectivePrice && (
+                            <span className="ml-1 text-xs font-semibold tracking-normal text-slate-500">
+                                /unit
+                            </span>
+                        )}
                     </p>
                     {isWholesale && (
                         <p className="text-xs font-bold text-[#FF6D00]">
-                            Wholesale · MOQ{' '}
-                            {listing.wholesaleMinimumQuantity ?? 2}
+                            {listing.wholesaleMinimumQuantity ?? 2}+ units
                         </p>
                     )}
                     {Number.isFinite(savings) && savings > 0 && (

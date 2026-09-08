@@ -194,16 +194,17 @@ export default function SellerListings({
                                                 )}
                                                 {listing.is_wholesale_enabled && (
                                                     <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-bold text-orange-700">
-                                                        Wholesale · LKR{' '}
+                                                        From LKR{' '}
                                                         {Number(
                                                             listing.wholesale_price ??
                                                                 0,
                                                         ).toLocaleString(
                                                             'en-LK',
                                                         )}{' '}
-                                                        · MOQ{' '}
+                                                        /unit ·{' '}
                                                         {listing.wholesale_min_quantity ??
                                                             '—'}
+                                                        + units
                                                     </span>
                                                 )}
                                             </div>

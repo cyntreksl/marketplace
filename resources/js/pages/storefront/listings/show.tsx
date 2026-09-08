@@ -142,23 +142,26 @@ export default function ListingShow({
             ),
         [listing.variants, selections],
     );
-    const wholesaleMinimum =
+    const wholesaleTiers =
         selectedVariant === undefined
-            ? listing.wholesaleMinimumQuantity
-            : selectedVariant.wholesaleMinimumQuantity;
-    const wholesalePrice =
-        selectedVariant === undefined
-            ? listing.wholesalePrice
-            : selectedVariant.wholesalePrice;
+            ? listing.wholesaleTiers
+            : selectedVariant.wholesaleTiers;
+    const wholesaleMinimum = wholesaleTiers[0]?.minimumQuantity ?? null;
+    const appliedWholesaleTier = [...wholesaleTiers]
+        .reverse()
+        .find((tier) => quantity >= tier.minimumQuantity);
+    const lowestWholesaleTier = [...wholesaleTiers].sort(
+        (first, second) =>
+            Number(first.unitPrice) - Number(second.unitPrice) ||
+            first.minimumQuantity - second.minimumQuantity,
+    )[0];
     const retailPrice =
         selectedVariant?.sellingPrice ?? listing.salePrice ?? listing.price;
     const isWholesaleQuantity = Boolean(
-        listing.wholesaleEnabled &&
-        wholesaleMinimum !== null &&
-        quantity >= wholesaleMinimum,
+        listing.wholesaleEnabled && appliedWholesaleTier,
     );
     const displayedSellingPrice = isWholesaleQuantity
-        ? wholesalePrice
+        ? (appliedWholesaleTier?.unitPrice ?? null)
         : retailPrice;
     const displayedMarketPrice = selectedVariant
         ? selectedVariant.marketPrice
@@ -324,7 +327,8 @@ export default function ListingShow({
                 </div>
                 {isWholesaleQuantity && (
                     <p className="mt-2 text-sm font-bold text-orange-700">
-                        Wholesale unit price · MOQ {wholesaleMinimum}
+                        Wholesale unit price ·{' '}
+                        {appliedWholesaleTier?.minimumQuantity}+ tier
                     </p>
                 )}
                 {listing.retailEnabled && listing.wholesaleEnabled && (
@@ -335,9 +339,41 @@ export default function ListingShow({
                                 listing.salePrice ??
                                 listing.price,
                         )}{' '}
-                        · Wholesale {formatPrice(wholesalePrice)} from{' '}
-                        {wholesaleMinimum} units
+                        · Wholesale from{' '}
+                        {formatPrice(lowestWholesaleTier?.unitPrice ?? null)} at{' '}
+                        {lowestWholesaleTier?.minimumQuantity}+ units
                     </p>
+                )}
+                {listing.wholesaleEnabled && wholesaleTiers.length > 0 && (
+                    <div className="mt-4 overflow-hidden rounded-lg border border-orange-100 bg-white">
+                        <div className="grid grid-cols-2 bg-orange-50 px-3 py-2 text-xs font-bold tracking-wide text-orange-900 uppercase">
+                            <span>Quantity</span>
+                            <span className="text-right">Unit price</span>
+                        </div>
+                        {wholesaleTiers.map((tier, index) => {
+                            const nextTier = wholesaleTiers[index + 1];
+                            const isActive =
+                                appliedWholesaleTier?.minimumQuantity ===
+                                tier.minimumQuantity;
+
+                            return (
+                                <div
+                                    key={tier.minimumQuantity}
+                                    className={`grid grid-cols-2 px-3 py-2 text-sm ${index > 0 ? 'border-t border-orange-100' : ''} ${isActive ? 'bg-orange-100 font-bold text-orange-900' : 'text-slate-600'}`}
+                                >
+                                    <span>
+                                        {nextTier
+                                            ? `${tier.minimumQuantity}–${nextTier.minimumQuantity - 1} units`
+                                            : `${tier.minimumQuantity}+ units`}
+                                    </span>
+                                    <span className="text-right">
+                                        {formatPrice(tier.unitPrice)}
+                                        {isActive && ' · Active'}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
                 )}
                 {displayedDiscountPercentage !== null &&
                     displayedDiscountPercentage > 0 && (
@@ -494,7 +530,9 @@ export default function ListingShow({
                                                                         ),
                                                                 );
                                                             const nextMinimum =
-                                                                nextVariant?.wholesaleMinimumQuantity;
+                                                                nextVariant
+                                                                    ?.wholesaleTiers[0]
+                                                                    ?.minimumQuantity;
 
                                                             if (nextMinimum) {
                                                                 setQuantity(

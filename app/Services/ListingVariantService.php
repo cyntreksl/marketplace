@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\Repositories\ListingVariantRepository;
+use App\Contracts\Repositories\WholesalePriceTierRepository;
 use App\Models\Listing;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
@@ -13,6 +14,7 @@ class ListingVariantService
 {
     public function __construct(
         private readonly ListingVariantRepository $variants,
+        private readonly WholesalePriceTierRepository $wholesalePriceTiers,
         private readonly ListingImageService $images,
     ) {}
 
@@ -42,6 +44,12 @@ class ListingVariantService
         $variants = collect($matrix)->map(function (array $selections) use ($attributes, $options, $submittedVariants): array {
             $key = $this->combinationKey($selections, $options);
             $submitted = $submittedVariants->get($key, []);
+            $wholesaleTiers = $this->normalizedWholesaleTiers(
+                ($attributes['is_wholesale_enabled'] ?? false) ? ($submitted['wholesale_tiers'] ?? []) : [],
+            );
+            $lowestWholesaleTier = collect($wholesaleTiers)
+                ->sortBy([['unit_price', 'asc'], ['minimum_quantity', 'asc']])
+                ->first();
 
             return [
                 'combination_key' => $key,
@@ -53,8 +61,9 @@ class ListingVariantService
                 'mpn' => filled($submitted['mpn'] ?? null) ? Str::squish((string) $submitted['mpn']) : null,
                 'selling_price' => filled($submitted['selling_price'] ?? null) ? $submitted['selling_price'] : null,
                 'market_price' => filled($submitted['market_price'] ?? null) ? $submitted['market_price'] : null,
-                'wholesale_price' => filled($submitted['wholesale_price'] ?? null) ? $submitted['wholesale_price'] : null,
-                'wholesale_min_quantity' => filled($submitted['wholesale_min_quantity'] ?? null) ? (int) $submitted['wholesale_min_quantity'] : null,
+                'wholesale_price' => $lowestWholesaleTier['unit_price'] ?? null,
+                'wholesale_min_quantity' => $lowestWholesaleTier['minimum_quantity'] ?? null,
+                'wholesale_tiers' => $wholesaleTiers,
                 'stock_quantity' => max(0, (int) ($submitted['stock_quantity'] ?? 0)),
                 'is_active' => filter_var($submitted['is_active'] ?? true, FILTER_VALIDATE_BOOL),
             ];
@@ -69,6 +78,12 @@ class ListingVariantService
 
         foreach ($synchronizedVariants as $variant) {
             $submitted = $submittedVariants->get($variant->combination_key, []);
+            $this->wholesalePriceTiers->replaceForVariant(
+                $variant,
+                $this->normalizedWholesaleTiers(
+                    ($attributes['is_wholesale_enabled'] ?? false) ? ($submitted['wholesale_tiers'] ?? []) : [],
+                ),
+            );
             $upload = $submitted['image'] ?? null;
             $crop = $submitted['image_crop'] ?? null;
             $existingImage = $variant->image()->first();
@@ -100,6 +115,20 @@ class ListingVariantService
                 $this->images->removeVariantImages(collect([$existingImage]));
             }
         }
+    }
+
+    /** @return list<array{minimum_quantity: int, unit_price: mixed}> */
+    private function normalizedWholesaleTiers(mixed $tiers): array
+    {
+        return array_values(collect(is_array($tiers) ? $tiers : [])
+            ->filter(fn (mixed $tier): bool => filled(Arr::get((array) $tier, 'minimum_quantity')) && filled(Arr::get((array) $tier, 'unit_price')))
+            ->map(fn (mixed $tier): array => [
+                'minimum_quantity' => (int) Arr::get((array) $tier, 'minimum_quantity'),
+                'unit_price' => Arr::get((array) $tier, 'unit_price'),
+            ])
+            ->sortBy('minimum_quantity')
+            ->values()
+            ->all());
     }
 
     /** @param array<int, mixed> $options

@@ -23,6 +23,10 @@ import { PortalLayout } from '@/components/portal-layout';
 import { RichTextContent } from '@/components/rich-text-editor';
 
 type ListingMedia = { id: number; url: string };
+type WholesalePriceTier = {
+    minimum_quantity: number;
+    unit_price: string;
+};
 type ListingVariant = {
     id: number;
     sku: string | null;
@@ -32,6 +36,7 @@ type ListingVariant = {
     market_price: string | null;
     wholesale_price: string | null;
     wholesale_min_quantity: number | null;
+    wholesale_price_tiers: WholesalePriceTier[];
     stock_quantity: number;
     reserved_quantity: number;
     is_active: boolean;
@@ -85,6 +90,7 @@ type Listing = {
     is_wholesale_enabled: boolean;
     wholesale_price: string | null;
     wholesale_min_quantity: number | null;
+    wholesale_price_tiers: WholesalePriceTier[];
     commission_percentage: string | null;
     meta_title: string | null;
     meta_description: string | null;
@@ -141,9 +147,10 @@ export default function ShowAdminListing({ listing }: { listing: Listing }) {
                             )}
                             {listing.is_wholesale_enabled && (
                                 <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
-                                    Wholesale ·{' '}
-                                    {formatPrice(listing.wholesale_price)} · MOQ{' '}
-                                    {listing.wholesale_min_quantity ?? '—'}
+                                    Wholesale · From{' '}
+                                    {formatPrice(listing.wholesale_price)} ·{' '}
+                                    {listing.wholesale_min_quantity ?? '—'}+
+                                    units
                                 </span>
                             )}
                         </div>
@@ -391,6 +398,18 @@ export default function ShowAdminListing({ listing }: { listing: Listing }) {
                                                         {formatPrice(
                                                             variant.selling_price,
                                                         )}
+                                                        {listing.is_wholesale_enabled &&
+                                                            variant
+                                                                .wholesale_price_tiers
+                                                                .length > 0 && (
+                                                                <div className="mt-2 border-t border-slate-100 pt-2 dark:border-slate-800">
+                                                                    <WholesaleTierList
+                                                                        tiers={
+                                                                            variant.wholesale_price_tiers
+                                                                        }
+                                                                    />
+                                                                </div>
+                                                            )}
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         {Math.max(
@@ -526,6 +545,24 @@ export default function ShowAdminListing({ listing }: { listing: Listing }) {
 
                         <DetailCard icon={CircleDollarSign} title="Inventory">
                             <dl>
+                                {listing.is_wholesale_enabled &&
+                                    listing.product_type === 'simple' && (
+                                        <DetailRow
+                                            label="Wholesale tiers"
+                                            value={
+                                                listing.wholesale_price_tiers
+                                                    .length > 0 ? (
+                                                    <WholesaleTierList
+                                                        tiers={
+                                                            listing.wholesale_price_tiers
+                                                        }
+                                                    />
+                                                ) : (
+                                                    'Not set'
+                                                )
+                                            }
+                                        />
+                                    )}
                                 <DetailRow
                                     label="Total stock"
                                     value={listing.stock_quantity}
@@ -660,6 +697,22 @@ function formatPrice(value: string | null): string {
     return value === null
         ? 'Not set'
         : `LKR ${Number(value).toLocaleString('en-LK', { minimumFractionDigits: 2 })}`;
+}
+
+function WholesaleTierList({ tiers }: { tiers: WholesalePriceTier[] }) {
+    return (
+        <div className="mt-1 grid gap-1 text-xs font-normal">
+            {tiers.map((tier) => (
+                <div
+                    key={tier.minimum_quantity}
+                    className="flex justify-between gap-3"
+                >
+                    <span>{tier.minimum_quantity}+ units</span>
+                    <strong>{formatPrice(tier.unit_price)} / unit</strong>
+                </div>
+            ))}
+        </div>
+    );
 }
 
 function formatDate(value: string | null): string {

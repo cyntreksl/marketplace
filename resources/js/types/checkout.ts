@@ -4,6 +4,7 @@ export type CheckoutCartItem = {
     unitPrice: string;
     pricingTier: 'retail' | 'wholesale' | null;
     minimumQuantity: number;
+    appliedTierMinimumQuantity: number | null;
     total: string;
     error: string | null;
     availableQuantity: number;

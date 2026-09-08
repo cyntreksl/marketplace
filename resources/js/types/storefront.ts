@@ -66,6 +66,11 @@ export type StorefrontListingAuction = {
     bidCount: number | null;
 };
 
+export type StorefrontWholesalePriceTier = {
+    minimumQuantity: number;
+    unitPrice: string;
+};
+
 export type StorefrontListing = {
     id: number;
     title: string;
@@ -87,6 +92,7 @@ export type StorefrontListing = {
     wholesaleEnabled: boolean;
     wholesalePrice: string | null;
     wholesaleMinimumQuantity: number | null;
+    wholesaleTiers: StorefrontWholesalePriceTier[];
     discountPercentage: number | null;
     ratingAverage: number | null;
     reviewCount: number;
@@ -114,6 +120,7 @@ export type StorefrontListing = {
         marketPrice: string | null;
         wholesalePrice: string | null;
         wholesaleMinimumQuantity: number | null;
+        wholesaleTiers: StorefrontWholesalePriceTier[];
         selectionKey: string;
         selections: Record<string, string>;
         stockQuantity: number;
