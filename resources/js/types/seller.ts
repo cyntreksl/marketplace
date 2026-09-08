@@ -36,6 +36,7 @@ export type SellerOrder = {
         unit_price: string;
         total: string;
         variant_options: Record<string, string> | null;
+        pricing_tier: 'retail' | 'wholesale';
     }[];
     shipment: {
         courier_name: string;

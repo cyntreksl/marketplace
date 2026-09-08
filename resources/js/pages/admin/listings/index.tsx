@@ -12,6 +12,10 @@ type Listing = {
     short_description: string | null;
     price: string | null;
     sale_price: string | null;
+    is_retail_enabled: boolean;
+    is_wholesale_enabled: boolean;
+    wholesale_price: string | null;
+    wholesale_min_quantity: number | null;
     moderation_reason: string | null;
     media: { id: number; url: string }[];
     seller_profile: { store_name: string };
@@ -77,6 +81,24 @@ export default function AdminListings({
                                     Current status:{' '}
                                     {listing.status.replace('_', ' ')}
                                 </p>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                    {listing.is_retail_enabled && (
+                                        <span className="rounded-full bg-sky-50 px-2.5 py-1 text-xs font-bold text-sky-700">
+                                            Retail
+                                        </span>
+                                    )}
+                                    {listing.is_wholesale_enabled && (
+                                        <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-700">
+                                            Wholesale · LKR{' '}
+                                            {Number(
+                                                listing.wholesale_price ?? 0,
+                                            ).toLocaleString('en-LK')}{' '}
+                                            · MOQ{' '}
+                                            {listing.wholesale_min_quantity ??
+                                                '—'}
+                                        </span>
+                                    )}
+                                </div>
                                 {listing.short_description && (
                                     <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                                         {listing.short_description}

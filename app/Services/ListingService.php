@@ -37,8 +37,33 @@ class ListingService
 
         return [
             'sellerStatus' => $profile->status,
-            'listings' => $this->listings->paginateForSeller($profile, $filters),
+            'listings' => $this->listings->paginateForSeller($profile, $filters, 'retail'),
             'filters' => ['q' => $filters['q'] ?? '', 'status' => $filters['status'] ?? 'all', 'sort' => $filters['sort'] ?? 'newest'],
+        ];
+    }
+
+    /**
+     * @param  array{q?: string, status?: string, sort?: string}  $filters
+     * @return array{sellerStatus: string, listings: LengthAwarePaginator<int, Listing>, filters: array{q: string, status: string, sort: string}}
+     */
+    public function sellerWholesaleIndex(User $seller, array $filters = []): array
+    {
+        $profile = $this->sellerProfileFor($seller);
+
+        return [
+            'sellerStatus' => $profile->status,
+            'listings' => $this->listings->paginateForSeller($profile, $filters, 'wholesale'),
+            'filters' => ['q' => $filters['q'] ?? '', 'status' => $filters['status'] ?? 'all', 'sort' => $filters['sort'] ?? 'newest'],
+        ];
+    }
+
+    /** @return array{sellerStatus: string, brands: mixed, defaultChannel: 'retail'|'wholesale'} */
+    public function sellerCreateData(User $seller, string $defaultChannel = 'retail'): array
+    {
+        return [
+            'sellerStatus' => $this->sellerProfileFor($seller)->status,
+            'brands' => $this->catalog->listingBrands(),
+            'defaultChannel' => $defaultChannel === 'wholesale' ? 'wholesale' : 'retail',
         ];
     }
 
@@ -300,7 +325,10 @@ class ListingService
         $title = filled($attributes['title'] ?? null) ? (string) $attributes['title'] : null;
         $sellingPrice = filled($attributes['selling_price'] ?? null) ? $attributes['selling_price'] : null;
         $comparePrice = filled($attributes['compare_price'] ?? null) ? $attributes['compare_price'] : null;
+        $wholesalePrice = filled($attributes['wholesale_price'] ?? null) ? $attributes['wholesale_price'] : null;
+        $wholesaleMinimum = filled($attributes['wholesale_min_quantity'] ?? null) ? (int) $attributes['wholesale_min_quantity'] : null;
         $isVariantProduct = ($attributes['product_type'] ?? 'simple') === 'variant';
+        $isWholesaleEnabled = (bool) ($attributes['is_wholesale_enabled'] ?? false);
 
         return [
             'category_id' => $category?->id,
@@ -318,6 +346,8 @@ class ListingService
             'specifications' => $this->specificationAttributes($attributes['specifications_text'] ?? null),
             'condition' => $attributes['condition'] ?? null,
             'listing_type' => 'buy_now',
+            'is_retail_enabled' => (bool) ($attributes['is_retail_enabled'] ?? true),
+            'is_wholesale_enabled' => $isWholesaleEnabled,
             'product_type' => $attributes['product_type'] ?? 'simple',
             'location' => $attributes['location'] ?? null,
             'warranty' => $attributes['warranty'] ?? null,
@@ -330,6 +360,8 @@ class ListingService
             'is_new_arrival' => (bool) ($attributes['is_new_arrival'] ?? false),
             'price' => $isVariantProduct ? null : ($comparePrice ?? $sellingPrice),
             'sale_price' => $isVariantProduct || $comparePrice === null ? null : $sellingPrice,
+            'wholesale_price' => $isVariantProduct || ! $isWholesaleEnabled ? null : $wholesalePrice,
+            'wholesale_min_quantity' => $isVariantProduct || ! $isWholesaleEnabled ? null : $wholesaleMinimum,
             'commission_percentage' => $category?->commission_percentage,
             'meta_title' => $attributes['meta_title'] ?? null,
             'meta_description' => $attributes['meta_description'] ?? null,
@@ -349,11 +381,19 @@ class ListingService
             ->first();
         $sellingPrice = $lowestPricedVariant?->selling_price;
         $marketPrice = $lowestPricedVariant?->market_price;
+        $lowestWholesaleVariant = (clone $activeVariants)
+            ->whereNotNull('wholesale_price')
+            ->whereNotNull('wholesale_min_quantity')
+            ->orderBy('wholesale_price')
+            ->orderBy('position')
+            ->first();
 
         $listing->forceFill([
             'stock_quantity' => (clone $activeVariants)->sum('stock_quantity'),
             'price' => $marketPrice ?? $sellingPrice,
             'sale_price' => $marketPrice === null ? null : $sellingPrice,
+            'wholesale_price' => $listing->is_wholesale_enabled ? $lowestWholesaleVariant?->wholesale_price : null,
+            'wholesale_min_quantity' => $listing->is_wholesale_enabled ? $lowestWholesaleVariant?->wholesale_min_quantity : null,
         ]);
         $this->listings->save($listing);
     }
@@ -370,6 +410,7 @@ class ListingService
 
     private function ensureReadyForReview(Listing $listing): void
     {
+        $activeVariants = $listing->variants()->where('is_active', true)->get();
         $validator = Validator::make([
             ...$listing->only([
                 'category_id',
@@ -379,27 +420,75 @@ class ListingService
                 'condition',
                 'price',
                 'product_type',
+                'is_retail_enabled',
+                'is_wholesale_enabled',
+                'wholesale_price',
+                'wholesale_min_quantity',
             ]),
             'brand' => $listing->brand_id ?? $listing->brand_name,
             'media_count' => $listing->media()->count(),
             'variant_count' => $listing->variants()->count(),
             'variants_with_skus' => $listing->variants()->whereNotNull('sku')->count(),
+            'active_variants' => $activeVariants->map(fn ($variant): array => [
+                'selling_price' => $variant->selling_price,
+                'wholesale_price' => $variant->wholesale_price,
+                'wholesale_min_quantity' => $variant->wholesale_min_quantity,
+            ])->all(),
         ], [
             'category_id' => ['required', 'integer'],
             'sku' => ['required', 'string'],
             'title' => ['required', 'string'],
             'description' => ['required', 'string'],
             'condition' => ['required', 'string'],
-            'price' => ['required', 'numeric', 'min:1'],
+            'price' => ['nullable', 'numeric', 'min:1', 'required_if:is_retail_enabled,1'],
+            'wholesale_price' => ['nullable', 'numeric', 'min:1', 'required_if:is_wholesale_enabled,1'],
+            'wholesale_min_quantity' => ['nullable', 'integer', 'between:2,100000', 'required_if:is_wholesale_enabled,1'],
+            'is_retail_enabled' => ['required', 'boolean'],
+            'is_wholesale_enabled' => ['required', 'boolean'],
             'brand' => ['required'],
             'media_count' => ['integer', 'min:1'],
             'variant_count' => ['exclude_unless:product_type,variant', 'required', 'integer', 'min:1'],
             'variants_with_skus' => ['exclude_unless:product_type,variant', 'same:variant_count'],
+            'active_variants.*.selling_price' => ['nullable', 'numeric', 'min:1', 'required_if:is_retail_enabled,1'],
+            'active_variants.*.wholesale_price' => ['nullable', 'numeric', 'min:1', 'required_if:is_wholesale_enabled,1'],
+            'active_variants.*.wholesale_min_quantity' => ['nullable', 'integer', 'between:2,100000', 'required_if:is_wholesale_enabled,1'],
         ], [
             'media_count.min' => 'Add at least one product image before submitting for review.',
             'variant_count.min' => 'Generate at least one complete variant before submitting for review.',
             'variants_with_skus.same' => 'Every variant needs a SKU before submitting for review.',
         ]);
+
+        $validator->after(function ($validator) use ($listing, $activeVariants): void {
+            if (! $listing->is_retail_enabled && ! $listing->is_wholesale_enabled) {
+                $validator->errors()->add('is_retail_enabled', 'Choose at least one sales channel.');
+            }
+
+            if ($listing->product_type === 'simple') {
+                if (
+                    $listing->is_retail_enabled
+                    && $listing->is_wholesale_enabled
+                    && $listing->wholesale_price !== null
+                    && $listing->buyNowPrice() !== null
+                    && (float) $listing->wholesale_price >= (float) $listing->buyNowPrice()
+                ) {
+                    $validator->errors()->add('wholesale_price', 'The wholesale price must be lower than the selling price.');
+                }
+
+                return;
+            }
+
+            foreach ($activeVariants as $index => $variant) {
+                if (
+                    $listing->is_retail_enabled
+                    && $listing->is_wholesale_enabled
+                    && $variant->wholesale_price !== null
+                    && $variant->selling_price !== null
+                    && (float) $variant->wholesale_price >= (float) $variant->selling_price
+                ) {
+                    $validator->errors()->add("active_variants.{$index}.wholesale_price", 'The wholesale price must be lower than the selling price.');
+                }
+            }
+        });
 
         if ($validator->fails()) {
             throw new ValidationException($validator);

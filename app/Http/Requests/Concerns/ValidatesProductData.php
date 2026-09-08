@@ -53,8 +53,12 @@ trait ValidatesProductData
             'location' => ['nullable', 'string', 'max:120'],
             'warranty' => ['nullable', 'string', 'max:500'],
             'stock_quantity' => [Rule::requiredIf($publishing && $this->input('product_type') === 'simple'), 'nullable', 'integer', 'min:0', 'max:100000'],
-            'selling_price' => [Rule::excludeIf($this->input('product_type') === 'variant'), Rule::requiredIf($publishing), 'nullable', 'decimal:0,2', 'min:1'],
+            'is_retail_enabled' => ['required', 'boolean'],
+            'is_wholesale_enabled' => ['required', 'boolean'],
+            'selling_price' => [Rule::excludeIf($this->input('product_type') === 'variant'), Rule::requiredIf($publishing && $this->boolean('is_retail_enabled')), 'nullable', 'decimal:0,2', 'min:1'],
             'compare_price' => [Rule::excludeIf($this->input('product_type') === 'variant'), 'nullable', 'decimal:0,2', 'gt:selling_price'],
+            'wholesale_price' => [Rule::excludeIf($this->input('product_type') === 'variant'), 'nullable', 'decimal:0,2', 'min:1'],
+            'wholesale_min_quantity' => [Rule::excludeIf($this->input('product_type') === 'variant'), 'nullable', 'integer', 'between:2,100000'],
             'low_stock_threshold' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'allow_backorders' => ['required', 'boolean'],
             'is_active' => ['required', 'boolean'],
@@ -74,6 +78,8 @@ trait ValidatesProductData
             'variants.*.mpn' => [Rule::excludeIf($this->input('product_type') !== 'variant'), 'nullable', 'string', 'max:100'],
             'variants.*.selling_price' => ['nullable', 'decimal:0,2', 'min:1'],
             'variants.*.market_price' => ['nullable', 'decimal:0,2', 'min:1'],
+            'variants.*.wholesale_price' => ['nullable', 'decimal:0,2', 'min:1'],
+            'variants.*.wholesale_min_quantity' => ['nullable', 'integer', 'between:2,100000'],
             'variants.*.stock_quantity' => ['nullable', 'integer', 'min:0', 'max:100000'],
             'variants.*.is_active' => ['required', 'boolean'],
             'variants.*.image' => [
@@ -148,6 +154,8 @@ trait ValidatesProductData
             'selling_price' => $sellingPrice,
             'compare_price' => $comparePrice,
             'product_type' => $this->input('product_type', 'simple'),
+            'is_retail_enabled' => $this->has('is_retail_enabled') ? $this->boolean('is_retail_enabled') : true,
+            'is_wholesale_enabled' => $this->boolean('is_wholesale_enabled'),
             'low_stock_threshold' => $this->input('low_stock_threshold', 0),
             'allow_backorders' => $this->boolean('allow_backorders'),
             'is_active' => $this->has('is_active') ? $this->boolean('is_active') : true,
@@ -184,6 +192,22 @@ trait ValidatesProductData
             if (! $this->boolean('submit_for_review')) {
                 return;
             }
+
+            if (! $this->boolean('is_retail_enabled') && ! $this->boolean('is_wholesale_enabled')) {
+                $validator->errors()->add('is_retail_enabled', 'Choose at least one sales channel.');
+            }
+
+            if ($this->input('product_type') === 'simple' && $this->boolean('is_wholesale_enabled')) {
+                if (! filled($this->input('wholesale_price'))) {
+                    $validator->errors()->add('wholesale_price', 'Enter a wholesale price before submitting for review.');
+                }
+
+                if (! filled($this->input('wholesale_min_quantity'))) {
+                    $validator->errors()->add('wholesale_min_quantity', 'Enter a wholesale minimum quantity before submitting for review.');
+                }
+            }
+
+            $this->validateWholesalePrice($validator, $this->input('selling_price'), $this->input('wholesale_price'), 'wholesale_price');
 
             if (! filled($this->input('brand_id')) && ! filled($this->input('brand_name'))) {
                 $validator->errors()->add('brand_id', 'Choose a brand or enter a new brand name.');
@@ -348,9 +372,24 @@ trait ValidatesProductData
             }
 
             foreach ($activeVariants as $index => $variant) {
-                if (! filled(Arr::get((array) $variant, 'selling_price'))) {
+                if ($this->boolean('is_retail_enabled') && ! filled(Arr::get((array) $variant, 'selling_price'))) {
                     $validator->errors()->add("variants.{$index}.selling_price", 'Enter a selling price for each active variant.');
                 }
+
+                if ($this->boolean('is_wholesale_enabled') && ! filled(Arr::get((array) $variant, 'wholesale_price'))) {
+                    $validator->errors()->add("variants.{$index}.wholesale_price", 'Enter a wholesale price for each active variant.');
+                }
+
+                if ($this->boolean('is_wholesale_enabled') && ! filled(Arr::get((array) $variant, 'wholesale_min_quantity'))) {
+                    $validator->errors()->add("variants.{$index}.wholesale_min_quantity", 'Enter a wholesale minimum quantity for each active variant.');
+                }
+
+                $this->validateWholesalePrice(
+                    $validator,
+                    Arr::get((array) $variant, 'selling_price'),
+                    Arr::get((array) $variant, 'wholesale_price'),
+                    "variants.{$index}.wholesale_price",
+                );
             }
         }
 
@@ -393,6 +432,17 @@ trait ValidatesProductData
 
         if ($baseSkuConflictsWithVariant) {
             $validator->errors()->add('sku', 'The SKU is already used by a variant.');
+        }
+    }
+
+    private function validateWholesalePrice(Validator $validator, mixed $retailPrice, mixed $wholesalePrice, string $field): void
+    {
+        if (! is_numeric($retailPrice) || ! is_numeric($wholesalePrice)) {
+            return;
+        }
+
+        if ((float) $wholesalePrice >= (float) $retailPrice) {
+            $validator->errors()->add($field, 'The wholesale price must be lower than the retail selling price.');
         }
     }
 

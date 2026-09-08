@@ -10,6 +10,10 @@ import { SellerPageHeader } from '@/components/seller-page-header';
 import { SellerPagination } from '@/components/seller-pagination';
 import { SellerPortalLayout } from '@/components/seller-portal-layout';
 import { index } from '@/routes/seller/listings';
+import {
+    create as createWholesale,
+    index as wholesaleIndex,
+} from '@/routes/seller/wholesale';
 import type { SellerPaginator } from '@/types';
 
 type Listing = {
@@ -21,6 +25,10 @@ type Listing = {
     moderation_reason: string | null;
     product_type: 'simple' | 'variant';
     price: string | null;
+    is_retail_enabled: boolean;
+    is_wholesale_enabled: boolean;
+    wholesale_price: string | null;
+    wholesale_min_quantity: number | null;
     has_orders: boolean;
     created_at: string;
     brand: { name: string } | null;
@@ -62,24 +70,33 @@ export default function SellerListings({
     sellerStatus,
     listings,
     filters,
+    channel = 'retail',
 }: {
     sellerStatus: string;
     listings: SellerPaginator<Listing>;
     filters: Filters;
+    channel?: 'retail' | 'wholesale';
 }) {
+    const isWholesale = channel === 'wholesale';
+    const title = isWholesale ? 'Wholesale' : 'Products';
+    const listRoute = isWholesale ? wholesaleIndex : index;
+
     return (
-        <SellerPortalLayout title="Products">
-            <Head title="Products" />
+        <SellerPortalLayout title={title}>
+            <Head title={title} />
             <div className="space-y-6">
                 <SellerPageHeader
-                    title="Products"
-                    description={`Manage inventory, pricing, moderation, and listing health. Account status: ${sellerStatus.replaceAll('_', ' ')}.`}
+                    title={title}
+                    description={`${isWholesale ? 'Manage bulk pricing and minimum order quantities' : 'Manage retail inventory and pricing'}. Account status: ${sellerStatus.replaceAll('_', ' ')}.`}
                     actions={
                         <Link
-                            href={create()}
+                            href={isWholesale ? createWholesale() : create()}
                             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground"
                         >
-                            <Plus className="size-4" /> Add product
+                            <Plus className="size-4" />{' '}
+                            {isWholesale
+                                ? 'Add wholesale product'
+                                : 'Add product'}
                         </Link>
                     }
                 />
@@ -90,7 +107,7 @@ export default function SellerListings({
                     </p>
                 )}
                 <Form
-                    {...index.form()}
+                    {...listRoute.form()}
                     className="grid gap-3 rounded-2xl border bg-white p-4 sm:grid-cols-[minmax(0,1fr)_12rem_11rem_auto] dark:bg-slate-900"
                     options={{ preserveScroll: true, preserveState: true }}
                 >
@@ -169,6 +186,27 @@ export default function SellerListings({
                                                     listing.brand_name ??
                                                     'No brand'}
                                             </p>
+                                            <div className="mt-1 flex flex-wrap gap-1">
+                                                {listing.is_retail_enabled && (
+                                                    <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700">
+                                                        Retail
+                                                    </span>
+                                                )}
+                                                {listing.is_wholesale_enabled && (
+                                                    <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-bold text-orange-700">
+                                                        Wholesale · LKR{' '}
+                                                        {Number(
+                                                            listing.wholesale_price ??
+                                                                0,
+                                                        ).toLocaleString(
+                                                            'en-LK',
+                                                        )}{' '}
+                                                        · MOQ{' '}
+                                                        {listing.wholesale_min_quantity ??
+                                                            '—'}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-4 py-4">
                                             <p>{listing.sku ?? '—'}</p>

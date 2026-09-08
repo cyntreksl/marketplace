@@ -365,9 +365,9 @@ class EloquentCatalogRepository implements CatalogRepository
         return $category;
     }
 
-    public function activeTopLevelCategories(): Collection
+    public function activeTopLevelCategories(string $channel = 'retail'): Collection
     {
-        $categoryIds = $this->indexableCategoryIds();
+        $categoryIds = $this->indexableCategoryIds($channel);
 
         return Category::query()
             ->select(['id', 'name', 'slug', 'image_path', 'image_disk', 'sort_order'])
@@ -388,8 +388,8 @@ class EloquentCatalogRepository implements CatalogRepository
     public function publicBrands(): Collection
     {
         return Brand::query()
-            ->withCount(['listings' => fn ($query) => $query->publiclyVisible()])
-            ->whereIn('id', Listing::query()->select('brand_id')->directlyVisible())
+            ->withCount(['listings' => fn ($query) => $query->retailVisible()])
+            ->whereIn('id', Listing::query()->select('brand_id')->retailVisible())
             ->orderBy('name')
             ->get()
             ->map(function (Brand $brand): Brand {
@@ -414,7 +414,7 @@ class EloquentCatalogRepository implements CatalogRepository
         return Category::query()
             ->select(['id', 'slug', 'updated_at'])
             ->storefrontAvailable()
-            ->whereIn('id', $this->indexableCategoryIds())
+            ->whereIn('id', $this->indexableCategoryIds('retail'))
             ->orderBy('id')
             ->get();
     }
@@ -422,7 +422,7 @@ class EloquentCatalogRepository implements CatalogRepository
     public function categoryHasVisibleProducts(Category $category): bool
     {
         return Listing::query()
-            ->directlyVisible()
+            ->retailVisible()
             ->whereIn('category_id', $this->activeDescendantIdsForSlug($category->slug))
             ->exists();
     }
@@ -430,7 +430,7 @@ class EloquentCatalogRepository implements CatalogRepository
     public function brandHasVisibleProducts(Brand $brand): bool
     {
         return Listing::query()
-            ->directlyVisible()
+            ->retailVisible()
             ->where('brand_id', $brand->id)
             ->exists();
     }
@@ -439,7 +439,7 @@ class EloquentCatalogRepository implements CatalogRepository
     {
         return Brand::query()
             ->select(['id', 'slug', 'updated_at'])
-            ->whereIn('id', Listing::query()->select('brand_id')->directlyVisible())
+            ->whereIn('id', Listing::query()->select('brand_id')->retailVisible())
             ->orderBy('id')
             ->get();
     }
@@ -529,13 +529,21 @@ class EloquentCatalogRepository implements CatalogRepository
         }
     }
 
-    public function availableBrands(): Collection
+    public function availableBrands(string $channel = 'retail'): Collection
     {
+        $listingQuery = Listing::query()->select('brand_id');
+        $channel === 'wholesale' ? $listingQuery->wholesaleVisible() : $listingQuery->retailVisible();
+
         return Brand::query()
             ->select(['id', 'name', 'slug'])
-            ->whereIn('id', Listing::query()->select('brand_id')->directlyVisible())
+            ->whereIn('id', $listingQuery)
             ->orderBy('name')
             ->get();
+    }
+
+    public function listingBrands(): Collection
+    {
+        return Brand::query()->orderBy('name')->get(['id', 'name']);
     }
 
     public function lookupCategories(?string $search, ?int $parentId, bool $leafOnly = false): Collection
@@ -630,9 +638,9 @@ class EloquentCatalogRepository implements CatalogRepository
         return $categoryIds->all();
     }
 
-    public function activeCategoryContextBySlug(string $slug): ?array
+    public function activeCategoryContextBySlug(string $slug, string $channel = 'retail'): ?array
     {
-        $indexableCategoryIds = $this->indexableCategoryIds();
+        $indexableCategoryIds = $this->indexableCategoryIds($channel);
         $category = Category::query()
             ->select(['id', 'parent_id', 'name', 'slug', 'seo_title', 'seo_description', 'seo_intro', 'image_path', 'image_disk'])
             ->where('slug', $slug)
@@ -671,9 +679,9 @@ class EloquentCatalogRepository implements CatalogRepository
         ];
     }
 
-    public function activeCategoryTrailBySlug(string $slug): array
+    public function activeCategoryTrailBySlug(string $slug, string $channel = 'retail'): array
     {
-        $context = $this->activeCategoryContextBySlug($slug);
+        $context = $this->activeCategoryContextBySlug($slug, $channel);
 
         if ($context === null) {
             return [];
@@ -691,10 +699,17 @@ class EloquentCatalogRepository implements CatalogRepository
     }
 
     /** @return array<int, int> */
-    private function indexableCategoryIds(): array
+    private function indexableCategoryIds(string $channel = 'all'): array
     {
-        $categoryIds = Listing::query()
-            ->directlyVisible()
+        $listingQuery = Listing::query();
+
+        match ($channel) {
+            'retail' => $listingQuery->retailVisible(),
+            'wholesale' => $listingQuery->wholesaleVisible(),
+            default => $listingQuery->directlyVisible(),
+        };
+
+        $categoryIds = $listingQuery
             ->whereNotNull('category_id')
             ->pluck('category_id')
             ->map(fn (int $id): int => $id)

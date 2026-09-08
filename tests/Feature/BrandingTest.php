@@ -93,7 +93,7 @@ test('storefront listing pages share the category listing card', function () {
     expect($listingCard)
         ->toContain('export function ListingCard({ listing }: { listing: StorefrontListing })')
         ->toContain('src={image.cardUrl}', 'alt={listing.title}', '{listing.title}')
-        ->toContain('href={listingShow(listing.slug)}', 'formatPrice(listing.effectivePrice)')
+        ->toContain('href={detailHref}', 'wholesale: true', 'formatPrice(listing.effectivePrice)')
         ->toContain('Save {formatPrice(savings.toString())}', 'Contact seller', 'Out of stock', 'Auction')
         ->toContain('Number.isFinite(savings) && savings > 0', "listing.listingType === 'buy_now'")
         ->not->toContain('line-through')

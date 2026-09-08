@@ -116,6 +116,7 @@ class BuyerPortalService
                 'total' => $item->total,
                 'variant_sku' => $item->variant_sku,
                 'variant_options' => $item->variant_options,
+                'pricing_tier' => $item->pricing_tier,
                 'listing_slug' => $item->listing?->slug,
                 'image_url' => $this->imageUrl($item),
                 'review' => $item->review === null ? null : [
@@ -185,6 +186,7 @@ class BuyerPortalService
             'order_number' => $item->sellerOrder->number,
             'delivered_at' => $item->sellerOrder->delivered_at?->toIso8601String(),
             'variant_options' => $item->variant_options,
+            'pricing_tier' => $item->pricing_tier,
         ];
     }
 

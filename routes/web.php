@@ -38,6 +38,7 @@ use App\Http\Controllers\SellerRegistrationController;
 use App\Http\Controllers\SellerReturnRequestController;
 use App\Http\Controllers\SellerStoreController;
 use App\Http\Controllers\SellerWalletController;
+use App\Http\Controllers\SellerWholesaleController;
 use App\Http\Controllers\SeoDiscoveryController;
 use App\Http\Controllers\Settings\ProfileController as SettingsProfileController;
 use App\Http\Controllers\Settings\SecurityController as SettingsSecurityController;
@@ -78,6 +79,7 @@ Route::inertia('/legal/cookies', 'storefront/content/show', ['document' => 'cook
 Route::inertia('/policies/sellers', 'storefront/content/show', ['document' => 'sellers'])->name('policies.sellers');
 Route::inertia('/policies/prohibited-items', 'storefront/content/show', ['document' => 'prohibited'])->name('policies.prohibited');
 Route::get('/listings', [StorefrontController::class, 'index'])->name('listings.index');
+Route::get('/wholesale', [StorefrontController::class, 'wholesale'])->name('wholesale.index');
 Route::get('/auctions', [StorefrontController::class, 'auctions'])->name('auctions.index');
 Route::get('/collections/{collection}', [StorefrontController::class, 'collection'])
     ->whereIn('collection', ['featured', 'deals', 'best-sellers', 'new-arrivals', 'clearance'])
@@ -106,6 +108,8 @@ Route::post('/auctions/{auction}/bids', [AuctionBidController::class, 'store'])
 Route::middleware('auth')->prefix('seller')->name('seller.')->group(function (): void {
     Route::get('/onboarding', [SellerOnboardingController::class, 'edit'])->name('onboarding.edit');
     Route::put('/onboarding', [SellerOnboardingController::class, 'update'])->name('onboarding.update');
+    Route::get('/wholesale', [SellerWholesaleController::class, 'index'])->name('wholesale.index');
+    Route::get('/wholesale/create', [SellerWholesaleController::class, 'create'])->name('wholesale.create');
     Route::get('/listings', [SellerListingController::class, 'index'])->name('listings.index');
     Route::get('/listings/create', [SellerListingController::class, 'create'])->name('listings.create');
     Route::post('/listings', [SellerListingController::class, 'store'])->name('listings.store');

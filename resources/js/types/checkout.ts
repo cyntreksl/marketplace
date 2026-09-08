@@ -2,6 +2,8 @@ export type CheckoutCartItem = {
     id: number | string;
     quantity: number;
     unitPrice: string;
+    pricingTier: 'retail' | 'wholesale' | null;
+    minimumQuantity: number;
     total: string;
     error: string | null;
     availableQuantity: number;
@@ -53,6 +55,7 @@ export type CheckoutConfirmationItem = {
     variantOptions: Record<string, string> | null;
     quantity: number;
     unitPrice: string;
+    pricingTier: 'retail' | 'wholesale';
     total: string;
 };
 

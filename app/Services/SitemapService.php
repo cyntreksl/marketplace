@@ -46,8 +46,12 @@ class SitemapService
             'legal.terms', 'legal.privacy', 'legal.cookies',
         ];
 
-        if ($this->listings->sitemapProductCount() > 0) {
+        if ($this->listings->retailProductCount() > 0) {
             $routes[] = 'listings.index';
+        }
+
+        if ($this->listings->wholesaleProductCount() > 0) {
+            $routes[] = 'wholesale.index';
         }
 
         if ($this->listings->indexableAuctionCount() > 0) {

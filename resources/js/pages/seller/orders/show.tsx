@@ -160,6 +160,12 @@ export default function SellerOrderShow({ order }: { order: SellerOrder }) {
                                             <p className="font-bold">
                                                 {item.title}
                                             </p>
+                                            {item.pricing_tier ===
+                                                'wholesale' && (
+                                                <span className="mt-1 inline-flex rounded-full bg-orange-50 px-2 py-0.5 text-xs font-bold text-orange-700">
+                                                    Wholesale
+                                                </span>
+                                            )}
                                             {item.variant_options && (
                                                 <p className="mt-1 text-sm text-slate-500">
                                                     {Object.entries(

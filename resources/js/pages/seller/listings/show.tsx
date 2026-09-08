@@ -38,6 +38,8 @@ type ListingVariant = {
     mpn: string | null;
     selling_price: string | null;
     market_price: string | null;
+    wholesale_price: string | null;
+    wholesale_min_quantity: number | null;
     stock_quantity: number;
     reserved_quantity: number;
     is_active: boolean;
@@ -78,6 +80,10 @@ type Listing = {
     is_new_arrival: boolean;
     price: string | null;
     sale_price: string | null;
+    is_retail_enabled: boolean;
+    is_wholesale_enabled: boolean;
+    wholesale_price: string | null;
+    wholesale_min_quantity: number | null;
     commission_percentage: string | null;
     meta_title: string | null;
     meta_description: string | null;
@@ -268,6 +274,16 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
                             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                                 {listing.is_active ? 'Active' : 'Inactive'}
                             </span>
+                            {listing.is_retail_enabled && (
+                                <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">
+                                    Retail
+                                </span>
+                            )}
+                            {listing.is_wholesale_enabled && (
+                                <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
+                                    Wholesale
+                                </span>
+                            )}
                         </div>
                         <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
                             {listing.title ?? 'Untitled product'}
@@ -553,6 +569,23 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
                                             : 'Not set'
                                     }
                                 />
+                                {listing.is_wholesale_enabled && (
+                                    <>
+                                        <DetailRow
+                                            label="Wholesale price"
+                                            value={formatPrice(
+                                                listing.wholesale_price,
+                                            )}
+                                        />
+                                        <DetailRow
+                                            label="Wholesale MOQ"
+                                            value={
+                                                listing.wholesale_min_quantity ??
+                                                'Not set'
+                                            }
+                                        />
+                                    </>
+                                )}
                                 <DetailRow
                                     label="Commission"
                                     value={

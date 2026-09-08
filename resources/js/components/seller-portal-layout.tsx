@@ -9,6 +9,7 @@ import {
     RotateCcw,
     Settings,
     Store,
+    Warehouse,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
@@ -38,6 +39,7 @@ import { index as ordersIndex } from '@/routes/seller/orders';
 import { index as returnsIndex } from '@/routes/seller/returns';
 import { edit as storeEdit } from '@/routes/seller/store';
 import { index as walletIndex } from '@/routes/seller/wallet';
+import { index as wholesaleIndex } from '@/routes/seller/wholesale';
 import type { Auth } from '@/types';
 
 type SellerRoute = ReturnType<typeof dashboard>;
@@ -79,6 +81,12 @@ const groups: {
                 href: listingsIndex(),
                 icon: Boxes,
                 match: '/seller/listings',
+            },
+            {
+                title: 'Wholesale',
+                href: wholesaleIndex(),
+                icon: Warehouse,
+                match: '/seller/wholesale',
             },
             {
                 title: 'Customer questions',

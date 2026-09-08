@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { Zap } from 'lucide-react';
 import { trackEvent } from '@/lib/tracking';
 import { show as listingShow } from '@/routes/listings';
@@ -13,6 +13,10 @@ function formatPrice(value: string | null): string {
 }
 
 export function ListingCard({ listing }: { listing: StorefrontListing }) {
+    const isWholesale = usePage().url.split('?')[0] === '/wholesale';
+    const detailHref = listingShow(listing.slug, {
+        query: isWholesale ? { wholesale: true } : {},
+    });
     const image = listing.media[0] ?? null;
     const savings =
         listing.listingType === 'buy_now' &&
@@ -39,7 +43,7 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
         <article className="group @container flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-100/50">
             <div className="relative">
                 <Link
-                    href={listingShow(listing.slug)}
+                    href={detailHref}
                     onClick={trackSelection}
                     className="relative block aspect-[1.02/1] overflow-hidden bg-gradient-to-br from-white via-orange-50/50 to-slate-50"
                 >
@@ -62,7 +66,7 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
 
             <div className="flex flex-1 flex-col p-3 @min-[180px]:p-4">
                 <Link
-                    href={listingShow(listing.slug)}
+                    href={detailHref}
                     onClick={trackSelection}
                     title={listing.title}
                     className="truncate text-sm leading-6 font-normal text-slate-900 transition hover:text-[#FF6D00] @min-[180px]:text-base"
@@ -74,6 +78,12 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
                     <p className="text-[clamp(1rem,12cqi,1.5rem)] leading-8 font-bold tracking-tight break-words text-slate-950">
                         {formatPrice(listing.effectivePrice)}
                     </p>
+                    {isWholesale && (
+                        <p className="text-xs font-bold text-[#FF6D00]">
+                            Wholesale · MOQ{' '}
+                            {listing.wholesaleMinimumQuantity ?? 2}
+                        </p>
+                    )}
                     {Number.isFinite(savings) && savings > 0 && (
                         <p className="flex items-start gap-1 text-xs leading-5 font-bold text-rose-600 @min-[180px]:text-sm">
                             <Zap

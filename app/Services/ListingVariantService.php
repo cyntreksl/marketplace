@@ -53,6 +53,8 @@ class ListingVariantService
                 'mpn' => filled($submitted['mpn'] ?? null) ? Str::squish((string) $submitted['mpn']) : null,
                 'selling_price' => filled($submitted['selling_price'] ?? null) ? $submitted['selling_price'] : null,
                 'market_price' => filled($submitted['market_price'] ?? null) ? $submitted['market_price'] : null,
+                'wholesale_price' => filled($submitted['wholesale_price'] ?? null) ? $submitted['wholesale_price'] : null,
+                'wholesale_min_quantity' => filled($submitted['wholesale_min_quantity'] ?? null) ? (int) $submitted['wholesale_min_quantity'] : null,
                 'stock_quantity' => max(0, (int) ($submitted['stock_quantity'] ?? 0)),
                 'is_active' => filter_var($submitted['is_active'] ?? true, FILTER_VALIDATE_BOOL),
             ];

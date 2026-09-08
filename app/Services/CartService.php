@@ -12,7 +12,11 @@ use Illuminate\Validation\ValidationException;
 /** @phpstan-type CartSummary array{items: list<array<string, mixed>>, subtotal: string, shippingTotal: string, total: string, quantity: int, canCheckout: bool, paymentMethods: list<string>} */
 class CartService
 {
-    public function __construct(private readonly CartRepository $carts, private readonly MarketplaceSettingsService $settings) {}
+    public function __construct(
+        private readonly CartRepository $carts,
+        private readonly MarketplaceSettingsService $settings,
+        private readonly ListingPricingService $pricing,
+    ) {}
 
     /** @return CartSummary */
     public function summary(Request $request): array
@@ -42,13 +46,21 @@ class CartService
             } elseif (($listing->product_type === 'variant' && ($variant === null || ! $variant->is_active)) || ($listing->product_type !== 'variant' && ($entry['listing_variant_id'] ?? null) !== null)) {
                 $error = 'This product option is no longer available. Remove it and choose another option.';
             }
-            $price = $variant?->buyNowPrice() ?? $listing?->buyNowPrice();
+            $pricing = $listing === null
+                ? null
+                : $this->pricing->forQuantity($listing, $variant, (int) $entry['quantity']);
+            $price = $pricing['unitPrice'] ?? null;
             $available = max(0, $variant?->availableQuantity() ?? (($listing->stock_quantity ?? 0) - ($listing->reserved_quantity ?? 0)));
-            if ($error === null && ($price === null || (! $listing->allow_backorders && $entry['quantity'] > $available))) {
+            if ($error === null && $price === null) {
+                $minimum = $this->pricing->wholesaleMinimum($listing, $variant);
+                $error = $minimum === null
+                    ? 'This quantity is no longer available.'
+                    : "This wholesale item requires at least {$minimum} units.";
+            } elseif ($error === null && ! $listing->allow_backorders && $entry['quantity'] > $available) {
                 $error = 'This quantity is no longer available.';
             }
-            if ($entry['quantity'] > 100) {
-                $error = 'Choose no more than 100 of each item.';
+            if ($entry['quantity'] > 100000) {
+                $error = 'Choose no more than 100,000 of each item.';
             }
             $lineTotal = BigDecimal::of($price ?? '0')->multipliedBy($entry['quantity'])->toScale(2);
             $subtotal = $subtotal->plus($lineTotal);
@@ -59,9 +71,11 @@ class CartService
                 'selection_key' => $entry['selection_key'],
                 'quantity' => $entry['quantity'],
                 'unitPrice' => $price ?? '0.00',
+                'pricingTier' => $pricing['tier'] ?? null,
+                'minimumQuantity' => $pricing['minimumQuantity'] ?? ($listing === null ? 1 : ($this->pricing->wholesaleMinimum($listing, $variant) ?? 1)),
                 'total' => (string) $lineTotal,
                 'error' => $error,
-                'availableQuantity' => $listing?->allow_backorders ? 100 : min(100, $available),
+                'availableQuantity' => $listing?->allow_backorders ? 100000 : min(100000, $available),
                 'variant' => $variant === null ? null : [
                     'sku' => $variant->sku,
                     'selling_price' => $price,

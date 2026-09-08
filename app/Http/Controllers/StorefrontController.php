@@ -51,6 +51,15 @@ class StorefrontController extends Controller
         return Inertia::render('storefront/listings/index', $data);
     }
 
+    public function wholesale(StorefrontBrowseRequest $request): Response
+    {
+        $filters = $request->filters();
+        $data = $this->storefront->wholesaleData($filters);
+        $this->searchAnalytics->track($request, [...$filters, 'channel' => 'wholesale'], 'wholesale', $data['listings']->total());
+
+        return Inertia::render('storefront/listings/index', $data);
+    }
+
     public function category(StorefrontBrowseRequest $request, string $category): Response
     {
         $filters = $request->filters();
@@ -94,6 +103,7 @@ class StorefrontController extends Controller
             $listing,
             $request->user(),
             $variantId === false ? null : $variantId,
+            $request->query('wholesale') === '1',
         );
         $this->metaConversions->trackViewContent($request, $details['listing'], $details['selectedVariantId']);
 

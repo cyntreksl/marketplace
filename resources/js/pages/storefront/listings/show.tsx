@@ -104,6 +104,7 @@ export default function ListingShow({
     sellerListings,
     selectedVariantId,
     sellerSummary,
+    purchaseContext,
 }: {
     listing: StorefrontListing;
     categories: StorefrontCategory[];
@@ -118,10 +119,14 @@ export default function ListingShow({
     sellerListings: StorefrontListing[];
     selectedVariantId: number | null;
     sellerSummary: PublicSellerSummary | null;
+    purchaseContext: {
+        channel: 'retail' | 'wholesale';
+        initialQuantity: number;
+    };
 }) {
     const { auth } = usePage().props;
     const comparison = useProductComparison();
-    const [quantity, setQuantity] = useState(1);
+    const [quantity, setQuantity] = useState(purchaseContext.initialQuantity);
     const initialVariant = listing.variants.find(
         (variant) => variant.id === selectedVariantId,
     );
@@ -137,8 +142,24 @@ export default function ListingShow({
             ),
         [listing.variants, selections],
     );
-    const displayedSellingPrice =
-        selectedVariant?.sellingPrice ?? listing.effectivePrice;
+    const wholesaleMinimum =
+        selectedVariant === undefined
+            ? listing.wholesaleMinimumQuantity
+            : selectedVariant.wholesaleMinimumQuantity;
+    const wholesalePrice =
+        selectedVariant === undefined
+            ? listing.wholesalePrice
+            : selectedVariant.wholesalePrice;
+    const retailPrice =
+        selectedVariant?.sellingPrice ?? listing.salePrice ?? listing.price;
+    const isWholesaleQuantity = Boolean(
+        listing.wholesaleEnabled &&
+        wholesaleMinimum !== null &&
+        quantity >= wholesaleMinimum,
+    );
+    const displayedSellingPrice = isWholesaleQuantity
+        ? wholesalePrice
+        : retailPrice;
     const displayedMarketPrice = selectedVariant
         ? selectedVariant.marketPrice
         : listing.salePrice
@@ -154,13 +175,17 @@ export default function ListingShow({
               )
             : null;
     const canPurchase =
-        listing.productType === 'simple'
-            ? listing.stockStatus !== 'out_of_stock' &&
-              (listing.stockStatus === 'backorder' ||
-                  listing.stockQuantity >= quantity)
-            : Boolean(
-                  selectedVariant && selectedVariant.stockQuantity >= quantity,
-              );
+        !listing.retailEnabled &&
+        (!wholesaleMinimum || quantity < wholesaleMinimum)
+            ? false
+            : listing.productType === 'simple'
+              ? listing.stockStatus !== 'out_of_stock' &&
+                (listing.stockStatus === 'backorder' ||
+                    listing.stockQuantity >= quantity)
+              : Boolean(
+                    selectedVariant &&
+                    selectedVariant.stockQuantity >= quantity,
+                );
     const isOutOfStock =
         listing.stockStatus === 'out_of_stock' ||
         (listing.productType === 'variant' &&
@@ -251,6 +276,23 @@ export default function ListingShow({
             <p className="text-3xl font-black tracking-tight text-[#ff5a00]">
                 {formatPrice(displayedSellingPrice)}
             </p>
+            {isWholesaleQuantity && (
+                <p className="mt-1 text-sm font-bold text-orange-700">
+                    Wholesale unit price · MOQ {wholesaleMinimum}
+                </p>
+            )}
+            {listing.retailEnabled && listing.wholesaleEnabled && (
+                <p className="mt-2 text-sm text-slate-600">
+                    Retail{' '}
+                    {formatPrice(
+                        selectedVariant?.sellingPrice ??
+                            listing.salePrice ??
+                            listing.price,
+                    )}{' '}
+                    · Wholesale {formatPrice(wholesalePrice)} from{' '}
+                    {wholesaleMinimum} units
+                </p>
+            )}
             {displayedMarketPrice &&
                 Number(displayedMarketPrice) >
                     Number(displayedSellingPrice) && (
@@ -391,15 +433,50 @@ export default function ListingShow({
                                                     }
                                                     key={value}
                                                     type="button"
-                                                    onClick={() =>
+                                                    onClick={() => {
+                                                        const nextSelections = {
+                                                            ...selections,
+                                                            [option.name]:
+                                                                value,
+                                                        };
                                                         setSelections(
-                                                            (current) => ({
-                                                                ...current,
-                                                                [option.name]:
-                                                                    value,
-                                                            }),
-                                                        )
-                                                    }
+                                                            nextSelections,
+                                                        );
+
+                                                        if (
+                                                            purchaseContext.channel ===
+                                                            'wholesale'
+                                                        ) {
+                                                            const nextVariant =
+                                                                listing.variants.find(
+                                                                    (variant) =>
+                                                                        Object.entries(
+                                                                            variant.selections,
+                                                                        ).every(
+                                                                            ([
+                                                                                name,
+                                                                                selectedValue,
+                                                                            ]) =>
+                                                                                nextSelections[
+                                                                                    name
+                                                                                ] ===
+                                                                                selectedValue,
+                                                                        ),
+                                                                );
+                                                            const nextMinimum =
+                                                                nextVariant?.wholesaleMinimumQuantity;
+
+                                                            if (nextMinimum) {
+                                                                setQuantity(
+                                                                    (current) =>
+                                                                        Math.max(
+                                                                            current,
+                                                                            nextMinimum,
+                                                                        ),
+                                                                );
+                                                            }
+                                                        }
+                                                    }}
                                                     className={`min-h-11 rounded-lg border px-4 py-2 text-sm font-bold ${selections[option.name] === value ? 'border-[#ff5a00] text-[#ff5a00] ring-1 ring-orange-100' : 'border-slate-200'}`}
                                                 >
                                                     {value}
@@ -420,7 +497,7 @@ export default function ListingShow({
                                         ? (selectedVariant?.stockQuantity ??
                                           100)
                                         : listing.stockStatus === 'backorder'
-                                          ? 100
+                                          ? 100000
                                           : listing.stockQuantity
                                 }
                                 quantity={quantity}
@@ -432,6 +509,11 @@ export default function ListingShow({
                                     !selectedVariant
                                 }
                                 price={formatPrice(displayedSellingPrice)}
+                                minimumQuantity={
+                                    listing.retailEnabled
+                                        ? 1
+                                        : (wholesaleMinimum ?? 2)
+                                }
                             />
                         ) : (
                             listing.auction && (

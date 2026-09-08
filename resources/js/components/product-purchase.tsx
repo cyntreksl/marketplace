@@ -14,6 +14,7 @@ export function ProductPurchase({
     needsVariant,
     price,
     stockLimit,
+    minimumQuantity = 1,
 }: {
     listingId: number;
     variantId?: number;
@@ -24,6 +25,7 @@ export function ProductPurchase({
     needsVariant: boolean;
     price: string;
     stockLimit: number;
+    minimumQuantity?: number;
 }) {
     const actionsRef = useRef<HTMLDivElement>(null);
     const [showSticky, setShowSticky] = useState(false);
@@ -44,10 +46,13 @@ export function ProductPurchase({
         return () => observer.disconnect();
     }, []);
     const formId = `purchase-${listingId}`;
-    const maximumQuantity = Math.max(1, Math.min(100, stockLimit));
+    const maximumQuantity = Math.max(
+        minimumQuantity,
+        Math.min(100000, stockLimit),
+    );
     const validQuantity =
         Number.isInteger(quantity) &&
-        quantity >= 1 &&
+        quantity >= minimumQuantity &&
         quantity <= maximumQuantity;
     const purchaseDisabled = !canPurchase || isOutOfStock || !validQuantity;
     const message = isOutOfStock
@@ -55,7 +60,7 @@ export function ProductPurchase({
         : needsVariant
           ? 'Choose your options to continue.'
           : !validQuantity || !canPurchase
-            ? `Enter a quantity from 1 to ${maximumQuantity}.`
+            ? `Enter a quantity from ${minimumQuantity} to ${maximumQuantity}.`
             : null;
 
     return (
@@ -97,9 +102,13 @@ export function ProductPurchase({
                         <div className="flex w-max items-center overflow-hidden rounded-lg border border-slate-200 bg-white focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-100">
                             <button
                                 type="button"
-                                disabled={processing || quantity <= 1}
+                                disabled={
+                                    processing || quantity <= minimumQuantity
+                                }
                                 onClick={() =>
-                                    setQuantity(Math.max(1, quantity - 1))
+                                    setQuantity(
+                                        Math.max(minimumQuantity, quantity - 1),
+                                    )
                                 }
                                 className="grid size-11 place-items-center bg-slate-50 transition hover:bg-orange-50 disabled:opacity-40"
                                 aria-label="Decrease quantity"
@@ -110,7 +119,7 @@ export function ProductPurchase({
                                 id={`${formId}-quantity`}
                                 type="number"
                                 inputMode="numeric"
-                                min={1}
+                                min={minimumQuantity}
                                 max={maximumQuantity}
                                 step={1}
                                 value={quantity || ''}
@@ -123,10 +132,11 @@ export function ProductPurchase({
                                 onBlur={() =>
                                     setQuantity(
                                         Math.max(
-                                            1,
+                                            minimumQuantity,
                                             Math.min(
                                                 maximumQuantity,
-                                                Math.floor(quantity) || 1,
+                                                Math.floor(quantity) ||
+                                                    minimumQuantity,
                                             ),
                                         ),
                                     )

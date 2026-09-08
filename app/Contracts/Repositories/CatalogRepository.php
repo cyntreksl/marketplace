@@ -91,7 +91,7 @@ interface CatalogRepository
     public function selectableCategory(int $id): Category;
 
     /** @return Collection<int, Category> */
-    public function activeTopLevelCategories(): Collection;
+    public function activeTopLevelCategories(string $channel = 'retail'): Collection;
 
     /** @return Collection<int, Brand> */
     public function publicBrands(): Collection;
@@ -115,7 +115,10 @@ interface CatalogRepository
     public function replaceHomepageCategories(array $popularCategoryIds, array $featuredCategoryIds): void;
 
     /** @return Collection<int, Brand> */
-    public function availableBrands(): Collection;
+    public function availableBrands(string $channel = 'retail'): Collection;
+
+    /** @return Collection<int, Brand> */
+    public function listingBrands(): Collection;
 
     /** @return Collection<int, Category> */
     public function lookupCategories(?string $search, ?int $parentId, bool $leafOnly = false): Collection;
@@ -136,10 +139,10 @@ interface CatalogRepository
      *     children: array<int, array{id: int, name: string, slug: string, image_url: string|null, has_children: bool}>
      * }|null
      */
-    public function activeCategoryContextBySlug(string $slug): ?array;
+    public function activeCategoryContextBySlug(string $slug, string $channel = 'retail'): ?array;
 
     /** @return array<int, array{id: int, name: string, slug: string, image_url: string|null}> */
-    public function activeCategoryTrailBySlug(string $slug): array;
+    public function activeCategoryTrailBySlug(string $slug, string $channel = 'retail'): array;
 
     public function activeCategoryBySlug(string $slug): Category;
 

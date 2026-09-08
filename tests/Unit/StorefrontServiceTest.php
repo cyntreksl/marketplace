@@ -24,17 +24,17 @@ test('browse data combines listing results navigation context and filter options
     $listingRepository = Mockery::mock(ListingRepository::class, function (MockInterface $mock): void {
         $mock->shouldReceive('paginatePublic')
             ->once()
-            ->with(['category' => 'fashion', 'sort' => 'newest'])
+            ->with(['category' => 'fashion', 'sort' => 'newest'], 'retail')
             ->andReturn(new LengthAwarePaginator([], 0, 18, 1, ['path' => '/listings']));
     });
     $catalogRepository = Mockery::mock(CatalogRepository::class, function (MockInterface $mock): void {
-        $mock->shouldReceive('activeTopLevelCategories')->once()->andReturn(collect());
-        $mock->shouldReceive('activeCategoryContextBySlug')->once()->with('fashion')->andReturn([
+        $mock->shouldReceive('activeTopLevelCategories')->once()->with('retail')->andReturn(collect());
+        $mock->shouldReceive('activeCategoryContextBySlug')->once()->with('fashion', 'retail')->andReturn([
             'current' => ['id' => 1, 'name' => 'Fashion', 'slug' => 'fashion'],
             'ancestors' => [],
             'children' => [],
         ]);
-        $mock->shouldReceive('availableBrands')->once()->andReturn(collect());
+        $mock->shouldReceive('availableBrands')->once()->with('retail')->andReturn(collect());
     });
 
     $data = (new StorefrontService($listingRepository, $catalogRepository, Mockery::mock(PromotionRepository::class), Mockery::mock(ReviewRepository::class), Mockery::mock(SeoHeadService::class), Mockery::mock(StaticMediaService::class), Mockery::mock(ProductQuestionRepository::class), Mockery::mock(WatchlistRepository::class), Mockery::mock(SellerStoreRepository::class), new SellerSummaryService))->browseData([
@@ -72,12 +72,12 @@ test('listing details include an empty media collection and category trail', fun
 
     $listingRepository = Mockery::mock(ListingRepository::class, function (MockInterface $mock) use ($listing): void {
         $mock->shouldReceive('findPublicBySlug')->once()->with('modern-laptop')->andReturn($listing);
-        $mock->shouldReceive('related')->once()->with($listing)->andReturn(collect());
-        $mock->shouldReceive('otherListingsFromSeller')->once()->with($listing)->andReturn(collect());
+        $mock->shouldReceive('related')->once()->with($listing, 'retail')->andReturn(collect());
+        $mock->shouldReceive('otherListingsFromSeller')->once()->with($listing, 'retail')->andReturn(collect());
     });
     $catalogRepository = Mockery::mock(CatalogRepository::class, function (MockInterface $mock): void {
-        $mock->shouldReceive('activeTopLevelCategories')->once()->andReturn(collect());
-        $mock->shouldReceive('activeCategoryTrailBySlug')->once()->with('laptops')->andReturn([
+        $mock->shouldReceive('activeTopLevelCategories')->once()->with('retail')->andReturn(collect());
+        $mock->shouldReceive('activeCategoryTrailBySlug')->once()->with('laptops', 'retail')->andReturn([
             ['id' => 1, 'name' => 'Electronics', 'slug' => 'electronics'],
             ['id' => 2, 'name' => 'Laptops', 'slug' => 'laptops'],
         ]);

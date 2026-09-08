@@ -122,21 +122,21 @@ class StorefrontService
      * @param  array<string, mixed>  $filters
      * @return array<string, mixed>
      */
-    public function browseData(array $filters): array
+    public function browseData(array $filters, string $channel = 'retail'): array
     {
         $selectedCategorySlug = $filters['category'] ?? null;
 
         return [
             'filters' => $filters,
-            'listings' => $this->listings->paginatePublic($filters)->through(fn (Listing $listing) => $this->listingData($listing)),
+            'listings' => $this->listings->paginatePublic($filters, $channel)->through(fn (Listing $listing) => $this->listingData($listing, channel: $channel)),
             'pageHeading' => 'Online Shopping in Sri Lanka',
             'intro' => 'Browse products from approved Sri Lankan sellers, compare prices, and buy securely through ProDeals.lk.',
-            'categories' => $this->storefrontCategories(),
+            'categories' => $this->storefrontCategories($channel),
             'categoryContext' => is_string($selectedCategorySlug)
-                ? $this->catalog->activeCategoryContextBySlug($selectedCategorySlug)
+                ? $this->catalog->activeCategoryContextBySlug($selectedCategorySlug, $channel)
                 : null,
             'filterOptions' => [
-                'brands' => $this->catalog->availableBrands()
+                'brands' => $this->catalog->availableBrands($channel)
                     ->map(fn (Brand $brand): array => $brand->only(['id', 'name', 'slug']))
                     ->values(),
             ],
@@ -160,13 +160,45 @@ class StorefrontService
                 ['name' => 'Home', 'url' => route('home')],
                 ['name' => 'Shop', 'url' => route('listings.index')],
             ],
-            indexable: ! $hasFilters && $this->listings->sitemapProductCount() > 0,
+            indexable: ! $hasFilters && $this->listings->retailProductCount() > 0,
             items: $this->catalogItems($data),
         );
 
         return [
             ...$data,
             'browseUrl' => route('listings.index'),
+            'seo' => $seo,
+            'head' => $this->seo->tags($seo),
+        ];
+    }
+
+    /** @param array<string, mixed> $filters
+     * @return array<string, mixed>
+     */
+    public function wholesaleData(array $filters): array
+    {
+        $data = $this->browseData($filters, 'wholesale');
+        $page = max(1, (int) request()->query('page', 1));
+        $hasFilters = collect(request()->query())->except('page')->filter()->isNotEmpty();
+        $canonical = route('wholesale.index').(! $hasFilters && $page > 1 ? '?page='.$page : '');
+        $seo = $this->seo->catalogPayload(
+            title: 'Wholesale Products in Sri Lanka - '.config('app.name'),
+            description: 'Buy wholesale products in bulk from approved Sri Lankan sellers with clear minimum quantities and wholesale pricing.',
+            canonical: $canonical,
+            breadcrumbs: [
+                ['name' => 'Home', 'url' => route('home')],
+                ['name' => 'Wholesale', 'url' => route('wholesale.index')],
+            ],
+            indexable: ! $hasFilters && $this->listings->wholesaleProductCount() > 0,
+            items: $this->catalogItems($data),
+        );
+
+        return [
+            ...$data,
+            'browseUrl' => route('wholesale.index'),
+            'pageHeading' => 'Wholesale Products',
+            'intro' => 'Buy in bulk from approved sellers with transparent minimum order quantities and wholesale unit prices.',
+            'catalogMode' => 'wholesale',
             'seo' => $seo,
             'head' => $this->seo->tags($seo),
         ];
@@ -332,22 +364,34 @@ class StorefrontService
     }
 
     /** @return array<string, mixed> */
-    public function listingDetailsData(string $slug, ?User $viewer = null, ?int $requestedVariantId = null): array
+    public function listingDetailsData(string $slug, ?User $viewer = null, ?int $requestedVariantId = null, bool $wholesaleIntent = false): array
     {
         $listing = $this->listings->findPublicBySlug($slug);
+        $channel = ($wholesaleIntent || ! $listing->is_retail_enabled) && $listing->is_wholesale_enabled
+            ? 'wholesale'
+            : 'retail';
         $categoryTrail = $listing->category === null
             ? []
-            : $this->catalog->activeCategoryTrailBySlug($listing->category->slug);
+            : $this->catalog->activeCategoryTrailBySlug($listing->category->slug, $channel);
         $seo = $this->seo->listingPayload($listing, $categoryTrail);
         $selectedVariantId = $listing->variants
             ->where('is_active', true)
             ->firstWhere('id', $requestedVariantId)?->id;
+        $selectedVariant = $listing->variants->firstWhere('id', $selectedVariantId);
 
         return [
             'head' => $this->seo->tags($seo),
             'seo' => $seo,
-            'listing' => $this->listingData($listing, detailed: true),
+            'listing' => $this->listingData($listing, detailed: true, channel: $channel),
             'selectedVariantId' => $selectedVariantId,
+            'purchaseContext' => [
+                'channel' => $channel,
+                'initialQuantity' => $channel === 'wholesale'
+                    ? max(2, (int) ($selectedVariantId === null
+                        ? ($listing->wholesale_min_quantity ?? 2)
+                        : ($selectedVariant->wholesale_min_quantity ?? 2)))
+                    : 1,
+            ],
             'sellerSummary' => $listing->sellerProfile === null ? null : $this->sellerSummaries->forSeller($this->sellers->findPublic($listing->sellerProfile->slug)),
             'reviews' => $this->reviews->forListing((int) $listing->id, 20)->map(fn ($review): array => [
                 'id' => $review->id,
@@ -356,7 +400,7 @@ class StorefrontService
                 'buyerName' => $review->buyer->name,
                 'createdAt' => $review->created_at->toDateString(),
             ])->values(),
-            'categories' => $this->storefrontCategories(),
+            'categories' => $this->storefrontCategories($channel),
             'categoryTrail' => $categoryTrail,
             'questions' => $this->questions->answeredFor($listing)->map(fn ($question): array => $this->questionData($question))->values(),
             'pendingQuestions' => $this->questions->pendingForViewer($listing, $viewer)->map(fn ($question): array => $this->questionData($question))->values(),
@@ -366,8 +410,8 @@ class StorefrontService
                 'returnWindowDays' => $listing->category->return_window_days,
                 'codEnabled' => $listing->category->cod_enabled,
             ],
-            'relatedListings' => $this->listings->related($listing)->map(fn (Listing $related): array => $this->listingData($related))->values(),
-            'sellerListings' => $this->listings->otherListingsFromSeller($listing)->map(fn (Listing $sellerListing): array => $this->listingData($sellerListing))->values(),
+            'relatedListings' => $this->listings->related($listing, $channel)->map(fn (Listing $related): array => $this->listingData($related, channel: $channel))->values(),
+            'sellerListings' => $this->listings->otherListingsFromSeller($listing, $channel)->map(fn (Listing $sellerListing): array => $this->listingData($sellerListing, channel: $channel))->values(),
         ];
     }
 
@@ -396,9 +440,9 @@ class StorefrontService
     }
 
     /** @return Collection<int, array<string, mixed>> */
-    private function storefrontCategories(): Collection
+    private function storefrontCategories(string $channel = 'retail'): Collection
     {
-        return $this->catalog->activeTopLevelCategories()
+        return $this->catalog->activeTopLevelCategories($channel)
             ->map(fn (Category $category): array => $this->storefrontCategoryData($category));
     }
 
@@ -423,7 +467,7 @@ class StorefrontService
     }
 
     /** @return array<string, mixed> */
-    private function listingData(Listing $listing, bool $detailed = false): array
+    private function listingData(Listing $listing, bool $detailed = false, string $channel = 'retail'): array
     {
         $activeVariants = $detailed
             ? $listing->variants->where('is_active', true)
@@ -444,7 +488,13 @@ class StorefrontService
             'listingType' => $listing->listing_type,
             'price' => $listing->price,
             'salePrice' => $listing->sale_price,
-            'effectivePrice' => $listing->auction === null ? $listing->buyNowPrice() : $listing->auction->current_price,
+            'effectivePrice' => $channel === 'wholesale'
+                ? $listing->wholesale_price
+                : ($listing->auction === null ? $listing->buyNowPrice() : $listing->auction->current_price),
+            'retailEnabled' => $listing->is_retail_enabled,
+            'wholesaleEnabled' => $listing->is_wholesale_enabled,
+            'wholesalePrice' => $listing->wholesale_price,
+            'wholesaleMinimumQuantity' => $listing->wholesale_min_quantity,
             'discountPercentage' => $this->discountPercentage($listing),
             'ratingAverage' => $listing->getAttribute('rating_average') === null ? null : round((float) $listing->getAttribute('rating_average'), 1),
             'reviewCount' => (int) $listing->getAttribute('reviews_count'),
@@ -493,6 +543,8 @@ class StorefrontService
                     'mpn' => $variant->mpn,
                     'sellingPrice' => $variant->selling_price,
                     'marketPrice' => $variant->market_price,
+                    'wholesalePrice' => $variant->wholesale_price,
+                    'wholesaleMinimumQuantity' => $variant->wholesale_min_quantity,
                     'selectionKey' => $variant->combination_key,
                     'selections' => $variant->optionValues->sortBy(fn ($value) => $value->option->position)->mapWithKeys(fn ($value): array => [$value->option->name => $value->value]),
                     'stockQuantity' => $variant->availableQuantity(),

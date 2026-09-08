@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property numeric-string $unit_price
  * @property numeric-string $total
  */
-#[Fillable(['seller_order_id', 'listing_id', 'listing_variant_id', 'title', 'variant_sku', 'variant_options', 'quantity', 'unit_price', 'commission_percentage', 'commission_amount', 'total'])]
+#[Fillable(['seller_order_id', 'listing_id', 'listing_variant_id', 'title', 'variant_sku', 'variant_options', 'quantity', 'unit_price', 'pricing_tier', 'commission_percentage', 'commission_amount', 'total'])]
 class OrderItem extends Model
 {
     /** @use HasFactory<OrderItemFactory> */

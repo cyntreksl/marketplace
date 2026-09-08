@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /** @property array<string, mixed>|null $specifications */
-#[Fillable(['seller_profile_id', 'category_id', 'brand_id', 'brand_name', 'sku', 'barcode', 'gtin', 'mpn', 'model', 'title', 'slug', 'short_description', 'description', 'condition', 'listing_type', 'product_type', 'status', 'location', 'specifications', 'warranty', 'stock_quantity', 'reserved_quantity', 'low_stock_threshold', 'allow_backorders', 'is_active', 'is_featured', 'is_best_seller', 'price', 'sale_price', 'cost_price', 'commission_percentage', 'moderation_reason', 'submitted_at', 'approved_at', 'is_best_offer', 'is_new_arrival', 'is_clearance', 'meta_title', 'meta_description'])]
+#[Fillable(['seller_profile_id', 'category_id', 'brand_id', 'brand_name', 'sku', 'barcode', 'gtin', 'mpn', 'model', 'title', 'slug', 'short_description', 'description', 'condition', 'listing_type', 'is_retail_enabled', 'is_wholesale_enabled', 'product_type', 'status', 'location', 'specifications', 'warranty', 'stock_quantity', 'reserved_quantity', 'low_stock_threshold', 'allow_backorders', 'is_active', 'is_featured', 'is_best_seller', 'price', 'sale_price', 'wholesale_price', 'wholesale_min_quantity', 'cost_price', 'commission_percentage', 'moderation_reason', 'submitted_at', 'approved_at', 'is_best_offer', 'is_new_arrival', 'is_clearance', 'meta_title', 'meta_description'])]
 class Listing extends Model
 {
     /** @use HasFactory<ListingFactory> */
@@ -26,6 +26,7 @@ class Listing extends Model
             'specifications' => 'array',
             'price' => 'decimal:2',
             'sale_price' => 'decimal:2',
+            'wholesale_price' => 'decimal:2',
             'cost_price' => 'decimal:2',
             'commission_percentage' => 'decimal:2',
             'submitted_at' => 'datetime',
@@ -37,6 +38,8 @@ class Listing extends Model
             'is_featured' => 'boolean',
             'is_best_seller' => 'boolean',
             'is_clearance' => 'boolean',
+            'is_retail_enabled' => 'boolean',
+            'is_wholesale_enabled' => 'boolean',
         ];
     }
 
@@ -161,5 +164,21 @@ class Listing extends Model
                     ->orWhere('listings.allow_backorders', true)
                     ->orWhereColumn('listings.stock_quantity', '>', 'listings.reserved_quantity');
             });
+    }
+
+    /** @param Builder<Listing> $query */
+    public function scopeRetailVisible(Builder $query): void
+    {
+        $query->directlyVisible()->where('listings.is_retail_enabled', true);
+    }
+
+    /** @param Builder<Listing> $query */
+    public function scopeWholesaleVisible(Builder $query): void
+    {
+        $query->directlyVisible()
+            ->where('listings.listing_type', 'buy_now')
+            ->where('listings.is_wholesale_enabled', true)
+            ->whereNotNull('listings.wholesale_price')
+            ->whereNotNull('listings.wholesale_min_quantity');
     }
 }

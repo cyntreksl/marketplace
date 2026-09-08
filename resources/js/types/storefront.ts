@@ -83,6 +83,10 @@ export type StorefrontListing = {
     price: string | null;
     salePrice: string | null;
     effectivePrice: string | null;
+    retailEnabled: boolean;
+    wholesaleEnabled: boolean;
+    wholesalePrice: string | null;
+    wholesaleMinimumQuantity: number | null;
     discountPercentage: number | null;
     ratingAverage: number | null;
     reviewCount: number;
@@ -108,6 +112,8 @@ export type StorefrontListing = {
         mpn: string | null;
         sellingPrice: string | null;
         marketPrice: string | null;
+        wholesalePrice: string | null;
+        wholesaleMinimumQuantity: number | null;
         selectionKey: string;
         selections: Record<string, string>;
         stockQuantity: number;

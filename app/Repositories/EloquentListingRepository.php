@@ -24,11 +24,13 @@ class EloquentListingRepository implements ListingRepository
             ->exists();
     }
 
-    public function paginatePublic(array $filters, int $perPage = 18): LengthAwarePaginator
+    public function paginatePublic(array $filters, string $channel = 'retail', int $perPage = 18): LengthAwarePaginator
     {
-        $effectivePrice = 'CAST(COALESCE(auctions.current_price, listings.sale_price, listings.price) AS DECIMAL(12, 2))';
+        $effectivePrice = $channel === 'wholesale'
+            ? 'CAST(listings.wholesale_price AS DECIMAL(12, 2))'
+            : 'CAST(COALESCE(auctions.current_price, listings.sale_price, listings.price) AS DECIMAL(12, 2))';
 
-        $query = $this->publicQuery()
+        $query = $this->publicQuery($channel)
             ->leftJoin('auctions', 'auctions.listing_id', '=', 'listings.id')
             ->when($filters['collection'] ?? null, function (Builder $query, string $collection): void {
                 match ($collection) {
@@ -50,7 +52,7 @@ class EloquentListingRepository implements ListingRepository
             ->when($filters['min_price'] ?? null, fn ($query, int|float|string $minimum) => $query->whereRaw("{$effectivePrice} >= ?", [$minimum]))
             ->when($filters['max_price'] ?? null, fn ($query, int|float|string $maximum) => $query->whereRaw("{$effectivePrice} <= ?", [$maximum]));
 
-        $this->applySort($query, (string) ($filters['sort'] ?? 'newest'));
+        $this->applySort($query, (string) ($filters['sort'] ?? 'newest'), $channel);
 
         return $query->paginate($perPage)
             ->withQueryString();
@@ -75,6 +77,16 @@ class EloquentListingRepository implements ListingRepository
         return Listing::query()->directlyVisible()->count();
     }
 
+    public function retailProductCount(): int
+    {
+        return Listing::query()->retailVisible()->count();
+    }
+
+    public function wholesaleProductCount(): int
+    {
+        return Listing::query()->wholesaleVisible()->count();
+    }
+
     public function indexableAuctionCount(): int
     {
         return Listing::query()
@@ -89,7 +101,7 @@ class EloquentListingRepository implements ListingRepository
 
         return collect($collections)
             ->filter(function (string $collection): bool {
-                $query = Listing::query()->directlyVisible();
+                $query = Listing::query()->retailVisible();
 
                 match ($collection) {
                     'featured' => $query->where('listings.is_featured', true),
@@ -126,6 +138,7 @@ class EloquentListingRepository implements ListingRepository
     public function merchantProducts(): LazyCollection
     {
         return $this->directPublicQuery()
+            ->where('listings.is_retail_enabled', true)
             ->where('listings.listing_type', 'buy_now')
             ->with([
                 'variantOptions.values',
@@ -226,9 +239,9 @@ class EloquentListingRepository implements ListingRepository
             ->latest('listings.created_at')->limit($limit)->get();
     }
 
-    public function related(Listing $listing, int $limit = 6): Collection
+    public function related(Listing $listing, string $channel = 'retail', int $limit = 6): Collection
     {
-        return $this->publicQuery()
+        return $this->publicQuery($channel)
             ->whereKeyNot($listing->id)
             ->where(function (Builder $query) use ($listing): void {
                 $query->where('listings.category_id', $listing->category_id)
@@ -240,9 +253,9 @@ class EloquentListingRepository implements ListingRepository
             ->get();
     }
 
-    public function otherListingsFromSeller(Listing $listing, int $limit = 6): Collection
+    public function otherListingsFromSeller(Listing $listing, string $channel = 'retail', int $limit = 6): Collection
     {
-        return $this->publicQuery()
+        return $this->publicQuery($channel)
             ->whereKeyNot($listing->id)
             ->where('listings.seller_profile_id', $listing->seller_profile_id)
             ->latest('listings.created_at')
@@ -254,7 +267,7 @@ class EloquentListingRepository implements ListingRepository
      * @param  array{q?: string, status?: string, sort?: string}  $filters
      * @return LengthAwarePaginator<int, Listing>
      */
-    public function paginateForSeller(SellerProfile $seller, array $filters = [], int $perPage = 20): LengthAwarePaginator
+    public function paginateForSeller(SellerProfile $seller, array $filters = [], string $channel = 'retail', int $perPage = 20): LengthAwarePaginator
     {
         $query = $seller->listings()
             ->with([
@@ -263,6 +276,8 @@ class EloquentListingRepository implements ListingRepository
                 'category:id,name',
             ])
             ->withExists(['orderItems as has_orders']);
+
+        $query->where($channel === 'wholesale' ? 'is_wholesale_enabled' : 'is_retail_enabled', true);
 
         if ($search = trim((string) ($filters['q'] ?? ''))) {
             $query->where(fn (Builder $query): Builder => $query->where('title', 'like', "%{$search}%")->orWhere('sku', 'like', "%{$search}%"));
@@ -401,14 +416,21 @@ class EloquentListingRepository implements ListingRepository
     }
 
     /** @return Builder<Listing> */
-    private function publicQuery(): Builder
+    private function publicQuery(string $channel = 'retail'): Builder
     {
-        return Listing::query()
+        $query = Listing::query()
             ->select('listings.*')
-            ->publiclyVisible()
             ->withAvg('reviews as rating_average', 'rating')
             ->withCount('reviews')
             ->with($this->publicRelations());
+
+        if ($channel === 'wholesale') {
+            $query->wholesaleVisible();
+        } else {
+            $query->retailVisible();
+        }
+
+        return $query;
     }
 
     /** @return Builder<Listing> */
@@ -435,11 +457,15 @@ class EloquentListingRepository implements ListingRepository
     }
 
     /** @param Builder<Listing> $query */
-    private function applySort(Builder $query, string $sort): void
+    private function applySort(Builder $query, string $sort, string $channel = 'retail'): void
     {
+        $effectivePrice = $channel === 'wholesale'
+            ? 'CAST(listings.wholesale_price AS DECIMAL(12, 2))'
+            : 'CAST(COALESCE(auctions.current_price, listings.sale_price, listings.price) AS DECIMAL(12, 2))';
+
         match ($sort) {
-            'price_asc' => $query->orderByRaw('CAST(COALESCE(auctions.current_price, listings.sale_price, listings.price) AS DECIMAL(12, 2)) asc'),
-            'price_desc' => $query->orderByRaw('CAST(COALESCE(auctions.current_price, listings.sale_price, listings.price) AS DECIMAL(12, 2)) desc'),
+            'price_asc' => $query->orderByRaw("{$effectivePrice} asc"),
+            'price_desc' => $query->orderByRaw("{$effectivePrice} desc"),
             default => $query->latest('listings.created_at'),
         };
     }

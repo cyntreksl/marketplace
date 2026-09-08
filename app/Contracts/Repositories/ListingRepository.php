@@ -16,11 +16,15 @@ interface ListingRepository
      * @param  array<string, mixed>  $filters
      * @return LengthAwarePaginator<int, Listing>
      */
-    public function paginatePublic(array $filters, int $perPage = 18): LengthAwarePaginator;
+    public function paginatePublic(array $filters, string $channel = 'retail', int $perPage = 18): LengthAwarePaginator;
 
     public function findPublicBySlug(string $slug): Listing;
 
     public function sitemapProductCount(): int;
+
+    public function retailProductCount(): int;
+
+    public function wholesaleProductCount(): int;
 
     public function indexableAuctionCount(): int;
 
@@ -66,17 +70,17 @@ interface ListingRepository
     public function clearance(int $limit = 10): Collection;
 
     /** @return Collection<int, Listing> */
-    public function related(Listing $listing, int $limit = 6): Collection;
+    public function related(Listing $listing, string $channel = 'retail', int $limit = 6): Collection;
 
     /** @return Collection<int, Listing> */
-    public function otherListingsFromSeller(Listing $listing, int $limit = 6): Collection;
+    public function otherListingsFromSeller(Listing $listing, string $channel = 'retail', int $limit = 6): Collection;
 
     /** @return LengthAwarePaginator<int, Listing> */
     /**
      * @param  array{q?: string, status?: string, sort?: string}  $filters
      * @return LengthAwarePaginator<int, Listing>
      */
-    public function paginateForSeller(SellerProfile $seller, array $filters = [], int $perPage = 20): LengthAwarePaginator;
+    public function paginateForSeller(SellerProfile $seller, array $filters = [], string $channel = 'retail', int $perPage = 20): LengthAwarePaginator;
 
     public function save(Listing $listing): Listing;
 

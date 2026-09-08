@@ -47,7 +47,7 @@ class EloquentSellerStoreRepository implements SellerStoreRepository
     {
         return SellerProfile::query()->whereIn('status', ['approved', 'active'])
             ->withCount([
-                'listings as public_product_count' => fn ($query) => $query->publiclyVisible(),
+                'listings as public_product_count' => fn ($query) => $query->retailVisible(),
                 'listings as indexable_product_count' => fn ($query) => $query->directlyVisible(),
             ]);
     }

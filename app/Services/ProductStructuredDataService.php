@@ -136,8 +136,8 @@ class ProductStructuredDataService
             'offers' => $this->offer(
                 listing: $listing,
                 url: route('listings.show', $listing->slug),
-                price: $listing->buyNowPrice(),
-                marketPrice: $listing->sale_price === null ? null : (string) $listing->price,
+                price: $listing->is_retail_enabled ? $listing->buyNowPrice() : ($listing->wholesale_price === null ? null : (string) $listing->wholesale_price),
+                marketPrice: $listing->is_retail_enabled && $listing->sale_price !== null ? (string) $listing->price : null,
                 availability: $listing->stockStatus(),
             ),
         ]);
@@ -223,8 +223,8 @@ class ProductStructuredDataService
             'offers' => $this->offer(
                 listing: $listing,
                 url: $url,
-                price: $variant->buyNowPrice(),
-                marketPrice: $variant->market_price === null ? null : (string) $variant->market_price,
+                price: $listing->is_retail_enabled ? $variant->buyNowPrice() : ($variant->wholesale_price === null ? null : (string) $variant->wholesale_price),
+                marketPrice: $listing->is_retail_enabled && $variant->market_price !== null ? (string) $variant->market_price : null,
                 availability: $variant->availableQuantity() > 0 ? 'in_stock' : ($listing->allow_backorders ? 'backorder' : 'out_of_stock'),
             ),
         ]);

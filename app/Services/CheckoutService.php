@@ -28,6 +28,7 @@ class CheckoutService
         private readonly SellerOrderNotificationService $sellerOrderNotifications,
         private readonly PaymentAttemptService $paymentAttempts,
         private readonly MetaConversionsService $metaConversions,
+        private readonly ListingPricingService $pricing,
     ) {}
 
     /**
@@ -91,7 +92,7 @@ class CheckoutService
             foreach ($cartItems as $cartItem) {
                 $listing = $lockedListings[$cartItem->listing_id];
                 $variant = $lockedVariants[$cartItem->id] ?? null;
-                $subtotal = $subtotal->plus(BigDecimal::of($this->buyNowPrice($listing, $variant))->multipliedBy($cartItem->quantity));
+                $subtotal = $subtotal->plus(BigDecimal::of($this->buyNowPrice($listing, $variant, $cartItem->quantity))->multipliedBy($cartItem->quantity));
             }
 
             if ($paymentMethod === 'cod' && $subtotal->isGreaterThan($this->settings->integer('checkout.cod_maximum_amount', 50000))) {
@@ -102,7 +103,10 @@ class CheckoutService
             $total = $subtotal->plus($shippingTotal);
             $lockedSummary = $summary;
             $lockedSummary['items'] = array_map(function (array $item) use ($lockedListings, $lockedVariants): array {
-                $item['unitPrice'] = $this->buyNowPrice($lockedListings[$item['listing_id']], $lockedVariants[$item['id']] ?? null);
+                $lockedPricing = $this->priceForQuantity($lockedListings[$item['listing_id']], $lockedVariants[$item['id']] ?? null, $item['quantity']);
+                $item['unitPrice'] = $lockedPricing['unitPrice'];
+                $item['pricingTier'] = $lockedPricing['tier'];
+                $item['minimumQuantity'] = $lockedPricing['minimumQuantity'];
 
                 return $item;
             }, $summary['items']);
@@ -129,7 +133,7 @@ class CheckoutService
                 foreach ($items as $item) {
                     $listing = $lockedListings[$item->listing_id];
                     $variant = $lockedVariants[$item->id] ?? null;
-                    $sellerSubtotal = $sellerSubtotal->plus(BigDecimal::of($this->buyNowPrice($listing, $variant))->multipliedBy($item->quantity));
+                    $sellerSubtotal = $sellerSubtotal->plus(BigDecimal::of($this->buyNowPrice($listing, $variant, $item->quantity))->multipliedBy($item->quantity));
                 }
 
                 $sellerOrder = $this->repository->createSellerOrder([
@@ -144,7 +148,8 @@ class CheckoutService
                 foreach ($items as $item) {
                     $listing = $lockedListings[$item->listing_id];
                     $variant = $lockedVariants[$item->id] ?? null;
-                    $effectivePrice = $this->buyNowPrice($listing, $variant);
+                    $lockedPricing = $this->priceForQuantity($listing, $variant, $item->quantity);
+                    $effectivePrice = $lockedPricing['unitPrice'];
                     $lineTotal = BigDecimal::of($effectivePrice)->multipliedBy($item->quantity);
                     $commission = $lineTotal->multipliedBy((string) $listing->commission_percentage)->dividedBy(100, 2, RoundingMode::Down);
                     $this->repository->addItem($sellerOrder, [
@@ -155,6 +160,7 @@ class CheckoutService
                         'variant_options' => $variant === null ? null : $this->variantOptions($variant),
                         'quantity' => $item->quantity,
                         'unit_price' => $effectivePrice,
+                        'pricing_tier' => $lockedPricing['tier'],
                         'commission_percentage' => $listing->commission_percentage,
                         'commission_amount' => (string) $commission,
                         'total' => (string) $lineTotal,
@@ -214,6 +220,7 @@ class CheckoutService
                     'variantOptions' => $item->variant_options,
                     'quantity' => $item->quantity,
                     'unitPrice' => $item->unit_price,
+                    'pricingTier' => $item->pricing_tier,
                     'total' => $item->total,
                 ];
             }
@@ -241,7 +248,7 @@ class CheckoutService
     /** @param array<string, mixed> $summary */
     public function reviewHash(array $summary): string
     {
-        $items = array_map(fn (array $item): array => [$item['listing_id'], $item['listing_variant_id'], $item['quantity'], $item['unitPrice']], $summary['items']);
+        $items = array_map(fn (array $item): array => [$item['listing_id'], $item['listing_variant_id'], $item['quantity'], $item['unitPrice'], $item['pricingTier'] ?? null], $summary['items']);
         sort($items);
 
         return hash('sha256', json_encode([$items, $summary['subtotal'], $summary['shippingTotal'], $summary['total']], JSON_THROW_ON_ERROR));
@@ -252,9 +259,15 @@ class CheckoutService
         return $prefix.'-'.now()->format('ymd').'-'.Str::upper(Str::random(8));
     }
 
-    private function buyNowPrice(Listing $listing, ?ListingVariant $variant): string
+    private function buyNowPrice(Listing $listing, ?ListingVariant $variant, int $quantity): string
     {
-        $price = $variant?->buyNowPrice() ?? $listing->buyNowPrice();
+        return $this->priceForQuantity($listing, $variant, $quantity)['unitPrice'];
+    }
+
+    /** @return array{unitPrice: string, tier: 'retail'|'wholesale', minimumQuantity: int} */
+    private function priceForQuantity(Listing $listing, ?ListingVariant $variant, int $quantity): array
+    {
+        $price = $this->pricing->forQuantity($listing, $variant, $quantity);
 
         if ($price === null) {
             throw ValidationException::withMessages(['cart' => "{$listing->title} does not have an available price."]);

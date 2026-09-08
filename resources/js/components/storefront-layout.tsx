@@ -22,6 +22,7 @@ import {
     dashboard as sellerDashboard,
     register as sellerRegister,
 } from '@/routes/seller';
+import { index as wholesaleIndex } from '@/routes/wholesale';
 
 export type { StorefrontCategory } from '@/components/storefront-category-menu';
 
@@ -65,6 +66,8 @@ export function StorefrontLayout({
     const search =
         new URL(url, 'https://storefront.local').searchParams.get('search') ??
         '';
+    const isWholesaleCatalog = url.split('?')[0] === wholesaleIndex.url();
+    const searchRoute = isWholesaleCatalog ? wholesaleIndex : listingsIndex;
     const categoryMenuProps = {
         categories: navigationCategories,
         selectedCategorySlug,
@@ -73,6 +76,7 @@ export function StorefrontLayout({
 
     const navigation = [
         ['Shop', '/listings'],
+        ['Wholesale', wholesaleIndex.url()],
         ['Auctions', '/auctions'],
         ['Deals', '/collections/deals'],
         ['Brands', '/brands'],
@@ -142,7 +146,7 @@ export function StorefrontLayout({
                         </div>
                     )}
                     <Form
-                        {...listingsIndex.form()}
+                        {...searchRoute.form()}
                         role="search"
                         className="hidden min-w-0 flex-1 md:block"
                     >
@@ -238,7 +242,7 @@ export function StorefrontLayout({
                     </div>
                 </nav>
                 <div className="px-4 pb-3 sm:px-6 md:hidden">
-                    <Form {...listingsIndex.form()} role="search">
+                    <Form {...searchRoute.form()} role="search">
                         <label className="flex h-10 overflow-hidden rounded-full border-2 border-[#FF6D00] focus-within:ring-2 focus-within:ring-orange-100">
                             <span className="sr-only">Search products</span>
                             <input

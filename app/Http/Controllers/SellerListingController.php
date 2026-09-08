@@ -8,7 +8,6 @@ use App\Http\Requests\SellerListingIndexRequest;
 use App\Http\Requests\StoreListingRequest;
 use App\Http\Requests\SubmitListingRequest;
 use App\Http\Requests\UpdateListingRequest;
-use App\Models\Brand;
 use App\Models\Listing;
 use App\Services\ListingContentSuggestionService;
 use App\Services\ListingService;
@@ -33,12 +32,7 @@ class SellerListingController extends Controller
 
     public function create(Request $request): Response
     {
-        $seller = $request->user()->sellerProfile()->firstOrFail();
-
-        return Inertia::render('seller/listings/create', [
-            'sellerStatus' => $seller->status,
-            'brands' => Brand::query()->orderBy('name')->get(['id', 'name']),
-        ]);
+        return Inertia::render('seller/listings/create', $this->listings->sellerCreateData($request->user()));
     }
 
     public function show(Request $request, Listing $listing): Response
@@ -60,7 +54,7 @@ class SellerListingController extends Controller
             'listing' => $listing,
             'sellerStatus' => $seller->status,
             'selectedCategory' => $listing->category === null ? null : $this->catalog->categoryOption($listing->category),
-            'brands' => Brand::query()->orderBy('name')->get(['id', 'name']),
+            'brands' => $this->catalog->listingBrands(),
         ]);
     }
 

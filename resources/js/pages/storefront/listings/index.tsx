@@ -64,6 +64,8 @@ function activeFilterCount(filters: StorefrontBrowseFilters): number {
 function breadcrumbItems(
     categoryContext: StorefrontCategoryContext | null,
     pageHeading: string,
+    browseUrl: string,
+    catalogMode: 'retail' | 'wholesale',
 ): StorefrontBreadcrumbItem[] {
     if (!categoryContext) {
         return [{ label: 'Home', href: home.url() }, { label: pageHeading }];
@@ -78,7 +80,9 @@ function breadcrumbItems(
             href:
                 index === trail.length - 1
                     ? undefined
-                    : categoryShow.url(category.slug),
+                    : catalogMode === 'wholesale'
+                      ? `${browseUrl}?category=${encodeURIComponent(category.slug)}`
+                      : categoryShow.url(category.slug),
         })),
     ];
 }
@@ -86,9 +90,13 @@ function breadcrumbItems(
 function CategoryStrip({
     categories,
     categoryContext,
+    browseUrl,
+    catalogMode,
 }: {
     categories: StorefrontCategory[];
     categoryContext: StorefrontCategoryContext | null;
+    browseUrl: string;
+    catalogMode: 'retail' | 'wholesale';
 }) {
     const items = categoryContext
         ? categoryContext.children.map((category) => ({
@@ -118,7 +126,11 @@ function CategoryStrip({
                 {items.slice(0, 10).map(({ category, hasChildren }) => (
                     <Link
                         key={category.id}
-                        href={categoryShow(category.slug)}
+                        href={
+                            catalogMode === 'wholesale'
+                                ? `${browseUrl}?category=${encodeURIComponent(category.slug)}`
+                                : categoryShow(category.slug)
+                        }
                         prefetch
                         aria-label={`${category.name}${hasChildren ? ', browse subcategories' : ''}`}
                         className="group flex h-30 w-28 shrink-0 snap-start flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF6D00]/40 hover:shadow-md focus-visible:ring-2 focus-visible:ring-[#FF6D00] focus-visible:ring-offset-2 focus-visible:outline-none motion-reduce:transform-none sm:h-32 sm:w-[8.6rem]"
@@ -146,6 +158,7 @@ export default function ListingsIndex({
     pageHeading,
     intro,
     browseUrl,
+    catalogMode = 'retail',
 }: {
     listings: StorefrontListingPaginator;
     categories: StorefrontCategory[];
@@ -155,6 +168,7 @@ export default function ListingsIndex({
     pageHeading: string;
     intro: string;
     browseUrl: string;
+    catalogMode?: 'retail' | 'wholesale';
 }) {
     const filterCount = activeFilterCount(filters);
     const pageTitle = pageHeading;
@@ -186,7 +200,12 @@ export default function ListingsIndex({
         >
             <main className="storefront-container py-6 lg:py-8">
                 <StorefrontBreadcrumbs
-                    items={breadcrumbItems(categoryContext, pageHeading)}
+                    items={breadcrumbItems(
+                        categoryContext,
+                        pageHeading,
+                        browseUrl,
+                        catalogMode,
+                    )}
                 />
 
                 <header className="mt-5 max-w-4xl">
@@ -201,6 +220,8 @@ export default function ListingsIndex({
                 <CategoryStrip
                     categories={categories}
                     categoryContext={categoryContext}
+                    browseUrl={browseUrl}
+                    catalogMode={catalogMode}
                 />
 
                 <section id="results" className="scroll-mt-40 pt-4 pb-14">
@@ -212,7 +233,9 @@ export default function ListingsIndex({
                             <div>
                                 <div className="flex flex-wrap items-center gap-2">
                                     <h2 className="text-2xl font-black tracking-tight text-slate-950">
-                                        Products
+                                        {catalogMode === 'wholesale'
+                                            ? 'Wholesale products'
+                                            : 'Products'}
                                     </h2>
                                     {filterCount > 0 && (
                                         <span className="rounded-full bg-[#FF6D00]/10 px-2.5 py-1 text-xs font-black text-[#FF6D00]">

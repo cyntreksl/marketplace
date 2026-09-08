@@ -102,6 +102,7 @@ class SellerPortalService
                 'unit_price' => $item->unit_price,
                 'total' => $item->total,
                 'variant_options' => $item->variant_options,
+                'pricing_tier' => $item->pricing_tier,
             ])->all(),
             'shipment' => $order->shipment === null ? null : [
                 'courier_name' => $order->shipment->courier_name,

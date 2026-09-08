@@ -75,6 +75,11 @@ function CartLine({ item }: { item: CheckoutCartItem }) {
                 <p className="mt-2 text-sm text-slate-600">
                     {cartMoney(item.unitPrice)} each
                 </p>
+                {item.pricingTier === 'wholesale' && (
+                    <span className="mt-2 inline-flex rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-700">
+                        Wholesale pricing · MOQ {item.minimumQuantity}
+                    </span>
+                )}
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                     <div className="inline-flex items-center rounded-lg border border-slate-200">
                         <button
@@ -89,8 +94,8 @@ function CartLine({ item }: { item: CheckoutCartItem }) {
                         <input
                             key={item.quantity}
                             type="number"
-                            min={1}
-                            max={100}
+                            min={item.minimumQuantity}
+                            max={item.availableQuantity}
                             defaultValue={item.quantity}
                             disabled={busy}
                             aria-label={`Quantity for ${item.listing.title}`}

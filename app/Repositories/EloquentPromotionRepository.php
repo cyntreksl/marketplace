@@ -32,7 +32,7 @@ class EloquentPromotionRepository implements PromotionRepository
             ->where(fn ($query) => $query->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
             ->where('ends_at', '>=', now())
             ->with(['listings' => fn ($query) => $query
-                ->publiclyVisible()
+                ->retailVisible()
                 ->withAvg('reviews as rating_average', 'rating')
                 ->withCount('reviews')
                 ->with(['brand:id,name,slug', 'category:id,name,slug', 'media', 'sellerProfile:id,store_name,slug', 'auction'])])

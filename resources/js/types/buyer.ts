@@ -38,6 +38,7 @@ export type BuyerOrderItem = {
     total: string;
     variant_sku: string | null;
     variant_options: Record<string, string> | null;
+    pricing_tier: 'retail' | 'wholesale';
     listing_slug: string | null;
     image_url: string | null;
     review: { rating: number; comment: string | null } | null;

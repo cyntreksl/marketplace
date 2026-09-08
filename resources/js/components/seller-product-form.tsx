@@ -13,6 +13,7 @@ import {
     Send,
     Settings2,
     Sparkles,
+    Store,
     Tags,
     Trash2,
     UploadCloud,
@@ -62,6 +63,8 @@ type VariantRow = {
     mpn: string;
     selling_price: string;
     market_price: string;
+    wholesale_price: string;
+    wholesale_min_quantity: number | '';
     stock_quantity: number | '';
     is_active: boolean;
     image: File | null;
@@ -94,6 +97,8 @@ type StoredVariant = {
     mpn: string | null;
     selling_price: string | null;
     market_price: string | null;
+    wholesale_price: string | null;
+    wholesale_min_quantity: number | null;
     stock_quantity: number;
     is_active: boolean;
     position: number;
@@ -168,6 +173,10 @@ export type SellerProductFormListing = {
     is_new_arrival: boolean;
     price: string | null;
     sale_price: string | null;
+    is_retail_enabled: boolean;
+    is_wholesale_enabled: boolean;
+    wholesale_price: string | null;
+    wholesale_min_quantity: number | null;
     meta_title: string | null;
     meta_description: string | null;
     media?: ListingMedia[];
@@ -195,6 +204,10 @@ type ProductFormData = {
     stock_quantity: number | '';
     selling_price: string;
     compare_price: string;
+    is_retail_enabled: boolean;
+    is_wholesale_enabled: boolean;
+    wholesale_price: string;
+    wholesale_min_quantity: number | '';
     low_stock_threshold: number | '';
     allow_backorders: boolean;
     is_active: boolean;
@@ -249,6 +262,7 @@ export function SellerProductForm({
     canSubmit,
     cancelHref,
     mode = 'seller',
+    defaultChannel = 'retail',
 }: {
     form: FormDefinition;
     initialCategory: CategoryOption | null;
@@ -257,6 +271,7 @@ export function SellerProductForm({
     canSubmit: boolean;
     cancelHref?: string;
     mode?: 'admin' | 'seller';
+    defaultChannel?: 'retail' | 'wholesale';
 }) {
     const isAdmin = mode === 'admin';
     const [selectedCategory, setSelectedCategory] =
@@ -327,6 +342,8 @@ export function SellerProductForm({
                     mpn: variant.mpn ?? '',
                     selling_price: variant.selling_price ?? '',
                     market_price: variant.market_price ?? '',
+                    wholesale_price: variant.wholesale_price ?? '',
+                    wholesale_min_quantity: variant.wholesale_min_quantity ?? 2,
                     stock_quantity: variant.stock_quantity,
                     is_active: variant.is_active,
                     image: null,
@@ -363,6 +380,14 @@ export function SellerProductForm({
         stock_quantity: listing?.stock_quantity ?? '',
         selling_price: listing?.sale_price ?? listing?.price ?? '',
         compare_price: listing?.sale_price ? (listing.price ?? '') : '',
+        is_retail_enabled:
+            listing?.is_retail_enabled ?? defaultChannel === 'retail',
+        is_wholesale_enabled:
+            listing?.is_wholesale_enabled ?? defaultChannel === 'wholesale',
+        wholesale_price: listing?.wholesale_price ?? '',
+        wholesale_min_quantity:
+            listing?.wholesale_min_quantity ??
+            (defaultChannel === 'wholesale' ? 2 : ''),
         low_stock_threshold: listing?.low_stock_threshold ?? 0,
         allow_backorders: listing?.allow_backorders ?? false,
         is_active: listing?.is_active ?? true,
@@ -440,6 +465,8 @@ export function SellerProductForm({
     const productType = form.data.product_type;
     const baseSku = form.data.sku;
     const baseSellingPrice = form.data.selling_price;
+    const baseWholesalePrice = form.data.wholesale_price;
+    const baseWholesaleMinimum = form.data.wholesale_min_quantity;
     const baseStockQuantity = form.data.stock_quantity;
     const setFormData = form.setData;
 
@@ -473,6 +500,11 @@ export function SellerProductForm({
                 stock_quantity: existing?.stock_quantity ?? 0,
                 selling_price: existing?.selling_price ?? baseSellingPrice,
                 market_price: existing?.market_price ?? '',
+                wholesale_price:
+                    existing?.wholesale_price ?? baseWholesalePrice,
+                wholesale_min_quantity:
+                    existing?.wholesale_min_quantity ??
+                    (baseWholesaleMinimum || 2),
                 is_active: existing?.is_active ?? true,
                 image: existing?.image ?? null,
                 image_crop: existing?.image_crop ?? null,
@@ -499,6 +531,8 @@ export function SellerProductForm({
     }, [
         baseSku,
         baseSellingPrice,
+        baseWholesalePrice,
+        baseWholesaleMinimum,
         baseStockQuantity,
         combinations,
         productType,
@@ -1116,6 +1150,8 @@ export function SellerProductForm({
                 mpn: variant.mpn,
                 selling_price: variant.selling_price,
                 market_price: variant.market_price,
+                wholesale_price: variant.wholesale_price,
+                wholesale_min_quantity: variant.wholesale_min_quantity,
                 stock_quantity: variant.stock_quantity,
                 is_active: variant.is_active,
                 image: variant.image,
@@ -1163,6 +1199,69 @@ export function SellerProductForm({
         >
             <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_23rem]">
                 <div className="grid gap-5">
+                    <FormCard
+                        title="Sales Channels"
+                        icon={<Store className="size-5" />}
+                    >
+                        <Field
+                            label="Where should this product be sold?"
+                            error={
+                                errorFor('is_retail_enabled') ??
+                                errorFor('is_wholesale_enabled')
+                            }
+                            required
+                        >
+                            <select
+                                value={
+                                    form.data.is_retail_enabled &&
+                                    form.data.is_wholesale_enabled
+                                        ? 'both'
+                                        : form.data.is_wholesale_enabled
+                                          ? 'wholesale'
+                                          : 'retail'
+                                }
+                                onChange={(event) => {
+                                    const channel = event.target.value;
+                                    form.setData({
+                                        ...form.data,
+                                        is_retail_enabled:
+                                            channel === 'retail' ||
+                                            channel === 'both',
+                                        is_wholesale_enabled:
+                                            channel === 'wholesale' ||
+                                            channel === 'both',
+                                        wholesale_min_quantity:
+                                            channel === 'retail'
+                                                ? ''
+                                                : form.data
+                                                      .wholesale_min_quantity ||
+                                                  2,
+                                    });
+                                    form.clearErrors(
+                                        'is_retail_enabled',
+                                        'is_wholesale_enabled',
+                                    );
+                                }}
+                                className={inputClass(
+                                    errorFor('is_retail_enabled') ??
+                                        errorFor('is_wholesale_enabled'),
+                                )}
+                            >
+                                <option value="retail">Retail only</option>
+                                <option value="wholesale">
+                                    Wholesale only
+                                </option>
+                                <option value="both">
+                                    Retail and wholesale
+                                </option>
+                            </select>
+                        </Field>
+                        <p className="mt-2 text-sm text-slate-500">
+                            Products enabled for both channels switch to the
+                            wholesale unit price automatically when the order
+                            reaches its minimum quantity.
+                        </p>
+                    </FormCard>
                     <FormCard
                         title="Basic Information"
                         icon={<Info className="size-5" />}
@@ -1469,34 +1568,119 @@ export function SellerProductForm({
                         <div className="grid gap-5 md:grid-cols-3">
                             {!isVariantProduct ? (
                                 <>
-                                    <Field
-                                        label="Selling Price (LKR)"
-                                        error={errorFor('selling_price')}
-                                        required
-                                    >
-                                        <MoneyInput
-                                            value={form.data.selling_price}
-                                            onChange={(value) =>
-                                                setField('selling_price', value)
-                                            }
-                                            error={errorFor('selling_price')}
-                                            ariaLabel="Selling price in LKR"
-                                        />
-                                    </Field>
-                                    <Field
-                                        label="Market Price (LKR)"
-                                        error={errorFor('compare_price')}
-                                        helpText="Optional discount reference price."
-                                    >
-                                        <MoneyInput
-                                            value={form.data.compare_price}
-                                            onChange={(value) =>
-                                                setField('compare_price', value)
-                                            }
-                                            error={errorFor('compare_price')}
-                                            ariaLabel="Optional market price in LKR"
-                                        />
-                                    </Field>
+                                    {form.data.is_retail_enabled && (
+                                        <>
+                                            <Field
+                                                label="Selling Price (LKR)"
+                                                error={errorFor(
+                                                    'selling_price',
+                                                )}
+                                                required
+                                            >
+                                                <MoneyInput
+                                                    value={
+                                                        form.data.selling_price
+                                                    }
+                                                    onChange={(value) =>
+                                                        setField(
+                                                            'selling_price',
+                                                            value,
+                                                        )
+                                                    }
+                                                    error={errorFor(
+                                                        'selling_price',
+                                                    )}
+                                                    ariaLabel="Selling price in LKR"
+                                                />
+                                            </Field>
+                                            <Field
+                                                label="Market Price (LKR)"
+                                                error={errorFor(
+                                                    'compare_price',
+                                                )}
+                                                helpText="Optional discount reference price."
+                                            >
+                                                <MoneyInput
+                                                    value={
+                                                        form.data.compare_price
+                                                    }
+                                                    onChange={(value) =>
+                                                        setField(
+                                                            'compare_price',
+                                                            value,
+                                                        )
+                                                    }
+                                                    error={errorFor(
+                                                        'compare_price',
+                                                    )}
+                                                    ariaLabel="Optional market price in LKR"
+                                                />
+                                            </Field>
+                                        </>
+                                    )}
+                                    {form.data.is_wholesale_enabled && (
+                                        <>
+                                            <Field
+                                                label="Wholesale Price (LKR)"
+                                                error={errorFor(
+                                                    'wholesale_price',
+                                                )}
+                                                required
+                                            >
+                                                <MoneyInput
+                                                    value={
+                                                        form.data
+                                                            .wholesale_price
+                                                    }
+                                                    onChange={(value) =>
+                                                        setField(
+                                                            'wholesale_price',
+                                                            value,
+                                                        )
+                                                    }
+                                                    error={errorFor(
+                                                        'wholesale_price',
+                                                    )}
+                                                    ariaLabel="Wholesale price in LKR"
+                                                />
+                                            </Field>
+                                            <Field
+                                                label="Wholesale minimum quantity"
+                                                error={errorFor(
+                                                    'wholesale_min_quantity',
+                                                )}
+                                                required
+                                            >
+                                                <input
+                                                    type="number"
+                                                    min="2"
+                                                    max="100000"
+                                                    value={
+                                                        form.data
+                                                            .wholesale_min_quantity
+                                                    }
+                                                    onChange={(event) =>
+                                                        setField(
+                                                            'wholesale_min_quantity',
+                                                            event.target
+                                                                .value === ''
+                                                                ? ''
+                                                                : Number(
+                                                                      event
+                                                                          .target
+                                                                          .value,
+                                                                  ),
+                                                        )
+                                                    }
+                                                    className={inputClass(
+                                                        errorFor(
+                                                            'wholesale_min_quantity',
+                                                        ),
+                                                    )}
+                                                />
+                                            </Field>
+                                        </>
+                                    )}
                                     <Field
                                         label="Stock Quantity"
                                         error={errorFor('stock_quantity')}
@@ -1813,6 +1997,17 @@ export function SellerProductForm({
                                                     <th className="w-40 px-4 py-3">
                                                         Selling price
                                                     </th>
+                                                    {form.data
+                                                        .is_wholesale_enabled && (
+                                                        <>
+                                                            <th className="w-40 px-4 py-3">
+                                                                Wholesale price
+                                                            </th>
+                                                            <th className="w-36 px-4 py-3">
+                                                                Wholesale MOQ
+                                                            </th>
+                                                        </>
+                                                    )}
                                                     <th className="w-36 px-4 py-3">
                                                         Stock
                                                     </th>
@@ -2041,6 +2236,70 @@ export function SellerProductForm({
                                                                         )}
                                                                     />
                                                                 </td>
+                                                                {form.data
+                                                                    .is_wholesale_enabled && (
+                                                                    <>
+                                                                        <td className="px-4 py-3">
+                                                                            <MoneyInput
+                                                                                ariaLabel={`${variant.selections.join(' / ')} wholesale price`}
+                                                                                value={
+                                                                                    variant.wholesale_price
+                                                                                }
+                                                                                onChange={(
+                                                                                    value,
+                                                                                ) =>
+                                                                                    updateVariant(
+                                                                                        index,
+                                                                                        {
+                                                                                            wholesale_price:
+                                                                                                value,
+                                                                                        },
+                                                                                    )
+                                                                                }
+                                                                                error={errorFor(
+                                                                                    `variants.${index}.wholesale_price`,
+                                                                                )}
+                                                                            />
+                                                                        </td>
+                                                                        <td className="px-4 py-3">
+                                                                            <input
+                                                                                aria-label={`${variant.selections.join(' / ')} wholesale minimum quantity`}
+                                                                                type="number"
+                                                                                min="2"
+                                                                                max="100000"
+                                                                                value={
+                                                                                    variant.wholesale_min_quantity
+                                                                                }
+                                                                                onChange={(
+                                                                                    event,
+                                                                                ) =>
+                                                                                    updateVariant(
+                                                                                        index,
+                                                                                        {
+                                                                                            wholesale_min_quantity:
+                                                                                                event
+                                                                                                    .target
+                                                                                                    .value ===
+                                                                                                ''
+                                                                                                    ? ''
+                                                                                                    : Number(
+                                                                                                          event
+                                                                                                              .target
+                                                                                                              .value,
+                                                                                                      ),
+                                                                                        },
+                                                                                    )
+                                                                                }
+                                                                                className={inputClass(
+                                                                                    errorFor(
+                                                                                        `variants.${index}.wholesale_min_quantity`,
+                                                                                    ),
+                                                                                    'h-10',
+                                                                                )}
+                                                                            />
+                                                                        </td>
+                                                                    </>
+                                                                )}
                                                                 <td className="px-4 py-3">
                                                                     <input
                                                                         aria-label={`${variant.selections.join(' / ')} stock quantity`}

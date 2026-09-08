@@ -119,6 +119,11 @@ function OrderItems({ order }: { order: CheckoutConfirmationOrder }) {
                                 <h3 className="text-base font-bold text-slate-950">
                                     {item.title}
                                 </h3>
+                                {item.pricingTier === 'wholesale' && (
+                                    <span className="mt-1 inline-flex rounded-full bg-orange-50 px-2 py-0.5 text-xs font-bold text-orange-700">
+                                        Wholesale
+                                    </span>
+                                )}
                                 <p className="mt-1 text-sm text-slate-500">
                                     Sold by {item.seller}
                                 </p>
