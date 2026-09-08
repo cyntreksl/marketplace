@@ -10,6 +10,12 @@ const scripts = [];
 const sessionValues = new Map();
 let reloadCount = 0;
 
+function trackedEvents(event) {
+    return window.dataLayer.filter(
+        (value) => !Array.isArray(value) && value.event === event,
+    );
+}
+
 before(async () => {
     globalThis.document = {
         get cookie() {
@@ -56,15 +62,12 @@ before(async () => {
         configFile: false,
         envDir: false,
         define: {
-            'import.meta.env.VITE_GTM_CONTAINER_ID': JSON.stringify(
-                'GTM-KTT94R7G',
-            ),
+            'import.meta.env.VITE_GTM_CONTAINER_ID':
+                JSON.stringify('GTM-KTT94R7G'),
         },
         resolve: {
             alias: {
-                '@': fileURLToPath(
-                    new URL('../resources/js', import.meta.url),
-                ),
+                '@': fileURLToPath(new URL('../resources/js', import.meta.url)),
             },
         },
         server: { middlewareMode: true, watch: null, ws: false },
@@ -95,10 +98,7 @@ test('GTM and commerce events remain gated until versioned consent is granted', 
     });
 
     tracking.trackEvent('view_item', { item_id: '1' });
-    assert.equal(
-        window.dataLayer.some((value) => value.event === 'view_item'),
-        false,
-    );
+    assert.equal(trackedEvents('view_item').length, 0);
 
     tracking.saveConsent(true, false);
     tracking.trackEvent('view_item', { item_id: '1' });
@@ -108,20 +108,26 @@ test('GTM and commerce events remain gated until versioned consent is granted', 
         scripts[0].src,
         'https://www.googletagmanager.com/gtm.js?id=GTM-KTT94R7G',
     );
-    assert.equal(
-        window.dataLayer.some((value) => value.event === 'view_item'),
-        true,
-    );
+    assert.deepEqual(trackedEvents('view_item')[0], {
+        event: 'view_item',
+        eventModel: { item_id: '1' },
+    });
 });
 
 test('purchase events are deduplicated by stable transaction ID', () => {
     tracking.trackPurchase('SO-100', { value: 1600, currency: 'LKR' });
     tracking.trackPurchase('SO-100', { value: 1600, currency: 'LKR' });
 
-    assert.equal(
-        window.dataLayer.filter((value) => value.event === 'purchase').length,
-        1,
-    );
+    assert.equal(trackedEvents('purchase').length, 1);
+    assert.deepEqual(trackedEvents('purchase')[0], {
+        event: 'purchase',
+        eventModel: {
+            value: 1600,
+            currency: 'LKR',
+            event_id: 'Purchase:SO-100',
+            transaction_id: 'SO-100',
+        },
+    });
 });
 
 test('revocation denies consent, clears known vendor cookies, and reloads', () => {
@@ -145,12 +151,8 @@ test('marketing-only consent makes commerce events available to consent-checked 
     tracking.saveConsent(false, true);
     tracking.trackEvent('view_item', { item_id: 'marketing-item' });
 
-    assert.equal(
-        window.dataLayer.some(
-            (value) =>
-                value.event === 'view_item' &&
-                value.item_id === 'marketing-item',
-        ),
-        true,
-    );
+    assert.deepEqual(trackedEvents('view_item').at(-1), {
+        event: 'view_item',
+        eventModel: { item_id: 'marketing-item' },
+    });
 });

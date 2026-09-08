@@ -210,7 +210,8 @@ export function trackEvent(
         return;
     }
 
-    window.dataLayer.push({ event, ...parameters });
+    ensureConsentDefaults();
+    window.dataLayer.push({ event, eventModel: parameters });
 }
 
 export function trackPageView(url: string): void {
@@ -248,7 +249,11 @@ export function trackPurchase(
         return;
     }
 
-    trackEvent('purchase', { transaction_id: transactionId, ...parameters });
+    trackEvent('purchase', {
+        ...parameters,
+        event_id: `Purchase:${transactionId}`,
+        transaction_id: transactionId,
+    });
 
     const consent = readConsent();
 

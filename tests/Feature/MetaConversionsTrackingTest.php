@@ -48,7 +48,7 @@ test('valid public listing views queue ViewContent while crawlers and prefetches
     Queue::assertPushed(SendMetaConversion::class, function (SendMetaConversion $job) use ($expectedFbc, $listing): bool {
         return $job->event->name === 'ViewContent'
             && $job->event->customData['content_ids'] === [(string) $listing->id]
-            && $job->event->customData['value'] === '2500.00'
+            && $job->event->customData['value'] === 2500.0
             && $job->event->userData['fbc'] === $expectedFbc
             && ! array_key_exists('fbclid', $job->event->userData);
     });
@@ -123,7 +123,7 @@ test('successful cart additions queue the added quantity and invalid mutations d
     Queue::assertPushed(SendMetaConversion::class, 2);
     Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => $job->event->name === 'AddToCart'
         && $job->event->customData['contents'][0]['quantity'] === 1
-        && $job->event->customData['value'] === '1000.00'
+        && $job->event->customData['value'] === 1000.0
         && $job->event->userData['fbc'] === $fbc
         && $job->event->userData['fbp'] === $fbp);
 
@@ -226,6 +226,9 @@ test('Purchase uses a stable event id hashes PII and clears accepted attribution
     $serialized = json_encode($gateway->event?->toArray(), JSON_THROW_ON_ERROR);
     expect($gateway->event?->id)->toBe('Purchase:'.$order->number)
         ->and($gateway->event?->customData['order_id'])->toBe($order->number)
+        ->and($gateway->event?->customData['currency'])->toBe('LKR')
+        ->and($gateway->event?->customData['value'])->toBe(1600.0)
+        ->and($gateway->event?->customData['contents'][0]['item_price'])->toBe(1000.0)
         ->and($gateway->event?->userData['em'][0])->toBe(hash('sha256', 'buyer@example.com'))
         ->and($gateway->event?->userData['ph'][0])->toBe(hash('sha256', '94771234567'))
         ->and($gateway->event?->userData['fbc'])->toBe($fbc)

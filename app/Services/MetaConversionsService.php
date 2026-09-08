@@ -40,7 +40,7 @@ class MetaConversionsService
         }
 
         $contentId = (string) ($selectedVariantId ?? $listing['id']);
-        $price = (string) ($listing['effectivePrice'] ?? '0.00');
+        $price = (float) ($listing['effectivePrice'] ?? 0);
 
         $this->queue(new MetaConversionEvent(
             name: 'ViewContent',
@@ -68,7 +68,7 @@ class MetaConversionsService
 
         $contentId = (string) ($item['listing_variant_id'] ?? $item['listing_id']);
         $quantity = (int) $item['quantity'];
-        $unitPrice = (string) $item['unitPrice'];
+        $unitPrice = (float) $item['unitPrice'];
 
         $this->queue(new MetaConversionEvent(
             name: 'AddToCart',
@@ -78,7 +78,7 @@ class MetaConversionsService
             userData: $this->requestUserData($request),
             customData: [
                 'currency' => 'LKR',
-                'value' => (string) $item['total'],
+                'value' => (float) $item['total'],
                 'content_ids' => [$contentId],
                 'content_type' => 'product',
                 'content_name' => (string) data_get($item, 'listing.title'),
@@ -97,7 +97,7 @@ class MetaConversionsService
         $contents = array_map(fn (array $item): array => [
             'id' => (string) ($item['listing_variant_id'] ?? $item['listing_id']),
             'quantity' => (int) $item['quantity'],
-            'item_price' => (string) $item['unitPrice'],
+            'item_price' => (float) $item['unitPrice'],
         ], $cart['items']);
 
         $this->queue(new MetaConversionEvent(
@@ -108,7 +108,7 @@ class MetaConversionsService
             userData: $this->requestUserData($request),
             customData: [
                 'currency' => 'LKR',
-                'value' => (string) $cart['total'],
+                'value' => (float) $cart['total'],
                 'content_ids' => array_column($contents, 'id'),
                 'content_type' => 'product',
                 'num_items' => (int) $cart['quantity'],
@@ -170,7 +170,7 @@ class MetaConversionsService
                 $contents[] = [
                     'id' => (string) ($item->listing_variant_id ?? $item->listing_id),
                     'quantity' => (int) $item->quantity,
-                    'item_price' => (string) $item->unit_price,
+                    'item_price' => (float) $item->unit_price,
                 ];
             }
         }
@@ -184,7 +184,7 @@ class MetaConversionsService
             userData: $this->purchaseUserData($order, $attribution),
             customData: [
                 'currency' => 'LKR',
-                'value' => $order->total,
+                'value' => (float) $order->total,
                 'order_id' => $order->number,
                 'content_ids' => array_column($contents, 'id'),
                 'content_type' => 'product',
