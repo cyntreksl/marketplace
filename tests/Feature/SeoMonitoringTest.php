@@ -20,7 +20,9 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Notifications\Dispatcher;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Sleep;
 
 beforeEach(function () {
@@ -395,4 +397,27 @@ test('setup delivery test is explicit and does not create a failure record', fun
     Notification::assertSentOnDemand(SeoMonitoringNotification::class, fn ($notification) => $notification->test
         && str_contains($notification->toMail(new stdClass)->subject, 'delivery test'));
     expect(app(SeoMonitoringRepository::class)->get('alert:catalog')['failed'])->toBeFalse();
+});
+
+test('monitoring retains structured success logs independently of production warning level', function () {
+    Storage::fake('local');
+    config([
+        'logging.channels.single.level' => 'warning',
+        'logging.channels.seo-monitoring.path' => Storage::disk('local')->path('seo-monitoring.log'),
+    ]);
+    Log::forgetChannel('seo-monitoring');
+    $monitor = app(SeoMonitoringService::class);
+    expect($monitor->run('catalog', fn () => ['issues' => [], 'context' => ['offer_count' => 51]]))->toBeTrue();
+    expect($monitor->run('merchant', fn () => throw new RuntimeException('SECRET_PRIVATE_KEY')))->toBeFalse();
+    $files = Storage::disk('local')->allFiles();
+    expect($files)->toHaveCount(1);
+    $contents = Storage::disk('local')->get($files[0]);
+    $records = array_map(fn (string $line): array => json_decode($line, true, flags: JSON_THROW_ON_ERROR), explode("\n", trim($contents)));
+    expect($records)->toHaveCount(2)
+        ->and($records[0]['level_name'])->toBe('INFO')
+        ->and($records[0]['context']['check'])->toBe('catalog')
+        ->and($records[0]['context']['offer_count'])->toBe(51)
+        ->and($records[1]['level_name'])->toBe('ERROR')
+        ->and($contents)->not->toContain('SECRET_PRIVATE_KEY');
+    Log::forgetChannel('seo-monitoring');
 });

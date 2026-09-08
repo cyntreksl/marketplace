@@ -1,5 +1,6 @@
 <?php
 
+use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
@@ -71,6 +72,14 @@ return [
             'level' => env('LOG_LEVEL', 'debug'),
             'max_files' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
+        ],
+
+        'seo-monitoring' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/seo-monitoring.log'),
+            'level' => 'info',
+            'max_files' => 45,
+            'formatter' => JsonFormatter::class,
         ],
 
         'monthly' => [

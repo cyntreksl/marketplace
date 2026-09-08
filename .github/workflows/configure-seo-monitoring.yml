@@ -7,6 +7,10 @@ on:
         description: Read scheduler health and recent monitoring results without changing configuration
         type: boolean
         default: false
+      run_checks:
+        description: Run both monitoring commands during verification without sending a test email
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -44,11 +48,17 @@ jobs:
           printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
           printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
 
+      - name: Run manual monitoring checks
+        if: ${{ inputs.verify_only && inputs.run_checks }}
+        run: |
+          set -Eeuo pipefail
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "${DEPLOY_USER}@${WORKER_HOST}" 'cd /var/www/prodeals/current && php8.4 artisan seo:check-catalog --no-interaction && php8.4 artisan seo:check-merchant --no-interaction'
+
       - name: Read scheduled monitoring results
         if: ${{ inputs.verify_only }}
         run: |
           set -Eeuo pipefail
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "${DEPLOY_USER}@${WORKER_HOST}" 'test -f /etc/cron.d/prodeals-scheduler && systemctl is-active --quiet cron && cd /var/www/prodeals/current && php8.4 artisan schedule:list --no-interaction && grep -h "SEO monitoring" storage/logs/laravel*.log | tail -20'
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "${DEPLOY_USER}@${WORKER_HOST}" 'test -f /etc/cron.d/prodeals-scheduler && systemctl is-active --quiet cron && cd /var/www/prodeals/current && php8.4 artisan schedule:list --no-interaction && tail -n 20 storage/logs/seo-monitoring*.log'
 
       - name: Configure and verify production monitoring
         if: ${{ !inputs.verify_only }}

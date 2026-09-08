@@ -22,7 +22,7 @@ class SeoMonitoringService
 
             return true;
         } catch (Throwable $exception) {
-            Log::error('SEO monitoring test notification failed', ['exception_type' => $exception::class]);
+            Log::channel('seo-monitoring')->error('SEO monitoring test notification failed', ['exception_type' => $exception::class]);
 
             return false;
         }
@@ -46,7 +46,7 @@ class SeoMonitoringService
                 sort($issues);
                 $previous = $this->state->get('alert:'.$name);
                 if ($issues === [] && ($result['context']['reconciliation_pending'] ?? false) && ($previous['failed'] ?? false)) {
-                    Log::info('SEO monitoring is awaiting import reconciliation', ['check' => $name, ...$result['context']]);
+                    Log::channel('seo-monitoring')->info('SEO monitoring is awaiting import reconciliation', ['check' => $name, ...$result['context']]);
 
                     return true;
                 }
@@ -59,7 +59,7 @@ class SeoMonitoringService
                 ));
 
                 $context = [...$result['context'], 'check' => $name, 'issues' => $issues, 'checked_at' => now()->toIso8601String()];
-                Log::log($failed ? 'error' : 'info', 'SEO monitoring check completed', $context);
+                Log::channel('seo-monitoring')->log($failed ? 'error' : 'info', 'SEO monitoring check completed', $context);
                 if ($notify) {
                     Notification::route('mail', config('seo-monitoring.alert_email'))
                         ->notify(new SeoMonitoringNotification($name, $issues, $recovered));
@@ -75,7 +75,7 @@ class SeoMonitoringService
                 return ! $failed;
             }) === true;
         } catch (Throwable $exception) {
-            Log::error('SEO monitoring infrastructure failed', ['check' => $name, 'exception_type' => $exception::class]);
+            Log::channel('seo-monitoring')->error('SEO monitoring infrastructure failed', ['check' => $name, 'exception_type' => $exception::class]);
 
             return false;
         }
