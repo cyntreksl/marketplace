@@ -115,10 +115,12 @@ class EloquentCheckoutRepository implements CheckoutRepository
     {
         $order->update(['status' => 'expired']);
         foreach ($order->sellerOrders()->with('items')->get() as $sellerOrder) {
-            foreach ($sellerOrder->items as $item) {
-                Listing::withTrashed()->whereKey($item->listing_id)->decrement('reserved_quantity', $item->quantity);
-                if ($item->listing_variant_id !== null) {
-                    ListingVariant::query()->whereKey($item->listing_variant_id)->decrement('reserved_quantity', $item->quantity);
+            if ($order->auction_offer_id === null) {
+                foreach ($sellerOrder->items as $item) {
+                    Listing::withTrashed()->whereKey($item->listing_id)->decrement('reserved_quantity', $item->quantity);
+                    if ($item->listing_variant_id !== null) {
+                        ListingVariant::query()->whereKey($item->listing_variant_id)->decrement('reserved_quantity', $item->quantity);
+                    }
                 }
             }
             $sellerOrder->update(['status' => 'expired']);

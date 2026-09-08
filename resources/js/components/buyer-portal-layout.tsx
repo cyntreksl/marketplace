@@ -9,6 +9,7 @@ import {
     RotateCcw,
     Settings,
     ShoppingCart,
+    Gavel,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
@@ -32,6 +33,7 @@ import { cn } from '@/lib/utils';
 import { home } from '@/routes';
 import { dashboard } from '@/routes/buyer';
 import { index as addressesIndex } from '@/routes/buyer/addresses';
+import { index as auctionOffersIndex } from '@/routes/buyer/auction-offers';
 import { index as feedbackIndex } from '@/routes/buyer/feedback';
 import { index as ordersIndex } from '@/routes/buyer/orders';
 import { index as paymentsIndex } from '@/routes/buyer/payments';
@@ -65,6 +67,12 @@ const navigation: {
         href: ordersIndex(),
         icon: Package,
         match: '/buyer/orders',
+    },
+    {
+        title: 'Auction offers',
+        href: auctionOffersIndex(),
+        icon: Gavel,
+        match: '/buyer/auction-offers',
     },
     {
         title: 'Payments',

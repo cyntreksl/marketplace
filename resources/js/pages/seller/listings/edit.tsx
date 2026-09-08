@@ -15,11 +15,23 @@ export default function EditSellerListing({
     selectedCategory,
     brands,
     sellerStatus,
+    auctionFlags,
+    auctionDefaults,
 }: {
     listing: SellerProductFormListing & { id: number };
     selectedCategory: CategoryOption | null;
     brands: Brand[];
     sellerStatus: string;
+    auctionFlags: {
+        enabled: boolean;
+        types: Record<'normal' | 'blind' | 'time_extended', boolean>;
+    };
+    auctionDefaults: {
+        durationDays: number;
+        extensionMinutes: number;
+        startsAt: string;
+        endsAt: string;
+    };
 }) {
     return (
         <SellerPortalLayout title="Edit product">
@@ -54,6 +66,8 @@ export default function EditSellerListing({
                     brands={brands}
                     listing={listing}
                     canSubmit={['approved', 'active'].includes(sellerStatus)}
+                    auctionFlags={auctionFlags}
+                    auctionDefaults={auctionDefaults}
                 />
             </main>
         </SellerPortalLayout>

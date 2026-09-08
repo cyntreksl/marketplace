@@ -162,6 +162,7 @@ test('product sitemap publishes high resolution R2 image entries', function () {
 });
 
 test('canonical auctions page contains only live auctions and is indexable when populated', function () {
+    enableAuctions();
     $liveListing = Listing::factory()->create(['listing_type' => 'auction', 'title' => 'Live camera']);
     Auction::factory()->for($liveListing)->create();
     $endedListing = Listing::factory()->create(['listing_type' => 'auction', 'title' => 'Ended watch']);

@@ -15,6 +15,7 @@ class MarketplaceModerationService
     public function __construct(
         private readonly AuditLogService $auditLogs,
         private readonly CatalogRepository $catalog,
+        private readonly AuctionService $auctions,
     ) {}
 
     public function reviewSeller(User $actor, SellerProfile $seller, string $status, string $reason): SellerProfile
@@ -35,7 +36,7 @@ class MarketplaceModerationService
 
     public function reviewListing(User $actor, Listing $listing, string $status, string $reason): Listing
     {
-        return DB::transaction(function () use ($actor, $listing, $status, $reason): Listing {
+        $listing = DB::transaction(function () use ($actor, $listing, $status, $reason): Listing {
             $listing = Listing::query()->lockForUpdate()->findOrFail($listing->id);
             $before = $listing->getAttributes();
 
@@ -52,6 +53,12 @@ class MarketplaceModerationService
 
             return $listing;
         });
+
+        if ($status === 'approved') {
+            $this->auctions->scheduleApprovedListing($listing->id);
+        }
+
+        return $listing;
     }
 
     private function approveTypedBrand(User $actor, Listing $listing, string $reason): void

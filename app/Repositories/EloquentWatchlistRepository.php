@@ -54,6 +54,12 @@ class EloquentWatchlistRepository implements WatchlistRepository
     /** @return array<int, string> */
     private function cardRelations(): array
     {
-        return ['category:id,name,slug', 'brand:id,name,slug', 'sellerProfile:id,store_name,slug', 'media', 'auction:id,listing_id,status,current_price,minimum_increment,ends_at'];
+        return [
+            'category:id,name,slug',
+            'brand:id,name,slug',
+            'sellerProfile:id,store_name,slug',
+            'media',
+            'activeAuction:auctions.id,auctions.listing_id,auctions.status,auctions.current_price,auctions.minimum_increment,auctions.ends_at',
+        ];
     }
 }

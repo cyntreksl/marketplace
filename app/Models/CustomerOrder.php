@@ -21,7 +21,7 @@ use Illuminate\Support\Carbon;
  * @property array<string, string|null>|null $meta_attribution
  * @property Carbon|null $created_at
  */
-#[Fillable(['checkout_token', 'number', 'buyer_id', 'status', 'subtotal', 'shipping_total', 'total', 'shipping_address', 'billing_address', 'meta_attribution'])]
+#[Fillable(['checkout_token', 'number', 'buyer_id', 'auction_offer_id', 'status', 'subtotal', 'shipping_total', 'total', 'shipping_address', 'billing_address', 'meta_attribution'])]
 #[Hidden(['meta_attribution'])]
 class CustomerOrder extends Model
 {
@@ -37,6 +37,12 @@ class CustomerOrder extends Model
     public function buyer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'buyer_id')->withTrashed();
+    }
+
+    /** @return BelongsTo<AuctionOffer, $this> */
+    public function auctionOffer(): BelongsTo
+    {
+        return $this->belongsTo(AuctionOffer::class);
     }
 
     /** @return HasMany<SellerOrder, $this> */

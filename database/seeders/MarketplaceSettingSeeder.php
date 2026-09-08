@@ -13,9 +13,12 @@ class MarketplaceSettingSeeder extends Seeder
     public function run(): void
     {
         foreach ([
+            'auction.enabled' => ['group' => 'auction', 'value' => false],
+            'auction.types.normal.enabled' => ['group' => 'auction', 'value' => true],
+            'auction.types.blind.enabled' => ['group' => 'auction', 'value' => true],
+            'auction.types.time_extended.enabled' => ['group' => 'auction', 'value' => true],
             'auction.default_duration_days' => ['group' => 'auction', 'value' => 7],
             'auction.anti_sniping_extension_minutes' => ['group' => 'auction', 'value' => 5],
-            'auction.winner_payment_deadline_hours' => ['group' => 'auction', 'value' => 48],
             'checkout.shipping_fee' => ['group' => 'checkout', 'value' => 600],
             'checkout.cod_maximum_amount' => ['group' => 'checkout', 'value' => 50000],
             'settlement.hold_days' => ['group' => 'settlement', 'value' => 7],

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\AuctionStatus;
 use Database\Factories\ListingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -92,7 +93,21 @@ class Listing extends Model
     /** @return HasOne<Auction, $this> */
     public function auction(): HasOne
     {
-        return $this->hasOne(Auction::class);
+        return $this->hasOne(Auction::class)->latestOfMany();
+    }
+
+    /** @return HasMany<Auction, $this> */
+    public function auctions(): HasMany
+    {
+        return $this->hasMany(Auction::class);
+    }
+
+    /** @return HasOne<Auction, $this> */
+    public function activeAuction(): HasOne
+    {
+        return $this->hasOne(Auction::class)
+            ->whereIn('status', AuctionStatus::nonTerminalValues())
+            ->latestOfMany();
     }
 
     /** @return HasMany<OrderItem, $this> */
@@ -151,11 +166,14 @@ class Listing extends Model
         $query->where('listings.status', 'approved')
             ->where('listings.is_active', true)
             ->where(function (Builder $query): void {
-                $query->where('listings.listing_type', '!=', 'auction')
-                    ->orWhereHas('auction', fn (Builder $query): Builder => $query
-                        ->where('status', 'live')
-                        ->where('starts_at', '<=', now())
-                        ->where('ends_at', '>', now()));
+                $query->where('listings.is_retail_enabled', true)
+                    ->orWhere('listings.is_wholesale_enabled', true)
+                    ->orWhereHas('auctions', fn (Builder $query): Builder => $query
+                        ->whereIn('status', [
+                            AuctionStatus::Scheduled,
+                            AuctionStatus::Live,
+                            AuctionStatus::OfferPending,
+                        ]));
             })
             ->whereHas('sellerProfile', fn (Builder $query) => $query
                 ->whereNull('seller_profiles.deleted_at')
@@ -179,7 +197,6 @@ class Listing extends Model
     public function scopeWholesaleVisible(Builder $query): void
     {
         $query->directlyVisible()
-            ->where('listings.listing_type', 'buy_now')
             ->where('listings.is_wholesale_enabled', true)
             ->whereNotNull('listings.wholesale_price')
             ->whereNotNull('listings.wholesale_min_quantity');

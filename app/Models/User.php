@@ -101,6 +101,18 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return $this->hasMany(BuyerAddress::class, 'buyer_id');
     }
 
+    /** @return HasMany<Bid, $this> */
+    public function bids(): HasMany
+    {
+        return $this->hasMany(Bid::class, 'buyer_id');
+    }
+
+    /** @return HasMany<AuctionOffer, $this> */
+    public function auctionOffers(): HasMany
+    {
+        return $this->hasMany(AuctionOffer::class, 'buyer_id');
+    }
+
     public function sendEmailVerificationNotification(): void
     {
         $this->notify(new QueuedVerifyEmailNotification);

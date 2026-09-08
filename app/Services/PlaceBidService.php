@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\AuctionStatus;
+use App\AuctionType;
 use App\Contracts\Repositories\AuctionRepository;
 use App\Exceptions\InvalidAuctionBidException;
 use App\Models\Auction;
@@ -17,21 +19,27 @@ class PlaceBidService
         private MarketplaceSettingsService $settings,
     ) {}
 
-    public function place(User $buyer, int $auctionId, string $maximumAmount): Bid
+    public function place(User $buyer, int $auctionId, string $amount): Bid
     {
-        return DB::transaction(function () use ($buyer, $auctionId, $maximumAmount): Bid {
+        return DB::transaction(function () use ($buyer, $auctionId, $amount): Bid {
             $auction = $this->auctions->findForUpdate($auctionId);
 
             $this->ensureBuyerCanBid($buyer, $auction);
 
-            $minimumBid = BigDecimal::of($auction->current_price ?? $auction->starting_price)
-                ->plus($auction->minimum_increment);
-
-            if (BigDecimal::of($maximumAmount)->isLessThan($minimumBid)) {
-                throw new InvalidAuctionBidException("Your maximum bid must be at least {$minimumBid}.");
+            $minimumBid = $this->minimumBid($auction, $buyer);
+            if (BigDecimal::of($amount)->isLessThan($minimumBid)) {
+                throw new InvalidAuctionBidException("Your bid must be at least {$minimumBid} per unit.");
             }
 
-            $bid = $this->recordBid($auction, $buyer, $maximumAmount, $minimumBid);
+            $bid = $this->auctions->createBid($auction, $buyer, [
+                'amount' => $amount,
+                'maximum_amount' => null,
+                'is_proxy' => false,
+            ]);
+
+            if ($auction->type !== AuctionType::Blind) {
+                $this->auctions->save($auction, ['current_price' => $amount]);
+            }
 
             $this->extendAuctionWhenEndingSoon($auction);
 
@@ -41,8 +49,16 @@ class PlaceBidService
 
     private function ensureBuyerCanBid(User $buyer, Auction $auction): void
     {
-        if ($auction->status !== 'live' || $auction->starts_at->isFuture() || $auction->ends_at->isPast()) {
+        if (! $this->settings->auctionTypeEnabled($auction->type)) {
+            throw new InvalidAuctionBidException('Bidding is currently disabled for this auction type.');
+        }
+
+        if ($auction->status !== AuctionStatus::Live || $auction->starts_at->isFuture() || $auction->ends_at->lessThanOrEqualTo(now())) {
             throw new InvalidAuctionBidException('This auction is not accepting bids.');
+        }
+
+        if (! $buyer->is_active || ! $buyer->hasVerifiedEmail()) {
+            throw new InvalidAuctionBidException('Verify an active account before placing a bid.');
         }
 
         if ($auction->listing->sellerProfile->user_id === $buyer->id) {
@@ -50,39 +66,34 @@ class PlaceBidService
         }
     }
 
-    private function recordBid(Auction $auction, User $buyer, string $maximumAmount, BigDecimal $minimumBid): Bid
+    private function minimumBid(Auction $auction, User $buyer): BigDecimal
     {
-        $leadingBid = $auction->bids->sortByDesc(fn (Bid $bid) => $bid->maximum_amount ?? $bid->amount)->first();
-        $leadingMaximum = $leadingBid === null ? null : (string) ($leadingBid->maximum_amount ?? $leadingBid->amount);
+        if ($auction->type === AuctionType::Blind) {
+            $ownHighestBid = $auction->bids
+                ->where('buyer_id', $buyer->id)
+                ->sortByDesc('amount')
+                ->first();
 
-        $maximum = BigDecimal::of($maximumAmount);
-        $amount = $leadingMaximum === null
-            ? $minimumBid
-            : ($maximum->isLessThan(BigDecimal::of($leadingMaximum)->plus($auction->minimum_increment))
-                ? $maximum
-                : BigDecimal::of($leadingMaximum)->plus($auction->minimum_increment));
-
-        $bid = Bid::create([
-            'auction_id' => $auction->id,
-            'buyer_id' => $buyer->id,
-            'amount' => (string) $amount,
-            'maximum_amount' => $maximumAmount,
-            'is_proxy' => $maximum->isGreaterThan($amount),
-        ]);
-
-        if ($leadingMaximum === null || $maximum->isGreaterThan(BigDecimal::of($leadingMaximum))) {
-            $auction->update(['current_price' => (string) $amount]);
+            return $ownHighestBid === null
+                ? BigDecimal::of($auction->starting_price)
+                : BigDecimal::of($ownHighestBid->amount)->plus($auction->minimum_increment);
         }
 
-        return $bid;
+        return $auction->current_price === null
+            ? BigDecimal::of($auction->starting_price)
+            : BigDecimal::of($auction->current_price)->plus($auction->minimum_increment);
     }
 
     private function extendAuctionWhenEndingSoon(Auction $auction): void
     {
-        $extensionMinutes = $this->settings->integer('auction.anti_sniping_extension_minutes', 5);
+        if ($auction->type !== AuctionType::TimeExtended) {
+            return;
+        }
+
+        $extensionMinutes = $auction->extension_window_minutes;
 
         if ($auction->ends_at->lessThanOrEqualTo(now()->addMinutes($extensionMinutes))) {
-            $auction->update(['ends_at' => $auction->ends_at->addMinutes($extensionMinutes)]);
+            $this->auctions->save($auction, ['ends_at' => now()->addMinutes($extensionMinutes)]);
         }
     }
 }

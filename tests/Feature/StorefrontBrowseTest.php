@@ -82,6 +82,7 @@ test('storefront browsing filters and sorts by the displayed effective price', f
         'title' => 'Auction jacket',
         'condition' => 'refurbished',
         'listing_type' => 'auction',
+        'is_retail_enabled' => false,
         'location' => 'Galle',
         'price' => null,
         'created_at' => now()->subDay(),

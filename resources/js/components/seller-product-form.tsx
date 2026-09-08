@@ -217,6 +217,18 @@ export type SellerProductFormListing = {
     media?: ListingMedia[];
     variant_options?: StoredVariantOption[];
     variants?: StoredVariant[];
+    auction?: {
+        id: number;
+        type: 'normal' | 'blind' | 'time_extended';
+        quantity: number;
+        starting_price: string;
+        minimum_increment: string;
+        extension_window_minutes: number;
+        starts_at: string;
+        ends_at: string;
+        listing_variant_id: number | null;
+        variant?: { sku: string } | null;
+    } | null;
 };
 
 type FormDefinition = { action: string; method: 'post' | 'put' };
@@ -241,6 +253,17 @@ type ProductFormData = {
     compare_price: string;
     is_retail_enabled: boolean;
     is_wholesale_enabled: boolean;
+    auction_enabled: boolean;
+    auction: {
+        type: 'normal' | 'blind' | 'time_extended';
+        variant_sku: string;
+        quantity: number | '';
+        starting_price: string;
+        minimum_increment: string;
+        extension_window_minutes: number | '';
+        starts_at: string;
+        ends_at: string;
+    };
     wholesale_tiers: WholesaleTierInput[];
     low_stock_threshold: number | '';
     allow_backorders: boolean;
@@ -297,6 +320,16 @@ export function SellerProductForm({
     cancelHref,
     mode = 'seller',
     defaultChannel = 'retail',
+    auctionFlags = {
+        enabled: false,
+        types: { normal: true, blind: true, time_extended: true },
+    },
+    auctionDefaults = {
+        durationDays: 7,
+        extensionMinutes: 5,
+        startsAt: '',
+        endsAt: '',
+    },
 }: {
     form: FormDefinition;
     initialCategory: CategoryOption | null;
@@ -306,6 +339,16 @@ export function SellerProductForm({
     cancelHref?: string;
     mode?: 'admin' | 'seller';
     defaultChannel?: 'retail' | 'wholesale';
+    auctionFlags?: {
+        enabled: boolean;
+        types: Record<'normal' | 'blind' | 'time_extended', boolean>;
+    };
+    auctionDefaults?: {
+        durationDays: number;
+        extensionMinutes: number;
+        startsAt: string;
+        endsAt: string;
+    };
 }) {
     const isAdmin = mode === 'admin';
     const [selectedCategory, setSelectedCategory] =
@@ -421,6 +464,23 @@ export function SellerProductForm({
             listing?.is_retail_enabled ?? defaultChannel === 'retail',
         is_wholesale_enabled:
             listing?.is_wholesale_enabled ?? defaultChannel === 'wholesale',
+        auction_enabled: listing?.auction != null,
+        auction: {
+            type: listing?.auction?.type ?? 'normal',
+            variant_sku: listing?.auction?.variant?.sku ?? '',
+            quantity: listing?.auction?.quantity ?? 1,
+            starting_price: listing?.auction?.starting_price ?? '',
+            minimum_increment: listing?.auction?.minimum_increment ?? '',
+            extension_window_minutes:
+                listing?.auction?.extension_window_minutes ??
+                auctionDefaults.extensionMinutes,
+            starts_at:
+                listing?.auction?.starts_at?.slice(0, 16) ??
+                auctionDefaults.startsAt.slice(0, 16),
+            ends_at:
+                listing?.auction?.ends_at?.slice(0, 16) ??
+                auctionDefaults.endsAt.slice(0, 16),
+        },
         wholesale_tiers: initialWholesaleTiers(
             listing?.wholesale_price_tiers,
             listing?.wholesale_min_quantity,
@@ -1246,12 +1306,16 @@ export function SellerProductForm({
                         >
                             <select
                                 value={
-                                    form.data.is_retail_enabled &&
-                                    form.data.is_wholesale_enabled
-                                        ? 'both'
-                                        : form.data.is_wholesale_enabled
-                                          ? 'wholesale'
-                                          : 'retail'
+                                    form.data.auction_enabled &&
+                                    !form.data.is_retail_enabled &&
+                                    !form.data.is_wholesale_enabled
+                                        ? 'auction'
+                                        : form.data.is_retail_enabled &&
+                                            form.data.is_wholesale_enabled
+                                          ? 'both'
+                                          : form.data.is_wholesale_enabled
+                                            ? 'wholesale'
+                                            : 'retail'
                                 }
                                 onChange={(event) => {
                                     const channel = event.target.value;
@@ -1263,6 +1327,9 @@ export function SellerProductForm({
                                         is_wholesale_enabled:
                                             channel === 'wholesale' ||
                                             channel === 'both',
+                                        auction_enabled:
+                                            channel === 'auction' ||
+                                            form.data.auction_enabled,
                                         wholesale_tiers:
                                             form.data.wholesale_tiers.length > 0
                                                 ? form.data.wholesale_tiers
@@ -1290,14 +1357,292 @@ export function SellerProductForm({
                                 <option value="both">
                                     Retail and wholesale
                                 </option>
+                                {auctionFlags.enabled && (
+                                    <option value="auction">
+                                        Auction only
+                                    </option>
+                                )}
                             </select>
                         </Field>
+                        {auctionFlags.enabled && (
+                            <label className="mt-4 flex items-start gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+                                <input
+                                    type="checkbox"
+                                    checked={form.data.auction_enabled}
+                                    onChange={(event) =>
+                                        form.setData(
+                                            'auction_enabled',
+                                            event.target.checked,
+                                        )
+                                    }
+                                    className="mt-1 size-5 accent-primary"
+                                />
+                                <span>
+                                    <span className="block text-sm font-bold">
+                                        Add an auction offer
+                                    </span>
+                                    <span className="mt-1 block text-sm text-slate-500">
+                                        The product follows normal moderation.
+                                        Its auction reserves stock only after
+                                        approval.
+                                    </span>
+                                </span>
+                            </label>
+                        )}
                         <p className="mt-2 text-sm text-slate-500">
                             Products enabled for both channels switch to the
                             wholesale unit price automatically when the order
                             reaches its minimum quantity.
                         </p>
                     </FormCard>
+                    {form.data.auction_enabled && (
+                        <FormCard
+                            title="Auction Offer"
+                            icon={<Store className="size-5" />}
+                        >
+                            <div className="grid gap-5 md:grid-cols-3">
+                                <Field
+                                    label="Auction type"
+                                    error={errorFor('auction.type')}
+                                    required
+                                >
+                                    <select
+                                        value={form.data.auction.type}
+                                        onChange={(event) =>
+                                            form.setData('auction', {
+                                                ...form.data.auction,
+                                                type: event.target
+                                                    .value as ProductFormData['auction']['type'],
+                                            })
+                                        }
+                                        className={inputClass(
+                                            errorFor('auction.type'),
+                                        )}
+                                    >
+                                        <option
+                                            value="normal"
+                                            disabled={
+                                                !auctionFlags.types.normal
+                                            }
+                                        >
+                                            Normal
+                                        </option>
+                                        <option
+                                            value="blind"
+                                            disabled={!auctionFlags.types.blind}
+                                        >
+                                            Blind
+                                        </option>
+                                        <option
+                                            value="time_extended"
+                                            disabled={
+                                                !auctionFlags.types
+                                                    .time_extended
+                                            }
+                                        >
+                                            Time extended
+                                        </option>
+                                    </select>
+                                </Field>
+                                <Field
+                                    label="Lot quantity"
+                                    error={errorFor('auction.quantity')}
+                                    required
+                                >
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={form.data.auction.quantity}
+                                        onChange={(event) =>
+                                            form.setData('auction', {
+                                                ...form.data.auction,
+                                                quantity:
+                                                    event.target.value === ''
+                                                        ? ''
+                                                        : Number(
+                                                              event.target
+                                                                  .value,
+                                                          ),
+                                            })
+                                        }
+                                        className={inputClass(
+                                            errorFor('auction.quantity'),
+                                        )}
+                                    />
+                                </Field>
+                                {isVariantProduct && (
+                                    <Field
+                                        label="Auction variant"
+                                        error={errorFor('auction.variant_sku')}
+                                        required
+                                    >
+                                        <select
+                                            value={
+                                                form.data.auction.variant_sku
+                                            }
+                                            onChange={(event) =>
+                                                form.setData('auction', {
+                                                    ...form.data.auction,
+                                                    variant_sku:
+                                                        event.target.value,
+                                                })
+                                            }
+                                            className={inputClass(
+                                                errorFor('auction.variant_sku'),
+                                            )}
+                                        >
+                                            <option value="">
+                                                Choose a variant
+                                            </option>
+                                            {form.data.variants
+                                                .filter(
+                                                    (variant) =>
+                                                        variant.is_active &&
+                                                        variant.sku,
+                                                )
+                                                .map((variant) => (
+                                                    <option
+                                                        key={variant.sku}
+                                                        value={variant.sku}
+                                                    >
+                                                        {variant.selections.join(
+                                                            ' / ',
+                                                        )}{' '}
+                                                        · {variant.sku}
+                                                    </option>
+                                                ))}
+                                        </select>
+                                    </Field>
+                                )}
+                                <Field
+                                    label="Starting price per unit (LKR)"
+                                    error={errorFor('auction.starting_price')}
+                                    required
+                                >
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        step="0.01"
+                                        value={form.data.auction.starting_price}
+                                        onChange={(event) =>
+                                            form.setData('auction', {
+                                                ...form.data.auction,
+                                                starting_price:
+                                                    event.target.value,
+                                            })
+                                        }
+                                        className={inputClass(
+                                            errorFor('auction.starting_price'),
+                                        )}
+                                    />
+                                </Field>
+                                <Field
+                                    label="Minimum increment (LKR)"
+                                    error={errorFor(
+                                        'auction.minimum_increment',
+                                    )}
+                                    required
+                                >
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        step="0.01"
+                                        value={
+                                            form.data.auction.minimum_increment
+                                        }
+                                        onChange={(event) =>
+                                            form.setData('auction', {
+                                                ...form.data.auction,
+                                                minimum_increment:
+                                                    event.target.value,
+                                            })
+                                        }
+                                        className={inputClass(
+                                            errorFor(
+                                                'auction.minimum_increment',
+                                            ),
+                                        )}
+                                    />
+                                </Field>
+                                {form.data.auction.type === 'time_extended' && (
+                                    <Field
+                                        label="Extension window (minutes)"
+                                        error={errorFor(
+                                            'auction.extension_window_minutes',
+                                        )}
+                                        required
+                                    >
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="60"
+                                            value={
+                                                form.data.auction
+                                                    .extension_window_minutes
+                                            }
+                                            onChange={(event) =>
+                                                form.setData('auction', {
+                                                    ...form.data.auction,
+                                                    extension_window_minutes:
+                                                        Number(
+                                                            event.target.value,
+                                                        ),
+                                                })
+                                            }
+                                            className={inputClass(
+                                                errorFor(
+                                                    'auction.extension_window_minutes',
+                                                ),
+                                            )}
+                                        />
+                                    </Field>
+                                )}
+                                <Field
+                                    label="Starts at"
+                                    error={errorFor('auction.starts_at')}
+                                    required
+                                >
+                                    <input
+                                        type="datetime-local"
+                                        value={form.data.auction.starts_at}
+                                        onChange={(event) =>
+                                            form.setData('auction', {
+                                                ...form.data.auction,
+                                                starts_at: event.target.value,
+                                            })
+                                        }
+                                        className={inputClass(
+                                            errorFor('auction.starts_at'),
+                                        )}
+                                    />
+                                </Field>
+                                <Field
+                                    label="Ends at"
+                                    error={errorFor('auction.ends_at')}
+                                    required
+                                >
+                                    <input
+                                        type="datetime-local"
+                                        value={form.data.auction.ends_at}
+                                        onChange={(event) =>
+                                            form.setData('auction', {
+                                                ...form.data.auction,
+                                                ends_at: event.target.value,
+                                            })
+                                        }
+                                        className={inputClass(
+                                            errorFor('auction.ends_at'),
+                                        )}
+                                    />
+                                </Field>
+                            </div>
+                            <p className="mt-4 text-sm text-slate-500">
+                                Once scheduled, sellers cannot edit or cancel
+                                this auction. Auction orders accept Stripe card
+                                payment only.
+                            </p>
+                        </FormCard>
+                    )}
                     <FormCard
                         title="Basic Information"
                         icon={<Info className="size-5" />}

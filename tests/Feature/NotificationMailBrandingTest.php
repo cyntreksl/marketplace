@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Notifications\AuctionOfferNotification;
 use App\Notifications\BuyerOrderStatusNotification;
 use App\Notifications\NewReturnRequestNotification;
 use App\Notifications\OrderAcknowledgmentNotification;
@@ -155,6 +156,7 @@ test('the branded email inventory covers every application notification', functi
         ->all();
 
     $coveredClasses = collect([
+        AuctionOfferNotification::class,
         BuyerOrderStatusNotification::class,
         NewReturnRequestNotification::class,
         OrderAcknowledgmentNotification::class,

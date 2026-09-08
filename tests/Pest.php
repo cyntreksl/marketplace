@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\MarketplaceSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -47,6 +48,22 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/** @param list<string> $types */
+function enableAuctions(array $types = ['normal', 'blind', 'time_extended']): void
+{
+    MarketplaceSetting::query()->updateOrCreate(
+        ['key' => 'auction.enabled'],
+        ['group' => 'auction', 'value' => true],
+    );
+
+    foreach (['normal', 'blind', 'time_extended'] as $type) {
+        MarketplaceSetting::query()->updateOrCreate(
+            ['key' => "auction.types.{$type}.enabled"],
+            ['group' => 'auction', 'value' => in_array($type, $types, true)],
+        );
+    }
 }
 
 /** @return array{checkout_token: string, review_hash: string} */

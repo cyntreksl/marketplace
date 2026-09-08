@@ -116,16 +116,17 @@ test('an operations admin can view dashboard and moderation queues', function ()
 });
 
 test('a buyer receives validation feedback when an auction bid cannot be accepted', function () {
+    enableAuctions();
     $auction = Auction::factory()->create()->load('listing.sellerProfile.user');
     $buyer = User::factory()->create();
 
     $this->actingAs($buyer)
-        ->post(route('auctions.bids.store', $auction), ['maximum_amount' => '12000.00'])
+        ->post(route('auctions.bids.store', $auction), ['amount' => '12000.00'])
         ->assertRedirect()
         ->assertSessionHasNoErrors();
 
     $this->actingAs($auction->listing->sellerProfile->user)
-        ->post(route('auctions.bids.store', $auction), ['maximum_amount' => '12500.00'])
+        ->post(route('auctions.bids.store', $auction), ['amount' => '12500.00'])
         ->assertRedirect()
-        ->assertSessionHasErrors('maximum_amount');
+        ->assertSessionHasErrors('amount');
 });

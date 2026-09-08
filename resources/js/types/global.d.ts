@@ -1,4 +1,5 @@
 import type { SeoPayload } from '@/components/seo-head';
+import type { AuctionFlags } from '@/types/auction';
 import type { Auth } from '@/types/auth';
 import type { CheckoutCart } from '@/types/checkout';
 import type { MarketplaceDetails } from '@/types/marketplace';
@@ -22,6 +23,7 @@ declare module '@inertiajs/core' {
                 cart_added: boolean;
             };
             marketplace: MarketplaceDetails;
+            auctionFlags: AuctionFlags;
             seo: SeoPayload;
             sidebarOpen: boolean;
             [key: string]: unknown;

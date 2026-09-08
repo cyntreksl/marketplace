@@ -12,9 +12,9 @@ class AuctionBidController extends Controller
     public function store(PlaceBidRequest $request, int $auction, PlaceBidService $bids): RedirectResponse
     {
         try {
-            $bids->place($request->user(), $auction, $request->validated('maximum_amount'));
+            $bids->place($request->user(), $auction, (string) $request->validated('amount'));
         } catch (InvalidAuctionBidException $exception) {
-            return back()->withErrors(['maximum_amount' => $exception->getMessage()]);
+            return back()->withErrors(['amount' => $exception->getMessage()]);
         }
 
         return back();

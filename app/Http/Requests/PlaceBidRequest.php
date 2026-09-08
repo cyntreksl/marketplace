@@ -22,7 +22,7 @@ class PlaceBidRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'maximum_amount' => ['required', 'decimal:0,2', 'min:1'],
+            'amount' => ['required', 'decimal:0,2', 'min:1'],
         ];
     }
 }

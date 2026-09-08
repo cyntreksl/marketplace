@@ -9,6 +9,7 @@ use App\Contracts\Repositories\SellerStoreRepository;
 use App\Contracts\Repositories\WatchlistRepository;
 use App\Models\Category;
 use App\Models\Listing;
+use App\Services\MarketplaceSettingsService;
 use App\Services\SellerSummaryService;
 use App\Services\SeoHeadService;
 use App\Services\StaticMediaService;
@@ -37,7 +38,7 @@ test('browse data combines listing results navigation context and filter options
         $mock->shouldReceive('availableBrands')->once()->with('retail')->andReturn(collect());
     });
 
-    $data = (new StorefrontService($listingRepository, $catalogRepository, Mockery::mock(PromotionRepository::class), Mockery::mock(ReviewRepository::class), Mockery::mock(SeoHeadService::class), Mockery::mock(StaticMediaService::class), Mockery::mock(ProductQuestionRepository::class), Mockery::mock(WatchlistRepository::class), Mockery::mock(SellerStoreRepository::class), new SellerSummaryService))->browseData([
+    $data = (new StorefrontService($listingRepository, $catalogRepository, Mockery::mock(PromotionRepository::class), Mockery::mock(ReviewRepository::class), Mockery::mock(SeoHeadService::class), Mockery::mock(StaticMediaService::class), Mockery::mock(ProductQuestionRepository::class), Mockery::mock(WatchlistRepository::class), Mockery::mock(SellerStoreRepository::class), new SellerSummaryService, Mockery::mock(MarketplaceSettingsService::class)))->browseData([
         'category' => 'fashion',
         'sort' => 'newest',
     ]);
@@ -67,6 +68,7 @@ test('listing details include an empty media collection and category trail', fun
     $listing->setRelation('media', collect());
     $listing->setRelation('sellerProfile', null);
     $listing->setRelation('auction', null);
+    $listing->setRelation('activeAuction', null);
     $listing->setRelation('variantOptions', collect());
     $listing->setRelation('variants', collect());
     $listing->setRelation('wholesalePriceTiers', collect());
@@ -103,7 +105,7 @@ test('listing details include an empty media collection and category trail', fun
         $mock->shouldReceive('activeFlashSale')->once()->andReturnNull();
     });
 
-    $data = (new StorefrontService($listingRepository, $catalogRepository, $promotionRepository, $reviewRepository, $seo, Mockery::mock(StaticMediaService::class), $questionRepository, Mockery::mock(WatchlistRepository::class), Mockery::mock(SellerStoreRepository::class), new SellerSummaryService))->listingDetailsData('modern-laptop');
+    $data = (new StorefrontService($listingRepository, $catalogRepository, $promotionRepository, $reviewRepository, $seo, Mockery::mock(StaticMediaService::class), $questionRepository, Mockery::mock(WatchlistRepository::class), Mockery::mock(SellerStoreRepository::class), new SellerSummaryService, Mockery::mock(MarketplaceSettingsService::class)))->listingDetailsData('modern-laptop');
 
     expect($data['listing']['media'])->toBeEmpty()
         ->and($data['head'])->toHaveCount(1)

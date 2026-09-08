@@ -83,13 +83,14 @@ test('listing details include six related items and other products from the sell
 });
 
 test('a buyer can place a valid bid and cannot bid on their own auction', function () {
+    enableAuctions();
     $auction = Auction::factory()->create()->load('listing.sellerProfile.user');
     $buyer = User::factory()->create();
 
     $bid = app(PlaceBidService::class)->place($buyer, $auction->id, '12000.00');
 
     expect($bid)->toBeInstanceOf(Bid::class)
-        ->and($auction->refresh()->current_price)->toEqual('10500.00');
+        ->and($auction->refresh()->current_price)->toEqual('12000.00');
 
     expect(fn () => app(PlaceBidService::class)->place($auction->listing->sellerProfile->user, $auction->id, '12500.00'))
         ->toThrow(InvalidAuctionBidException::class);

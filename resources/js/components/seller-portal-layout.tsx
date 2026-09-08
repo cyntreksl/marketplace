@@ -10,6 +10,7 @@ import {
     Settings,
     Store,
     Warehouse,
+    Gavel,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
@@ -33,6 +34,7 @@ import { cn } from '@/lib/utils';
 import { home } from '@/routes';
 import { index as questionIndex } from '@/routes/product-questions';
 import { dashboard } from '@/routes/seller';
+import { index as auctionsIndex } from '@/routes/seller/auctions';
 import { index as listingsIndex } from '@/routes/seller/listings';
 import { edit as onboardingEdit } from '@/routes/seller/onboarding';
 import { index as ordersIndex } from '@/routes/seller/orders';
@@ -87,6 +89,12 @@ const groups: {
                 href: wholesaleIndex(),
                 icon: Warehouse,
                 match: '/seller/wholesale',
+            },
+            {
+                title: 'Auctions',
+                href: auctionsIndex(),
+                icon: Gavel,
+                match: '/seller/auctions',
             },
             {
                 title: 'Customer questions',

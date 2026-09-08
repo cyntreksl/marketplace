@@ -64,6 +64,7 @@ test('blank and invalid storefront searches are not tracked', function () {
 });
 
 test('searches are tracked across storefront browse contexts', function () {
+    enableAuctions();
     $category = Category::factory()->create(['slug' => 'electronics']);
     $brand = Brand::factory()->create(['slug' => 'acme']);
     $auctionListing = Listing::factory()->create([

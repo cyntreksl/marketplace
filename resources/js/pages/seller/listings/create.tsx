@@ -8,9 +8,21 @@ type Brand = { id: number; name: string };
 export default function CreateSellerListing({
     brands,
     sellerStatus,
+    auctionFlags,
+    auctionDefaults,
 }: {
     brands: Brand[];
     sellerStatus: string;
+    auctionFlags: {
+        enabled: boolean;
+        types: Record<'normal' | 'blind' | 'time_extended', boolean>;
+    };
+    auctionDefaults: {
+        durationDays: number;
+        extensionMinutes: number;
+        startsAt: string;
+        endsAt: string;
+    };
 }) {
     return (
         <SellerPortalLayout title="Add new product">
@@ -21,6 +33,8 @@ export default function CreateSellerListing({
                     initialCategory={null}
                     brands={brands}
                     canSubmit={['approved', 'active'].includes(sellerStatus)}
+                    auctionFlags={auctionFlags}
+                    auctionDefaults={auctionDefaults}
                 />
             </main>
         </SellerPortalLayout>

@@ -50,11 +50,15 @@ class SellerListingController extends Controller
         $seller = $request->user()->sellerProfile()->firstOrFail();
         $listing = $this->listings->sellerProduct($request->user(), $listing->id);
 
+        $createData = $this->listings->sellerCreateData($request->user());
+
         return Inertia::render('seller/listings/edit', [
             'listing' => $listing,
             'sellerStatus' => $seller->status,
             'selectedCategory' => $listing->category === null ? null : $this->catalog->categoryOption($listing->category),
             'brands' => $this->catalog->listingBrands(),
+            'auctionFlags' => $createData['auctionFlags'],
+            'auctionDefaults' => $createData['auctionDefaults'],
         ]);
     }
 

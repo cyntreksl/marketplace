@@ -35,7 +35,7 @@ class EloquentPromotionRepository implements PromotionRepository
                 ->retailVisible()
                 ->withAvg('reviews as rating_average', 'rating')
                 ->withCount('reviews')
-                ->with(['brand:id,name,slug', 'category:id,name,slug', 'media', 'sellerProfile:id,store_name,slug', 'auction'])])
+                ->with(['brand:id,name,slug', 'category:id,name,slug', 'media', 'sellerProfile:id,store_name,slug', 'activeAuction'])])
             ->orderBy('sort_order')
             ->first();
     }

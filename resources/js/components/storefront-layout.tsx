@@ -17,6 +17,7 @@ import type { StorefrontCategory } from '@/components/storefront-category-menu';
 import { StorefrontFooter } from '@/components/storefront-footer';
 import { StorefrontMobileNavigation } from '@/components/storefront-mobile-navigation';
 import { home, login } from '@/routes';
+import { index as auctionsIndex } from '@/routes/auctions';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
 import { index as listingsIndex } from '@/routes/listings';
 import {
@@ -80,7 +81,9 @@ export function StorefrontLayout({
     const navigation = [
         ['Shop', '/listings'],
         ['Wholesale', wholesaleIndex.url()],
-        ['Auctions', '/auctions'],
+        ...(props.auctionFlags.enabled
+            ? ([['Auctions', auctionsIndex.url()]] as const)
+            : []),
         ['Deals', '/collections/deals'],
         ['Brands', '/brands'],
         ['Buying', '/buying'],

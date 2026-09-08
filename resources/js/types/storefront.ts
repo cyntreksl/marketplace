@@ -60,10 +60,15 @@ export type StorefrontListingMedia = {
 export type StorefrontListingAuction = {
     id: number;
     status: string;
+    type: 'normal' | 'blind' | 'time_extended';
+    quantity: number;
+    startingPrice: string;
     currentPrice: string | null;
     minimumIncrement: string | null;
     endsAt: string;
     bidCount: number | null;
+    viewerBid: string | null;
+    canBid: boolean;
 };
 
 export type StorefrontWholesalePriceTier = {

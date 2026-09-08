@@ -13,6 +13,7 @@ import {
     ShoppingBag,
     Store,
     WalletCards,
+    Gavel,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Fragment } from 'react';
@@ -36,6 +37,7 @@ import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
 import { home } from '@/routes';
 import { dashboard as adminDashboard } from '@/routes/admin';
+import { index as adminAuctionsIndex } from '@/routes/admin/auctions';
 import { index as adminBrandsIndex } from '@/routes/admin/brands';
 import { index as adminCategoriesIndex } from '@/routes/admin/categories';
 import { index as adminHomepageIndex } from '@/routes/admin/homepage';
@@ -114,6 +116,12 @@ const portalDetails: Record<Portal, PortalDetails> = {
                 title: 'Listing reviews',
                 href: adminListingsIndex(),
                 icon: ClipboardCheck,
+                group: 'Marketplace',
+            },
+            {
+                title: 'Auctions',
+                href: adminAuctionsIndex(),
+                icon: Gavel,
                 group: 'Marketplace',
             },
             {

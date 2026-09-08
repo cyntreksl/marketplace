@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\AuctionStatus;
 use App\Contracts\Repositories\CatalogRepository;
 use App\Contracts\Repositories\ListingRepository;
 use App\Models\Listing;
@@ -26,12 +27,21 @@ class EloquentListingRepository implements ListingRepository
 
     public function paginatePublic(array $filters, string $channel = 'retail', int $perPage = 18): LengthAwarePaginator
     {
-        $effectivePrice = $channel === 'wholesale'
-            ? 'CAST(listings.wholesale_price AS DECIMAL(12, 2))'
-            : 'CAST(COALESCE(auctions.current_price, listings.sale_price, listings.price) AS DECIMAL(12, 2))';
+        if (($filters['listing_type'] ?? null) === 'auction') {
+            $channel = 'auction';
+        }
+        $effectivePrice = match ($channel) {
+            'wholesale' => 'CAST(listings.wholesale_price AS DECIMAL(12, 2))',
+            'auction' => 'CAST(COALESCE(auctions.current_price, auctions.starting_price) AS DECIMAL(12, 2))',
+            default => 'CAST(CASE WHEN listings.is_retail_enabled = 1 THEN COALESCE(listings.sale_price, listings.price) ELSE COALESCE(auctions.current_price, auctions.starting_price) END AS DECIMAL(12, 2))',
+        };
 
         $query = $this->publicQuery($channel)
-            ->leftJoin('auctions', 'auctions.listing_id', '=', 'listings.id')
+            ->leftJoin('auctions', function ($join): void {
+                $join->on('auctions.listing_id', '=', 'listings.id')
+                    ->where('auctions.status', '=', AuctionStatus::Live->value)
+                    ->whereNull('auctions.deleted_at');
+            })
             ->when($filters['collection'] ?? null, function (Builder $query, string $collection): void {
                 match ($collection) {
                     'featured' => $query->where('listings.is_featured', true),
@@ -47,7 +57,7 @@ class EloquentListingRepository implements ListingRepository
             ->when($filters['category'] ?? null, fn ($query, string $category) => $query->whereIn('listings.category_id', $this->catalog->activeDescendantIdsForSlug($category)))
             ->when($filters['brand'] ?? null, fn ($query, string $brand) => $query->whereHas('brand', fn ($query) => $query->where('slug', $brand)))
             ->when($filters['condition'] ?? null, fn ($query, string $condition) => $query->where('listings.condition', $condition))
-            ->when($filters['listing_type'] ?? null, fn ($query, string $listingType) => $query->where('listings.listing_type', $listingType))
+            ->when(($filters['listing_type'] ?? null) === 'buy_now', fn ($query) => $query->where('listings.is_retail_enabled', true))
             ->when($filters['location'] ?? null, fn ($query, string $location) => $query->where('listings.location', 'like', "%{$location}%"))
             ->when($filters['min_price'] ?? null, fn ($query, int|float|string $minimum) => $query->whereRaw("{$effectivePrice} >= ?", [$minimum]))
             ->when($filters['max_price'] ?? null, fn ($query, int|float|string $maximum) => $query->whereRaw("{$effectivePrice} <= ?", [$maximum]));
@@ -63,7 +73,7 @@ class EloquentListingRepository implements ListingRepository
         return $this->directPublicQuery()
             ->with([
                 'sellerProfile.user:id,name',
-                'auction.bids.buyer:id,name',
+                'activeAuction.bids',
                 'variantOptions.values',
                 'wholesalePriceTiers',
                 'variants.optionValues.option',
@@ -93,7 +103,10 @@ class EloquentListingRepository implements ListingRepository
     {
         return Listing::query()
             ->directlyVisible()
-            ->where('listings.listing_type', 'auction')
+            ->whereHas('auctions', fn (Builder $query): Builder => $query
+                ->where('status', AuctionStatus::Live)
+                ->where('starts_at', '<=', now())
+                ->where('ends_at', '>', now()))
             ->count();
     }
 
@@ -291,7 +304,7 @@ class EloquentListingRepository implements ListingRepository
     {
         $query = $seller->listings()
             ->with([
-                'auction:id,listing_id,status,starts_at,ends_at',
+                'auction:auctions.id,auctions.listing_id,auctions.status,auctions.starts_at,auctions.ends_at',
                 'brand:id,name',
                 'category:id,name',
             ])
@@ -450,8 +463,19 @@ class EloquentListingRepository implements ListingRepository
 
         if ($channel === 'wholesale') {
             $query->wholesaleVisible();
+        } elseif ($channel === 'auction') {
+            $query->directlyVisible()->whereHas('auctions', fn (Builder $query): Builder => $query
+                ->where('status', AuctionStatus::Live)
+                ->where('starts_at', '<=', now())
+                ->where('ends_at', '>', now()));
         } else {
-            $query->retailVisible()->publiclyVisible();
+            $query->directlyVisible()->where(function (Builder $query): void {
+                $query->where('listings.is_retail_enabled', true)
+                    ->orWhereHas('auctions', fn (Builder $query): Builder => $query
+                        ->where('status', AuctionStatus::Live)
+                        ->where('starts_at', '<=', now())
+                        ->where('ends_at', '>', now()));
+            });
         }
 
         return $query;
@@ -476,16 +500,18 @@ class EloquentListingRepository implements ListingRepository
             'category:id,name,slug,google_product_category_id,return_window_days,cod_enabled',
             'media:id,listing_id,disk,path,type,sort_order,variant_version,variants,processing_status',
             'sellerProfile:id,store_name,slug',
-            'auction:id,listing_id,status,current_price,ends_at',
+            'activeAuction',
         ];
     }
 
     /** @param Builder<Listing> $query */
     private function applySort(Builder $query, string $sort, string $channel = 'retail'): void
     {
-        $effectivePrice = $channel === 'wholesale'
-            ? 'CAST(listings.wholesale_price AS DECIMAL(12, 2))'
-            : 'CAST(COALESCE(auctions.current_price, listings.sale_price, listings.price) AS DECIMAL(12, 2))';
+        $effectivePrice = match ($channel) {
+            'wholesale' => 'CAST(listings.wholesale_price AS DECIMAL(12, 2))',
+            'auction' => 'CAST(COALESCE(auctions.current_price, auctions.starting_price) AS DECIMAL(12, 2))',
+            default => 'CAST(CASE WHEN listings.is_retail_enabled = 1 THEN COALESCE(listings.sale_price, listings.price) ELSE COALESCE(auctions.current_price, auctions.starting_price) END AS DECIMAL(12, 2))',
+        };
 
         match ($sort) {
             'price_asc' => $query->orderByRaw("{$effectivePrice} asc"),

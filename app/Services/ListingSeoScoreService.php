@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\AuctionStatus;
 use App\Models\Listing;
 use App\Rules\ValidGtin;
 use App\Support\SeoText;
@@ -113,11 +114,10 @@ class ListingSeoScoreService
     /** @return array{key: string, label: string, points: int, maximum: int, passed: bool, recommendation: string|null} */
     private function commerceCheck(Listing $listing): array
     {
-        if ($listing->listing_type === 'auction') {
-            $auction = $listing->auction;
-            $points = $auction !== null && (float) $auction->starting_price > 0 ? 5 : 0;
-            $points += $auction !== null
-                && in_array($auction->status, ['scheduled', 'live'], true)
+        if ($listing->activeAuction !== null && ! $listing->is_retail_enabled && ! $listing->is_wholesale_enabled) {
+            $auction = $listing->activeAuction;
+            $points = (float) $auction->starting_price > 0 ? 5 : 0;
+            $points += in_array($auction->status, [AuctionStatus::Scheduled, AuctionStatus::Live], true)
                 && $auction->starts_at->lt($auction->ends_at) ? 5 : 0;
 
             return $this->check('commerce', 'Auction data', $points, 10, 'Set valid auction pricing, status, and start/end dates.');

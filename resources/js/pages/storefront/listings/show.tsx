@@ -556,15 +556,16 @@ export default function ListingShow({
                             </div>
                         )}
 
-                        {listing.listingType === 'buy_now' ? (
+                        {listing.retailEnabled && (
                             <div className="xl:hidden">
                                 <ProductPurchase
                                     {...purchaseProps}
                                     instanceId="responsive"
                                 />
                             </div>
-                        ) : (
-                            listing.auction && (
+                        )}
+                        {listing.auction &&
+                            (listing.auction.canBid ? (
                                 <Form
                                     {...placeBid.form(listing.auction.id)}
                                     className="mt-6 grid grid-cols-[1fr_auto] gap-2"
@@ -573,14 +574,33 @@ export default function ListingShow({
                                         type="number"
                                         step="0.01"
                                         min={
-                                            Number(
-                                                listing.auction.currentPrice ??
-                                                    0,
-                                            ) +
-                                            Number(
-                                                listing.auction
-                                                    .minimumIncrement ?? 0,
-                                            )
+                                            listing.auction.type === 'blind'
+                                                ? Number(
+                                                      listing.auction
+                                                          .viewerBid ??
+                                                          listing.auction
+                                                              .startingPrice,
+                                                  ) +
+                                                  (listing.auction.viewerBid
+                                                      ? Number(
+                                                            listing.auction
+                                                                .minimumIncrement ??
+                                                                0,
+                                                        )
+                                                      : 0)
+                                                : Number(
+                                                      listing.auction
+                                                          .currentPrice ??
+                                                          listing.auction
+                                                              .startingPrice,
+                                                  ) +
+                                                  (listing.auction.currentPrice
+                                                      ? Number(
+                                                            listing.auction
+                                                                .minimumIncrement ??
+                                                                0,
+                                                        )
+                                                      : 0)
                                         }
                                         name="amount"
                                         placeholder="Your bid"
@@ -590,9 +610,18 @@ export default function ListingShow({
                                         Place Bid
                                     </button>
                                     <p className="col-span-2 text-sm text-slate-500">
-                                        Current bid{' '}
-                                        {formatPrice(
-                                            listing.auction.currentPrice,
+                                        {listing.auction.type === 'blind' ? (
+                                            'Blind auction'
+                                        ) : (
+                                            <>
+                                                Current bid{' '}
+                                                {formatPrice(
+                                                    listing.auction
+                                                        .currentPrice ??
+                                                        listing.auction
+                                                            .startingPrice,
+                                                )}
+                                            </>
                                         )}{' '}
                                         · {listing.auction.bidCount ?? 0} bids ·
                                         Ends{' '}
@@ -601,8 +630,13 @@ export default function ListingShow({
                                         ).toLocaleString()}
                                     </p>
                                 </Form>
-                            )
-                        )}
+                            ) : (
+                                <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                                    This auction is read-only. New bids are
+                                    currently unavailable, but existing auction
+                                    offers and payments continue normally.
+                                </div>
+                            ))}
 
                         <div className="mt-4 flex flex-wrap gap-5 text-sm text-slate-500">
                             {auth.user ? (
@@ -653,11 +687,12 @@ export default function ListingShow({
                                 <Truck className="size-4 text-orange-600" />
                                 Shipping information
                             </Link>
-                            {categoryPolicies?.codEnabled && (
-                                <span className="inline-flex items-center">
-                                    Cash on Delivery available
-                                </span>
-                            )}
+                            {listing.retailEnabled &&
+                                categoryPolicies?.codEnabled && (
+                                    <span className="inline-flex items-center">
+                                        Cash on Delivery available
+                                    </span>
+                                )}
                         </div>
                         {sellerSummary && (
                             <div className="xl:hidden">
@@ -672,7 +707,7 @@ export default function ListingShow({
                         <div className="-mx-5 -mt-5 bg-emerald-50 px-5 py-3 text-base font-black text-emerald-700">
                             Service commitment
                         </div>
-                        {listing.listingType === 'buy_now' && (
+                        {listing.retailEnabled && (
                             <ProductPurchase
                                 {...purchaseProps}
                                 instanceId="desktop"

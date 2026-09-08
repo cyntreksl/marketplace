@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\Role;
 use App\Services\CartService;
+use App\Services\MarketplaceSettingsService;
 use App\Services\SeoHeadService;
 use App\Services\StorefrontService;
 use Illuminate\Http\Request;
@@ -15,6 +16,7 @@ class HandleInertiaRequests extends Middleware
         private readonly SeoHeadService $seo,
         private readonly CartService $carts,
         private readonly StorefrontService $storefront,
+        private readonly MarketplaceSettingsService $settings,
     ) {}
 
     /**
@@ -72,6 +74,7 @@ class HandleInertiaRequests extends Middleware
                 ];
             },
             'marketplace' => config('marketplace'),
+            'auctionFlags' => fn (): array => $this->settings->auctionFlags(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

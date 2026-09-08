@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\AdminAuctionController;
+use App\Http\Controllers\AdminAuctionSettingsController;
 use App\Http\Controllers\AdminBrandController;
 use App\Http\Controllers\AdminCategoryBrowseController;
 use App\Http\Controllers\AdminCategoryController;
@@ -14,6 +16,7 @@ use App\Http\Controllers\AdminTaxonomyController;
 use App\Http\Controllers\AuctionBidController;
 use App\Http\Controllers\BrandDirectoryController;
 use App\Http\Controllers\BuyerAddressController;
+use App\Http\Controllers\BuyerAuctionOfferController;
 use App\Http\Controllers\BuyerDashboardController;
 use App\Http\Controllers\BuyerFeedbackController;
 use App\Http\Controllers\BuyerOrderController;
@@ -30,6 +33,7 @@ use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\ProductQuestionController;
 use App\Http\Controllers\ProductQuestionQueueController;
 use App\Http\Controllers\ReturnEvidenceController;
+use App\Http\Controllers\SellerAuctionController;
 use App\Http\Controllers\SellerDashboardController;
 use App\Http\Controllers\SellerListingController;
 use App\Http\Controllers\SellerOnboardingController;
@@ -110,6 +114,13 @@ Route::middleware('auth')->prefix('seller')->name('seller.')->group(function ():
     Route::put('/onboarding', [SellerOnboardingController::class, 'update'])->name('onboarding.update');
     Route::get('/wholesale', [SellerWholesaleController::class, 'index'])->name('wholesale.index');
     Route::get('/wholesale/create', [SellerWholesaleController::class, 'create'])->name('wholesale.create');
+    Route::get('/auctions', [SellerAuctionController::class, 'index'])->name('auctions.index');
+    Route::get('/auctions/create', [SellerAuctionController::class, 'create'])->name('auctions.create');
+    Route::post('/auctions', [SellerAuctionController::class, 'store'])->name('auctions.store');
+    Route::get('/auctions/{auction}', [SellerAuctionController::class, 'show'])->whereNumber('auction')->name('auctions.show');
+    Route::get('/auctions/{auction}/edit', [SellerAuctionController::class, 'edit'])->whereNumber('auction')->name('auctions.edit');
+    Route::put('/auctions/{auction}', [SellerAuctionController::class, 'update'])->whereNumber('auction')->name('auctions.update');
+    Route::delete('/auctions/{auction}', [SellerAuctionController::class, 'destroy'])->whereNumber('auction')->name('auctions.destroy');
     Route::get('/listings', [SellerListingController::class, 'index'])->name('listings.index');
     Route::get('/listings/create', [SellerListingController::class, 'create'])->name('listings.create');
     Route::post('/listings', [SellerListingController::class, 'store'])->name('listings.store');
@@ -155,6 +166,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/checkout/thank-you/{customerOrder:number}', [CheckoutController::class, 'thankYou'])->name('checkout.thank_you.show');
     Route::get('/buyer', [BuyerDashboardController::class, 'index'])->name('buyer.dashboard');
     Route::get('/buyer/orders', [BuyerOrderController::class, 'index'])->name('buyer.orders.index');
+    Route::get('/buyer/auction-offers', [BuyerAuctionOfferController::class, 'index'])->name('buyer.auction-offers.index');
+    Route::get('/buyer/auction-offers/{auctionOffer}', [BuyerAuctionOfferController::class, 'show'])->whereNumber('auctionOffer')->name('buyer.auction-offers.show');
+    Route::post('/buyer/auction-offers/{auctionOffer}/accept', [BuyerAuctionOfferController::class, 'accept'])->whereNumber('auctionOffer')->block(30, 10)->name('buyer.auction-offers.accept');
     Route::get('/buyer/orders/{customerOrder:number}', [BuyerOrderController::class, 'show'])->name('buyer.orders.show');
     Route::get('/buyer/payments', [BuyerPaymentController::class, 'index'])->name('buyer.payments.index');
     Route::get('/buyer/feedback', [BuyerFeedbackController::class, 'index'])->name('buyer.feedback.index');
@@ -189,6 +203,11 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/search-insights', AdminSearchInsightsController::class)->name('search-insights.index');
+    Route::get('/auctions', [AdminAuctionController::class, 'index'])->name('auctions.index');
+    Route::get('/auctions/settings', [AdminAuctionSettingsController::class, 'index'])->name('auctions.settings.index');
+    Route::put('/auctions/settings', [AdminAuctionSettingsController::class, 'update'])->name('auctions.settings.update');
+    Route::get('/auctions/{auction}', [AdminAuctionController::class, 'show'])->whereNumber('auction')->name('auctions.show');
+    Route::post('/auctions/{auction}/cancel', [AdminAuctionController::class, 'cancel'])->whereNumber('auction')->name('auctions.cancel');
     Route::get('/homepage', [AdminHomepageController::class, 'index'])->name('homepage.index');
     Route::put('/homepage/categories', [AdminHomepageController::class, 'updateCategories'])->name('homepage.categories.update');
     Route::patch('/homepage/listings/{listing}', [AdminHomepageController::class, 'updateListing'])->name('homepage.listings.update');

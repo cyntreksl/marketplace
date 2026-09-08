@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\AuctionStatus;
+use App\AuctionType;
 use App\Contracts\Repositories\CatalogRepository;
 use App\Contracts\Repositories\ListingRepository;
 use App\Contracts\Repositories\ProductQuestionRepository;
@@ -30,6 +32,7 @@ class StorefrontService
         private readonly WatchlistRepository $watchlists,
         private readonly SellerStoreRepository $sellers,
         private readonly SellerSummaryService $sellerSummaries,
+        private readonly MarketplaceSettingsService $settings,
     ) {}
 
     /** @return array<string, mixed> */
@@ -338,7 +341,8 @@ class StorefrontService
      */
     public function auctionData(array $filters): array
     {
-        $data = $this->browseData([...$filters, 'listing_type' => 'auction']);
+        abort_unless($this->settings->auctionsEnabled(), 404);
+        $data = $this->browseData([...$filters, 'listing_type' => 'auction'], 'auction');
         $page = max(1, (int) request()->query('page', 1));
         $hasFilters = collect(request()->query())->except('page')->filter()->isNotEmpty();
         $canonical = route('auctions.index').(! $hasFilters && $page > 1 ? '?page='.$page : '');
@@ -389,7 +393,7 @@ class StorefrontService
         return [
             'head' => $this->seo->tags($seo),
             'seo' => $seo,
-            'listing' => $this->listingData($listing, detailed: true, channel: $channel),
+            'listing' => $this->listingData($listing, detailed: true, channel: $channel, viewer: $viewer),
             'selectedVariantId' => $selectedVariantId,
             'purchaseContext' => [
                 'channel' => $channel,
@@ -472,7 +476,7 @@ class StorefrontService
     }
 
     /** @return array<string, mixed> */
-    private function listingData(Listing $listing, bool $detailed = false, string $channel = 'retail'): array
+    private function listingData(Listing $listing, bool $detailed = false, string $channel = 'retail', ?User $viewer = null): array
     {
         $activeVariants = $detailed
             ? $listing->variants->where('is_active', true)
@@ -490,12 +494,14 @@ class StorefrontService
             'gtin' => $detailed ? $listing->gtin : null,
             'mpn' => $detailed ? $listing->mpn : null,
             'condition' => $listing->condition,
-            'listingType' => $listing->listing_type,
+            'listingType' => $listing->activeAuction !== null && ($channel === 'auction' || ! $listing->is_retail_enabled) ? 'auction' : 'buy_now',
             'price' => $listing->price,
             'salePrice' => $listing->sale_price,
             'effectivePrice' => $channel === 'wholesale'
                 ? $listing->wholesale_price
-                : ($listing->auction === null ? $listing->buyNowPrice() : $listing->auction->current_price),
+                : (($channel === 'auction' || ! $listing->is_retail_enabled)
+                    ? ($listing->activeAuction === null ? null : ($listing->activeAuction->current_price ?? $listing->activeAuction->starting_price))
+                    : $listing->buyNowPrice()),
             'retailEnabled' => $listing->is_retail_enabled,
             'wholesaleEnabled' => $listing->is_wholesale_enabled,
             'wholesalePrice' => $listing->wholesale_price,
@@ -523,13 +529,23 @@ class StorefrontService
                 'card2xUrl' => $media->urlForVariant('card_2x'),
             ]),
             'seller' => $listing->sellerProfile?->only(['store_name', 'slug']),
-            'auction' => $listing->auction === null ? null : [
-                'id' => $listing->auction->id,
-                'status' => $listing->auction->status,
-                'currentPrice' => $listing->auction->current_price,
-                'minimumIncrement' => $listing->auction->minimum_increment,
-                'endsAt' => $listing->auction->ends_at->toIso8601String(),
-                'bidCount' => $detailed ? $listing->auction->bids->count() : null,
+            'auction' => $listing->activeAuction === null ? null : [
+                'id' => $listing->activeAuction->id,
+                'status' => $listing->activeAuction->status->value,
+                'type' => $listing->activeAuction->type->value,
+                'quantity' => $listing->activeAuction->quantity,
+                'startingPrice' => $listing->activeAuction->starting_price,
+                'currentPrice' => $listing->activeAuction->type === AuctionType::Blind && $listing->activeAuction->status === AuctionStatus::Live
+                    ? null
+                    : $listing->activeAuction->current_price,
+                'minimumIncrement' => $listing->activeAuction->minimum_increment,
+                'endsAt' => $listing->activeAuction->ends_at->toIso8601String(),
+                'bidCount' => $detailed ? $listing->activeAuction->bids->count() : null,
+                'viewerBid' => $detailed && $viewer !== null
+                    ? $listing->activeAuction->bids->where('buyer_id', $viewer->id)->max('amount')
+                    : null,
+                'canBid' => $listing->activeAuction->status === AuctionStatus::Live
+                    && $this->settings->auctionTypeEnabled($listing->activeAuction->type),
             ],
             'variantOptions' => $detailed
                 ? $listing->variantOptions->map(fn ($option): array => [

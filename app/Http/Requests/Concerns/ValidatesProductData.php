@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Concerns;
 
+use App\AuctionType;
 use App\Models\Category;
 use App\Models\Listing;
 use App\Models\ListingVariant;
@@ -55,6 +56,7 @@ trait ValidatesProductData
             'stock_quantity' => [Rule::requiredIf($publishing && $this->input('product_type') === 'simple'), 'nullable', 'integer', 'min:0', 'max:100000'],
             'is_retail_enabled' => ['required', 'boolean'],
             'is_wholesale_enabled' => ['required', 'boolean'],
+            'auction_enabled' => ['required', 'boolean'],
             'selling_price' => [Rule::excludeIf($this->input('product_type') === 'variant'), Rule::requiredIf($publishing && $this->boolean('is_retail_enabled')), 'nullable', 'decimal:0,2', 'min:1'],
             'compare_price' => [Rule::excludeIf($this->input('product_type') === 'variant'), 'nullable', 'decimal:0,2', 'gt:selling_price'],
             'wholesale_tiers' => [Rule::excludeIf($this->input('product_type') === 'variant'), 'nullable', 'array', 'max:3'],
@@ -102,6 +104,16 @@ trait ValidatesProductData
             'removed_media_ids.*' => ['integer', 'distinct'],
             ...$this->listingImageRules(required: false),
             'submit_for_review' => ['required', 'boolean'],
+            'auction' => ['nullable', 'array'],
+            'auction.type' => ['required_if:auction_enabled,1', Rule::enum(AuctionType::class)],
+            'auction.listing_variant_id' => ['nullable', 'integer'],
+            'auction.variant_sku' => ['nullable', 'string', 'max:100'],
+            'auction.quantity' => ['required_if:auction_enabled,1', 'nullable', 'integer', 'between:1,100000'],
+            'auction.starting_price' => ['required_if:auction_enabled,1', 'nullable', 'decimal:0,2', 'min:1'],
+            'auction.minimum_increment' => ['required_if:auction_enabled,1', 'nullable', 'decimal:0,2', 'min:1'],
+            'auction.extension_window_minutes' => ['nullable', 'required_if:auction.type,time_extended', 'integer', 'between:1,60'],
+            'auction.starts_at' => ['required_if:auction_enabled,1', 'nullable', 'date', 'after:now'],
+            'auction.ends_at' => ['required_if:auction_enabled,1', 'nullable', 'date', 'after:auction.starts_at'],
         ];
     }
 
@@ -160,6 +172,7 @@ trait ValidatesProductData
             'product_type' => $this->input('product_type', 'simple'),
             'is_retail_enabled' => $this->has('is_retail_enabled') ? $this->boolean('is_retail_enabled') : true,
             'is_wholesale_enabled' => $this->boolean('is_wholesale_enabled'),
+            'auction_enabled' => $this->boolean('auction_enabled'),
             'low_stock_threshold' => $this->input('low_stock_threshold', 0),
             'allow_backorders' => $this->boolean('allow_backorders'),
             'is_active' => $this->has('is_active') ? $this->boolean('is_active') : true,
@@ -207,7 +220,7 @@ trait ValidatesProductData
                 return;
             }
 
-            if (! $this->boolean('is_retail_enabled') && ! $this->boolean('is_wholesale_enabled')) {
+            if (! $this->boolean('is_retail_enabled') && ! $this->boolean('is_wholesale_enabled') && ! $this->boolean('auction_enabled')) {
                 $validator->errors()->add('is_retail_enabled', 'Choose at least one sales channel.');
             }
 

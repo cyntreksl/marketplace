@@ -31,6 +31,7 @@ class ListingService
         private readonly ListingVariantService $variants,
         private readonly WholesalePriceTierRepository $wholesalePriceTiers,
         private readonly ListingSeoMetadataService $seoMetadata,
+        private readonly AuctionService $auctions,
     ) {}
 
     /**
@@ -63,13 +64,17 @@ class ListingService
         ];
     }
 
-    /** @return array{sellerStatus: string, brands: mixed, defaultChannel: 'retail'|'wholesale'} */
+    /** @return array{sellerStatus: string, brands: mixed, defaultChannel: 'retail'|'wholesale', auctionFlags: array{enabled: bool, types: array<string, bool>}, auctionDefaults: array{durationDays: int, extensionMinutes: int, startsAt: string, endsAt: string}} */
     public function sellerCreateData(User $seller, string $defaultChannel = 'retail'): array
     {
+        $auctionData = $this->auctions->sellerCreateData($seller);
+
         return [
             'sellerStatus' => $this->sellerProfileFor($seller)->status,
             'brands' => $this->catalog->listingBrands(),
             'defaultChannel' => $defaultChannel === 'wholesale' ? 'wholesale' : 'retail',
+            'auctionFlags' => $auctionData['flags'],
+            'auctionDefaults' => $auctionData['defaults'],
         ];
     }
 
@@ -102,7 +107,7 @@ class ListingService
             $this->variants->synchronize($listing, $attributes);
             $this->synchronizeVariantSummary($listing);
             $this->storeImages($listing, $attributes['images'] ?? [], $attributes['image_crops'] ?? []);
-            $listing->auction()->delete();
+            $this->synchronizeAuctionDraft($seller, $listing, $attributes);
 
             $this->auditLogs->record($seller, 'listing.draft_created', $listing, after: $listing->getAttributes());
 
@@ -134,11 +139,11 @@ class ListingService
                 'is_best_offer' => false,
             ]);
             $this->listings->save($listing);
-            $listing->auction()->delete();
             $this->images->remove($listing, array_map('intval', $attributes['removed_media_ids'] ?? []));
             $this->synchronizeListingWholesaleTiers($listing, $attributes);
             $this->variants->synchronize($listing, $attributes);
             $this->synchronizeVariantSummary($listing);
+            $this->synchronizeAuctionDraft($seller, $listing, $attributes);
 
             if ($attributes['images'] ?? []) {
                 $this->storeImages($listing, $attributes['images'], $attributes['image_crops']);
@@ -162,7 +167,6 @@ class ListingService
                 'is_best_offer' => false,
             ]);
             $this->listings->save($listing);
-            $listing->auction()->delete();
             $this->images->remove($listing, array_map('intval', $attributes['removed_media_ids'] ?? []));
             $this->synchronizeListingWholesaleTiers($listing, $attributes);
             $this->variants->synchronize($listing, $attributes);
@@ -445,7 +449,7 @@ class ListingService
 
     private function ensureReadyForReview(Listing $listing): void
     {
-        $listing->loadMissing('wholesalePriceTiers');
+        $listing->loadMissing(['wholesalePriceTiers', 'activeAuction']);
         $activeVariants = $listing->variants()->where('is_active', true)->with('wholesalePriceTiers')->get();
         $validator = ValidatorFacade::make([
             ...$listing->only([
@@ -501,7 +505,7 @@ class ListingService
         ]);
 
         $validator->after(function ($validator) use ($listing, $activeVariants): void {
-            if (! $listing->is_retail_enabled && ! $listing->is_wholesale_enabled) {
+            if (! $listing->is_retail_enabled && ! $listing->is_wholesale_enabled && $listing->activeAuction === null) {
                 $validator->errors()->add('is_retail_enabled', 'Choose at least one sales channel.');
             }
 
@@ -533,6 +537,34 @@ class ListingService
         if ($validator->fails()) {
             throw new ValidationException($validator);
         }
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function synchronizeAuctionDraft(User $seller, Listing $listing, array $attributes): void
+    {
+        $auction = $listing->activeAuction()->first();
+        if (! (bool) ($attributes['auction_enabled'] ?? false)) {
+            if ($auction !== null) {
+                $this->auctions->deleteDraft($seller, $auction->id);
+            }
+
+            return;
+        }
+
+        $auctionAttributes = (array) ($attributes['auction'] ?? []);
+        $variantSku = $auctionAttributes['variant_sku'] ?? null;
+        if (! filled($auctionAttributes['listing_variant_id'] ?? null) && filled($variantSku)) {
+            $auctionAttributes['listing_variant_id'] = $listing->variants()->where('sku', $variantSku)->value('id');
+        }
+        $auctionAttributes['listing_id'] = $listing->id;
+
+        if ($auction === null) {
+            $this->auctions->create($seller, $auctionAttributes);
+
+            return;
+        }
+
+        $this->auctions->updateDraft($seller, $auction->id, $auctionAttributes);
     }
 
     /** @param Collection<int, WholesalePriceTier> $tiers */
