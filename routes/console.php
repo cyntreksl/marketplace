@@ -20,3 +20,11 @@ Schedule::call(function (): void {
 })->name('close-ended-auctions')->everyMinute()->withoutOverlapping()->onOneServer();
 
 Schedule::command('checkout:reconcile-payments')->everyMinute()->withoutOverlapping()->onOneServer();
+
+Schedule::command('seo:check-catalog')->dailyAt('01:45')->timezone('Asia/Colombo')
+    ->environments('production')->when(fn (): bool => (bool) config('seo-monitoring.enabled'))
+    ->withoutOverlapping(30)->onOneServer()->runInBackground();
+
+Schedule::command('seo:check-merchant')->dailyAt('03:30')->timezone('Asia/Colombo')
+    ->environments('production')->when(fn (): bool => (bool) config('seo-monitoring.enabled'))
+    ->withoutOverlapping(30)->onOneServer()->runInBackground();

@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Contracts\CourierAdapter;
+use App\Contracts\GoogleMerchantGateway;
+use App\Contracts\GoogleMerchantTokenProvider;
 use App\Contracts\MetaConversionsGateway;
 use App\Contracts\PaymentGateway;
 use App\Contracts\Repositories\AuctionRepository;
@@ -26,10 +28,12 @@ use App\Contracts\Repositories\ReviewRepository;
 use App\Contracts\Repositories\SearchEventRepository;
 use App\Contracts\Repositories\SellerPortalRepository;
 use App\Contracts\Repositories\SellerStoreRepository;
+use App\Contracts\Repositories\SeoMonitoringRepository;
 use App\Contracts\Repositories\WatchlistRepository;
 use App\Couriers\ManualCourierAdapter;
 use App\Models\User;
 use App\Payments\StripePaymentGateway;
+use App\Repositories\CacheSeoMonitoringRepository;
 use App\Repositories\EloquentAuctionRepository;
 use App\Repositories\EloquentBuyerAddressRepository;
 use App\Repositories\EloquentBuyerPortalRepository;
@@ -52,6 +56,8 @@ use App\Repositories\EloquentSearchEventRepository;
 use App\Repositories\EloquentSellerPortalRepository;
 use App\Repositories\EloquentSellerStoreRepository;
 use App\Repositories\EloquentWatchlistRepository;
+use App\Services\GoogleMerchantApiService;
+use App\Services\GoogleMerchantTokenService;
 use App\Services\MetaConversionsApiService;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -74,6 +80,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(SeoMonitoringRepository::class, CacheSeoMonitoringRepository::class);
+        $this->app->bind(GoogleMerchantTokenProvider::class, GoogleMerchantTokenService::class);
+        $this->app->bind(GoogleMerchantGateway::class, GoogleMerchantApiService::class);
         $this->app->bind(SellerStoreRepository::class, EloquentSellerStoreRepository::class);
         $this->app->bind(SearchEventRepository::class, EloquentSearchEventRepository::class);
         $this->app->bind(SellerPortalRepository::class, EloquentSellerPortalRepository::class);

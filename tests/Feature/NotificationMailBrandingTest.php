@@ -11,6 +11,7 @@ use App\Notifications\RefundOutcomeNotification;
 use App\Notifications\RefundReadyNotification;
 use App\Notifications\ReturnDecisionNotification;
 use App\Notifications\SellerOrderReadyNotification;
+use App\Notifications\SeoMonitoringNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Markdown;
@@ -164,7 +165,20 @@ test('the branded email inventory covers every application notification', functi
         RefundReadyNotification::class,
         ReturnDecisionNotification::class,
         SellerOrderReadyNotification::class,
+        SeoMonitoringNotification::class,
     ])->sort()->values()->all();
 
     expect($notificationClasses)->toBe($coveredClasses);
+});
+
+test('SEO monitoring notifications use the branded operational email layout', function () {
+    foreach ([
+        new SeoMonitoringNotification('merchant', ['Import failed.']),
+        new SeoMonitoringNotification('merchant', [], recovered: true),
+        new SeoMonitoringNotification('catalog', [], test: true),
+    ] as $notification) {
+        expect($notification)->toBeInstanceOf(ShouldQueue::class);
+        $message = $notification->toMail(new stdClass);
+        expect((string) $message->render())->toContain('prodeals-email-logo.png?v=', 'support@prodeals.lk', 'The ProDeals.lk team');
+    }
 });

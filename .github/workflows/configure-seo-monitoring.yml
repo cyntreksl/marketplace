@@ -1,0 +1,85 @@
+name: configure-seo-monitoring
+
+on:
+  workflow_dispatch:
+    inputs:
+      verify_only:
+        description: Read scheduler health and recent monitoring results without changing configuration
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://prodeals.lk
+    concurrency:
+      group: prodeals-production
+      cancel-in-progress: false
+    env:
+      WEB_HOST: ${{ secrets.WEB_HOST }}
+      WORKER_HOST: ${{ secrets.WORKER_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      GOOGLE_MERCHANT_CREDENTIALS_JSON: ${{ secrets.GOOGLE_MERCHANT_CREDENTIALS_JSON }}
+      TRANSACTION_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+
+    steps:
+      - name: Checkout configuration tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d "$HOME/.ssh"
+          install -m 600 /dev/null "$HOME/.ssh/id_ed25519"
+          install -m 600 /dev/null "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+
+      - name: Read scheduled monitoring results
+        if: ${{ inputs.verify_only }}
+        run: |
+          set -Eeuo pipefail
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "${DEPLOY_USER}@${WORKER_HOST}" 'test -f /etc/cron.d/prodeals-scheduler && systemctl is-active --quiet cron && cd /var/www/prodeals/current && php8.4 artisan schedule:list --no-interaction && grep -h "SEO monitoring" storage/logs/laravel*.log | tail -20'
+
+      - name: Configure and verify production monitoring
+        if: ${{ !inputs.verify_only }}
+        run: |
+          set -Eeuo pipefail
+          test -n "$GOOGLE_MERCHANT_CREDENTIALS_JSON"
+          ssh_options=(-o BatchMode=yes -o StrictHostKeyChecking=yes)
+          remote_script="/tmp/prodeals-sync-seo-monitoring.sh"
+
+          rollback() {
+            exit_code="$?"
+            trap - ERR
+            set +e
+            for host in "$WEB_HOST" "$WORKER_HOST"; do
+              ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "${remote_script} rollback ${TRANSACTION_ID}"
+            done
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl restart prodeals-worker'
+            exit "$exit_code"
+          }
+          trap rollback ERR
+
+          for host in "$WEB_HOST" "$WORKER_HOST"; do
+            scp "${ssh_options[@]}" .github/deploy/sync-seo-monitoring.sh "${DEPLOY_USER}@${host}:${remote_script}"
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "chmod 700 ${remote_script}"
+            printf '%s\n' "$GOOGLE_MERCHANT_CREDENTIALS_JSON" | ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "${remote_script} apply ${TRANSACTION_ID}"
+          done
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl restart prodeals-worker'
+          ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'test -f /etc/cron.d/prodeals-scheduler && systemctl is-active --quiet cron && cd /var/www/prodeals/current && php8.4 artisan seo:check-catalog --test-notification --no-interaction && php8.4 artisan seo:check-merchant --no-interaction && php8.4 artisan schedule:list --no-interaction'
+          curl --fail --silent --show-error https://prodeals.lk/up >/dev/null
+
+          for host in "$WEB_HOST" "$WORKER_HOST"; do
+            ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" "${remote_script} commit ${TRANSACTION_ID} && rm -f ${remote_script}"
+          done
+          trap - ERR

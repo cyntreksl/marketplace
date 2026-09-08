@@ -427,7 +427,7 @@ class EloquentListingRepository implements ListingRepository
         if ($channel === 'wholesale') {
             $query->wholesaleVisible();
         } else {
-            $query->retailVisible();
+            $query->retailVisible()->publiclyVisible();
         }
 
         return $query;

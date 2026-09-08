@@ -9,6 +9,6 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/js/components/seo-head.tsx | .ai/rules/components.md |
 | app/{Notifications,Mail}/** | .ai/rules/notifications-mail.md |
 | resources/** | .ai/rules/resources.md |
-| app/Services/**, app/Services/ListingService.php | .ai/rules/services.md |
+| app/Services/**, app/Services/ListingService.php, app/Services/Seo*CheckService.php | .ai/rules/services.md |
 | tests/** | .ai/rules/tests.md |
 | .github/deploy/**,.github/workflows/** | .ai/rules/workflows.md |

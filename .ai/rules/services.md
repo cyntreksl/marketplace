@@ -2,6 +2,7 @@
 paths:
   - 'app/Services/**'
   - app/Services/ListingService.php
+  - 'app/Services/Seo*CheckService.php'
 ---
 
 # Services
@@ -23,3 +24,6 @@ The homepage hero is the selected home-deals-banner.png artwork, displayed witho
 
 ## Seller storefront privacy and branding publication
 Public stores and seller summaries must use SellerSummaryService's explicit allowlist and approved, active seller eligibility. Scope catalog filters and aggregate counts in repositories with Listing::publiclyVisible. Branding saves publish immediately; upload replacements to generated seller-specific R2 paths, persist successfully before deleting previous objects, and keep existing branding on failures.
+
+## Reconcile Merchant imports only against a stable catalog
+Discovery XML is generated live; keep the scheduled Merchant URL source as the only catalog upload path. Merchant offers include active variants, so reconcile offer IDs/counts separately from canonical sitemap URLs. Compare Google's processed count only when a successful pre-import baseline precedes the upload and its fingerprint still matches; pending reconciliation must not produce a false recovery notice. Never expose credentials or raw provider errors in monitoring logs or alerts.
