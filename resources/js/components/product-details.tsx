@@ -373,7 +373,7 @@ export function ProductDetails({
 
     return (
         <div
-            className="mt-8"
+            className="mt-4 sm:mt-8"
             style={
                 { '--detail-offset': `${headerHeight + 84}px` } as CSSProperties
             }
@@ -381,7 +381,7 @@ export function ProductDetails({
             <nav
                 aria-label="Product information"
                 style={{ top: headerHeight }}
-                className="sticky z-30 -mx-1 overflow-x-auto rounded-2xl border border-white bg-white/95 p-1 shadow-sm ring-1 ring-slate-200/80 backdrop-blur-xl"
+                className="sticky z-30 -mx-1 hidden overflow-x-auto rounded-2xl border border-white bg-white/95 p-1 shadow-sm ring-1 ring-slate-200/80 backdrop-blur-xl md:block"
             >
                 <div className="flex min-w-max gap-1">
                     {sections.map(([id, title]) => (
@@ -404,13 +404,13 @@ export function ProductDetails({
                     ))}
                 </div>
             </nav>
-            <div className="mt-5 grid gap-4">
+            <div className="grid gap-3 md:mt-5 md:gap-4">
                 {sections.map(([id, title]) => (
                     <section
                         key={id}
                         id={id}
                         tabIndex={-1}
-                        className="scroll-mt-(--detail-offset) rounded-2xl border border-slate-200/80 bg-white p-5 focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:outline-none sm:p-7"
+                        className="scroll-mt-(--detail-offset) rounded-xl border border-slate-200/80 bg-white p-4 focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:outline-none sm:rounded-2xl sm:p-7"
                     >
                         <h2 className="hidden text-xl font-bold tracking-tight md:block">
                             {title}

@@ -38,7 +38,7 @@ export function ProductGallery({
         );
 
     return (
-        <div className="grid min-w-0 gap-3 sm:grid-cols-[4.5rem_minmax(0,1fr)]">
+        <div className="grid min-w-0 gap-2 sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:gap-3">
             <Dialog>
                 <div className="relative order-1 overflow-hidden rounded-xl border border-slate-200 bg-white sm:order-2">
                     {selected ? (
@@ -55,9 +55,9 @@ export function ProductGallery({
                                     width={1280}
                                     height={1280}
                                     fetchPriority="high"
-                                    className="size-full object-contain p-5 transition-transform duration-300 group-hover:scale-105 motion-reduce:transform-none"
+                                    className="size-full object-contain p-2 transition-transform duration-300 group-hover:scale-105 motion-reduce:transform-none sm:p-5"
                                 />
-                                <span className="absolute right-4 bottom-4 grid size-11 place-items-center rounded-full border border-slate-100 bg-white/90 text-slate-600 shadow-sm">
+                                <span className="absolute right-3 bottom-3 grid size-10 place-items-center rounded-full border border-slate-100 bg-white/90 text-slate-600 shadow-sm sm:right-4 sm:bottom-4 sm:size-11">
                                     <Maximize2 className="size-5" />
                                 </span>
                             </button>
@@ -71,7 +71,7 @@ export function ProductGallery({
                         </div>
                     )}
                     {media.length > 1 && (
-                        <span className="absolute bottom-4 left-4 rounded-full bg-white/90 px-3 py-2 text-sm font-semibold text-slate-600">
+                        <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-2.5 py-1.5 text-sm font-semibold text-slate-600 sm:bottom-4 sm:left-4 sm:px-3 sm:py-2">
                             {index + 1} / {media.length}
                         </span>
                     )}
@@ -129,7 +129,7 @@ export function ProductGallery({
             {media.length > 0 && (
                 <div
                     aria-label="Product images"
-                    className="order-2 flex gap-2 overflow-x-auto p-1 sm:order-1 sm:max-h-[32rem] sm:flex-col sm:overflow-y-auto"
+                    className="order-2 flex gap-2 overflow-x-auto px-0.5 py-1 sm:order-1 sm:max-h-[32rem] sm:flex-col sm:overflow-y-auto sm:p-1"
                 >
                     {media.map((item, mediaIndex) => (
                         <button

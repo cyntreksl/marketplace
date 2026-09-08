@@ -14,6 +14,7 @@ export function ProductPurchase({
     price,
     stockLimit,
     minimumQuantity = 1,
+    instanceId = 'inline',
 }: {
     listingId: number;
     variantId?: number;
@@ -25,8 +26,9 @@ export function ProductPurchase({
     price: string;
     stockLimit: number;
     minimumQuantity?: number;
+    instanceId?: string;
 }) {
-    const formId = `purchase-${listingId}`;
+    const formId = `purchase-${listingId}-${instanceId}`;
     const maximumQuantity = Math.max(
         minimumQuantity,
         Math.min(100000, stockLimit),
@@ -159,7 +161,7 @@ export function ProductPurchase({
                             {message}
                         </p>
                     )}
-                    <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="mt-4 hidden grid-cols-2 gap-3 lg:grid">
                         <button
                             disabled={processing || purchaseDisabled}
                             className="flex min-h-13 items-center justify-center gap-2 rounded-lg border border-[#ff5a00] bg-white text-sm font-bold text-orange-700 transition hover:bg-orange-50 disabled:opacity-50"
@@ -187,18 +189,9 @@ export function ProductPurchase({
                     ))}
                     <div
                         aria-label="Quick purchase"
-                        className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 border-t border-orange-100 bg-white/95 px-4 py-2.5 shadow-[0_-8px_30px_-12px_rgba(15,23,42,0.15)] backdrop-blur-xl lg:hidden"
+                        className="fixed inset-x-0 bottom-0 z-50 border-t border-orange-100 bg-white/95 px-4 pt-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_-12px_rgba(15,23,42,0.15)] backdrop-blur-xl lg:hidden"
                     >
                         <div className="mx-auto max-w-3xl">
-                            <div className="mb-2 flex items-center justify-between gap-3">
-                                <p className="text-lg font-black text-slate-950">
-                                    {price}
-                                </p>
-                                <p className="text-sm font-medium text-slate-500">
-                                    {quantity}{' '}
-                                    {quantity === 1 ? 'item' : 'items'}
-                                </p>
-                            </div>
                             <div className="grid grid-cols-2 gap-2">
                                 <button
                                     form={formId}

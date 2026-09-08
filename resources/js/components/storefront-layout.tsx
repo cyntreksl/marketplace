@@ -136,9 +136,6 @@ export function StorefrontLayout({
                 className="sticky top-0 z-40 border-b border-slate-100 bg-white"
             >
                 <div className="storefront-container flex items-center gap-2 py-3 sm:gap-3 lg:gap-5">
-                    <div className="lg:hidden">
-                        <MobileStorefrontCategoryMenu {...categoryMenuProps} />
-                    </div>
                     <Link
                         href={home()}
                         className="shrink-0"
@@ -219,6 +216,9 @@ export function StorefrontLayout({
                                 ? 'Seller Portal'
                                 : 'Become a Seller'}
                         </Link>
+                    </div>
+                    <div className="ml-auto lg:hidden">
+                        <MobileStorefrontCategoryMenu {...categoryMenuProps} />
                     </div>
                 </div>
 

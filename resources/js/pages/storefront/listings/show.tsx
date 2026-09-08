@@ -271,58 +271,87 @@ export default function ListingShow({
         }
     };
 
+    const purchaseProps = {
+        listingId: listing.id,
+        variantId: selectedVariant?.id,
+        stockLimit:
+            listing.productType === 'variant'
+                ? (selectedVariant?.stockQuantity ?? 100)
+                : listing.stockStatus === 'backorder'
+                  ? 100000
+                  : listing.stockQuantity,
+        quantity,
+        setQuantity,
+        canPurchase,
+        isOutOfStock,
+        needsVariant:
+            listing.productType === 'variant' && selectedVariant === undefined,
+        price: formatPrice(displayedSellingPrice),
+        minimumQuantity: listing.retailEnabled ? 1 : (wholesaleMinimum ?? 2),
+    };
     const offerSummary = (
-        <div>
-            <p className="text-3xl font-black tracking-tight text-[#ff5a00]">
-                {formatPrice(displayedSellingPrice)}
-            </p>
-            {isWholesaleQuantity && (
-                <p className="mt-1 text-sm font-bold text-orange-700">
-                    Wholesale unit price · MOQ {wholesaleMinimum}
-                </p>
-            )}
-            {listing.retailEnabled && listing.wholesaleEnabled && (
-                <p className="mt-2 text-sm text-slate-600">
-                    Retail{' '}
-                    {formatPrice(
-                        selectedVariant?.sellingPrice ??
-                            listing.salePrice ??
-                            listing.price,
-                    )}{' '}
-                    · Wholesale {formatPrice(wholesalePrice)} from{' '}
-                    {wholesaleMinimum} units
-                </p>
-            )}
-            {displayedMarketPrice &&
-                Number(displayedMarketPrice) >
-                    Number(displayedSellingPrice) && (
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-                        <span className="text-slate-400 line-through">
-                            {formatPrice(displayedMarketPrice)}
-                        </span>
-                        <strong className="text-[#ff5a00]">
-                            {displayedDiscountPercentage}% OFF
-                        </strong>
-                    </div>
-                )}
-            {displayedDiscountPercentage !== null &&
-                displayedDiscountPercentage > 0 && (
-                    <p className="mt-2 text-sm font-semibold text-emerald-700">
-                        You save{' '}
-                        {formatPrice(
-                            String(
-                                Number(displayedMarketPrice) -
-                                    Number(displayedSellingPrice),
-                            ),
-                        )}
-                    </p>
-                )}
+        <div className="overflow-hidden rounded-xl border border-rose-100 bg-gradient-to-br from-rose-50 via-white to-orange-50 shadow-[0_8px_24px_-20px_rgba(244,63,94,0.8)]">
             {activeCampaign && (
-                <div className="mt-4 grid gap-2 rounded-lg bg-orange-50 p-3 text-sm">
-                    <span>{activeCampaign.title} · Offer ends in</span>
-                    <OfferCountdown endsAt={activeCampaign.endsAt} />
+                <div className="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-[#ff334f] to-[#ff6d00] px-3 py-2 text-sm font-bold text-white sm:px-4">
+                    <span>{activeCampaign.title}</span>
+                    <span className="flex items-center gap-2">
+                        Ends in{' '}
+                        <OfferCountdown endsAt={activeCampaign.endsAt} />
+                    </span>
                 </div>
             )}
+            <div className="p-3 sm:p-4">
+                <div className="flex flex-wrap items-center gap-2 text-sm font-bold text-[#ff334f]">
+                    <span>Deal price</span>
+                    {displayedDiscountPercentage !== null &&
+                        displayedDiscountPercentage > 0 && (
+                            <span className="rounded bg-[#ff334f] px-2 py-0.5 text-white">
+                                {displayedDiscountPercentage}% OFF
+                            </span>
+                        )}
+                </div>
+                <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <p className="text-4xl font-black tracking-[-0.04em] text-[#ff334f] sm:text-5xl xl:text-4xl">
+                        {formatPrice(displayedSellingPrice)}
+                    </p>
+                    {displayedMarketPrice &&
+                        Number(displayedMarketPrice) >
+                            Number(displayedSellingPrice) && (
+                            <span className="text-sm text-slate-400 line-through">
+                                {formatPrice(displayedMarketPrice)}
+                            </span>
+                        )}
+                </div>
+                {isWholesaleQuantity && (
+                    <p className="mt-2 text-sm font-bold text-orange-700">
+                        Wholesale unit price · MOQ {wholesaleMinimum}
+                    </p>
+                )}
+                {listing.retailEnabled && listing.wholesaleEnabled && (
+                    <p className="mt-2 text-sm text-slate-600">
+                        Retail{' '}
+                        {formatPrice(
+                            selectedVariant?.sellingPrice ??
+                                listing.salePrice ??
+                                listing.price,
+                        )}{' '}
+                        · Wholesale {formatPrice(wholesalePrice)} from{' '}
+                        {wholesaleMinimum} units
+                    </p>
+                )}
+                {displayedDiscountPercentage !== null &&
+                    displayedDiscountPercentage > 0 && (
+                        <p className="mt-3 rounded-lg bg-rose-100/70 px-3 py-2 text-sm font-bold text-rose-700">
+                            Extra savings:{' '}
+                            {formatPrice(
+                                String(
+                                    Number(displayedMarketPrice) -
+                                        Number(displayedSellingPrice),
+                                ),
+                            )}
+                        </p>
+                    )}
+            </div>
         </div>
     );
 
@@ -332,9 +361,10 @@ export default function ListingShow({
             description={listing.metaDescription ?? listing.shortDescription}
             categories={categories}
             activeCategorySlugs={categoryTrail.map((item) => item.slug)}
+            showMobileNavigation={false}
         >
-            <main className="product-page storefront-container pt-5 pb-36 lg:pb-8">
-                <div className="mb-5">
+            <main className="product-page storefront-container bg-slate-50 pt-3 pb-24 sm:bg-white lg:pt-5 lg:pb-8">
+                <div className="mb-5 hidden lg:block">
                     <StorefrontBreadcrumbs
                         items={[
                             { label: 'Home', href: home.url() },
@@ -347,13 +377,13 @@ export default function ListingShow({
                     />
                 </div>
 
-                <div className="grid items-start gap-7 lg:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_18rem]">
+                <div className="grid items-start gap-3 lg:grid-cols-2 lg:gap-6 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,1fr)_20rem] xl:gap-5">
                     <ProductGallery
                         key={selectedVariant?.image?.cardUrl ?? 'base-gallery'}
                         listing={listing}
                         featuredImageUrl={selectedVariant?.image?.cardUrl}
                     />
-                    <section className="min-w-0">
+                    <section className="min-w-0 rounded-xl bg-white p-4 shadow-[0_2px_16px_rgba(15,23,42,0.05)] lg:rounded-none lg:p-0 lg:shadow-none">
                         {listing.brand && (
                             <Link
                                 href={brandShow(listing.brand.slug)}
@@ -362,7 +392,7 @@ export default function ListingShow({
                                 {listing.brand.name}
                             </Link>
                         )}
-                        <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+                        <h1 className="mt-2 text-xl font-black tracking-tight text-slate-950 sm:text-3xl">
                             {listing.title}
                         </h1>
                         <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
@@ -380,12 +410,13 @@ export default function ListingShow({
                                 {questions.length} answered questions
                             </a>
                         </div>
+                        <div className="mt-4">{offerSummary}</div>
                         {listing.shortDescription && (
-                            <p className="mt-5 text-base leading-6 text-slate-600">
+                            <p className="mt-4 text-base leading-6 text-slate-600">
                                 {listing.shortDescription}
                             </p>
                         )}
-                        <dl className="mt-5 grid gap-3 text-sm text-slate-600">
+                        <dl className="mt-4 grid gap-2 border-t border-slate-100 pt-4 text-sm text-slate-600">
                             {[
                                 ['Brand', listing.brand?.name],
                                 ['Model', listing.model],
@@ -400,7 +431,6 @@ export default function ListingShow({
                                     </div>
                                 ))}
                         </dl>
-                        <div className="mt-5 xl:hidden">{offerSummary}</div>
                         <div className="mt-5 flex flex-wrap items-center gap-3 text-sm">
                             <span
                                 className={`font-bold ${isOutOfStock ? 'text-red-600' : 'text-emerald-600'}`}
@@ -489,32 +519,12 @@ export default function ListingShow({
                         )}
 
                         {listing.listingType === 'buy_now' ? (
-                            <ProductPurchase
-                                listingId={listing.id}
-                                variantId={selectedVariant?.id}
-                                stockLimit={
-                                    listing.productType === 'variant'
-                                        ? (selectedVariant?.stockQuantity ??
-                                          100)
-                                        : listing.stockStatus === 'backorder'
-                                          ? 100000
-                                          : listing.stockQuantity
-                                }
-                                quantity={quantity}
-                                setQuantity={setQuantity}
-                                canPurchase={canPurchase}
-                                isOutOfStock={isOutOfStock}
-                                needsVariant={
-                                    listing.productType === 'variant' &&
-                                    !selectedVariant
-                                }
-                                price={formatPrice(displayedSellingPrice)}
-                                minimumQuantity={
-                                    listing.retailEnabled
-                                        ? 1
-                                        : (wholesaleMinimum ?? 2)
-                                }
-                            />
+                            <div className="xl:hidden">
+                                <ProductPurchase
+                                    {...purchaseProps}
+                                    instanceId="responsive"
+                                />
+                            </div>
                         ) : (
                             listing.auction && (
                                 <Form
@@ -618,11 +628,19 @@ export default function ListingShow({
                         )}
                     </section>
                     <aside
-                        className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm xl:block"
+                        className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white p-5 shadow-sm xl:sticky xl:top-24 xl:block"
                         aria-label="Price and seller information"
                     >
-                        {offerSummary}
-                        <div className="mt-5 grid gap-5 border-t border-slate-100 pt-5 text-sm">
+                        <div className="-mx-5 -mt-5 bg-emerald-50 px-5 py-3 text-base font-black text-emerald-700">
+                            Service commitment
+                        </div>
+                        {listing.listingType === 'buy_now' && (
+                            <ProductPurchase
+                                {...purchaseProps}
+                                instanceId="desktop"
+                            />
+                        )}
+                        <div className="mt-5 grid gap-4 border-t border-slate-100 pt-5 text-sm">
                             <div className="flex gap-3">
                                 <Truck className="size-4 shrink-0 text-[#ff5a00]" />
                                 <div>

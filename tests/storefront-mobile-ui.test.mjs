@@ -46,22 +46,42 @@ test('mobile storefront header avoids duplicating bottom navigation', async () =
         layout,
         /storefront-container hidden items-center gap-5 pb-2 lg:flex/,
     );
+    assert.ok(
+        layout.indexOf('aria-label="ProDeals.lk home"') <
+            layout.indexOf('<MobileStorefrontCategoryMenu'),
+    );
 });
 
-test('product purchase actions stay docked above mobile navigation', async () => {
+test('product purchase actions replace navigation at the device bottom', async () => {
     const purchase = await readFile(
         resourcePath('components/product-purchase.tsx'),
         'utf8',
     );
+    const productPage = await readFile(
+        resourcePath('pages/storefront/listings/show.tsx'),
+        'utf8',
+    );
 
     assert.match(purchase, /aria-label="Quick purchase"/);
-    assert.match(
-        purchase,
-        /bottom-\[calc\(4\.5rem\+env\(safe-area-inset-bottom\)\)\]/,
-    );
+    assert.match(purchase, /fixed inset-x-0 bottom-0/);
+    assert.match(purchase, /safe-area-inset-bottom/);
     assert.match(purchase, /Add to Cart/);
     assert.match(purchase, /Checkout/);
     assert.doesNotMatch(purchase, /IntersectionObserver|showSticky/);
+    assert.match(productPage, /showMobileNavigation=\{false\}/);
+});
+
+test('product page keeps three columns with a compact deal presentation', async () => {
+    const productPage = await readFile(
+        resourcePath('pages/storefront/listings/show.tsx'),
+        'utf8',
+    );
+
+    assert.match(productPage, /xl:grid-cols-\[/);
+    assert.match(productPage, /Deal price/);
+    assert.match(productPage, /Extra savings:/);
+    assert.match(productPage, /Service commitment/);
+    assert.match(productPage, /instanceId="desktop"/);
 });
 
 test('checkout flow keeps its focused mobile actions unobstructed', async () => {
