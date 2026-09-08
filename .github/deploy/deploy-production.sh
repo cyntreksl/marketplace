@@ -209,9 +209,9 @@ smoke_product() {
     local product_url
 
     product_sitemap_url="$(curl --fail --silent --show-error --max-time 30 https://prodeals.lk/sitemap.xml \
-        | grep -oE '<loc>[^<]*sitemaps/products-[^<]+' | head -1 | cut -c6-)"
+        | grep -oE '<loc>[^<]*sitemaps/products-[^<]+' | sed -n '1p' | cut -c6-)"
     product_url="$(curl --fail --silent --show-error --max-time 30 "$product_sitemap_url" \
-        | grep -oE '<loc>[^<]+' | head -1 | cut -c6-)"
+        | grep -oE '<loc>[^<]+' | sed -n '1p' | cut -c6-)"
     curl --fail --silent --show-error --max-time 30 "$product_url" > "$product_html"
     grep -q '<h1' "$product_html"
     grep -qE 'Rs\.|LKR' "$product_html"
