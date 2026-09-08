@@ -12,6 +12,21 @@ function formatPrice(value: string | null): string {
     return `Rs. ${Number(value).toLocaleString('en-LK')}`;
 }
 
+function ListingPrice({ value }: { value: string | null }) {
+    if (!value) {
+        return 'Contact seller';
+    }
+
+    return (
+        <>
+            <span className="mr-1 text-sm font-semibold tracking-normal">
+                Rs.
+            </span>
+            {Number(value).toLocaleString('en-LK')}
+        </>
+    );
+}
+
 export function ListingCard({ listing }: { listing: StorefrontListing }) {
     const isWholesale = usePage().url.split('?')[0] === '/wholesale';
     const detailHref = listingShow(listing.slug, {
@@ -81,7 +96,7 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
 
                 <div className="mt-2 flex flex-col gap-1">
                     <p className="text-[clamp(1rem,12cqi,1.5rem)] leading-8 font-bold tracking-tight break-words text-slate-950">
-                        {formatPrice(listing.effectivePrice)}
+                        <ListingPrice value={listing.effectivePrice} />
                     </p>
                     {isWholesale && (
                         <p className="text-xs font-bold text-[#FF6D00]">
