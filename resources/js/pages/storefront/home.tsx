@@ -215,6 +215,49 @@ function ProductRow({
     );
 }
 
+function ProductGrid({
+    title,
+    href,
+    listings,
+}: {
+    title: string;
+    href: string;
+    listings: StorefrontListing[];
+}) {
+    if (listings.length === 0) {
+        return (
+            <div>
+                <SectionTitle title={title} href={href} />
+                <p className="rounded-xl border border-dashed p-6 text-center text-xs text-slate-600">
+                    Products will appear here as the collection is curated.
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div>
+            <SectionTitle title={title} href={href} />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                {listings.slice(0, 18).map((listing, index) => (
+                    <div
+                        key={listing.id}
+                        className={
+                            index < 6
+                                ? undefined
+                                : index < 9
+                                  ? 'hidden sm:block'
+                                  : 'hidden lg:block'
+                        }
+                    >
+                        <ListingCard listing={listing} />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 function Countdown({ endsAt }: { endsAt: string }) {
     const [remaining, setRemaining] = useState(() =>
         Math.max(0, new Date(endsAt).getTime() - Date.now()),
@@ -355,7 +398,7 @@ export default function StorefrontHome({
                 </section>
 
                 <section className="mt-5">
-                    <ProductRow
+                    <ProductGrid
                         title="Featured Deals"
                         href="/collections/featured"
                         listings={
@@ -443,7 +486,7 @@ export default function StorefrontHome({
                 )}
 
                 <section className="mt-6">
-                    <ProductRow
+                    <ProductGrid
                         title="New Arrivals"
                         href="/collections/new-arrivals"
                         listings={newArrivals}
