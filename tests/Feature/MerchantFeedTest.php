@@ -1,9 +1,11 @@
 <?php
 
 use App\Models\Auction;
+use App\Models\Category;
 use App\Models\Listing;
 use App\Models\ListingMedia;
 use App\Models\ListingVariant;
+use App\Models\SellerProfile;
 
 test('merchant feed exposes live buy-now catalog data with shipping and no session', function () {
     $listing = Listing::factory()->create([
@@ -65,4 +67,66 @@ test('merchant feed emits active variants as stable grouped offers', function ()
         ->assertSee('<g:item_group_id>listing-'.$listing->id.'</g:item_group_id>', false)
         ->assertSee('<g:mpn>BLUE-M</g:mpn>', false)
         ->assertDontSee('INACTIVE', false);
+
+    $items = simplexml_load_string($response->getContent())->channel->item;
+    expect($items)->toHaveCount(1)
+        ->and((string) $items[0]->children('http://base.google.com/ns/1.0')->id)
+        ->toBe('listing-'.$listing->id.'-variant-'.$variant->id);
+});
+
+test('merchant feed contains the full approved catalog including sold out products', function () {
+    $listings = Listing::factory()->count(12)
+        ->has(ListingMedia::factory(), 'media')
+        ->create();
+    $soldOut = $listings->last();
+    $soldOut->update(['stock_quantity' => 0, 'reserved_quantity' => 0, 'allow_backorders' => false]);
+
+    foreach (['draft', 'pending_review', 'changes_requested', 'rejected', 'archived'] as $status) {
+        Listing::factory()->has(ListingMedia::factory(), 'media')->create(['status' => $status]);
+    }
+
+    Listing::factory()->has(ListingMedia::factory(), 'media')->create(['is_active' => false]);
+    Listing::factory()->has(ListingMedia::factory(), 'media')
+        ->for(SellerProfile::factory()->state(['status' => 'pending_review']))
+        ->create();
+    Listing::factory()->has(ListingMedia::factory(), 'media')
+        ->for(Category::factory()->state(['is_active' => false]))
+        ->create();
+    Listing::factory()->has(ListingMedia::factory(), 'media')
+        ->for(Category::factory()->state(['is_taxonomy_available' => false]))
+        ->create();
+    Listing::factory()->has(ListingMedia::factory(), 'media')->create()->delete();
+
+    $response = $this->get(route('feeds.google_merchant'))->assertOk();
+    $items = simplexml_load_string($response->getContent())->channel->item;
+    $offers = collect(iterator_to_array($items, false))
+        ->mapWithKeys(function (SimpleXMLElement $item): array {
+            $product = $item->children('http://base.google.com/ns/1.0');
+
+            return [(string) $product->id => (string) $product->availability];
+        });
+
+    expect($offers)->toHaveCount(12)
+        ->and($offers->keys()->all())->toBe($listings->map(fn (Listing $listing): string => 'listing-'.$listing->id)->all())
+        ->and($offers['listing-'.$soldOut->id])->toBe('out_of_stock')
+        ->and($offers->filter(fn (string $availability): bool => $availability === 'in_stock'))->toHaveCount(11);
+});
+
+test('new approvals enter the feed and sitemap and archival removes them', function () {
+    Listing::factory()->has(ListingMedia::factory(), 'media')->create();
+    $listing = Listing::factory()->has(ListingMedia::factory(), 'media')->create(['status' => 'pending_review']);
+    $offerId = '<g:id>listing-'.$listing->id.'</g:id>';
+
+    $this->get(route('feeds.google_merchant'))->assertOk()->assertDontSee($offerId, false);
+    $this->get(route('sitemap.products', 1))->assertOk()->assertDontSee(route('listings.show', $listing->slug), false);
+
+    $listing->update(['status' => 'approved']);
+
+    $this->get(route('feeds.google_merchant'))->assertOk()->assertSee($offerId, false);
+    $this->get(route('sitemap.products', 1))->assertOk()->assertSee(route('listings.show', $listing->slug), false);
+
+    $listing->update(['status' => 'archived']);
+
+    $this->get(route('feeds.google_merchant'))->assertOk()->assertDontSee($offerId, false);
+    $this->get(route('sitemap.products', 1))->assertOk()->assertDontSee(route('listings.show', $listing->slug), false);
 });

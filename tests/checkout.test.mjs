@@ -85,6 +85,7 @@ const item = {
 function renderCheckout(overrides = {}, billingAddress = null) {
     return renderToStaticMarkup(
         createElement(Checkout, {
+            savedAddresses: [],
             shippingAddress: null,
             billingAddress,
             cart: {
@@ -189,7 +190,7 @@ test('checkout exposes one payment action and prevents checkout for unavailable 
     );
 });
 
-test('the sticky summary ends after payment controls and has no internal scroll box', () => {
+test('the sticky summary includes payment reassurance and has no internal scroll box', () => {
     const html = renderCheckout();
     const summary = html.match(
         /<aside[^>]*id="order-summary"[^>]*>[\s\S]*?<\/aside>/,
@@ -202,7 +203,10 @@ test('the sticky summary ends after payment controls and has no internal scroll 
     assert.match(summaryOpeningTag, /style="top:[1-9][0-9]*px"/);
     assert.doesNotMatch(summaryOpeningTag, /100dvh|calc\(/);
     assert.doesNotMatch(summary, /overflow-y-auto|max-h-|100% Secure Checkout/);
-    assert.ok(html.indexOf('100% Secure Checkout') > html.indexOf('</aside>'));
+    assert.ok(
+        summary.indexOf('Safe, secure and encrypted') >
+            summary.indexOf('Continue to Payment'),
+    );
 });
 
 test('review and confirmation show the chosen billing address without a misleading same-address label', () => {

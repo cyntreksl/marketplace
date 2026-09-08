@@ -285,6 +285,7 @@ class ProductStructuredDataService
             'applicableCountry' => 'LK',
             'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
             'merchantReturnDays' => $days,
+            'returnFees' => 'https://schema.org/FreeReturn',
         ];
     }
 

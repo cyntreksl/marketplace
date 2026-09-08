@@ -65,6 +65,8 @@ test('simple products render safe merchant JSON-LD with Sri Lankan commerce valu
         ->and($product['offers']['availability'])->toBe('https://schema.org/InStock')
         ->and($product['offers']['hasMerchantReturnPolicy']['applicableCountry'])->toBe('LK')
         ->and($product['offers']['hasMerchantReturnPolicy']['merchantReturnDays'])->toBe(7)
+        ->and($product['offers']['hasMerchantReturnPolicy']['returnFees'])->toBe('https://schema.org/FreeReturn')
+        ->and($product['offers']['hasMerchantReturnPolicy'])->not->toHaveKey('returnMethod')
         ->and($product['offers']['shippingDetails']['shippingRate']['value'])->toBe(600)
         ->and($product['offers']['shippingDetails']['deliveryTime']['handlingTime']['minValue'])->toBe(1)
         ->and($product['offers']['shippingDetails']['deliveryTime']['transitTime']['maxValue'])->toBe(5)
@@ -80,7 +82,8 @@ test('zero-day categories declare that returns are not permitted', function () {
     $product = collect(productSeoGraphs($this->get(route('listings.show', $listing->slug))->getContent()))->firstWhere('@type', 'Product');
 
     expect($product['offers']['hasMerchantReturnPolicy']['returnPolicyCategory'])
-        ->toBe('https://schema.org/MerchantReturnNotPermitted');
+        ->toBe('https://schema.org/MerchantReturnNotPermitted')
+        ->and($product['offers']['hasMerchantReturnPolicy'])->not->toHaveKey('returnFees');
 });
 
 test('aggregate ratings and shipping are emitted only from genuine and complete data', function () {

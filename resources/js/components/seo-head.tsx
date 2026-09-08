@@ -117,23 +117,25 @@ export function SeoHead() {
                 content={seo.openGraph.image}
             />
             {seo.product && (
-                <>
-                    <meta
-                        head-key="product:price:amount"
-                        property="product:price:amount"
-                        content={seo.product.price ?? ''}
-                    />
-                    <meta
-                        head-key="product:price:currency"
-                        property="product:price:currency"
-                        content={seo.product.currency}
-                    />
-                    <meta
-                        head-key="product:availability"
-                        property="product:availability"
-                        content={seo.product.availability}
-                    />
-                </>
+                <meta
+                    head-key="product:price:amount"
+                    property="product:price:amount"
+                    content={seo.product.price ?? ''}
+                />
+            )}
+            {seo.product && (
+                <meta
+                    head-key="product:price:currency"
+                    property="product:price:currency"
+                    content={seo.product.currency}
+                />
+            )}
+            {seo.product && (
+                <meta
+                    head-key="product:availability"
+                    property="product:availability"
+                    content={seo.product.availability}
+                />
             )}
             {seo.jsonLd.map((graph, index) => (
                 <script
