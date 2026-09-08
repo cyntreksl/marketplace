@@ -149,7 +149,7 @@ class EloquentListingRepository implements ListingRepository
             ->lazyById(column: 'listings.id', alias: 'id');
     }
 
-    public function homepageBestOffers(int $limit = 8): Collection
+    public function homepageBestOffers(int $limit = 18): Collection
     {
         return $this->publicQuery()
             ->where('listings.is_best_offer', true)
@@ -161,7 +161,7 @@ class EloquentListingRepository implements ListingRepository
             ->get();
     }
 
-    public function homepageNewArrivals(int $limit = 8): Collection
+    public function homepageNewArrivals(int $limit = 18): Collection
     {
         return $this->publicQuery()
             ->where('listings.is_new_arrival', true)
@@ -235,7 +235,7 @@ class EloquentListingRepository implements ListingRepository
         return $listing;
     }
 
-    public function featuredDeals(int $limit = 10): Collection
+    public function featuredDeals(int $limit = 18): Collection
     {
         return $this->publicQuery()->where('listings.is_featured', true)->latest('listings.created_at')->limit($limit)->get();
     }

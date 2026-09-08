@@ -38,10 +38,10 @@ interface ListingRepository
     public function merchantProducts(): LazyCollection;
 
     /** @return Collection<int, Listing> */
-    public function homepageBestOffers(int $limit = 8): Collection;
+    public function homepageBestOffers(int $limit = 18): Collection;
 
     /** @return Collection<int, Listing> */
-    public function homepageNewArrivals(int $limit = 8): Collection;
+    public function homepageNewArrivals(int $limit = 18): Collection;
 
     /** @return Collection<int, Listing> */
     public function homepageForCategory(string $categorySlug, int $limit = 6): Collection;
@@ -61,7 +61,7 @@ interface ListingRepository
     public function updateMerchandising(Listing $listing, array $placements): Listing;
 
     /** @return Collection<int, Listing> */
-    public function featuredDeals(int $limit = 10): Collection;
+    public function featuredDeals(int $limit = 18): Collection;
 
     /** @return Collection<int, Listing> */
     public function bestSellers(int $limit = 10): Collection;
