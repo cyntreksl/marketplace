@@ -379,7 +379,10 @@ export default function BuyerReview({
     paymentMethod: CheckoutPaymentMethod;
 }) {
     return (
-        <StorefrontLayout title="Review & Place Order">
+        <StorefrontLayout
+            title="Review & Place Order"
+            showMobileNavigation={false}
+        >
             <Head title="Review & Place Order" />
             <main className="storefront-container py-5 sm:py-7">
                 <CheckoutProgress current="review" />

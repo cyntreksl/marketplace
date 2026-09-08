@@ -28,7 +28,7 @@ export default function BuyerPayment({
               : cart.paymentMethods[0];
 
     return (
-        <StorefrontLayout title="Payment">
+        <StorefrontLayout title="Payment" showMobileNavigation={false}>
             <Head title="Payment" />
             <main className="storefront-container py-6 sm:py-7">
                 <CheckoutProgress current="payment" />

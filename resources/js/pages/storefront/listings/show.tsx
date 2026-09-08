@@ -333,7 +333,7 @@ export default function ListingShow({
             categories={categories}
             activeCategorySlugs={categoryTrail.map((item) => item.slug)}
         >
-            <main className="product-page storefront-container pt-5 pb-28 lg:pb-8">
+            <main className="product-page storefront-container pt-5 pb-36 lg:pb-8">
                 <div className="mb-5">
                     <StorefrontBreadcrumbs
                         items={[

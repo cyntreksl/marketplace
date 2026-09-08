@@ -251,7 +251,10 @@ export default function BuyerThankYou({
     }, [order]);
 
     return (
-        <StorefrontLayout title="Thank You for Your Order">
+        <StorefrontLayout
+            title="Thank You for Your Order"
+            showMobileNavigation={false}
+        >
             <Head
                 title={`Order ${order.number} — ${formatStatus(order.status)}`}
             />

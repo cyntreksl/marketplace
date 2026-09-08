@@ -1,6 +1,5 @@
 import { Form } from '@inertiajs/react';
 import { Minus, Plus, ShoppingCart, ArrowRight } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
 import { store as addCartItem } from '@/actions/App/Http/Controllers/CartController';
 import { trackEvent } from '@/lib/tracking';
 
@@ -27,24 +26,6 @@ export function ProductPurchase({
     stockLimit: number;
     minimumQuantity?: number;
 }) {
-    const actionsRef = useRef<HTMLDivElement>(null);
-    const [showSticky, setShowSticky] = useState(false);
-    useEffect(() => {
-        const node = actionsRef.current;
-
-        if (!node) {
-            return;
-        }
-
-        const observer = new IntersectionObserver(([entry]) =>
-            setShowSticky(
-                !entry.isIntersecting && entry.boundingClientRect.top < 0,
-            ),
-        );
-        observer.observe(node);
-
-        return () => observer.disconnect();
-    }, []);
     const formId = `purchase-${listingId}`;
     const maximumQuantity = Math.max(
         minimumQuantity,
@@ -178,10 +159,7 @@ export function ProductPurchase({
                             {message}
                         </p>
                     )}
-                    <div
-                        ref={actionsRef}
-                        className="mt-4 grid grid-cols-2 gap-3"
-                    >
+                    <div className="mt-4 grid grid-cols-2 gap-3">
                         <button
                             disabled={processing || purchaseDisabled}
                             className="flex min-h-13 items-center justify-center gap-2 rounded-lg border border-[#ff5a00] bg-white text-sm font-bold text-orange-700 transition hover:bg-orange-50 disabled:opacity-50"
@@ -195,7 +173,7 @@ export function ProductPurchase({
                             disabled={processing || purchaseDisabled}
                             className="flex min-h-13 items-center justify-center gap-2 rounded-lg bg-[#ff5a00] text-sm font-bold text-white transition hover:bg-orange-600 disabled:opacity-50"
                         >
-                            Buy Now <ArrowRight className="size-4" />
+                            Checkout <ArrowRight className="size-4" />
                         </button>
                     </div>
                     {Object.entries(errors).map(([key, error]) => (
@@ -207,42 +185,43 @@ export function ProductPurchase({
                             {error}
                         </p>
                     ))}
-                    {showSticky && (
-                        <div
-                            aria-label="Quick purchase"
-                            className="fixed inset-x-0 bottom-0 z-40 border-t border-orange-100 bg-white/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-8px_30px_-12px_rgba(15,23,42,0.15)] backdrop-blur-xl lg:hidden"
-                        >
-                            <div className="mx-auto flex max-w-3xl items-center gap-3">
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-sm text-slate-500">
-                                        {quantity}{' '}
-                                        {quantity === 1 ? 'item' : 'items'}
-                                    </p>
-                                    <p className="text-lg font-black text-slate-950">
-                                        {price}
-                                    </p>
-                                </div>
+                    <div
+                        aria-label="Quick purchase"
+                        className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 border-t border-orange-100 bg-white/95 px-4 py-2.5 shadow-[0_-8px_30px_-12px_rgba(15,23,42,0.15)] backdrop-blur-xl lg:hidden"
+                    >
+                        <div className="mx-auto max-w-3xl">
+                            <div className="mb-2 flex items-center justify-between gap-3">
+                                <p className="text-lg font-black text-slate-950">
+                                    {price}
+                                </p>
+                                <p className="text-sm font-medium text-slate-500">
+                                    {quantity}{' '}
+                                    {quantity === 1 ? 'item' : 'items'}
+                                </p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
                                 <button
                                     form={formId}
                                     type="submit"
                                     disabled={processing || purchaseDisabled}
-                                    aria-label="Add to Cart"
-                                    className="grid size-12 place-items-center rounded-xl border border-orange-300 text-orange-700 disabled:opacity-50"
+                                    className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-orange-300 bg-white px-3 text-sm font-bold text-orange-700 transition hover:bg-orange-50 disabled:opacity-50"
                                 >
-                                    <ShoppingCart className="size-5" />
+                                    <ShoppingCart className="size-4" />
+                                    {processing ? 'Adding…' : 'Add to Cart'}
                                 </button>
                                 <button
                                     form={formId}
                                     name="buy_now"
                                     value="1"
                                     disabled={processing || purchaseDisabled}
-                                    className="min-h-12 rounded-xl bg-primary px-5 text-sm font-bold text-white disabled:opacity-50"
+                                    className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-sm font-bold text-white transition hover:bg-orange-600 disabled:opacity-50"
                                 >
-                                    {processing ? 'Adding…' : 'Buy Now'}
+                                    {processing ? 'Adding…' : 'Checkout'}
+                                    <ArrowRight className="size-4" />
                                 </button>
                             </div>
                             {message && (
-                                <p className="mx-auto mt-1 max-w-3xl text-sm text-amber-800">
+                                <p className="mt-1.5 text-sm text-amber-800">
                                     {message}
                                 </p>
                             )}
@@ -250,13 +229,13 @@ export function ProductPurchase({
                                 <p
                                     key={error}
                                     role="alert"
-                                    className="mx-auto max-w-3xl text-sm text-red-600"
+                                    className="text-sm text-red-600"
                                 >
                                     {error}
                                 </p>
                             ))}
                         </div>
-                    )}
+                    </div>
                 </>
             )}
         </Form>

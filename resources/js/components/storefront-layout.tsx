@@ -15,6 +15,7 @@ import {
 } from '@/components/storefront-category-menu';
 import type { StorefrontCategory } from '@/components/storefront-category-menu';
 import { StorefrontFooter } from '@/components/storefront-footer';
+import { StorefrontMobileNavigation } from '@/components/storefront-mobile-navigation';
 import { home, login } from '@/routes';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
 import { index as listingsIndex } from '@/routes/listings';
@@ -42,12 +43,14 @@ export function StorefrontLayout({
     children,
     categories,
     activeCategorySlugs = [],
+    showMobileNavigation = true,
 }: {
     children: React.ReactNode;
     title: string;
     description?: string | null;
     categories?: StorefrontCategory[];
     activeCategorySlugs?: string[];
+    showMobileNavigation?: boolean;
 }) {
     const { component, url, props } = usePage<{
         categories?: StorefrontCategory[];
@@ -85,8 +88,14 @@ export function StorefrontLayout({
     ] as const;
 
     return (
-        <div className="min-h-screen bg-white text-slate-950">
-            <div className="bg-[#FF6D00] text-white">
+        <div
+            className={`min-h-screen bg-white text-slate-950 ${
+                showMobileNavigation
+                    ? 'pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0'
+                    : ''
+            }`}
+        >
+            <div className="hidden bg-[#FF6D00] text-white lg:block">
                 <div className="storefront-container flex min-h-10 items-center justify-between gap-4 overflow-x-auto text-xs whitespace-nowrap">
                     <div className="flex shrink-0 items-center gap-3 font-medium sm:gap-6">
                         <span className="flex min-w-0 items-center">
@@ -169,7 +178,7 @@ export function StorefrontLayout({
                             </button>
                         </label>
                     </Form>
-                    <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+                    <div className="ml-auto hidden shrink-0 items-center gap-1 sm:gap-2 lg:flex">
                         <Link
                             href={auth.user ? buyerOrdersIndex() : login()}
                             aria-label={auth.user ? 'My account' : 'Sign in'}
@@ -215,7 +224,7 @@ export function StorefrontLayout({
 
                 <nav
                     aria-label="Storefront navigation"
-                    className="storefront-container flex items-center gap-5 pb-2"
+                    className="storefront-container hidden items-center gap-5 pb-2 lg:flex"
                 >
                     {isHomePage && (
                         <div className="hidden shrink-0 lg:block">
@@ -266,6 +275,7 @@ export function StorefrontLayout({
             </header>
             {children}
             <StorefrontFooter />
+            {showMobileNavigation && <StorefrontMobileNavigation />}
         </div>
     );
 }

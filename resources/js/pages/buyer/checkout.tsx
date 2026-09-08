@@ -223,7 +223,7 @@ export default function BuyerCheckout({
     }, [cart.items, cart.total]);
 
     return (
-        <StorefrontLayout title="Checkout">
+        <StorefrontLayout title="Checkout" showMobileNavigation={false}>
             <Head title="Checkout" />
             <main
                 className={`storefront-container pt-5 sm:pt-7 ${cart.items.length > 0 ? 'pb-44 lg:pb-7' : 'pb-7'}`}
