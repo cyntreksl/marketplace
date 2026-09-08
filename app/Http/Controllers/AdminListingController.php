@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\Repositories\CatalogRepository;
+use App\Http\Requests\AdminListingIndexRequest;
 use App\Http\Requests\UpdateListingDetailsRequest;
 use App\Http\Requests\UpdateListingModerationRequest;
 use App\Models\Brand;
@@ -17,12 +18,25 @@ use Inertia\Response;
 
 class AdminListingController extends Controller
 {
-    public function index(Request $request, AdminListingService $listings): Response
+    public function index(AdminListingIndexRequest $request, AdminListingService $listings): Response
     {
-        abort_unless($request->user()->can('viewAny', Listing::class), 403);
+        $filters = $request->filters('pending_review');
 
         return Inertia::render('admin/listings/index', [
-            'listings' => $listings->moderationQueue($request->only(['search', 'status'])),
+            'listings' => $listings->moderationQueue($filters),
+            'filters' => $filters,
+            'view' => 'moderation',
+        ]);
+    }
+
+    public function products(AdminListingIndexRequest $request, AdminListingService $listings): Response
+    {
+        $filters = $request->filters('all');
+
+        return Inertia::render('admin/listings/index', [
+            'listings' => $listings->allProducts($filters),
+            'filters' => $filters,
+            'view' => 'all',
         ]);
     }
 

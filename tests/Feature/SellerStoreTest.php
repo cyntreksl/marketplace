@@ -16,19 +16,22 @@ test('public stores expose only public seller fields and eligible products', fun
     $product = Listing::factory()->for($seller)->create();
     Listing::factory()->create();
     Listing::factory()->for($seller)->create(['status' => 'draft']);
-    Listing::factory()->for($seller)->create(['stock_quantity' => 0, 'reserved_quantity' => 0]);
+    $soldOutProduct = Listing::factory()->for($seller)->create(['stock_quantity' => 0, 'reserved_quantity' => 0]);
     $this->get(route('stores.show', $seller->slug))->assertOk()->assertHeaderMissing('X-Robots-Tag')->assertInertia(fn (Assert $page) => $page
         ->component('storefront/stores/show')
         ->where('seller.store_name', $seller->store_name)
-        ->where('seller.productCount', 1)
+        ->where('seller.productCount', 2)
         ->where('seller.about', 'Everyday kitchen essentials.')
         ->where('seller.sellingSince', $seller->approved_at->format('F Y'))
         ->missing('seller.phone')->missing('seller.pickup_address')->missing('seller.return_address')
         ->missing('seller.bank_account_details')->missing('seller.documents')->missing('seller.review_reason')
-        ->where('listings.total', 1)->where('listings.data.0.id', $product->id)
+        ->where('listings.total', 2)
+        ->where('listings.data.0.id', $product->id)
+        ->where('listings.data.1.id', $soldOutProduct->id)
+        ->where('listings.data.1.stockStatus', 'out_of_stock')
         ->where('seo.robots', 'index,follow,max-image-preview:large'));
     $this->get(route('listings.show', $product->slug))->assertOk()->assertInertia(fn (Assert $page) => $page
-        ->where('sellerSummary.slug', $seller->slug)->where('sellerSummary.productCount', 1)->missing('sellerSummary.phone'));
+        ->where('sellerSummary.slug', $seller->slug)->where('sellerSummary.productCount', 2)->missing('sellerSummary.phone'));
 });
 
 test('ineligible and missing stores are not public', function (string $status) {

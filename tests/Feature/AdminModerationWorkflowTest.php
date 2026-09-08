@@ -24,8 +24,121 @@ test('an operations admin can approve sellers and listings with an audit trail',
         ->and(AuditLog::query()->count())->toBe(2);
 });
 
-test('a buyer cannot access operational moderation queues', function () {
+test('buyers and sellers cannot access operational moderation queues', function () {
     $this->actingAs(User::factory()->create())->get(route('admin.sellers.index'))->assertForbidden();
+    $this->actingAs(User::factory()->create())->get(route('admin.products.index'))->assertForbidden();
+
+    $seller = SellerProfile::factory()->create();
+
+    $this->actingAs($seller->user)->get(route('admin.listings.index'))->assertForbidden();
+    $this->actingAs($seller->user)->get(route('admin.products.index'))->assertForbidden();
+});
+
+test('listing reviews default to a paginated pending review queue', function () {
+    $admin = User::factory()->create();
+    $admin->roles()->attach(Role::factory()->create(['name' => Role::Admin, 'label' => 'Administrator']));
+    $seller = SellerProfile::factory()->create();
+    $category = Category::factory()->create();
+    $brand = Brand::factory()->create();
+
+    Listing::factory()
+        ->count(21)
+        ->recycle([$seller, $category, $brand])
+        ->create(['status' => 'pending_review', 'approved_at' => null]);
+    Listing::factory()->recycle([$seller, $category, $brand])->create(['status' => 'approved']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.listings.index', ['page' => 2]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/listings/index')
+            ->where('view', 'moderation')
+            ->where('filters.status', 'pending_review')
+            ->where('listings.current_page', 2)
+            ->where('listings.total', 21)
+            ->has('listings.data', 1));
+});
+
+test('listing reviews can be searched and filtered', function () {
+    $admin = User::factory()->create();
+    $admin->roles()->attach(Role::factory()->create(['name' => Role::Admin, 'label' => 'Administrator']));
+    $seller = SellerProfile::factory()->create(['store_name' => 'Precision Audio']);
+    $matching = Listing::factory()->for($seller)->create([
+        'title' => 'Reference monitor',
+        'status' => 'rejected',
+        'listing_type' => 'auction',
+        'product_type' => 'variant',
+        'condition' => 'refurbished',
+        'approved_at' => null,
+    ]);
+    Listing::factory()->for($seller)->create([
+        'status' => 'rejected',
+        'listing_type' => 'auction',
+        'product_type' => 'variant',
+        'condition' => 'used',
+        'approved_at' => null,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.listings.index', [
+            'search' => 'Precision Audio',
+            'status' => 'rejected',
+            'listing_type' => 'auction',
+            'product_type' => 'variant',
+            'condition' => 'refurbished',
+            'sort' => 'oldest',
+        ]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('filters.search', 'Precision Audio')
+            ->where('filters.status', 'rejected')
+            ->where('filters.sort', 'oldest')
+            ->where('listings.total', 1)
+            ->where('listings.data.0.id', $matching->id));
+});
+
+test('all products are paginated and support catalog filters', function () {
+    $admin = User::factory()->create();
+    $admin->roles()->attach(Role::factory()->create(['name' => Role::Admin, 'label' => 'Administrator']));
+    $seller = SellerProfile::factory()->create();
+    $category = Category::factory()->create();
+    $brand = Brand::factory()->create();
+
+    Listing::factory()
+        ->count(21)
+        ->recycle([$seller, $category, $brand])
+        ->create([
+            'title' => 'Catalog product',
+            'status' => 'approved',
+            'listing_type' => 'buy_now',
+            'product_type' => 'simple',
+            'condition' => 'new',
+        ]);
+    Listing::factory()->recycle([$seller, $category, $brand])->create([
+        'title' => 'Catalog product draft',
+        'status' => 'draft',
+        'condition' => 'new',
+        'approved_at' => null,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.products.index', [
+            'search' => 'Catalog product',
+            'status' => 'approved',
+            'listing_type' => 'buy_now',
+            'product_type' => 'simple',
+            'condition' => 'new',
+            'sort' => 'title',
+            'page' => 2,
+        ]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/listings/index')
+            ->where('view', 'all')
+            ->where('filters.status', 'approved')
+            ->where('listings.current_page', 2)
+            ->where('listings.total', 21)
+            ->has('listings.data', 1));
 });
 
 test('an operations admin can inspect every product detail before moderation', function () {

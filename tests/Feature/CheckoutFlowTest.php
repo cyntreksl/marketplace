@@ -255,6 +255,30 @@ test('buyer reviews and places an order before the checkout session and cart are
     );
 });
 
+test('checkout rejects an item that sells out after the review is prepared', function (): void {
+    $user = User::factory()->create();
+    $cart = Cart::factory()->for($user, 'buyer')->create();
+    $listing = Listing::factory()->create(['stock_quantity' => 1]);
+    CartItem::factory()->for($cart)->for($listing)->create(['quantity' => 1]);
+
+    $this->actingAs($user)->post(route('checkout.store'), [
+        'recipient_name' => 'Saman Perera',
+        'address_line_one' => '123, Galle Road',
+        'city' => 'Colombo',
+        'phone' => '0771234567',
+    ])->assertRedirect(route('checkout.payment.show'));
+    $this->post(route('checkout.payment.store'), ['payment_method' => 'cod'])
+        ->assertRedirect(route('checkout.review.show'));
+
+    $review = checkoutReviewData();
+    $listing->update(['reserved_quantity' => 1]);
+
+    $this->post(route('checkout.review.store'), $review)
+        ->assertSessionHasErrors(['cart' => 'Update unavailable items in your cart before checking out.']);
+
+    expect(CustomerOrder::query()->count())->toBe(0);
+});
+
 test('buyer can create a pending order with an online payment method', function (string $paymentMethod): void {
     config(['services.stripe.secret' => 'sk_test_fake', 'services.stripe.webhook_secret' => 'whsec_fake']);
     Http::fake(['api.stripe.com/*' => Http::response(['error' => ['message' => 'Unavailable']], 503)]);

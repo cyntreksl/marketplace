@@ -42,6 +42,11 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
     return (
         <article className="group @container flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-100/50">
             <div className="relative">
+                {listing.stockStatus === 'out_of_stock' && (
+                    <span className="absolute top-3 left-3 z-10 rounded-full bg-slate-900 px-3 py-1 text-xs font-bold text-white shadow-sm">
+                        Out of stock
+                    </span>
+                )}
                 <Link
                     href={detailHref}
                     onClick={trackSelection}
@@ -97,9 +102,6 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
 
                 {listing.listingType === 'auction' && (
                     <p className="mt-1 text-xs text-slate-500">Auction</p>
-                )}
-                {listing.stockStatus === 'out_of_stock' && (
-                    <p className="mt-1 text-xs text-slate-500">Out of stock</p>
                 )}
             </div>
         </article>

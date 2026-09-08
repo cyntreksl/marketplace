@@ -54,6 +54,18 @@ test('stock changes are visible in both shared and full cart summaries', functio
     $this->patch(route('cart.items.update', $listing->id.'-base'), ['quantity' => 4])->assertSessionHasErrors('quantity');
 });
 
+test('an item that sells out in the cart is labeled out of stock and prevents checkout', function (): void {
+    $listing = Listing::factory()->create(['stock_quantity' => 1]);
+    $this->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 1]);
+    $listing->update(['reserved_quantity' => 1]);
+
+    $this->get(route('cart.show'))->assertInertia(fn ($page) => $page
+        ->where('cart.canCheckout', false)
+        ->where('commerce.cart.canCheckout', false)
+        ->where('cart.items.0.availableQuantity', 0)
+        ->where('cart.items.0.error', 'This item is out of stock.'));
+});
+
 test('shipping is configurable and COD eligibility includes delivery', function (): void {
     MarketplaceSetting::query()->create(['key' => 'checkout.shipping_fee', 'group' => 'checkout', 'value' => ['value' => 750]]);
     $listing = Listing::factory()->create(['price' => 49500, 'sale_price' => null]);

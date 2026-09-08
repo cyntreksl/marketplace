@@ -57,7 +57,9 @@ class CartService
                     ? 'This quantity is no longer available.'
                     : "This wholesale item requires at least {$minimum} units.";
             } elseif ($error === null && ! $listing->allow_backorders && $entry['quantity'] > $available) {
-                $error = 'This quantity is no longer available.';
+                $error = $available === 0
+                    ? 'This item is out of stock.'
+                    : 'This quantity is no longer available.';
             }
             if ($entry['quantity'] > 100000) {
                 $error = 'Choose no more than 100,000 of each item.';

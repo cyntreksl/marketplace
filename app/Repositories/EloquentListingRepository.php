@@ -196,7 +196,8 @@ class EloquentListingRepository implements ListingRepository
 
     public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator
     {
-        return Listing::query()
+        $search = trim((string) ($filters['search'] ?? ''));
+        $query = Listing::query()
             ->with([
                 'auction',
                 'brand:id,name,deleted_at',
@@ -205,9 +206,24 @@ class EloquentListingRepository implements ListingRepository
                 'sellerProfile:id,store_name',
                 'variants:id,listing_id,gtin,mpn,selling_price,stock_quantity,reserved_quantity,is_active',
             ])
-            ->when($filters['search'] ?? null, fn (Builder $query, string $search): Builder => $query->where('title', 'like', "%{$search}%"))
-            ->when($filters['status'] ?? null, fn (Builder $query, string $status): Builder => $query->where('status', $status))
-            ->latest()
+            ->when($filters['review_only'] ?? false, fn (Builder $query): Builder => $query->whereIn('status', ['pending_review', 'changes_requested', 'rejected', 'suspended']))
+            ->when($search !== '', fn (Builder $query): Builder => $query->where(function (Builder $query) use ($search): void {
+                $query->where('title', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%")
+                    ->orWhereHas('sellerProfile', fn (Builder $query): Builder => $query->where('store_name', 'like', "%{$search}%"));
+            }))
+            ->when(($filters['status'] ?? 'all') !== 'all', fn (Builder $query): Builder => $query->where('status', $filters['status']))
+            ->when(($filters['listing_type'] ?? 'all') !== 'all', fn (Builder $query): Builder => $query->where('listing_type', $filters['listing_type']))
+            ->when(($filters['product_type'] ?? 'all') !== 'all', fn (Builder $query): Builder => $query->where('product_type', $filters['product_type']))
+            ->when(($filters['condition'] ?? 'all') !== 'all', fn (Builder $query): Builder => $query->where('condition', $filters['condition']));
+
+        match ($filters['sort'] ?? 'newest') {
+            'oldest' => $query->oldest(),
+            'title' => $query->orderBy('title')->orderBy('id'),
+            default => $query->latest(),
+        };
+
+        return $query
             ->paginate($perPage)
             ->withQueryString();
     }

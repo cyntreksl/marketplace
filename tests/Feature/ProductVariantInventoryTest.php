@@ -521,7 +521,7 @@ test('active availability backorders and stock status control public purchasing'
 
     expect($publicIds)
         ->not->toContain($inactive->id)
-        ->not->toContain($outOfStock->id)
+        ->toContain($outOfStock->id)
         ->toContain($backorder->id)
         ->toContain($lowStock->id)
         ->and($inactive->stockStatus())->toBe('in_stock')

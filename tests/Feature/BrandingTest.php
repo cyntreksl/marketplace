@@ -95,6 +95,7 @@ test('storefront listing pages share the category listing card', function () {
         ->toContain('src={image.cardUrl}', 'alt={listing.title}', '{listing.title}')
         ->toContain('href={detailHref}', 'wholesale: true', 'formatPrice(listing.effectivePrice)')
         ->toContain('Save {formatPrice(savings.toString())}', 'Contact seller', 'Out of stock', 'Auction')
+        ->toContain("listing.stockStatus === 'out_of_stock'", 'absolute top-3 left-3 z-10 rounded-full bg-slate-900')
         ->toContain('Number.isFinite(savings) && savings > 0', "listing.listingType === 'buy_now'")
         ->not->toContain('line-through')
         ->not->toContain('<Form', '<Button', '<button', 'addCartItem', 'toast')

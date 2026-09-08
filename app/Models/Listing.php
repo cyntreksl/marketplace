@@ -158,12 +158,7 @@ class Listing extends Model
     /** @param Builder<Listing> $query */
     public function scopePubliclyVisible(Builder $query): void
     {
-        $query->directlyVisible()
-            ->where(function (Builder $query): void {
-                $query->where('listings.listing_type', 'auction')
-                    ->orWhere('listings.allow_backorders', true)
-                    ->orWhereColumn('listings.stock_quantity', '>', 'listings.reserved_quantity');
-            });
+        $query->directlyVisible();
     }
 
     /** @param Builder<Listing> $query */

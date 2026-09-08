@@ -202,6 +202,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): v
     Route::get('/sellers', [AdminSellerController::class, 'index'])->name('sellers.index');
     Route::patch('/sellers/{seller}', [AdminSellerController::class, 'update'])->name('sellers.update');
     Route::get('/listings', [AdminListingController::class, 'index'])->name('listings.index');
+    Route::get('/products', [AdminListingController::class, 'products'])->name('products.index');
     Route::get('/listings/{listing}/edit', [AdminListingController::class, 'edit'])->name('listings.edit');
     Route::get('/listings/{listing}', [AdminListingController::class, 'show'])->name('listings.show');
     Route::put('/listings/{listing}', [AdminListingController::class, 'updateDetails'])->name('listings.details.update');

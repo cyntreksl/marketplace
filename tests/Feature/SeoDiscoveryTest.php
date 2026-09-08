@@ -13,7 +13,7 @@ function expectCanonicalLink(string $html, string $url): void
     expect($html)->toMatch('/<link\b(?=[^>]*rel="canonical")(?=[^>]*href="'.preg_quote($url, '/').'")[^>]*>/');
 }
 
-test('approved sold-out products remain indexable details but are absent from browse and purchase', function () {
+test('approved sold-out products remain visible in browse and cannot be purchased', function () {
     $soldOut = Listing::factory()->create([
         'title' => 'Sold out camera',
         'slug' => 'sold-out-camera',
@@ -32,7 +32,11 @@ test('approved sold-out products remain indexable details but are absent from br
         ->assertOk()
         ->assertHeaderMissing('X-Robots-Tag')
         ->assertSee('name="robots" content="index,follow,max-image-preview:large"', false)
-        ->assertInertia(fn ($page) => $page->where('listings.total', 0));
+        ->assertInertia(fn ($page) => $page
+            ->where('listings.total', 1)
+            ->where('listings.data.0.id', $soldOut->id)
+            ->where('listings.data.0.stockQuantity', 0)
+            ->where('listings.data.0.stockStatus', 'out_of_stock'));
 
     $this->get(route('categories.show', $soldOut->category->slug))
         ->assertOk()
@@ -42,7 +46,7 @@ test('approved sold-out products remain indexable details but are absent from br
     $this->actingAs(User::factory()->create())
         ->post(route('cart.items.store'), ['listing_id' => $soldOut->id, 'quantity' => 1])
         ->assertRedirect()
-        ->assertSessionHasErrors(['quantity' => 'This quantity is no longer available.']);
+        ->assertSessionHasErrors(['quantity' => 'This item is out of stock.']);
 
     $this->assertDatabaseMissing('cart_items', ['listing_id' => $soldOut->id]);
 
