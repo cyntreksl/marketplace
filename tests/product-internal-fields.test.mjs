@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createElement } from 'react';
@@ -151,4 +152,34 @@ test('live variant save preserves ids and sends changed costs without a product 
             { id: 8, cost_price: '50.25' },
         ],
     });
+});
+
+test('seller product form places internal details at the end of the main section', () => {
+    const source = readFileSync(
+        fileURLToPath(
+            new URL(
+                '../resources/js/components/seller-product-form.tsx',
+                import.meta.url,
+            ),
+        ),
+        'utf8',
+    );
+    const salesChannelsPos = source.indexOf('title="Sales Channels"');
+    const basicInfoPos = source.indexOf('title="Basic Information"');
+    const pricingStockPos = source.indexOf('title="Pricing & Stock"');
+    const internalDetailsPos = source.indexOf('<ProductInternalFields');
+
+    assert.ok(salesChannelsPos > 0, 'Sales Channels section should exist');
+    assert.ok(
+        basicInfoPos > salesChannelsPos,
+        'Basic Information should follow Sales Channels',
+    );
+    assert.ok(
+        pricingStockPos > basicInfoPos,
+        'Pricing & Stock should follow Basic Information',
+    );
+    assert.ok(
+        internalDetailsPos > pricingStockPos,
+        'Internal details section should be at the end, after pricing & stock',
+    );
 });

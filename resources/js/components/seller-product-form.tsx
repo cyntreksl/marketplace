@@ -1309,39 +1309,6 @@ export function SellerProductForm({
         >
             <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_23rem]">
                 <div className="grid gap-5">
-                    <ProductInternalFields
-                        supplierName={form.data.supplier_name}
-                        internalNotes={form.data.internal_notes}
-                        costPrice={form.data.cost_price}
-                        variants={
-                            isVariantProduct
-                                ? form.data.variants.map((variant) => ({
-                                      label:
-                                          variant.sku ||
-                                          variant.selections.join(' / '),
-                                      costPrice: variant.cost_price,
-                                  }))
-                                : undefined
-                        }
-                        onSupplierChange={(value) =>
-                            setField('supplier_name', value)
-                        }
-                        onNotesChange={(value) =>
-                            setField('internal_notes', value)
-                        }
-                        onCostChange={(value) => setField('cost_price', value)}
-                        onVariantCostChange={(index, value) =>
-                            setField(
-                                'variants',
-                                form.data.variants.map((variant, row) =>
-                                    row === index
-                                        ? { ...variant, cost_price: value }
-                                        : variant,
-                                ),
-                            )
-                        }
-                        errorFor={errorFor}
-                    />
                     <FormCard
                         title="Sales Channels"
                         icon={<Store className="size-5" />}
@@ -2724,6 +2691,39 @@ export function SellerProductForm({
                             </div>
                         </FormCard>
                     )}
+                    <ProductInternalFields
+                        supplierName={form.data.supplier_name}
+                        internalNotes={form.data.internal_notes}
+                        costPrice={form.data.cost_price}
+                        variants={
+                            isVariantProduct
+                                ? form.data.variants.map((variant) => ({
+                                      label:
+                                          variant.sku ||
+                                          variant.selections.join(' / '),
+                                      costPrice: variant.cost_price,
+                                  }))
+                                : undefined
+                        }
+                        onSupplierChange={(value) =>
+                            setField('supplier_name', value)
+                        }
+                        onNotesChange={(value) =>
+                            setField('internal_notes', value)
+                        }
+                        onCostChange={(value) => setField('cost_price', value)}
+                        onVariantCostChange={(index, value) =>
+                            setField(
+                                'variants',
+                                form.data.variants.map((variant, row) =>
+                                    row === index
+                                        ? { ...variant, cost_price: value }
+                                        : variant,
+                                ),
+                            )
+                        }
+                        errorFor={errorFor}
+                    />
                 </div>
 
                 <aside className="grid content-start gap-5 xl:sticky xl:top-24">
