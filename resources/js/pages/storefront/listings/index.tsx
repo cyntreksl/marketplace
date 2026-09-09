@@ -1,12 +1,11 @@
 import { Form, Link } from '@inertiajs/react';
 import { Filter, LayoutGrid, PackageSearch, Search, Store } from 'lucide-react';
-import { useEffect } from 'react';
-import { ListingCard } from '@/components/listing-card';
+import { useEffect, useRef } from 'react';
 import { StorefrontBreadcrumbs } from '@/components/storefront-breadcrumbs';
 import { StorefrontCategoryArtwork } from '@/components/storefront-category-artwork';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { StorefrontListingFilters } from '@/components/storefront-listing-filters';
-import { StorefrontPagination } from '@/components/storefront-pagination';
+import { StorefrontProductGrid } from '@/components/storefront-product-grid';
 import { Button } from '@/components/ui/button';
 import {
     Sheet,
@@ -175,22 +174,53 @@ export default function ListingsIndex({
     const trail = categoryContext
         ? [...categoryContext.ancestors, categoryContext.current]
         : [];
+    const trackedListingIds = useRef(new Set<number>());
+    const trackingContext = JSON.stringify({
+        browseUrl,
+        catalogMode,
+        filters,
+        pageHeading,
+    });
+    const previousTrackingContext = useRef(trackingContext);
 
     useEffect(() => {
-        trackEvent('view_item_list', {
-            item_list_name: pageHeading,
-            items: listings.data.map((listing, index) => ({
-                item_id: String(listing.id),
-                item_name: listing.title,
-                price: Number(listing.effectivePrice ?? 0),
-                index,
-            })),
+        if (previousTrackingContext.current !== trackingContext) {
+            trackedListingIds.current.clear();
+            previousTrackingContext.current = trackingContext;
+        }
+
+        const untrackedItems = listings.data.flatMap((listing, index) => {
+            if (trackedListingIds.current.has(listing.id)) {
+                return [];
+            }
+
+            trackedListingIds.current.add(listing.id);
+
+            return [
+                {
+                    item_id: String(listing.id),
+                    item_name: listing.title,
+                    price: Number(listing.effectivePrice ?? 0),
+                    index,
+                },
+            ];
         });
 
+        if (untrackedItems.length === 0) {
+            return;
+        }
+
+        trackEvent('view_item_list', {
+            item_list_name: pageHeading,
+            items: untrackedItems,
+        });
+    }, [listings.data, pageHeading, trackingContext]);
+
+    useEffect(() => {
         if (filters.search) {
             trackEvent('search', { search_term: filters.search });
         }
-    }, [filters.search, listings.data, pageHeading]);
+    }, [filters.search]);
 
     return (
         <StorefrontLayout
@@ -247,8 +277,8 @@ export default function ListingsIndex({
                                     )}
                                 </div>
                                 <p className="mt-1 text-base text-slate-500">
-                                    {listings.from && listings.to
-                                        ? `Showing ${listings.from}–${listings.to} of ${listings.total} results`
+                                    {listings.data.length > 0
+                                        ? `${listings.data.length} of ${listings.total} results loaded`
                                         : 'No matching products'}
                                 </p>
                             </div>
@@ -340,14 +370,10 @@ export default function ListingsIndex({
 
                     <div className="min-w-0">
                         {listings.data.length > 0 ? (
-                            <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
-                                {listings.data.map((listing) => (
-                                    <ListingCard
-                                        key={listing.id}
-                                        listing={listing}
-                                    />
-                                ))}
-                            </div>
+                            <StorefrontProductGrid
+                                listings={listings}
+                                className="lg:grid-cols-3 xl:grid-cols-6"
+                            />
                         ) : (
                             <div className="rounded-3xl border border-dashed border-orange-200 bg-white px-6 py-16 text-center shadow-sm">
                                 <span className="mx-auto grid size-14 place-items-center rounded-2xl bg-orange-50 text-[#FF6D00]">
@@ -370,8 +396,6 @@ export default function ListingsIndex({
                                 </Button>
                             </div>
                         )}
-
-                        <StorefrontPagination paginator={listings} />
                     </div>
                 </section>
             </main>

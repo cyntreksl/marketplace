@@ -48,7 +48,7 @@ class StorefrontController extends Controller
         $data = $this->storefront->listingIndexData($filters);
         $this->searchAnalytics->track($request, $filters, 'listings', $data['listings']->total());
 
-        return Inertia::render('storefront/listings/index', $data);
+        return $this->renderListingIndex($data);
     }
 
     public function wholesale(StorefrontBrowseRequest $request): Response
@@ -57,7 +57,7 @@ class StorefrontController extends Controller
         $data = $this->storefront->wholesaleData($filters);
         $this->searchAnalytics->track($request, [...$filters, 'channel' => 'wholesale'], 'wholesale', $data['listings']->total());
 
-        return Inertia::render('storefront/listings/index', $data);
+        return $this->renderListingIndex($data);
     }
 
     public function category(StorefrontBrowseRequest $request, string $category): Response
@@ -66,7 +66,7 @@ class StorefrontController extends Controller
         $data = $this->storefront->categoryData($category, $filters);
         $this->searchAnalytics->track($request, [...$filters, 'category' => $category], 'category', $data['listings']->total());
 
-        return Inertia::render('storefront/listings/index', $data);
+        return $this->renderListingIndex($data);
     }
 
     public function brand(StorefrontBrowseRequest $request, string $brand): Response
@@ -75,7 +75,7 @@ class StorefrontController extends Controller
         $data = $this->storefront->brandData($brand, $filters);
         $this->searchAnalytics->track($request, [...$filters, 'brand' => $brand], 'brand', $data['listings']->total());
 
-        return Inertia::render('storefront/listings/index', $data);
+        return $this->renderListingIndex($data);
     }
 
     public function collection(StorefrontBrowseRequest $request, string $collection): Response
@@ -84,7 +84,7 @@ class StorefrontController extends Controller
         $data = $this->storefront->collectionData($collection, $filters);
         $this->searchAnalytics->track($request, [...$filters, 'collection' => $collection], 'collection', $data['listings']->total());
 
-        return Inertia::render('storefront/listings/index', $data);
+        return $this->renderListingIndex($data);
     }
 
     public function auctions(StorefrontBrowseRequest $request): Response
@@ -93,7 +93,7 @@ class StorefrontController extends Controller
         $data = $this->storefront->auctionData($filters);
         $this->searchAnalytics->track($request, [...$filters, 'listing_type' => 'auction'], 'auctions', $data['listings']->total());
 
-        return Inertia::render('storefront/listings/index', $data);
+        return $this->renderListingIndex($data);
     }
 
     public function show(Request $request, string $listing): Response
@@ -115,5 +115,13 @@ class StorefrontController extends Controller
         return response()->json([
             'listings' => $this->storefront->recentlyViewedData($request->validated('ids')),
         ]);
+    }
+
+    /** @param array<string, mixed> $data */
+    private function renderListingIndex(array $data): Response
+    {
+        $data['listings'] = Inertia::scroll($data['listings']);
+
+        return Inertia::render('storefront/listings/index', $data);
     }
 }

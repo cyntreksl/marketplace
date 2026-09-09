@@ -132,3 +132,109 @@ test('pagination links retain the active storefront filters', function () {
         ->toContain('sort=price_asc')
         ->toContain('page=2');
 });
+
+test('storefront product pages expose infinite scroll metadata and stable page boundaries', function () {
+    $createdAt = now()->subDay();
+    $listings = Listing::factory()->count(20)->create([
+        'condition' => 'used',
+        'price' => 500,
+        'created_at' => $createdAt,
+    ]);
+
+    $response = $this->get(route('listings.index', [
+        'condition' => 'used',
+        'sort' => 'price_desc',
+        'page' => 2,
+    ]))->assertOk();
+
+    $page = $response->viewData('page');
+
+    expect(collect($page['props']['listings']['data'])->pluck('id')->all())
+        ->toBe($listings->slice(18)->pluck('id')->all())
+        ->and($page['scrollProps']['listings'])
+        ->toMatchArray([
+            'pageName' => 'page',
+            'previousPage' => 1,
+            'nextPage' => null,
+            'currentPage' => 2,
+        ]);
+});
+
+test('every public catalog route exposes the listings scroll prop', function () {
+    enableAuctions();
+    $category = Category::factory()->create();
+    $brand = Brand::factory()->create();
+
+    foreach ([
+        route('listings.index'),
+        route('wholesale.index'),
+        route('auctions.index'),
+        route('collections.show', 'featured'),
+        route('categories.show', $category->slug),
+        route('brands.show', $brand->slug),
+    ] as $url) {
+        $page = $this->get($url)->assertOk()->viewData('page');
+
+        expect($page['scrollProps']['listings'])
+            ->toMatchArray([
+                'pageName' => 'page',
+                'previousPage' => null,
+                'currentPage' => 1,
+            ]);
+    }
+});
+
+test('infinite scroll partial requests return merge data and page-specific seo', function () {
+    Listing::factory()->count(19)->create();
+    $assetVersion = $this->get(route('listings.index'))->viewData('page')['version'];
+
+    $response = $this->withHeaders([
+        'X-Inertia' => 'true',
+        'X-Inertia-Version' => $assetVersion,
+        'X-Inertia-Partial-Component' => 'storefront/listings/index',
+        'X-Inertia-Partial-Data' => 'listings,seo',
+        'X-Inertia-Infinite-Scroll-Merge-Intent' => 'append',
+    ])->get(route('listings.index', ['page' => 2]))->assertOk();
+
+    expect($response->json('mergeProps'))->toContain('listings.data')
+        ->and($response->json('scrollProps.listings'))
+        ->toMatchArray([
+            'pageName' => 'page',
+            'previousPage' => 1,
+            'nextPage' => null,
+            'currentPage' => 2,
+        ])
+        ->and($response->json('props.listings.data'))->toHaveCount(1)
+        ->and($response->json('props.listings.next_page_url'))->toBeNull()
+        ->and($response->json('props.seo.canonicalUrl'))->toBe(route('listings.index').'?page=2')
+        ->and($response->json('props'))->not->toHaveKeys(['categories', 'filters', 'filterOptions']);
+
+    $previousResponse = $this->withHeaders([
+        'X-Inertia-Infinite-Scroll-Merge-Intent' => 'prepend',
+    ])->get(route('listings.index'))->assertOk();
+
+    expect($previousResponse->json('prependProps'))->toContain('listings.data')
+        ->and($previousResponse->json('scrollProps.listings'))
+        ->toMatchArray([
+            'pageName' => 'page',
+            'previousPage' => null,
+            'nextPage' => 2,
+            'currentPage' => 1,
+        ]);
+});
+
+test('empty and single-page product results do not expose another scroll page', function () {
+    $emptyPage = $this->get(route('listings.index'))->assertOk()->viewData('page');
+
+    expect($emptyPage['props']['listings']['data'])->toBeEmpty()
+        ->and($emptyPage['scrollProps']['listings']['nextPage'])->toBeNull()
+        ->and($emptyPage['scrollProps']['listings']['previousPage'])->toBeNull();
+
+    Listing::factory()->create();
+
+    $singlePage = $this->get(route('listings.index'))->assertOk()->viewData('page');
+
+    expect($singlePage['props']['listings']['data'])->toHaveCount(1)
+        ->and($singlePage['scrollProps']['listings']['nextPage'])->toBeNull()
+        ->and($singlePage['scrollProps']['listings']['previousPage'])->toBeNull();
+});

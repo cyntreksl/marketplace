@@ -1,10 +1,9 @@
 import { Form, Link } from '@inertiajs/react';
 import { Search, Store, ArrowRight } from 'lucide-react';
-import { ListingCard } from '@/components/listing-card';
 import { SellerLogo } from '@/components/seller-summary';
 import { StorefrontBreadcrumbs } from '@/components/storefront-breadcrumbs';
 import { StorefrontLayout } from '@/components/storefront-layout';
-import { StorefrontPagination } from '@/components/storefront-pagination';
+import { StorefrontProductGrid } from '@/components/storefront-product-grid';
 import { home } from '@/routes';
 import { show as storeShow } from '@/routes/stores';
 import type {
@@ -99,7 +98,8 @@ export default function StoreShow({
                                 Explore the store
                             </h2>
                             <p className="mt-1 text-sm text-slate-500">
-                                {listings.total} matching products
+                                {listings.data.length} of {listings.total}{' '}
+                                matching products loaded
                             </p>
                         </div>
                     </div>
@@ -159,14 +159,10 @@ export default function StoreShow({
                         </button>
                     </Form>
                     {listings.data.length ? (
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                            {listings.data.map((listing) => (
-                                <ListingCard
-                                    key={listing.id}
-                                    listing={listing}
-                                />
-                            ))}
-                        </div>
+                        <StorefrontProductGrid
+                            listings={listings}
+                            className="sm:grid-cols-3 lg:grid-cols-6"
+                        />
                     ) : (
                         <div className="rounded-3xl border border-dashed border-orange-200 bg-orange-50/40 p-10 text-center">
                             <Store className="mx-auto size-10 text-orange-500" />
@@ -190,7 +186,6 @@ export default function StoreShow({
                             )}
                         </div>
                     )}
-                    <StorefrontPagination paginator={listings} />
                 </section>
             </main>
         </StorefrontLayout>

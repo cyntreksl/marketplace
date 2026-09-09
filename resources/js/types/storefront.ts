@@ -174,18 +174,11 @@ export type StorefrontSocialProof = {
     reviews: StorefrontReview[];
 };
 
-export type StorefrontPaginationLink = {
-    url: string | null;
-    label: string;
-    active: boolean;
-};
-
 export type StorefrontListingPaginator = {
     data: StorefrontListing[];
     current_page: number;
     from: number | null;
     last_page: number;
-    links: StorefrontPaginationLink[];
     next_page_url: string | null;
     per_page: number;
     prev_page_url: string | null;

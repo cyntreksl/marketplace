@@ -514,9 +514,9 @@ class EloquentListingRepository implements ListingRepository
         };
 
         match ($sort) {
-            'price_asc' => $query->orderByRaw("{$effectivePrice} asc"),
-            'price_desc' => $query->orderByRaw("{$effectivePrice} desc"),
-            default => $query->latest('listings.created_at'),
+            'price_asc' => $query->orderByRaw("{$effectivePrice} asc")->orderBy('listings.id'),
+            'price_desc' => $query->orderByRaw("{$effectivePrice} desc")->orderBy('listings.id'),
+            default => $query->latest('listings.created_at')->orderBy('listings.id'),
         };
     }
 }

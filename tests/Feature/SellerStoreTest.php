@@ -64,9 +64,16 @@ test('store filters and pagination never escape their seller', function () {
         ->where('listings.per_page', 18)->where('listings.data.0.seller.slug', $seller->slug)
         ->where('seo.robots', 'noindex,follow,max-image-preview:large')
         ->where('seo.canonicalUrl', route('stores.show', $seller->slug)));
-    $this->get(route('stores.show', ['seller' => $seller->slug, 'page' => 2]))->assertOk()->assertInertia(fn (Assert $page) => $page
+    $secondPage = $this->get(route('stores.show', ['seller' => $seller->slug, 'page' => 2]))->assertOk()->assertInertia(fn (Assert $page) => $page
         ->where('seo.canonicalUrl', route('stores.show', $seller->slug).'?page=2')
         ->where('seo.robots', 'index,follow,max-image-preview:large'));
+
+    expect($secondPage->viewData('page')['scrollProps']['listings'])->toMatchArray([
+        'pageName' => 'page',
+        'previousPage' => 1,
+        'nextPage' => null,
+        'currentPage' => 2,
+    ]);
 });
 
 test('store discovery includes only eligible stores with public stock', function () {

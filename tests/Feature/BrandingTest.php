@@ -86,6 +86,7 @@ test('portal controls use semantic colors and consistent corner radii', function
 
 test('storefront listing pages share the category listing card', function () {
     $listingCard = file_get_contents(resource_path('js/components/listing-card.tsx'));
+    $productGrid = file_get_contents(resource_path('js/components/storefront-product-grid.tsx'));
     $categoryListings = file_get_contents(resource_path('js/pages/storefront/listings/index.tsx'));
     $home = file_get_contents(resource_path('js/pages/storefront/home.tsx'));
     $listingShow = file_get_contents(resource_path('js/pages/storefront/listings/show.tsx'));
@@ -101,10 +102,13 @@ test('storefront listing pages share the category listing card', function () {
         ->not->toContain('line-through')
         ->not->toContain('<Form', '<Button', '<button', 'addCartItem', 'toast')
         ->not->toContain('Official warranty', 'Islandwide delivery', 'ratingAverage', 'listingBadge')
-        ->and($categoryListings)
+        ->and($productGrid)
         ->toContain("import { ListingCard } from '@/components/listing-card';")
-        ->toContain('<ListingCard')
-        ->toContain('grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6')
+        ->toContain('<ListingCard key={listing.id} listing={listing} />')
+        ->and($categoryListings)
+        ->toContain("import { StorefrontProductGrid } from '@/components/storefront-product-grid';")
+        ->toContain('<StorefrontProductGrid')
+        ->toContain('className="lg:grid-cols-3 xl:grid-cols-6"')
         ->not->toContain('function ListingTile')
         ->and($home)
         ->toContain("import { ListingCard } from '@/components/listing-card';")

@@ -17,7 +17,10 @@ class SellerStoreController extends Controller
 
     public function show(StorefrontBrowseRequest $request, string $seller): Response
     {
-        return Inertia::render('storefront/stores/show', $this->stores->publicData($seller, $request->filters(), max(1, $request->integer('page', 1))));
+        $data = $this->stores->publicData($seller, $request->filters(), max(1, $request->integer('page', 1)));
+        $data['listings'] = Inertia::scroll($data['listings']);
+
+        return Inertia::render('storefront/stores/show', $data);
     }
 
     public function edit(Request $request): Response
