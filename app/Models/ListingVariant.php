@@ -11,16 +11,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['listing_id', 'seller_profile_id', 'combination_key', 'sku', 'gtin', 'mpn', 'selling_price', 'market_price', 'wholesale_price', 'wholesale_min_quantity', 'stock_quantity', 'reserved_quantity', 'is_active', 'position'])]
+#[Fillable(['listing_id', 'seller_profile_id', 'combination_key', 'sku', 'gtin', 'mpn', 'cost_price', 'selling_price', 'market_price', 'wholesale_price', 'wholesale_min_quantity', 'stock_quantity', 'reserved_quantity', 'is_active', 'position'])]
 class ListingVariant extends Model
 {
     /** @use HasFactory<ListingVariantFactory> */
     use HasFactory;
 
+    protected $hidden = ['cost_price'];
+
     protected function casts(): array
     {
         return [
             'selling_price' => 'decimal:2',
+            'cost_price' => 'decimal:2',
             'market_price' => 'decimal:2',
             'wholesale_price' => 'decimal:2',
             'is_active' => 'boolean',

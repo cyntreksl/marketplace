@@ -42,6 +42,8 @@ class AdminListingService
     public function product(int $listingId): Listing
     {
         $listing = $this->listings->findDetailedForAdminOrFail($listingId);
+        $listing->makeVisible(['cost_price', 'supplier_name', 'internal_notes']);
+        $listing->variants->each->makeVisible('cost_price');
         $listing->setAttribute('seo_score', $this->seoScores->score($listing));
 
         return $listing;

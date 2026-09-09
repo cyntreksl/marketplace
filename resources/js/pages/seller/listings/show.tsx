@@ -324,12 +324,15 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
                                 <Eye className="size-4" /> Storefront
                             </Link>
                         )}
-                        {canEdit && (
+                        {listing.status !== 'archived' && (
                             <Link
                                 href={edit(listing.id)}
                                 className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20"
                             >
-                                <Edit3 className="size-4" /> Edit product
+                                <Edit3 className="size-4" />{' '}
+                                {canEdit
+                                    ? 'Edit product'
+                                    : 'Edit internal details'}
                             </Link>
                         )}
                     </div>

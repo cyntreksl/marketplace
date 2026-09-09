@@ -36,6 +36,7 @@ use App\Http\Controllers\ReturnEvidenceController;
 use App\Http\Controllers\SellerAuctionController;
 use App\Http\Controllers\SellerDashboardController;
 use App\Http\Controllers\SellerListingController;
+use App\Http\Controllers\SellerListingInternalDetailsController;
 use App\Http\Controllers\SellerOnboardingController;
 use App\Http\Controllers\SellerOrderController;
 use App\Http\Controllers\SellerRegistrationController;
@@ -129,6 +130,7 @@ Route::middleware('auth')->prefix('seller')->name('seller.')->group(function ():
         ->name('listings.content-suggestions');
     Route::get('/listings/{listing}', [SellerListingController::class, 'show'])->name('listings.show');
     Route::get('/listings/{listing}/edit', [SellerListingController::class, 'edit'])->name('listings.edit');
+    Route::patch('/listings/{listing}/internal-details', [SellerListingInternalDetailsController::class, 'update'])->name('listings.internal-details.update');
     Route::put('/listings/{listing}', [SellerListingController::class, 'update'])->name('listings.update');
     Route::delete('/listings/{listing}', [SellerListingController::class, 'destroy'])->name('listings.destroy');
     Route::post('/listings/submit', [SellerListingController::class, 'submit'])->name('listings.submit');

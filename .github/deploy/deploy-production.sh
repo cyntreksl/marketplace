@@ -37,6 +37,7 @@ readonly -a ssh_options=(
 )
 
 previous_release_id=""
+maintenance_paused=false
 
 close_connections() {
     local host
@@ -50,6 +51,7 @@ close_connections() {
 
 rollback() {
     local exit_code="$?"
+    local rollback_failed=0
 
     trap - ERR
     set +e
@@ -62,8 +64,8 @@ rollback() {
         ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" \
             "${remote_script} rollback-to ${RELEASE_ID} ${previous_release_id}" &
         local worker_rollback_pid="$!"
-        wait "$web_rollback_pid"
-        wait "$worker_rollback_pid"
+        wait "$web_rollback_pid" || rollback_failed=1
+        wait "$worker_rollback_pid" || rollback_failed=1
 
         ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" \
             'sudo systemctl restart php8.4-fpm && sudo systemctl reload nginx && sudo systemctl restart prodeals-ssr' &
@@ -71,8 +73,12 @@ rollback() {
         ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" \
             'sudo supervisorctl restart prodeals-worker' &
         local worker_restart_pid="$!"
-        wait "$web_restart_pid"
-        wait "$worker_restart_pid"
+        wait "$web_restart_pid" || rollback_failed=1
+        wait "$worker_restart_pid" || rollback_failed=1
+    fi
+
+    if [[ "$maintenance_paused" == true ]] && [[ "$rollback_failed" == 0 ]]; then
+        resume_order_creation || echo 'Could not leave maintenance mode; restore service manually.' >&2
     fi
 
     exit "$exit_code"
@@ -157,6 +163,25 @@ prepare_release() {
     scp "${ssh_options[@]}" "$artifact_path" "${DEPLOY_USER}@${host}:${remote_artifact}"
     ssh "${ssh_options[@]}" "${DEPLOY_USER}@${host}" \
         "${remote_script} prepare ${RELEASE_ID} ${remote_artifact}"
+}
+
+pause_host() {
+    ssh "${ssh_options[@]}" "${DEPLOY_USER}@$1" "${remote_script} maintenance-down ${RELEASE_ID}"
+}
+
+resume_host() {
+    ssh "${ssh_options[@]}" "${DEPLOY_USER}@$1" "${remote_script} maintenance-up ${RELEASE_ID}"
+}
+
+pause_order_creation() {
+    maintenance_paused=true
+    run_on_hosts pause_host
+    ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl stop prodeals-worker'
+}
+
+resume_order_creation() {
+    run_on_hosts resume_host || return $?
+    maintenance_paused=false
 }
 
 run_migrations() {
@@ -265,11 +290,12 @@ run_stage 'Verify current releases' read_current_releases
 trap rollback ERR
 
 run_stage 'Upload and prepare releases' run_on_hosts prepare_release
+run_stage 'Pause order creation' pause_order_creation
 run_stage 'Run database and media migrations' run_migrations
-run_stage 'Stop worker' ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WORKER_HOST}" 'sudo supervisorctl stop prodeals-worker || true'
 run_stage 'Activate releases' run_on_hosts activate_release
 run_stage 'Restart services' restart_services
 run_stage 'Verify hosts' verify_hosts
+run_stage 'Resume order creation' resume_order_creation
 run_stage 'Run production smoke tests' run_external_smoke_tests
 run_stage 'Clean old releases' run_on_hosts cleanup_release
 

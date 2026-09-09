@@ -16,6 +16,7 @@ class CartService
         private readonly CartRepository $carts,
         private readonly MarketplaceSettingsService $settings,
         private readonly ListingPricingService $pricing,
+        private readonly CashOnDeliveryService $cashOnDelivery,
     ) {}
 
     /** @return CartSummary */
@@ -111,7 +112,7 @@ class CartService
             'quantity' => array_sum(array_column($items, 'quantity')),
             'canCheckout' => $items !== [] && ! array_filter(array_column($items, 'error')),
             'paymentMethods' => array_values(array_filter([
-                'cod' => $total->isLessThanOrEqualTo($this->settings->integer('checkout.cod_maximum_amount', 50000)) ? 'cod' : null,
+                'cod' => $this->cashOnDelivery->allows((string) $total) ? 'cod' : null,
                 'stripe' => config('services.stripe.secret') && config('services.stripe.webhook_secret') ? 'stripe' : null,
             ])),
         ];

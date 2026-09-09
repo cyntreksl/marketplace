@@ -52,6 +52,7 @@ class ListingVariantService
                 ->first();
 
             return [
+                ...(array_key_exists('cost_price', $submitted) ? ['cost_price' => $submitted['cost_price']] : []),
                 'combination_key' => $key,
                 'selections' => $selections,
                 'sku' => filled($submitted['sku'] ?? null)

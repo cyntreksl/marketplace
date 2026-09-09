@@ -41,12 +41,14 @@ const editable = ['draft', 'changes_requested', 'rejected'];
 function Actions({ listing }: { listing: Listing }) {
     return (
         <div className="flex flex-wrap gap-2">
-            {editable.includes(listing.status) && (
+            {listing.status !== 'archived' && (
                 <Link
                     href={edit(listing.id)}
                     className="min-h-10 rounded-xl border px-3 py-2 text-xs font-bold"
                 >
-                    Edit
+                    {editable.includes(listing.status)
+                        ? 'Edit'
+                        : 'Edit internal details'}
                 </Link>
             )}
             <Link

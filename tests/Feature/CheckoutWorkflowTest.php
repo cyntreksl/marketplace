@@ -17,8 +17,8 @@ test('a buyer checkout splits one cart into seller fulfilment orders', function 
     $category = Category::factory()->create();
     $firstSeller = SellerProfile::factory()->create();
     $secondSeller = SellerProfile::factory()->create();
-    $firstListing = Listing::factory()->create(['seller_profile_id' => $firstSeller->id, 'category_id' => $category->id, 'price' => 10000, 'stock_quantity' => 3]);
-    $secondListing = Listing::factory()->create(['seller_profile_id' => $secondSeller->id, 'category_id' => $category->id, 'price' => 25000, 'stock_quantity' => 2]);
+    $firstListing = Listing::factory()->create(['seller_profile_id' => $firstSeller->id, 'category_id' => $category->id, 'price' => 1000, 'stock_quantity' => 3]);
+    $secondListing = Listing::factory()->create(['seller_profile_id' => $secondSeller->id, 'category_id' => $category->id, 'price' => 2000, 'stock_quantity' => 2]);
 
     $this->actingAs($buyer)->post(route('cart.items.store'), ['listing_id' => $firstListing->id, 'quantity' => 2])->assertRedirect();
     $this->actingAs($buyer)->post(route('cart.items.store'), ['listing_id' => $secondListing->id, 'quantity' => 1])->assertRedirect();
@@ -51,12 +51,12 @@ test('a buyer checkout splits one cart into seller fulfilment orders', function 
     Notification::assertSentTo($firstSeller->user, SellerOrderReadyNotification::class, fn (SellerOrderReadyNotification $notification): bool => $notification->sellerOrderNumber === $firstSellerOrder->number
         && $notification->customerOrderNumber === $customerOrder->number
         && $notification->itemCount === 2
-        && $notification->sellerSubtotal === '20000.00'
+        && $notification->sellerSubtotal === '2000.00'
         && $notification->paymentMethod === 'cod');
     Notification::assertSentTo($secondSeller->user, SellerOrderReadyNotification::class, fn (SellerOrderReadyNotification $notification): bool => $notification->sellerOrderNumber === $secondSellerOrder->number
         && $notification->customerOrderNumber === $customerOrder->number
         && $notification->itemCount === 1
-        && $notification->sellerSubtotal === '25000.00'
+        && $notification->sellerSubtotal === '2000.00'
         && $notification->paymentMethod === 'cod');
     Notification::assertSentTimes(SellerOrderReadyNotification::class, 2);
 });
@@ -76,8 +76,7 @@ test('cash on delivery is unavailable when the cart total exceeds the configured
 
     $this->actingAs($buyer)->post(route('checkout.payment.store'), [
         'payment_method' => 'cod',
-    ])->assertRedirect(route('checkout.review.show'));
+    ])->assertSessionHasErrors('payment_method');
 
-    $this->actingAs($buyer)->post(route('checkout.review.store'), checkoutReviewData())
-        ->assertSessionHasErrors('payment_method');
+    expect(CustomerOrder::query()->count())->toBe(0);
 });

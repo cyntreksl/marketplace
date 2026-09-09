@@ -60,6 +60,20 @@ prepare_release() {
     )
 }
 
+maintenance_down() {
+    (
+        cd "$current_link"
+        php8.4 artisan down --retry=60 --no-interaction
+    )
+}
+
+maintenance_up() {
+    (
+        cd "$current_link"
+        php8.4 artisan up --no-interaction
+    )
+}
+
 migrate_release() {
     (
         cd "$release_dir"
@@ -163,6 +177,12 @@ case "$command_name" in
     prepare)
         prepare_release "$@"
         ;;
+    maintenance-down)
+        maintenance_down
+        ;;
+    maintenance-up)
+        maintenance_up
+        ;;
     migrate)
         migrate_release
         ;;
@@ -185,7 +205,7 @@ case "$command_name" in
         cleanup_releases
         ;;
     *)
-        echo "Usage: $0 {prepare|migrate|migrate-media|activate|rollback|rollback-to|current|cleanup} RELEASE_ID [ARGUMENT]" >&2
+        echo "Usage: $0 {prepare|maintenance-down|maintenance-up|migrate|migrate-media|activate|rollback|rollback-to|current|cleanup} RELEASE_ID [ARGUMENT]" >&2
         exit 1
         ;;
 esac

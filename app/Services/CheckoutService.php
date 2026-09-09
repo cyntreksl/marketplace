@@ -20,7 +20,7 @@ use Illuminate\Validation\ValidationException;
 class CheckoutService
 {
     public function __construct(
-        private readonly MarketplaceSettingsService $settings,
+        private readonly CashOnDeliveryService $cashOnDelivery,
         private readonly AuditLogService $auditLogs,
         private readonly CustomerOrderRepository $customerOrders,
         private readonly CheckoutRepository $repository,
@@ -95,12 +95,9 @@ class CheckoutService
                 $subtotal = $subtotal->plus(BigDecimal::of($this->buyNowPrice($listing, $variant, $cartItem->quantity))->multipliedBy($cartItem->quantity));
             }
 
-            if ($paymentMethod === 'cod' && $subtotal->isGreaterThan($this->settings->integer('checkout.cod_maximum_amount', 50000))) {
-                throw ValidationException::withMessages(['payment_method' => 'Cash on delivery is not available for this order total.']);
-            }
-
             $shippingTotal = BigDecimal::of($summary['shippingTotal']);
             $total = $subtotal->plus($shippingTotal);
+            $this->cashOnDelivery->ensureAllowed($paymentMethod, (string) $total);
             $lockedSummary = $summary;
             $lockedSummary['items'] = array_map(function (array $item) use ($lockedListings, $lockedVariants): array {
                 $lockedPricing = $this->priceForQuantity($lockedListings[$item['listing_id']], $lockedVariants[$item['id']] ?? null, $item['quantity']);

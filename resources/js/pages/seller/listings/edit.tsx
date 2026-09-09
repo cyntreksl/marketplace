@@ -4,6 +4,7 @@ import {
     update,
 } from '@/actions/App/Http/Controllers/SellerListingController';
 import type { CategoryOption } from '@/components/category-picker';
+import { SellerInternalDetailsForm } from '@/components/seller-internal-details-form';
 import { SellerPortalLayout } from '@/components/seller-portal-layout';
 import { SellerProductForm } from '@/components/seller-product-form';
 import type { SellerProductFormListing } from '@/components/seller-product-form';
@@ -33,6 +34,10 @@ export default function EditSellerListing({
         endsAt: string;
     };
 }) {
+    const canEditProduct = ['draft', 'changes_requested', 'rejected'].includes(
+        listing.status,
+    );
+
     return (
         <SellerPortalLayout title="Edit product">
             <Head title="Edit Product" />
@@ -49,8 +54,9 @@ export default function EditSellerListing({
                             Edit {listing.title ?? 'Product'}
                         </h1>
                         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                            Update the product information, inventory, images,
-                            and search details.
+                            {canEditProduct
+                                ? 'Update the product information, inventory, images, and search details.'
+                                : 'Update private costs, supplier, and notes. Product approval and public details stay as they are.'}
                         </p>
                     </div>
                     <Link
@@ -60,15 +66,23 @@ export default function EditSellerListing({
                         View product
                     </Link>
                 </div>
-                <SellerProductForm
-                    form={update.form(listing.id)}
-                    initialCategory={selectedCategory}
-                    brands={brands}
-                    listing={listing}
-                    canSubmit={['approved', 'active'].includes(sellerStatus)}
-                    auctionFlags={auctionFlags}
-                    auctionDefaults={auctionDefaults}
-                />
+                {listing.status === 'archived' ? (
+                    <p className="mt-6">Archived products are read-only.</p>
+                ) : !canEditProduct ? (
+                    <SellerInternalDetailsForm listing={listing} />
+                ) : (
+                    <SellerProductForm
+                        form={update.form(listing.id)}
+                        initialCategory={selectedCategory}
+                        brands={brands}
+                        listing={listing}
+                        canSubmit={['approved', 'active'].includes(
+                            sellerStatus,
+                        )}
+                        auctionFlags={auctionFlags}
+                        auctionDefaults={auctionDefaults}
+                    />
+                )}
             </main>
         </SellerPortalLayout>
     );

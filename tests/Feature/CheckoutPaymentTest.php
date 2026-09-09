@@ -4,6 +4,7 @@ use App\Contracts\MetaConversionsGateway;
 use App\Jobs\SendMetaPurchase;
 use App\Models\CustomerOrder;
 use App\Models\Listing;
+use App\Models\OrderNumberSequence;
 use App\Models\Payment;
 use App\Models\PaymentAttempt;
 use App\Models\User;
@@ -68,6 +69,8 @@ test('card checkout redirects to hosted payment and duplicate placement reuses t
     $order = CustomerOrder::sole();
     $payment = Payment::sole();
     $this->post(route('checkout.review.store'), $review)->assertRedirect(route('checkout.thank_you.show', $order->number));
+    expect($order->number)->toBe('PRO001125')
+        ->and(OrderNumberSequence::findOrFail('customer')->last_number)->toBe(1125);
     expect(CustomerOrder::count())->toBe(1)->and(Payment::count())->toBe(1)->and($listing->fresh()->reserved_quantity)->toBe(2)->and($order->total)->toBe('2600.00')->and($order->shipping_total)->toBe('600.00');
     expect($payment->attempts()->sole()->status->value)->toBe('pending')
         ->and($payment->attempts()->sole()->provider_session_id)->toBe('cs_test_checkout');

@@ -9,6 +9,7 @@ use App\Http\Requests\PlaceOrderRequest;
 use App\Models\CustomerOrder;
 use App\Services\BuyerAddressService;
 use App\Services\CartService;
+use App\Services\CashOnDeliveryService;
 use App\Services\CheckoutAddressService;
 use App\Services\CheckoutPaymentService;
 use App\Services\CheckoutService;
@@ -26,6 +27,7 @@ class CheckoutController extends Controller
 
     public function __construct(
         private readonly CartService $carts,
+        private readonly CashOnDeliveryService $cashOnDelivery,
         private readonly CheckoutRepository $orders,
         private readonly CheckoutPaymentService $payments,
         private readonly CheckoutService $checkout,
@@ -113,6 +115,7 @@ class CheckoutController extends Controller
         }
 
         $paymentMethod = (string) $request->validated('payment_method');
+        $this->cashOnDelivery->ensureAllowed($paymentMethod, $this->carts->summary($request)['total']);
         $request->session()->put('checkout.payment_method', $paymentMethod);
 
         return to_route('checkout.review.show');
@@ -133,6 +136,11 @@ class CheckoutController extends Controller
         }
 
         $cart = $this->carts->summary($request);
+        if ($paymentMethod === 'cod' && ! $this->cashOnDelivery->allows($cart['total'])) {
+            $request->session()->forget('checkout.payment_method');
+
+            return to_route('checkout.payment.show')->withErrors(['payment_method' => 'Cash on delivery is unavailable for this total, including delivery. Choose another payment method.']);
+        }
         $token = $request->session()->get('checkout.token', (string) Str::uuid());
         $request->session()->put('checkout.token', $token);
 

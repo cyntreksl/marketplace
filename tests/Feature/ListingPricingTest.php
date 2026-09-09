@@ -42,8 +42,8 @@ test('seller entered offer prices must be lower than the regular buy now price',
 test('effective offer pricing is snapshotted through totals commissions and cod validation', function () {
     $buyer = User::factory()->create();
     $listing = Listing::factory()->create([
-        'price' => '60000.00',
-        'sale_price' => '40000.00',
+        'price' => '6000.00',
+        'sale_price' => '4000.00',
         'commission_percentage' => '10.00',
     ]);
     $cart = Cart::factory()->create(['buyer_id' => $buyer->id]);
@@ -66,8 +66,8 @@ test('effective offer pricing is snapshotted through totals commissions and cod 
     $order = CustomerOrder::query()->where('buyer_id', $buyer->id)->sole();
     $item = $order->sellerOrders()->sole()->items()->sole();
 
-    expect($order->subtotal)->toBe('40000.00')
-        ->and($item->unit_price)->toBe('40000.00')
-        ->and($item->total)->toBe('40000.00')
-        ->and($item->commission_amount)->toBe('4000.00');
+    expect($order->subtotal)->toBe('4000.00')
+        ->and($item->unit_price)->toBe('4000.00')
+        ->and($item->total)->toBe('4000.00')
+        ->and($item->commission_amount)->toBe('400.00');
 });

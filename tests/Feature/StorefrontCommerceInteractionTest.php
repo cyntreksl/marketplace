@@ -147,7 +147,7 @@ test('multiple variants of one listing coexist in a cart and are snapshotted at 
         'seller_profile_id' => $listing->seller_profile_id,
         'combination_key' => 'colour:black',
         'sku' => 'PHONE-BLACK',
-        'selling_price' => '9000.00',
+        'selling_price' => '900.00',
         'stock_quantity' => 3,
     ]);
     $silverVariant = ListingVariant::factory()->create([
@@ -155,7 +155,7 @@ test('multiple variants of one listing coexist in a cart and are snapshotted at 
         'seller_profile_id' => $listing->seller_profile_id,
         'combination_key' => 'colour:silver',
         'sku' => 'PHONE-SILVER',
-        'selling_price' => '11000.00',
+        'selling_price' => '1100.00',
         'stock_quantity' => 4,
         'position' => 1,
     ]);
@@ -165,8 +165,8 @@ test('multiple variants of one listing coexist in a cart and are snapshotted at 
     $this->get(route('listings.show', $listing->slug))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
-            ->where('listing.variants.0.sellingPrice', '9000.00')
-            ->where('listing.variants.1.sellingPrice', '11000.00')
+            ->where('listing.variants.0.sellingPrice', '900.00')
+            ->where('listing.variants.1.sellingPrice', '1100.00')
             ->where('listing.variantOptions.0.values', ['Black', 'Silver']));
 
     $this->actingAs($buyer)->post(route('cart.items.store'), [
@@ -201,9 +201,9 @@ test('multiple variants of one listing coexist in a cart and are snapshotted at 
     expect($items)->toHaveCount(2)
         ->and($items[0]->variant_sku)->toBe('PHONE-BLACK')
         ->and($items[0]->variant_options)->toBe(['Colour' => 'Black'])
-        ->and($items[0]->unit_price)->toBe('9000.00')
+        ->and($items[0]->unit_price)->toBe('900.00')
         ->and($items[1]->variant_sku)->toBe('PHONE-SILVER')
-        ->and($items[1]->unit_price)->toBe('11000.00')
+        ->and($items[1]->unit_price)->toBe('1100.00')
         ->and($blackVariant->refresh()->reserved_quantity)->toBe(2)
         ->and($silverVariant->refresh()->reserved_quantity)->toBe(1)
         ->and($listing->refresh()->reserved_quantity)->toBe(3);

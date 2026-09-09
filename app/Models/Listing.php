@@ -15,11 +15,13 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /** @property array<string, mixed>|null $specifications */
-#[Fillable(['seller_profile_id', 'category_id', 'brand_id', 'brand_name', 'sku', 'barcode', 'gtin', 'mpn', 'model', 'title', 'slug', 'short_description', 'description', 'condition', 'listing_type', 'is_retail_enabled', 'is_wholesale_enabled', 'product_type', 'status', 'location', 'specifications', 'warranty', 'stock_quantity', 'reserved_quantity', 'low_stock_threshold', 'allow_backorders', 'is_active', 'is_featured', 'is_best_seller', 'price', 'sale_price', 'wholesale_price', 'wholesale_min_quantity', 'cost_price', 'commission_percentage', 'moderation_reason', 'submitted_at', 'approved_at', 'is_best_offer', 'is_new_arrival', 'is_clearance', 'meta_title', 'meta_description'])]
+#[Fillable(['seller_profile_id', 'category_id', 'brand_id', 'brand_name', 'sku', 'barcode', 'gtin', 'mpn', 'model', 'title', 'slug', 'short_description', 'description', 'condition', 'listing_type', 'is_retail_enabled', 'is_wholesale_enabled', 'product_type', 'status', 'location', 'specifications', 'warranty', 'stock_quantity', 'reserved_quantity', 'low_stock_threshold', 'allow_backorders', 'is_active', 'is_featured', 'is_best_seller', 'price', 'sale_price', 'wholesale_price', 'wholesale_min_quantity', 'cost_price', 'supplier_name', 'internal_notes', 'commission_percentage', 'moderation_reason', 'submitted_at', 'approved_at', 'is_best_offer', 'is_new_arrival', 'is_clearance', 'meta_title', 'meta_description'])]
 class Listing extends Model
 {
     /** @use HasFactory<ListingFactory> */
     use HasFactory, SoftDeletes;
+
+    protected $hidden = ['cost_price', 'supplier_name', 'internal_notes'];
 
     protected function casts(): array
     {

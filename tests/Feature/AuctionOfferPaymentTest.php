@@ -6,6 +6,7 @@ use App\Models\Auction;
 use App\Models\AuctionOffer;
 use App\Models\Bid;
 use App\Models\CustomerOrder;
+use App\Models\OrderNumberSequence;
 use App\Models\User;
 use App\Services\AuctionOrderService;
 use App\Services\AuctionPaymentCompletionService;
@@ -50,7 +51,9 @@ test('accepting an auction offer creates a stripe-only order outside the cart', 
         ->and($order->sellerOrders->sole()->items->sole()->pricing_tier)->toBe('auction')
         ->and($offer->refresh()->status)->toBe(AuctionOfferStatus::Accepted);
 
+    expect($order->number)->toBe('PRO001125');
     expect(app(AuctionOrderService::class)->accept($buyer, $offer->id, $address)->id)->toBe($order->id);
+    expect(OrderNumberSequence::findOrFail('customer')->last_number)->toBe(1125);
 });
 
 test('auction offer endpoint rejects cash on delivery and bank transfer', function (string $method) {

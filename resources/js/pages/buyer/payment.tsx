@@ -35,6 +35,10 @@ export default function BuyerPayment({
                 <h1 className="mt-6 text-2xl font-black sm:text-3xl">
                     Choose how to pay
                 </h1>
+                <p className="mt-2 text-sm text-slate-600">
+                    Cash on delivery is available for eligible order totals of
+                    LKR 5,000 or less, including delivery.
+                </p>
                 <div className="mt-5 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_21rem]">
                     <Form {...paymentStore.form()} className="grid gap-4">
                         {({ errors, processing }) => (

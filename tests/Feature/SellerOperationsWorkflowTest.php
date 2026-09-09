@@ -10,7 +10,7 @@ use App\Models\User;
 function createPaidSellerOrder(SellerProfile $seller): SellerOrder
 {
     $buyer = User::factory()->create();
-    $listing = Listing::factory()->create(['seller_profile_id' => $seller->id, 'price' => 12500]);
+    $listing = Listing::factory()->create(['seller_profile_id' => $seller->id, 'price' => 1250]);
     $cart = Cart::factory()->create(['buyer_id' => $buyer->id]);
     $cart->items()->create(['listing_id' => $listing->id, 'quantity' => 1]);
 

@@ -175,8 +175,8 @@ test('buyer reviews and places an order before the checkout session and cart are
         'listing_type' => 'buy_now',
         'status' => 'approved',
         'is_active' => true,
-        'price' => 25000,
-        'sale_price' => 22000,
+        'price' => 2500,
+        'sale_price' => 2200,
     ]);
 
     CartItem::factory()->for($cart)->create([
@@ -234,7 +234,7 @@ test('buyer reviews and places an order before the checkout session and cart are
             ->component('buyer/thank-you')
             ->where('order.number', $order->number)
             ->where('order.status', 'confirmed')
-            ->where('order.total', '22600.00')
+            ->where('order.total', '2800.00')
             ->where('order.payment.method', 'cod')
             ->where('order.payment.status', 'pending_collection')
             ->where('order.shippingAddress.recipient_name', 'Saman Perera')
@@ -250,7 +250,7 @@ test('buyer reviews and places an order before the checkout session and cart are
         OrderAcknowledgmentNotification::class,
         fn (OrderAcknowledgmentNotification $notification): bool => $notification->paymentMethod === 'cod'
             && $notification->itemCount === 1
-            && $notification->orderTotal === '22600.00'
+            && $notification->orderTotal === '2800.00'
             && $notification->orderNumber === $order->number,
     );
 });
@@ -258,7 +258,7 @@ test('buyer reviews and places an order before the checkout session and cart are
 test('checkout rejects an item that sells out after the review is prepared', function (): void {
     $user = User::factory()->create();
     $cart = Cart::factory()->for($user, 'buyer')->create();
-    $listing = Listing::factory()->create(['stock_quantity' => 1]);
+    $listing = Listing::factory()->create(['stock_quantity' => 1, 'price' => 1000]);
     CartItem::factory()->for($cart)->for($listing)->create(['quantity' => 1]);
 
     $this->actingAs($user)->post(route('checkout.store'), [

@@ -7,10 +7,12 @@ use App\Models\Cart;
 use App\Models\CustomerOrder;
 use App\Models\Listing;
 use App\Models\ListingVariant;
+use App\Models\OrderNumberSequence;
 use App\Models\Payment;
 use App\Models\SellerOrder;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class EloquentCheckoutRepository implements CheckoutRepository
 {
@@ -44,10 +46,15 @@ class EloquentCheckoutRepository implements CheckoutRepository
 
     public function createOrder(array $data): CustomerOrder
     {
-        $order = CustomerOrder::query()->create($data);
-        $order->update(['number' => 'PRO'.str_pad((string) $order->id, 6, '0', STR_PAD_LEFT)]);
+        return DB::transaction(function () use ($data): CustomerOrder {
+            OrderNumberSequence::query()->whereKey('customer')->increment('last_number');
+            $sequence = OrderNumberSequence::query()->lockForUpdate()->findOrFail('customer');
 
-        return $order;
+            return CustomerOrder::query()->create([
+                ...$data,
+                'number' => 'PRO'.str_pad((string) $sequence->last_number, 6, '0', STR_PAD_LEFT),
+            ]);
+        }, attempts: 3);
     }
 
     public function createSellerOrder(array $data): SellerOrder

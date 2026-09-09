@@ -80,10 +80,11 @@ class ListingService
 
     public function sellerProduct(User $seller, int $listingId): Listing
     {
-        return $this->listings->findDetailedForSellerOrFail(
-            $this->sellerProfileFor($seller),
-            $listingId,
-        );
+        $listing = $this->listings->findDetailedForSellerOrFail($this->sellerProfileFor($seller), $listingId);
+        $listing->makeVisible(['cost_price', 'supplier_name', 'internal_notes']);
+        $listing->variants->each->makeVisible('cost_price');
+
+        return $listing;
     }
 
     /** @param array<string, mixed> $attributes */
@@ -126,7 +127,7 @@ class ListingService
         }
 
         return DB::transaction(function () use ($seller, $profile, $listing, $attributes, $submitForReview): Listing {
-            $listing = $this->listings->findForSellerOrFail($profile, $listing->id);
+            $listing = $this->listings->findForSellerOrFail($profile, $listing->id, lockForUpdate: true);
 
             if (! in_array($listing->status, ['draft', 'changes_requested', 'rejected'], true)) {
                 throw new AuthorizationException('Only drafts and returned listings can be edited.');
@@ -373,6 +374,9 @@ class ListingService
             'sale_price' => $isVariantProduct || $comparePrice === null ? null : $sellingPrice,
             'wholesale_price' => $isWholesaleEnabled ? $listing?->wholesale_price : null,
             'wholesale_min_quantity' => $isWholesaleEnabled ? $listing?->wholesale_min_quantity : null,
+            'cost_price' => $isVariantProduct ? null : (array_key_exists('cost_price', $attributes) ? $attributes['cost_price'] : ($listing?->product_type === 'simple' ? $listing->cost_price : null)),
+            'supplier_name' => array_key_exists('supplier_name', $attributes) ? $attributes['supplier_name'] : $listing?->supplier_name,
+            'internal_notes' => array_key_exists('internal_notes', $attributes) ? $attributes['internal_notes'] : $listing?->internal_notes,
             'commission_percentage' => $category?->commission_percentage,
             'meta_title' => $attributes['meta_title'] ?? null,
             'meta_description' => $attributes['meta_description'] ?? null,

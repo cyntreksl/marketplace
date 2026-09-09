@@ -25,6 +25,7 @@ import Cropper from 'react-easy-crop';
 import type { Area, Point } from 'react-easy-crop';
 import { CategoryPicker } from '@/components/category-picker';
 import type { CategoryOption } from '@/components/category-picker';
+import { ProductInternalFields } from '@/components/product-internal-fields';
 import {
     RichTextEditor,
     richTextPlainText,
@@ -65,6 +66,7 @@ type StoredWholesaleTier = {
     unit_price: string;
 };
 type VariantRow = {
+    cost_price: string;
     selections: string[];
     sku: string;
     gtin: string;
@@ -99,6 +101,8 @@ type StoredVariantOption = {
 };
 
 type StoredVariant = {
+    id: number;
+    cost_price: string | null;
     sku: string | null;
     gtin: string | null;
     mpn: string | null;
@@ -181,6 +185,10 @@ function requestWasCancelled(caught: unknown): boolean {
 }
 
 export type SellerProductFormListing = {
+    status: string;
+    cost_price: string | null;
+    supplier_name: string | null;
+    internal_notes: string | null;
     title: string | null;
     sku: string | null;
     barcode: string | null;
@@ -233,6 +241,9 @@ export type SellerProductFormListing = {
 
 type FormDefinition = { action: string; method: 'post' | 'put' };
 type ProductFormData = {
+    cost_price: string;
+    supplier_name: string;
+    internal_notes: string;
     category_id: number | '';
     brand_id: number | null;
     brand_name: string;
@@ -419,6 +430,7 @@ export function SellerProductForm({
                     mpn: variant.mpn ?? '',
                     selling_price: variant.selling_price ?? '',
                     market_price: variant.market_price ?? '',
+                    cost_price: variant.cost_price ?? '',
                     wholesale_tiers: initialWholesaleTiers(
                         variant.wholesale_price_tiers,
                         variant.wholesale_min_quantity,
@@ -442,6 +454,9 @@ export function SellerProductForm({
         ),
     );
     const form = useForm<ProductFormData>({
+        cost_price: listing?.cost_price ?? '',
+        supplier_name: listing?.supplier_name ?? '',
+        internal_notes: listing?.internal_notes ?? '',
         category_id: listing?.category_id ?? '',
         brand_id: listing?.brand_id ?? null,
         brand_name: listing?.brand_name ?? '',
@@ -597,6 +612,7 @@ export function SellerProductForm({
                 stock_quantity: existing?.stock_quantity ?? 0,
                 selling_price: existing?.selling_price ?? baseSellingPrice,
                 market_price: existing?.market_price ?? '',
+                cost_price: existing?.cost_price ?? '',
                 wholesale_tiers:
                     existing?.wholesale_tiers ??
                     baseWholesaleTiers.map((tier) => ({ ...tier })),
@@ -1244,6 +1260,7 @@ export function SellerProductForm({
                 mpn: variant.mpn,
                 selling_price: variant.selling_price,
                 market_price: variant.market_price,
+                cost_price: variant.cost_price,
                 wholesale_tiers: variant.wholesale_tiers,
                 stock_quantity: variant.stock_quantity,
                 is_active: variant.is_active,
@@ -1292,6 +1309,39 @@ export function SellerProductForm({
         >
             <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_23rem]">
                 <div className="grid gap-5">
+                    <ProductInternalFields
+                        supplierName={form.data.supplier_name}
+                        internalNotes={form.data.internal_notes}
+                        costPrice={form.data.cost_price}
+                        variants={
+                            isVariantProduct
+                                ? form.data.variants.map((variant) => ({
+                                      label:
+                                          variant.sku ||
+                                          variant.selections.join(' / '),
+                                      costPrice: variant.cost_price,
+                                  }))
+                                : undefined
+                        }
+                        onSupplierChange={(value) =>
+                            setField('supplier_name', value)
+                        }
+                        onNotesChange={(value) =>
+                            setField('internal_notes', value)
+                        }
+                        onCostChange={(value) => setField('cost_price', value)}
+                        onVariantCostChange={(index, value) =>
+                            setField(
+                                'variants',
+                                form.data.variants.map((variant, row) =>
+                                    row === index
+                                        ? { ...variant, cost_price: value }
+                                        : variant,
+                                ),
+                            )
+                        }
+                        errorFor={errorFor}
+                    />
                     <FormCard
                         title="Sales Channels"
                         icon={<Store className="size-5" />}

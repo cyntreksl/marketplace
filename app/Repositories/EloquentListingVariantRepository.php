@@ -4,6 +4,8 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\ListingVariantRepository;
 use App\Models\Listing;
+use App\Models\ListingVariant;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
 class EloquentListingVariantRepository implements ListingVariantRepository
@@ -43,6 +45,7 @@ class EloquentListingVariantRepository implements ListingVariantRepository
                     'combination_key' => $variantData['combination_key'],
                 ]);
             $variant->forceFill([
+                ...Arr::only($variantData, ['cost_price']),
                 'combination_key' => $variantData['combination_key'],
                 'sku' => $variantData['sku'],
                 'gtin' => $variantData['gtin'],
@@ -77,6 +80,16 @@ class EloquentListingVariantRepository implements ListingVariantRepository
             ->pluck('image')
             ->filter()
             ->values();
+    }
+
+    public function lockForListing(Listing $listing): Collection
+    {
+        return $listing->variants()->lockForUpdate()->get();
+    }
+
+    public function updateCost(ListingVariant $variant, ?string $costPrice): void
+    {
+        $variant->forceFill(['cost_price' => $costPrice])->save();
     }
 
     public function deleteForListing(Listing $listing): void

@@ -20,7 +20,7 @@ class MarketplaceSettingSeeder extends Seeder
             'auction.default_duration_days' => ['group' => 'auction', 'value' => 7],
             'auction.anti_sniping_extension_minutes' => ['group' => 'auction', 'value' => 5],
             'checkout.shipping_fee' => ['group' => 'checkout', 'value' => 600],
-            'checkout.cod_maximum_amount' => ['group' => 'checkout', 'value' => 50000],
+            'checkout.cod_maximum_amount' => ['group' => 'checkout', 'value' => 5000],
             'settlement.hold_days' => ['group' => 'settlement', 'value' => 7],
             'settlement.minimum_payout_amount' => ['group' => 'settlement', 'value' => 5000],
         ] as $key => $setting) {

@@ -75,14 +75,14 @@ test('a seller can save and edit a completely incomplete product draft', functio
             ->where('listing.variants', []));
 });
 
-test('seller product forms ignore legacy cost price input', function () {
+test('seller product forms save private cost price input', function () {
     $seller = SellerProfile::factory()->create();
 
     $this->actingAs($seller->user)
         ->post(route('seller.listings.store'), ['cost_price' => '2500.00'])
         ->assertSessionHasNoErrors();
 
-    expect(Listing::query()->sole()->cost_price)->toBeNull();
+    expect(Listing::query()->sole()->cost_price)->toBe('2500.00');
 });
 
 test('submission requires a complete product while drafts still enforce pricing safety', function () {
@@ -514,7 +514,7 @@ test('variant image uploads accept smaller square source crops', function () {
 test('active availability backorders and stock status control public purchasing', function () {
     $inactive = Listing::factory()->create(['is_active' => false, 'stock_quantity' => 10]);
     $outOfStock = Listing::factory()->create(['stock_quantity' => 0, 'allow_backorders' => false]);
-    $backorder = Listing::factory()->create(['stock_quantity' => 0, 'allow_backorders' => true, 'price' => 20000]);
+    $backorder = Listing::factory()->create(['stock_quantity' => 0, 'allow_backorders' => true, 'price' => 1000]);
     $lowStock = Listing::factory()->create(['stock_quantity' => 2, 'low_stock_threshold' => 3]);
 
     $publicIds = Listing::query()->publiclyVisible()->pluck('listings.id');

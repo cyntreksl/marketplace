@@ -61,3 +61,73 @@ smoke_product
         await rm(directory, { recursive: true, force: true });
     }
 });
+
+test('deployment pauses order creation through migrations and activation', () => {
+    const stages = source.slice(
+        source.indexOf("run_stage 'Upload and prepare releases'"),
+    );
+    const pause = stages.indexOf("'Pause order creation'");
+    const migration = stages.indexOf("'Run database and media migrations'");
+    const activate = stages.indexOf("'Activate releases'");
+    const verify = stages.indexOf("'Verify hosts'");
+    const resume = stages.indexOf("'Resume order creation'");
+    assert.ok(
+        pause >= 0 &&
+            pause < migration &&
+            migration < activate &&
+            activate < verify &&
+            verify < resume,
+    );
+    const functions = [
+        'pause_host',
+        'resume_host',
+        'pause_order_creation',
+        'resume_order_creation',
+    ]
+        .map(
+            (name) =>
+                source.match(
+                    new RegExp(`${name}\\(\\) \\{[\\s\\S]*?\\n\\}`),
+                )?.[0],
+        )
+        .join('\n');
+    const result = spawnSync(
+        'bash',
+        [
+            '-c',
+            `set -Eeuo pipefail
+ssh_options=(-o BatchMode=yes)
+DEPLOY_USER=deploy
+WORKER_HOST=worker
+RELEASE_ID=release
+remote_script=release-script
+ssh() { printf '%s\\n' "$*"; }
+run_on_hosts() { "$1" web; "$1" worker; }
+${functions}
+pause_order_creation
+[[ "$maintenance_paused" == true ]]
+resume_order_creation
+[[ "$maintenance_paused" == false ]]
+`,
+        ],
+        { encoding: 'utf8' },
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(
+        result.stdout,
+        /deploy@web release-script maintenance-down release/,
+    );
+    assert.match(
+        result.stdout,
+        /deploy@worker release-script maintenance-down release/,
+    );
+    assert.match(result.stdout, /supervisorctl stop prodeals-worker/);
+    assert.match(
+        result.stdout,
+        /deploy@web release-script maintenance-up release/,
+    );
+    assert.match(
+        result.stdout,
+        /deploy@worker release-script maintenance-up release/,
+    );
+});
