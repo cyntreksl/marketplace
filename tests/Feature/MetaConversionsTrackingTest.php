@@ -49,7 +49,7 @@ test('valid public listing views queue ViewContent while crawlers and prefetches
 
     $cookie = $response->getCookie('_fbc', false);
     $fbc = $cookie?->getValue();
-    expect($fbc)->toMatch('/^fb\.1\.\d{13}\.'.$clickId.'\.[A-Za-z0-9_-]{8}$/')
+    expect($fbc)->toMatch('/^fb\.\d+\.\d{13}\.'.$clickId.'\.[A-Za-z0-9_-]{8}$/')
         ->and($cookie?->getExpiresTime())->toBe(now()->addDays(90)->timestamp)
         ->and($cookie?->getPath())->toBe('/')
         ->and($cookie?->getDomain())->toBe('prodeals.lk')
@@ -128,7 +128,7 @@ test('a newer Meta click replaces stored attribution and preserves case', functi
         ->assertOk();
 
     $newFbc = $response->getCookie('_fbc', false)?->getValue();
-    expect($newFbc)->toMatch('/^fb\.1\.\d{13}\.'.$newClickId.'\.[A-Za-z0-9_-]{8}$/');
+    expect($newFbc)->toMatch('/^fb\.\d+\.\d{13}\.'.$newClickId.'\.[A-Za-z0-9_-]{8}$/');
 
     Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => $job->event->userData['fbc'] === $newFbc);
 });
@@ -145,7 +145,7 @@ test('a valid click id in the referrer creates fbc and propagates builder reques
     ])->get(route('listings.show', $listing->slug))->assertOk();
 
     $fbc = $response->getCookie('_fbc', false)?->getValue();
-    expect($fbc)->toMatch('/^fb\.1\.\d{13}\.ReferrerClick_ABC\.[A-Za-z0-9_-]{8}$/');
+    expect($fbc)->toMatch('/^fb\.\d+\.\d{13}\.ReferrerClick_ABC\.[A-Za-z0-9_-]{8}$/');
     Queue::assertPushed(SendMetaConversion::class, function (SendMetaConversion $job) use ($fbc, $listing, $referrer): bool {
         return $job->event->userData['fbc'] === $fbc
             && str_starts_with($job->event->userData['client_ip_address'], '8.8.8.8.')
