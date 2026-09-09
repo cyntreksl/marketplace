@@ -15,12 +15,13 @@ final readonly class MetaConversionEvent
         public string $sourceUrl,
         public array $userData,
         public array $customData,
+        public ?string $referrerUrl = null,
     ) {}
 
     /** @return array<string, mixed> */
     public function toArray(): array
     {
-        return [
+        $event = [
             'event_name' => $this->name,
             'event_time' => $this->occurredAt,
             'event_id' => $this->id,
@@ -29,5 +30,11 @@ final readonly class MetaConversionEvent
             'user_data' => $this->userData,
             'custom_data' => $this->customData,
         ];
+
+        if ($this->referrerUrl !== null) {
+            $event['referrer_url'] = $this->referrerUrl;
+        }
+
+        return $event;
     }
 }

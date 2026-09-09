@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Services\MetaConversionsService;
+use App\Services\MetaParameterBuilderService;
 use App\Support\MetaConversionEvent;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -13,8 +14,10 @@ use Illuminate\Support\Str;
 #[Description('Send a synthetic ViewContent event to Meta Events Manager')]
 class TestMetaConversionsCommand extends Command
 {
-    public function handle(MetaConversionsService $conversions): int
-    {
+    public function handle(
+        MetaConversionsService $conversions,
+        MetaParameterBuilderService $parameterBuilder,
+    ): int {
         $testEventCode = $this->option('test-event-code');
 
         if ($testEventCode === '-') {
@@ -41,8 +44,8 @@ class TestMetaConversionsCommand extends Command
             sourceUrl: $sourceUrl,
             userData: [
                 'client_user_agent' => 'ProDeals Meta Conversions deployment verification',
-                'em' => [hash('sha256', 'meta-test@prodeals.lk')],
-                'external_id' => [hash('sha256', 'prodeals-deployment-verification')],
+                'em' => [$parameterBuilder->normalizedAndHashedPii('meta-test@prodeals.lk', MetaParameterBuilderService::PII_EMAIL)],
+                'external_id' => [$parameterBuilder->normalizedAndHashedPii('prodeals-deployment-verification', MetaParameterBuilderService::PII_EXTERNAL_ID)],
             ],
             customData: [
                 'currency' => 'LKR',

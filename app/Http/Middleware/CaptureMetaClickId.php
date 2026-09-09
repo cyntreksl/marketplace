@@ -2,14 +2,14 @@
 
 namespace App\Http\Middleware;
 
-use App\Services\MetaClickIdService;
+use App\Services\MetaParameterBuilderService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class CaptureMetaClickId
 {
-    public function __construct(private readonly MetaClickIdService $clickIds) {}
+    public function __construct(private readonly MetaParameterBuilderService $parameterBuilder) {}
 
     /**
      * Handle an incoming request.
@@ -18,10 +18,10 @@ class CaptureMetaClickId
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $cookie = $this->clickIds->capture($request);
+        $context = $this->parameterBuilder->process($request);
         $response = $next($request);
 
-        if ($cookie !== null) {
+        foreach ($context->responseCookies as $cookie) {
             $response->headers->setCookie($cookie);
         }
 

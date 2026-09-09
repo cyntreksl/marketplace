@@ -4,7 +4,7 @@ use App\Http\Middleware\AddSearchRobotHeaders;
 use App\Http\Middleware\CaptureMetaClickId;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
-use App\Services\MetaClickIdService;
+use App\Services\MetaParameterBuilderService;
 use App\Support\TrackingConsent;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -25,8 +25,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: [
             'sidebar_state',
             TrackingConsent::COOKIE_NAME,
-            MetaClickIdService::COOKIE_NAME,
-            MetaClickIdService::BROWSER_COOKIE_NAME,
+            MetaParameterBuilderService::CLICK_COOKIE_NAME,
+            MetaParameterBuilderService::BROWSER_COOKIE_NAME,
         ]);
 
         $middleware->web(append: [

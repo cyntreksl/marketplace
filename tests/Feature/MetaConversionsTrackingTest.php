@@ -7,7 +7,10 @@ use App\Models\CustomerOrder;
 use App\Models\Listing;
 use App\Models\User;
 use App\Services\MetaConversionsService;
+use App\Services\MetaParameterBuilderService;
 use App\Support\MetaConversionEvent;
+use App\Support\TrackingConsent;
+use FacebookAds\ParamBuilder;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
@@ -21,35 +24,45 @@ beforeEach(function (): void {
     ]);
 });
 
+function marketingConsentCookie(): string
+{
+    return urlencode(json_encode([
+        'version' => TrackingConsent::VERSION,
+        'analytics' => false,
+        'marketing' => true,
+        'decidedAt' => '2026-09-07T10:00:00.000Z',
+    ], JSON_THROW_ON_ERROR));
+}
+
 test('valid public listing views queue ViewContent while crawlers and prefetches do not', function (): void {
     Queue::fake();
     $listing = Listing::factory()->create(['price' => '2500.00', 'sale_price' => null]);
-    $this->travelTo('2026-09-07 12:34:56');
     config(['session.domain' => 'prodeals.lk']);
-    $clickId = 'AbC_def-123.XyZ';
-    $expectedFbc = 'fb.1.'.now()->getTimestampMs().'.'.$clickId;
+    $clickId = 'AbC_def-123_XyZ';
 
     $listingUrl = 'https://prodeals.lk'.route('listings.show', $listing->slug, absolute: false);
 
     $response = $this->withHeader('User-Agent', 'Mozilla/5.0')
         ->get($listingUrl.'?fbclid='.$clickId)
         ->assertOk()
-        ->assertPlainCookie('_fbc', $expectedFbc)
         ->assertCookieNotExpired('_fbc');
 
     $cookie = $response->getCookie('_fbc', false);
-    expect($cookie?->getExpiresTime())->toBe(now()->addDays(90)->timestamp)
+    $fbc = $cookie?->getValue();
+    expect($fbc)->toMatch('/^fb\.1\.\d{13}\.'.$clickId.'\.[A-Za-z0-9_-]{8}$/')
+        ->and($cookie?->getExpiresTime())->toBe(now()->addDays(90)->timestamp)
         ->and($cookie?->getPath())->toBe('/')
         ->and($cookie?->getDomain())->toBe('prodeals.lk')
         ->and($cookie?->isSecure())->toBeTrue()
         ->and($cookie?->isHttpOnly())->toBeFalse()
         ->and($cookie?->getSameSite())->toBe('lax');
 
-    Queue::assertPushed(SendMetaConversion::class, function (SendMetaConversion $job) use ($expectedFbc, $listing): bool {
+    Queue::assertPushed(SendMetaConversion::class, function (SendMetaConversion $job) use ($fbc, $listing): bool {
         return $job->event->name === 'ViewContent'
             && $job->event->customData['content_ids'] === [(string) $listing->id]
             && $job->event->customData['value'] === 2500.0
-            && $job->event->userData['fbc'] === $expectedFbc
+            && $job->event->userData['fbc'] === $fbc
+            && ! array_key_exists('fbp', $job->event->userData)
             && ! array_key_exists('fbclid', $job->event->userData);
     });
 
@@ -59,17 +72,45 @@ test('valid public listing views queue ViewContent while crawlers and prefetches
     Queue::assertNothingPushed();
 });
 
-test('existing Meta cookies remain plaintext and an unchanged click id is not reset', function (): void {
+test('legacy Meta cookies are upgraded with builder appendices', function (): void {
     Queue::fake();
     $listing = Listing::factory()->create();
-    $fbc = 'fb.1.1788775200123.Existing.Click-ID';
+    $fbc = 'fb.1.1788775200123.ExistingClick-ID';
     $fbp = 'fb.1.1788775200123.1116446470';
+    $expectedFbc = $fbc.'.AQEAAQMB';
+    $expectedFbp = $fbp.'.AQEAAQMB';
 
-    $this->withUnencryptedCookies(['_fbc' => $fbc, '_fbp' => $fbp])
+    $this->withUnencryptedCookies([
+        '_fbc' => $fbc,
+        '_fbp' => $fbp,
+        TrackingConsent::COOKIE_NAME => marketingConsentCookie(),
+    ])
         ->withHeader('User-Agent', 'Mozilla/5.0')
-        ->get(route('listings.show', $listing->slug).'?fbclid=Existing.Click-ID')
+        ->get(route('listings.show', $listing->slug).'?fbclid=ExistingClick-ID')
         ->assertOk()
-        ->assertCookieMissing('_fbc');
+        ->assertPlainCookie('_fbc', $expectedFbc)
+        ->assertPlainCookie('_fbp', $expectedFbp);
+
+    Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => $job->event->userData['fbc'] === $expectedFbc
+        && $job->event->userData['fbp'] === $expectedFbp);
+});
+
+test('appended Meta cookies remain plaintext and an unchanged click id is preserved', function (): void {
+    Queue::fake();
+    $listing = Listing::factory()->create();
+    $fbc = 'fb.1.1788775200123.ExistingClick-ID.AQEAAQMB';
+    $fbp = 'fb.1.1788775200123.1116446470.AQEAAQMB';
+
+    $this->withUnencryptedCookies([
+        '_fbc' => $fbc,
+        '_fbp' => $fbp,
+        TrackingConsent::COOKIE_NAME => marketingConsentCookie(),
+    ])
+        ->withHeader('User-Agent', 'Mozilla/5.0')
+        ->get(route('listings.show', $listing->slug).'?fbclid=ExistingClick-ID')
+        ->assertOk()
+        ->assertCookieMissing('_fbc')
+        ->assertCookieMissing('_fbp');
 
     Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => $job->event->userData['fbc'] === $fbc
         && $job->event->userData['fbp'] === $fbp);
@@ -78,18 +119,39 @@ test('existing Meta cookies remain plaintext and an unchanged click id is not re
 test('a newer Meta click replaces stored attribution and preserves case', function (): void {
     Queue::fake();
     $listing = Listing::factory()->create();
-    $this->travelTo('2026-09-07 13:00:00');
-    $existingFbc = 'fb.1.1788775200123.OldClick';
+    $existingFbc = 'fb.1.1788775200123.OldClick.AQEAAQMB';
     $newClickId = 'NewClick_AbC-123';
-    $expectedFbc = 'fb.1.'.now()->getTimestampMs().'.'.$newClickId;
 
-    $this->withUnencryptedCookie('_fbc', $existingFbc)
+    $response = $this->withUnencryptedCookie('_fbc', $existingFbc)
         ->withHeader('User-Agent', 'Mozilla/5.0')
         ->get(route('listings.show', $listing->slug).'?fbclid='.$newClickId)
-        ->assertOk()
-        ->assertPlainCookie('_fbc', $expectedFbc);
+        ->assertOk();
 
-    Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => $job->event->userData['fbc'] === $expectedFbc);
+    $newFbc = $response->getCookie('_fbc', false)?->getValue();
+    expect($newFbc)->toMatch('/^fb\.1\.\d{13}\.'.$newClickId.'\.[A-Za-z0-9_-]{8}$/');
+
+    Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => $job->event->userData['fbc'] === $newFbc);
+});
+
+test('a valid click id in the referrer creates fbc and propagates builder request data', function (): void {
+    Queue::fake();
+    $listing = Listing::factory()->create();
+    $referrer = 'https://www.facebook.com/ad?fbclid=ReferrerClick_ABC';
+
+    $response = $this->withHeaders([
+        'User-Agent' => 'Mozilla/5.0',
+        'Referer' => $referrer,
+        'X-Forwarded-For' => '8.8.8.8, 10.0.0.1',
+    ])->get(route('listings.show', $listing->slug))->assertOk();
+
+    $fbc = $response->getCookie('_fbc', false)?->getValue();
+    expect($fbc)->toMatch('/^fb\.1\.\d{13}\.ReferrerClick_ABC\.[A-Za-z0-9_-]{8}$/');
+    Queue::assertPushed(SendMetaConversion::class, function (SendMetaConversion $job) use ($fbc, $listing, $referrer): bool {
+        return $job->event->userData['fbc'] === $fbc
+            && str_starts_with($job->event->userData['client_ip_address'], '8.8.8.8.')
+            && str_starts_with($job->event->sourceUrl, route('listings.show', $listing->slug))
+            && str_starts_with($job->event->referrerUrl ?? '', $referrer.'.');
+    });
 });
 
 test('invalid Meta click ids and ordinary traffic do not create attribution cookies', function (mixed $clickId): void {
@@ -101,7 +163,8 @@ test('invalid Meta click ids and ordinary traffic do not create attribution cook
 
     $this->get($url)
         ->assertOk()
-        ->assertCookieMissing('_fbc');
+        ->assertCookieMissing('_fbc')
+        ->assertCookieMissing('_fbp');
 })->with([
     'no Meta click' => null,
     'unsafe characters' => 'bad click!',
@@ -109,13 +172,66 @@ test('invalid Meta click ids and ordinary traffic do not create attribution cook
     'non-scalar value' => [['click-id']],
 ]);
 
+test('invalid existing fbc values are ignored', function (): void {
+    Queue::fake();
+    $listing = Listing::factory()->create();
+
+    $this->withUnencryptedCookie('_fbc', 'not-a-valid-fbc')
+        ->withHeader('User-Agent', 'Mozilla/5.0')
+        ->get(route('listings.show', $listing->slug))
+        ->assertOk()
+        ->assertCookieMissing('_fbc');
+
+    Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => ! array_key_exists('fbc', $job->event->userData));
+});
+
+test('fbp is set and sent only after marketing consent', function (): void {
+    Queue::fake();
+    $listing = Listing::factory()->create();
+    $existingFbp = 'fb.1.1788775200123.1116446470.AQEAAQMB';
+
+    $this->withUnencryptedCookie('_fbp', $existingFbp)
+        ->withHeader('User-Agent', 'Mozilla/5.0')
+        ->get(route('listings.show', $listing->slug))
+        ->assertOk()
+        ->assertCookieMissing('_fbp');
+    Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => ! array_key_exists('fbp', $job->event->userData));
+
+    Queue::fake();
+    $response = $this->withUnencryptedCookies([
+        '_fbp' => '',
+        TrackingConsent::COOKIE_NAME => marketingConsentCookie(),
+    ])->withHeader('User-Agent', 'Mozilla/5.0')
+        ->get(route('listings.show', $listing->slug))
+        ->assertOk();
+
+    $fbp = $response->getCookie('_fbp', false)?->getValue();
+    expect($fbp)->toMatch('/^fb\.\d+\.\d{13}\.\d+\.[A-Za-z0-9_-]{8}$/');
+    Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => $job->event->userData['fbp'] === $fbp);
+});
+
+test('builder-formatted customer data is hashed exactly once', function (): void {
+    $builder = app(MetaParameterBuilderService::class);
+    $hash = hash('sha256', 'buyer@example.com');
+    $formatted = $builder->normalizedAndHashedPii(' Buyer@Example.COM ', MetaParameterBuilderService::PII_EMAIL);
+    $preHashed = $builder->normalizedAndHashedPii($hash, MetaParameterBuilderService::PII_EMAIL);
+
+    expect($formatted)->toMatch('/^'.$hash.'\.[A-Za-z0-9_-]{8}$/')
+        ->and($preHashed)->toMatch('/^'.$hash.'\.[A-Za-z0-9_-]{8}$/')
+        ->and($builder->normalizedAndHashedPii($preHashed, MetaParameterBuilderService::PII_EMAIL))->toBe($preHashed);
+});
+
 test('successful cart additions queue the added quantity and invalid mutations do not', function (): void {
     Queue::fake();
     $listing = Listing::factory()->create(['price' => '1000.00', 'sale_price' => null, 'stock_quantity' => 5]);
-    $fbc = 'fb.1.1788775200123.CartClick';
-    $fbp = 'fb.1.1788775200123.1116446470';
+    $fbc = 'fb.1.1788775200123.CartClick.AQEAAQMB';
+    $fbp = 'fb.1.1788775200123.1116446470.AQEAAQMB';
 
-    $this->withUnencryptedCookies(['_fbc' => $fbc, '_fbp' => $fbp])
+    $this->withUnencryptedCookies([
+        '_fbc' => $fbc,
+        '_fbp' => $fbp,
+        TrackingConsent::COOKIE_NAME => marketingConsentCookie(),
+    ])
         ->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 2])
         ->assertSessionHasNoErrors();
     $this->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 1])->assertSessionHasNoErrors();
@@ -140,7 +256,7 @@ test('checkout queues only for a non-empty valid cart and disabled tracking is s
     Queue::assertNothingPushed();
 
     $listing = Listing::factory()->create();
-    $fbc = 'fb.1.1788775200123.CheckoutClick';
+    $fbc = 'fb.1.1788775200123.CheckoutClick.AQEAAQMB';
     $this->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 1]);
     Queue::fake();
     $this->withUnencryptedCookie('_fbc', $fbc)->get(route('checkout.show'))->assertOk();
@@ -157,11 +273,15 @@ test('confirmed COD orders queue Purchase and store attribution encrypted', func
     Queue::fake();
     $buyer = User::factory()->create(['email' => 'buyer@example.com', 'name' => 'Buyer Person']);
     $listing = Listing::factory()->create(['price' => '1000.00', 'sale_price' => null]);
-    $fbc = 'fb.1.1788775200123.PurchaseClick';
-    $fbp = 'fb.1.1788775200123.1116446470';
+    $fbc = 'fb.1.1788775200123.PurchaseClick.AQEAAQMB';
+    $fbp = 'fb.1.1788775200123.1116446470.AQEAAQMB';
 
     $this->actingAs($buyer)
-        ->withUnencryptedCookies(['_fbc' => $fbc, '_fbp' => $fbp])
+        ->withUnencryptedCookies([
+            '_fbc' => $fbc,
+            '_fbp' => $fbp,
+            TrackingConsent::COOKIE_NAME => marketingConsentCookie(),
+        ])
         ->withHeader('User-Agent', 'Checkout Browser')
         ->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 2]);
     $this->post(route('checkout.store'), [
@@ -193,7 +313,7 @@ test('Purchase uses a stable event id hashes PII and clears accepted attribution
     Queue::fake();
     $buyer = User::factory()->create(['email' => 'buyer@example.com', 'name' => 'Buyer Person']);
     $listing = Listing::factory()->create(['price' => '1000.00', 'sale_price' => null]);
-    $fbc = 'fb.1.1788775200123.CompletedPurchaseClick';
+    $fbc = 'fb.1.1788775200123.CompletedPurchaseClick.AQEAAQMB';
 
     $this->actingAs($buyer)
         ->withUnencryptedCookie('_fbc', $fbc)
@@ -207,8 +327,9 @@ test('Purchase uses a stable event id hashes PII and clears accepted attribution
     ]);
     $this->post(route('checkout.payment.store'), ['payment_method' => 'cod']);
     $review = checkoutReviewData();
+    $referrer = 'https://www.facebook.com/prodeals-ad';
     Queue::fake();
-    $this->post(route('checkout.review.store'), $review);
+    $this->withHeader('Referer', $referrer)->post(route('checkout.review.store'), $review);
     $order = CustomerOrder::sole();
 
     $gateway = new class implements MetaConversionsGateway
@@ -229,8 +350,16 @@ test('Purchase uses a stable event id hashes PII and clears accepted attribution
         ->and($gateway->event?->customData['currency'])->toBe('LKR')
         ->and($gateway->event?->customData['value'])->toBe(1600.0)
         ->and($gateway->event?->customData['contents'][0]['item_price'])->toBe(1000.0)
-        ->and($gateway->event?->userData['em'][0])->toBe(hash('sha256', 'buyer@example.com'))
-        ->and($gateway->event?->userData['ph'][0])->toBe(hash('sha256', '94771234567'))
+        ->and($gateway->event?->sourceUrl)->toStartWith(route('checkout.review.store'))
+        ->and($gateway->event?->referrerUrl)->toStartWith($referrer.'.')
+        ->and($gateway->event?->userData['em'][0])->toMatch('/^'.hash('sha256', 'buyer@example.com').'\.[A-Za-z0-9_-]{8}$/')
+        ->and($gateway->event?->userData['external_id'][0])->toMatch('/^'.hash('sha256', (string) $buyer->id).'\.[A-Za-z0-9_-]{8}$/')
+        ->and($gateway->event?->userData['ph'][0])->toMatch('/^'.hash('sha256', '94771234567').'\.[A-Za-z0-9_-]{8}$/')
+        ->and($gateway->event?->userData['fn'][0])->toMatch('/^'.hash('sha256', 'buyer').'\.[A-Za-z0-9_-]{8}$/')
+        ->and($gateway->event?->userData['ln'][0])->toMatch('/^'.hash('sha256', 'person').'\.[A-Za-z0-9_-]{8}$/')
+        ->and($gateway->event?->userData['ct'][0])->toMatch('/^'.hash('sha256', 'colombo').'\.[A-Za-z0-9_-]{8}$/')
+        ->and($gateway->event?->userData['zp'][0])->toMatch('/^'.hash('sha256', '01000').'\.[A-Za-z0-9_-]{8}$/')
+        ->and($gateway->event?->userData['country'][0])->toMatch('/^'.hash('sha256', 'lk').'\.[A-Za-z0-9_-]{8}$/')
         ->and($gateway->event?->userData['fbc'])->toBe($fbc)
         ->and($serialized)->not->toContain('buyer@example.com')
         ->and($serialized)->not->toContain('0771234567')
@@ -244,6 +373,7 @@ test('queued jobs are unique and use bounded retry settings', function (): void 
 
     expect($eventJob->uniqueId())->toBe('event-unique')
         ->and($eventJob)->toBeInstanceOf(ShouldBeEncrypted::class)
+        ->and($eventJob->event->toArray())->not->toHaveKey('referrer_url')
         ->and($purchaseJob->uniqueId())->toBe('Purchase:42')
         ->and($eventJob->tries)->toBe(5)
         ->and($eventJob->backoff)->toBe([10, 60, 300, 900])
@@ -265,6 +395,19 @@ test('commerce still succeeds when a synchronous Meta delivery fails', function 
         ->assertRedirect()
         ->assertSessionHasNoErrors()
         ->assertSessionHas('cart_added', true);
+});
+
+test('storefront requests still succeed when the parameter builder fails', function (): void {
+    app()->instance(MetaParameterBuilderService::class, new class(app(TrackingConsent::class)) extends MetaParameterBuilderService
+    {
+        /** @param array<string, mixed> $server */
+        protected function processBuilder(ParamBuilder $builder, array $server): void
+        {
+            throw new RuntimeException('Simulated parameter builder failure');
+        }
+    });
+
+    $this->get(route('home'))->assertOk();
 });
 
 test('synthetic command requires a temporary code and never displays credentials', function (): void {
@@ -289,7 +432,7 @@ test('synthetic command requires a temporary code and never displays credentials
         ->assertSuccessful();
 
     expect($gateway->event?->name)->toBe('ViewContent')
-        ->and($gateway->event?->userData['em'][0])->toBe(hash('sha256', 'meta-test@prodeals.lk'))
+        ->and($gateway->event?->userData['em'][0])->toMatch('/^'.hash('sha256', 'meta-test@prodeals.lk').'\.[A-Za-z0-9_-]{8}$/')
         ->and(json_encode($gateway->event?->toArray(), JSON_THROW_ON_ERROR))->not->toContain('meta-test@prodeals.lk')
         ->and($gateway->testEventCode)->toBe('TEST123');
 });

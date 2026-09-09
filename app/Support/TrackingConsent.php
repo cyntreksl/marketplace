@@ -39,4 +39,9 @@ class TrackingConsent
 
         return $consent !== null && ($consent['analytics'] || $consent['marketing']);
     }
+
+    public function allowsMarketing(?string $cookie): bool
+    {
+        return $this->fromCookie($cookie)['marketing'] ?? false;
+    }
 }

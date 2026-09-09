@@ -28,6 +28,7 @@ function metaTestEvent(): MetaConversionEvent
         sourceUrl: 'https://prodeals.lk/listings/camera',
         userData: ['em' => [hash('sha256', 'buyer@example.com')]],
         customData: ['currency' => 'LKR', 'value' => 1250.0, 'content_ids' => ['42']],
+        referrerUrl: 'https://www.facebook.com/ad.AQEAAQMB',
     );
 }
 
@@ -51,6 +52,7 @@ test('gateway sends the expected v25 payload with bearer authentication and time
             && $body['data'][0]['event_name'] === 'ViewContent'
             && $body['data'][0]['event_id'] === 'event-123'
             && $body['data'][0]['action_source'] === 'website'
+            && $body['data'][0]['referrer_url'] === 'https://www.facebook.com/ad.AQEAAQMB'
             && $body['data'][0]['custom_data']['currency'] === 'LKR'
             && $body['data'][0]['custom_data']['value'] === 1250.0
             && ! str_contains($request->body(), 'buyer@example.com');

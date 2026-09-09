@@ -24,3 +24,23 @@ test('invalid or outdated consent cookies are rejected', function () {
     expect($tracking->fromCookie('not-json'))->toBeNull()
         ->and($tracking->fromCookie(urlencode('{"version":2,"analytics":true,"marketing":true,"decidedAt":"now"}')))->toBeNull();
 });
+
+test('marketing consent requires a valid cookie with marketing enabled', function (): void {
+    $tracking = new TrackingConsent;
+    $marketing = urlencode(json_encode([
+        'version' => 1,
+        'analytics' => false,
+        'marketing' => true,
+        'decidedAt' => '2026-09-07T10:00:00.000Z',
+    ], JSON_THROW_ON_ERROR));
+    $analyticsOnly = urlencode(json_encode([
+        'version' => 1,
+        'analytics' => true,
+        'marketing' => false,
+        'decidedAt' => '2026-09-07T10:00:00.000Z',
+    ], JSON_THROW_ON_ERROR));
+
+    expect($tracking->allowsMarketing($marketing))->toBeTrue()
+        ->and($tracking->allowsMarketing($analyticsOnly))->toBeFalse()
+        ->and($tracking->allowsMarketing(null))->toBeFalse();
+});
