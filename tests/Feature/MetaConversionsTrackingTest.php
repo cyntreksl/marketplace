@@ -41,6 +41,7 @@ test('valid public listing views queue ViewContent while crawlers and prefetches
     $clickId = 'AbC_def-123_XyZ';
 
     $listingUrl = 'https://prodeals.lk'.route('listings.show', $listing->slug, absolute: false);
+    $requestStartedAt = now();
 
     $response = $this->withHeader('User-Agent', 'Mozilla/5.0')
         ->get($listingUrl.'?fbclid='.$clickId)
@@ -50,7 +51,8 @@ test('valid public listing views queue ViewContent while crawlers and prefetches
     $cookie = $response->getCookie('_fbc', false);
     $fbc = $cookie?->getValue();
     expect($fbc)->toMatch('/^fb\.\d+\.\d{13}\.'.$clickId.'\.[A-Za-z0-9_-]{8}$/')
-        ->and($cookie?->getExpiresTime())->toBe(now()->addDays(90)->timestamp)
+        ->and($cookie?->getExpiresTime())->toBeGreaterThanOrEqual($requestStartedAt->addDays(90)->timestamp)
+        ->and($cookie?->getExpiresTime())->toBeLessThanOrEqual(now()->addDays(90)->timestamp)
         ->and($cookie?->getPath())->toBe('/')
         ->and($cookie?->getDomain())->toBe('prodeals.lk')
         ->and($cookie?->isSecure())->toBeTrue()
