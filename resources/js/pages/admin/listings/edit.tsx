@@ -3,6 +3,8 @@ import {
     show,
     updateDetails,
 } from '@/actions/App/Http/Controllers/AdminListingController';
+import { AdminListingMerchandisingForm } from '@/components/admin-listing-merchandising-form';
+import type { MerchandisingListing } from '@/components/admin-listing-merchandising-form';
 import type { CategoryOption } from '@/components/category-picker';
 import { PortalLayout } from '@/components/portal-layout';
 import { SellerProductForm } from '@/components/seller-product-form';
@@ -15,7 +17,7 @@ export default function EditAdminListing({
     selectedCategory,
     brands,
 }: {
-    listing: SellerProductFormListing & { id: number; title: string | null };
+    listing: SellerProductFormListing & MerchandisingListing;
     selectedCategory: CategoryOption | null;
     brands: Brand[];
 }) {
@@ -47,6 +49,14 @@ export default function EditAdminListing({
                         View review
                     </Link>
                 </div>
+                <AdminListingMerchandisingForm
+                    listing={listing}
+                    className="mt-6"
+                />
+                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                    Save product detail changes before assigning Best Offer or
+                    Clearance placement.
+                </p>
                 <SellerProductForm
                     form={updateDetails.form(listing.id)}
                     initialCategory={selectedCategory}

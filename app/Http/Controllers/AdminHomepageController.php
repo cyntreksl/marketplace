@@ -3,9 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateHomepageCategoriesRequest;
-use App\Http\Requests\UpdateListingMerchandisingRequest;
 use App\Models\Category;
-use App\Models\Listing;
 use App\Services\HomeMerchandisingService;
 use App\Services\PromotionService;
 use Illuminate\Http\RedirectResponse;
@@ -38,23 +36,5 @@ class AdminHomepageController extends Controller
         );
 
         return to_route('admin.homepage.index')->with('status', 'Homepage categories updated.');
-    }
-
-    public function updateListing(UpdateListingMerchandisingRequest $request, Listing $listing, HomeMerchandisingService $merchandising): RedirectResponse
-    {
-        $merchandising->updateListing(
-            $request->user(),
-            $listing,
-            [
-                'is_featured' => $request->boolean('is_featured'),
-                'is_best_offer' => $request->boolean('is_best_offer'),
-                'is_best_seller' => $request->boolean('is_best_seller'),
-                'is_new_arrival' => $request->boolean('is_new_arrival'),
-                'is_clearance' => $request->boolean('is_clearance'),
-            ],
-            $request->validated('reason'),
-        );
-
-        return back()->with('status', 'Listing homepage merchandising updated.');
     }
 }

@@ -186,6 +186,7 @@ function requestWasCancelled(caught: unknown): boolean {
 
 export type SellerProductFormListing = {
     status: string;
+    listing_type: string;
     cost_price: string | null;
     supplier_name: string | null;
     internal_notes: string | null;
@@ -211,8 +212,10 @@ export type SellerProductFormListing = {
     allow_backorders: boolean;
     is_active: boolean;
     is_featured: boolean;
+    is_best_offer: boolean;
     is_best_seller: boolean;
     is_new_arrival: boolean;
+    is_clearance: boolean;
     price: string | null;
     sale_price: string | null;
     is_retail_enabled: boolean;
@@ -2812,32 +2815,34 @@ export function SellerProductForm({
                                 </button>
                             ))}
                         </div>
-                        <div className="mt-5 grid gap-4">
-                            <ToggleRow
-                                label="Featured"
-                                description="Save as a featured product flag."
-                                checked={form.data.is_featured}
-                                onChange={(checked) =>
-                                    setField('is_featured', checked)
-                                }
-                            />
-                            <ToggleRow
-                                label="Best Seller"
-                                description="Mark this product as a best seller."
-                                checked={form.data.is_best_seller}
-                                onChange={(checked) =>
-                                    setField('is_best_seller', checked)
-                                }
-                            />
-                            <ToggleRow
-                                label="New Arrival"
-                                description="Mark this product as a new arrival."
-                                checked={form.data.is_new_arrival}
-                                onChange={(checked) =>
-                                    setField('is_new_arrival', checked)
-                                }
-                            />
-                        </div>
+                        {!isAdmin && (
+                            <div className="mt-5 grid gap-4">
+                                <ToggleRow
+                                    label="Featured"
+                                    description="Save as a featured product flag."
+                                    checked={form.data.is_featured}
+                                    onChange={(checked) =>
+                                        setField('is_featured', checked)
+                                    }
+                                />
+                                <ToggleRow
+                                    label="Best Seller"
+                                    description="Mark this product as a best seller."
+                                    checked={form.data.is_best_seller}
+                                    onChange={(checked) =>
+                                        setField('is_best_seller', checked)
+                                    }
+                                />
+                                <ToggleRow
+                                    label="New Arrival"
+                                    description="Mark this product as a new arrival."
+                                    checked={form.data.is_new_arrival}
+                                    onChange={(checked) =>
+                                        setField('is_new_arrival', checked)
+                                    }
+                                />
+                            </div>
+                        )}
                     </FormCard>
 
                     <FormCard

@@ -165,7 +165,10 @@ class ListingService
 
             $listing->forceFill([
                 ...$this->productAttributes($attributes, $listing),
+                'is_featured' => $listing->is_featured,
                 'is_best_offer' => false,
+                'is_best_seller' => $listing->is_best_seller,
+                'is_new_arrival' => $listing->is_new_arrival,
             ]);
             $this->listings->save($listing);
             $this->images->remove($listing, array_map('intval', $attributes['removed_media_ids'] ?? []));

@@ -66,12 +66,12 @@ test('homepage category limits and authorization are enforced', function () {
     $this->actingAs(User::factory()->create())->get(route('admin.homepage.index'))->assertForbidden();
 });
 
-test('best offers require a discounted approved buy now listing', function () {
+test('admin product merchandising requires a discounted approved buy now listing', function () {
     $admin = homepageAdmin();
     $eligible = Listing::factory()->create(['price' => '10000.00', 'sale_price' => '7500.00']);
     $ineligible = Listing::factory()->create(['price' => '10000.00', 'sale_price' => null]);
 
-    $this->actingAs($admin)->patch(route('admin.homepage.listings.update', $eligible), [
+    $this->actingAs($admin)->patch(route('admin.listings.merchandising.update', $eligible), [
         'is_best_offer' => true,
         'is_new_arrival' => true,
         'reason' => 'Strong verified launch discount',
@@ -80,11 +80,25 @@ test('best offers require a discounted approved buy now listing', function () {
     expect($eligible->refresh()->is_best_offer)->toBeTrue()
         ->and($eligible->is_new_arrival)->toBeTrue();
 
-    $this->actingAs($admin)->patch(route('admin.homepage.listings.update', $ineligible), [
+    $this->actingAs($admin)->patch(route('admin.listings.merchandising.update', $ineligible), [
         'is_best_offer' => true,
         'is_new_arrival' => false,
         'reason' => 'Attempt invalid offer placement',
     ])->assertSessionHasErrors('is_best_offer');
+});
+
+test('product merchandising controls live on admin product detail and edit pages', function () {
+    $showComponent = file_get_contents(resource_path('js/pages/admin/listings/show.tsx'));
+    $editComponent = file_get_contents(resource_path('js/pages/admin/listings/edit.tsx'));
+    $homepageComponent = file_get_contents(resource_path('js/pages/admin/homepage/index.tsx'));
+
+    expect($showComponent)
+        ->toContain('<AdminListingMerchandisingForm listing={listing} />')
+        ->and($editComponent)
+        ->toContain('<AdminListingMerchandisingForm')
+        ->and($homepageComponent)
+        ->not->toContain('Listing merchandising')
+        ->not->toContain('updateListing.form');
 });
 
 test('homepage output filters curated listings and uses the reference-first collection order', function () {

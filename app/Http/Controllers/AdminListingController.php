@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Contracts\Repositories\CatalogRepository;
 use App\Http\Requests\AdminListingIndexRequest;
 use App\Http\Requests\UpdateListingDetailsRequest;
+use App\Http\Requests\UpdateListingMerchandisingRequest;
 use App\Http\Requests\UpdateListingModerationRequest;
 use App\Models\Brand;
 use App\Models\Listing;
 use App\Services\AdminListingService;
+use App\Services\HomeMerchandisingService;
 use App\Services\ListingService;
 use App\Services\MarketplaceModerationService;
 use Illuminate\Http\RedirectResponse;
@@ -66,6 +68,24 @@ class AdminListingController extends Controller
         $listings->updateForModeration($request->user(), $listing, $request->validated());
 
         return to_route('admin.listings.show', $listing)->with('status', 'Listing details updated.');
+    }
+
+    public function updateMerchandising(UpdateListingMerchandisingRequest $request, Listing $listing, HomeMerchandisingService $merchandising): RedirectResponse
+    {
+        $merchandising->updateListing(
+            $request->user(),
+            $listing,
+            [
+                'is_featured' => $request->boolean('is_featured'),
+                'is_best_offer' => $request->boolean('is_best_offer'),
+                'is_best_seller' => $request->boolean('is_best_seller'),
+                'is_new_arrival' => $request->boolean('is_new_arrival'),
+                'is_clearance' => $request->boolean('is_clearance'),
+            ],
+            $request->validated('reason'),
+        );
+
+        return back()->with('status', 'Product merchandising updated.');
     }
 
     public function update(UpdateListingModerationRequest $request, Listing $listing, MarketplaceModerationService $moderation): RedirectResponse

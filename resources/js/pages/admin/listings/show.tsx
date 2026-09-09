@@ -19,6 +19,7 @@ import {
     index as listingIndex,
     update,
 } from '@/actions/App/Http/Controllers/AdminListingController';
+import { AdminListingMerchandisingForm } from '@/components/admin-listing-merchandising-form';
 import { PortalLayout } from '@/components/portal-layout';
 import { RichTextContent } from '@/components/rich-text-editor';
 
@@ -73,6 +74,7 @@ type Listing = {
     description: string | null;
     specifications: Record<string, string | number | boolean> | null;
     condition: string | null;
+    listing_type: string;
     product_type: 'simple' | 'variant';
     location: string | null;
     warranty: string | null;
@@ -82,8 +84,10 @@ type Listing = {
     allow_backorders: boolean;
     is_active: boolean;
     is_featured: boolean;
+    is_best_offer: boolean;
     is_best_seller: boolean;
     is_new_arrival: boolean;
+    is_clearance: boolean;
     price: string | null;
     sale_price: string | null;
     is_retail_enabled: boolean;
@@ -521,6 +525,8 @@ export default function ShowAdminListing({ listing }: { listing: Listing }) {
                                 )}
                             </Form>
                         </section>
+
+                        <AdminListingMerchandisingForm listing={listing} />
 
                         <DetailCard icon={Store} title="Seller">
                             <dl>

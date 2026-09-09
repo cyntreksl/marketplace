@@ -212,7 +212,6 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): v
     Route::post('/auctions/{auction}/cancel', [AdminAuctionController::class, 'cancel'])->whereNumber('auction')->name('auctions.cancel');
     Route::get('/homepage', [AdminHomepageController::class, 'index'])->name('homepage.index');
     Route::put('/homepage/categories', [AdminHomepageController::class, 'updateCategories'])->name('homepage.categories.update');
-    Route::patch('/homepage/listings/{listing}', [AdminHomepageController::class, 'updateListing'])->name('homepage.listings.update');
     Route::post('/homepage/promotions', [AdminPromotionController::class, 'store'])->name('homepage.promotions.store');
     Route::patch('/homepage/promotions/{promotion}', [AdminPromotionController::class, 'update'])->name('homepage.promotions.update');
     Route::delete('/homepage/promotions/{promotion}', [AdminPromotionController::class, 'destroy'])->name('homepage.promotions.destroy');
@@ -227,6 +226,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): v
     Route::get('/listings/{listing}/edit', [AdminListingController::class, 'edit'])->name('listings.edit');
     Route::get('/listings/{listing}', [AdminListingController::class, 'show'])->name('listings.show');
     Route::put('/listings/{listing}', [AdminListingController::class, 'updateDetails'])->name('listings.details.update');
+    Route::patch('/listings/{listing}/merchandising', [AdminListingController::class, 'updateMerchandising'])->name('listings.merchandising.update');
     Route::patch('/listings/{listing}', [AdminListingController::class, 'update'])->name('listings.update');
     Route::get('/catalog/categories', [AdminCategoryController::class, 'index'])->name('categories.index');
     Route::get('/catalog/categories/children', [AdminCategoryBrowseController::class, 'children'])->name('categories.children');

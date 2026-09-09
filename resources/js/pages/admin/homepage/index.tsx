@@ -1,10 +1,7 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { GripVertical, Image, Sparkles, Tag, X } from 'lucide-react';
+import { GripVertical, Image, Tag, X } from 'lucide-react';
 import { useState } from 'react';
-import {
-    updateCategories,
-    updateListing,
-} from '@/actions/App/Http/Controllers/AdminHomepageController';
+import { updateCategories } from '@/actions/App/Http/Controllers/AdminHomepageController';
 import {
     destroy as destroyPromotion,
     store as storePromotion,
@@ -31,15 +28,6 @@ type Listing = {
     title: string;
     status: string;
     listing_type: string;
-    price: string | null;
-    sale_price: string | null;
-    is_best_offer: boolean;
-    is_featured: boolean;
-    is_best_seller: boolean;
-    is_new_arrival: boolean;
-    is_clearance: boolean;
-    seller_profile: { store_name: string };
-    category: { name: string };
 };
 type Promotion = {
     id: number;
@@ -668,167 +656,6 @@ export default function AdminHomepage({
                                     )}
                                 </Form>
                             </div>
-                        ))}
-                    </div>
-                </section>
-
-                <section className="rounded-3xl border bg-white p-6 dark:bg-slate-900">
-                    <div className="flex items-center gap-3">
-                        <span className="grid size-11 place-items-center rounded-xl bg-teal-100 text-teal-700">
-                            <Sparkles className="size-5" />
-                        </span>
-                        <div>
-                            <h2 className="text-xl font-black">
-                                Listing merchandising
-                            </h2>
-                            <p className="text-sm text-slate-500">
-                                Best Offer eligibility is enforced independently
-                                from moderation.
-                            </p>
-                        </div>
-                    </div>
-                    <div className="mt-6 grid gap-3">
-                        {listings.data.map((listing) => (
-                            <article
-                                key={listing.id}
-                                className="grid gap-4 rounded-2xl border p-4 lg:grid-cols-[1fr_34rem]"
-                            >
-                                <div>
-                                    <p className="font-black">
-                                        {listing.title}
-                                    </p>
-                                    <p className="mt-1 text-sm text-slate-500">
-                                        {listing.seller_profile.store_name} ·{' '}
-                                        {listing.category.name} ·{' '}
-                                        {listing.status.replace('_', ' ')}
-                                    </p>
-                                    {listing.sale_price && (
-                                        <p className="mt-2 text-xs font-bold text-amber-700">
-                                            Rs.{' '}
-                                            {Number(
-                                                listing.sale_price,
-                                            ).toLocaleString()}{' '}
-                                            from Rs.{' '}
-                                            {Number(
-                                                listing.price,
-                                            ).toLocaleString()}
-                                        </p>
-                                    )}
-                                </div>
-                                <Form
-                                    {...updateListing.form(listing.id)}
-                                    options={{ preserveScroll: true }}
-                                    className="grid gap-2 sm:grid-cols-3"
-                                >
-                                    {({ processing, errors }) => (
-                                        <>
-                                            <select
-                                                name="is_featured"
-                                                defaultValue={
-                                                    listing.is_featured
-                                                        ? '1'
-                                                        : '0'
-                                                }
-                                                className="rounded-lg border bg-transparent p-2"
-                                            >
-                                                <option value="0">
-                                                    Not Featured
-                                                </option>
-                                                <option value="1">
-                                                    Featured Deal
-                                                </option>
-                                            </select>
-                                            <select
-                                                name="is_best_offer"
-                                                defaultValue={
-                                                    listing.is_best_offer
-                                                        ? '1'
-                                                        : '0'
-                                                }
-                                                className="rounded-lg border bg-transparent p-2"
-                                            >
-                                                <option value="0">
-                                                    Not Best Offer
-                                                </option>
-                                                <option value="1">
-                                                    Best Offer
-                                                </option>
-                                            </select>
-                                            <select
-                                                name="is_best_seller"
-                                                defaultValue={
-                                                    listing.is_best_seller
-                                                        ? '1'
-                                                        : '0'
-                                                }
-                                                className="rounded-lg border bg-transparent p-2"
-                                            >
-                                                <option value="0">
-                                                    Not Best Seller
-                                                </option>
-                                                <option value="1">
-                                                    Best Seller
-                                                </option>
-                                            </select>
-                                            <select
-                                                name="is_new_arrival"
-                                                defaultValue={
-                                                    listing.is_new_arrival
-                                                        ? '1'
-                                                        : '0'
-                                                }
-                                                className="rounded-lg border bg-transparent p-2"
-                                            >
-                                                <option value="0">
-                                                    Not New Arrival
-                                                </option>
-                                                <option value="1">
-                                                    New Arrival
-                                                </option>
-                                            </select>
-                                            <select
-                                                name="is_clearance"
-                                                defaultValue={
-                                                    listing.is_clearance
-                                                        ? '1'
-                                                        : '0'
-                                                }
-                                                className="rounded-lg border bg-transparent p-2"
-                                            >
-                                                <option value="0">
-                                                    Not Clearance
-                                                </option>
-                                                <option value="1">
-                                                    Clearance
-                                                </option>
-                                            </select>
-                                            <input
-                                                required
-                                                minLength={5}
-                                                name="reason"
-                                                placeholder="Merchandising reason"
-                                                className="rounded-lg border bg-transparent p-2"
-                                            />
-                                            <button
-                                                disabled={processing}
-                                                className="rounded-lg bg-primary px-4 py-2 text-sm font-black text-primary-foreground"
-                                            >
-                                                Save
-                                            </button>
-                                            {Object.values(errors).map(
-                                                (error) => (
-                                                    <p
-                                                        key={error}
-                                                        className="text-xs text-red-600 sm:col-span-3"
-                                                    >
-                                                        {error}
-                                                    </p>
-                                                ),
-                                            )}
-                                        </>
-                                    )}
-                                </Form>
-                            </article>
                         ))}
                     </div>
                 </section>

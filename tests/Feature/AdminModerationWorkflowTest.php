@@ -183,6 +183,9 @@ test('an operations admin can edit complete product details without changing mod
     $listing = Listing::factory()->create([
         'status' => 'pending_review',
         'approved_at' => null,
+        'is_featured' => true,
+        'is_best_seller' => true,
+        'is_new_arrival' => true,
     ]);
     ListingMedia::factory()->for($listing)->create();
     $description = '<p>Updated description with a comparison table.</p><table><tbody><tr><th>Finish</th><td>Black</td></tr></tbody></table>';
@@ -222,6 +225,9 @@ test('an operations admin can edit complete product details without changing mod
         ->description->toBe($description)
         ->specifications->toBe(['Details' => $specifications])
         ->commission_percentage->toBe('12.00')
+        ->is_featured->toBeTrue()
+        ->is_best_seller->toBeTrue()
+        ->is_new_arrival->toBeTrue()
         ->and(AuditLog::query()->where('action', 'listing.details_updated_by_admin')->exists())->toBeTrue();
 });
 
@@ -232,6 +238,7 @@ test('a buyer cannot view or edit an admin listing review', function () {
     $this->actingAs($buyer)->get(route('admin.listings.show', $listing))->assertForbidden();
     $this->actingAs($buyer)->get(route('admin.listings.edit', $listing))->assertForbidden();
     $this->actingAs($buyer)->put(route('admin.listings.details.update', $listing), [])->assertForbidden();
+    $this->actingAs($buyer)->patch(route('admin.listings.merchandising.update', $listing), [])->assertForbidden();
 });
 
 test('an operations admin cannot approve a listing that was not submitted for review', function () {
