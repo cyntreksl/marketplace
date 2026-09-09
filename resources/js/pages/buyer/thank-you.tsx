@@ -14,7 +14,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { OrderPaymentStatus } from '@/components/order-payment-status';
 import { StorefrontLayout } from '@/components/storefront-layout';
-import { trackPurchase } from '@/lib/tracking';
+import { buildCatalogItem, trackPurchase } from '@/lib/tracking';
 import { home } from '@/routes';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
 import type {
@@ -241,12 +241,13 @@ export default function BuyerThankYou({
             currency: 'LKR',
             value: Number(order.total),
             shipping: Number(order.shippingTotal),
-            items: order.items.map((item) => ({
-                item_id: item.variantSku ?? String(item.id),
-                item_name: item.title,
-                price: Number(item.unitPrice),
-                quantity: item.quantity,
-            })),
+            items: order.items.map((item) =>
+                buildCatalogItem(item.listingId, item.listingVariantId, {
+                    item_name: item.title,
+                    price: Number(item.unitPrice),
+                    quantity: item.quantity,
+                }),
+            ),
         });
     }, [order]);
 

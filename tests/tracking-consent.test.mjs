@@ -156,3 +156,20 @@ test('marketing-only consent makes commerce events available to consent-checked 
         eventModel: { item_id: 'marketing-item' },
     });
 });
+
+test('catalog items always use the exported listing or variant id', () => {
+    assert.deepEqual(
+        tracking.buildCatalogItem(65, null, {
+            item_name: 'Food chopper',
+        }),
+        {
+            item_name: 'Food chopper',
+            item_id: '65',
+            item_group_id: '65',
+        },
+    );
+    assert.deepEqual(tracking.buildCatalogItem(65, 901), {
+        item_id: '901',
+        item_group_id: '65',
+    });
+});

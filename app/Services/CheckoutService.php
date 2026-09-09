@@ -212,6 +212,8 @@ class CheckoutService
             foreach ($sellerOrder->items as $item) {
                 $items[] = [
                     'id' => $item->id,
+                    'listingId' => $item->listing_id,
+                    'listingVariantId' => $item->listing_variant_id,
                     'title' => $item->title,
                     'seller' => $sellerOrder->sellerProfile->store_name ?? 'Marketplace seller',
                     'variantSku' => $item->variant_sku,

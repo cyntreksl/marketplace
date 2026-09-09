@@ -242,6 +242,8 @@ test('buyer reviews and places an order before the checkout session and cart are
             ->where('order.billingAddress.recipient_name', 'Saman Perera')
             ->where('order.billingAddress.city', 'Colombo')
             ->has('order.items', 1)
+            ->where('order.items.0.listingId', $listing->id)
+            ->where('order.items.0.listingVariantId', null)
             ->where('order.items.0.title', $listing->title)
             ->where('order.items.0.quantity', 1));
 

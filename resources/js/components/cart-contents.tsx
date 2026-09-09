@@ -1,7 +1,7 @@
 import { Link, router, useForm } from '@inertiajs/react';
 import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { trackEvent } from '@/lib/tracking';
+import { buildCatalogItem, trackEvent } from '@/lib/tracking';
 import { destroy, update } from '@/routes/cart/items';
 import { show as checkoutShow } from '@/routes/checkout';
 import { index as listingsIndex, show as listingShow } from '@/routes/listings';
@@ -25,12 +25,15 @@ function CartLine({ item }: { item: CheckoutCartItem }) {
                 trackEvent('update_cart', {
                     currency: 'LKR',
                     items: [
-                        {
-                            item_id: String(item.id),
-                            item_name: item.listing.title,
-                            price: Number(item.unitPrice),
-                            quantity,
-                        },
+                        buildCatalogItem(
+                            item.listing_id,
+                            item.listing_variant_id,
+                            {
+                                item_name: item.listing.title,
+                                price: Number(item.unitPrice),
+                                quantity,
+                            },
+                        ),
                     ],
                 }),
         });
@@ -146,12 +149,18 @@ function CartLine({ item }: { item: CheckoutCartItem }) {
                                         currency: 'LKR',
                                         value: Number(item.total),
                                         items: [
-                                            {
-                                                item_id: String(item.id),
-                                                item_name: item.listing.title,
-                                                price: Number(item.unitPrice),
-                                                quantity: item.quantity,
-                                            },
+                                            buildCatalogItem(
+                                                item.listing_id,
+                                                item.listing_variant_id,
+                                                {
+                                                    item_name:
+                                                        item.listing.title,
+                                                    price: Number(
+                                                        item.unitPrice,
+                                                    ),
+                                                    quantity: item.quantity,
+                                                },
+                                            ),
                                         ],
                                     }),
                             })

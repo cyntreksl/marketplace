@@ -433,7 +433,8 @@ test('synthetic command requires a temporary code and never displays credentials
         ->doesntExpectOutput('test-access-token')
         ->assertSuccessful();
 
-    expect($gateway->event?->name)->toBe('ViewContent')
+    expect($gateway->event?->name)->toBe('PageView')
+        ->and($gateway->event?->customData)->toBe(['content_name' => 'Deployment verification'])
         ->and($gateway->event?->userData['em'][0])->toMatch('/^'.hash('sha256', 'meta-test@prodeals.lk').'\.[A-Za-z0-9_-]{8}$/')
         ->and(json_encode($gateway->event?->toArray(), JSON_THROW_ON_ERROR))->not->toContain('meta-test@prodeals.lk')
         ->and($gateway->testEventCode)->toBe('TEST123');

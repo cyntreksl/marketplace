@@ -214,6 +214,18 @@ export function trackEvent(
     window.dataLayer.push({ event, eventModel: parameters });
 }
 
+export function buildCatalogItem(
+    listingId: number,
+    listingVariantId: number | null | undefined,
+    parameters: Record<string, unknown> = {},
+): Record<string, unknown> {
+    return {
+        ...parameters,
+        item_id: String(listingVariantId ?? listingId),
+        item_group_id: String(listingId),
+    };
+}
+
 export function trackPageView(url: string): void {
     const consent = readConsent();
 

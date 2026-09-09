@@ -1,7 +1,7 @@
 import { Form } from '@inertiajs/react';
 import { Minus, Plus, ShoppingCart, ArrowRight } from 'lucide-react';
 import { store as addCartItem } from '@/actions/App/Http/Controllers/CartController';
-import { trackEvent } from '@/lib/tracking';
+import { buildCatalogItem, trackEvent } from '@/lib/tracking';
 
 export function ProductPurchase({
     listingId,
@@ -244,12 +244,10 @@ export function buildAddToCartParameters(
         currency: 'LKR',
         value: numericUnitPrice * quantity,
         items: [
-            {
-                item_id: String(variantId ?? listingId),
-                item_group_id: String(listingId),
+            buildCatalogItem(listingId, variantId, {
                 price: numericUnitPrice,
                 quantity,
-            },
+            }),
         ],
     };
 }

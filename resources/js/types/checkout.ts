@@ -1,5 +1,7 @@
 export type CheckoutCartItem = {
     id: number | string;
+    listing_id: number;
+    listing_variant_id: number | null;
     quantity: number;
     unitPrice: string;
     pricingTier: 'retail' | 'wholesale' | null;
@@ -50,6 +52,8 @@ export type ShippingAddress = {
 
 export type CheckoutConfirmationItem = {
     id: number;
+    listingId: number;
+    listingVariantId: number | null;
     title: string;
     seller: string;
     variantSku: string | null;

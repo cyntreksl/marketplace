@@ -11,7 +11,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 
 #[Signature('meta:conversions:test {--test-event-code= : Temporary code from Meta Events Manager, or - to read it from stdin}')]
-#[Description('Send a synthetic ViewContent event to Meta Events Manager')]
+#[Description('Send a synthetic PageView event to Meta Events Manager')]
 class TestMetaConversionsCommand extends Command
 {
     public function handle(
@@ -38,7 +38,7 @@ class TestMetaConversionsCommand extends Command
 
         $sourceUrl = rtrim((string) config('app.url'), '/').'/';
         $conversions->sendTest(new MetaConversionEvent(
-            name: 'ViewContent',
+            name: 'PageView',
             id: 'Test:'.Str::uuid(),
             occurredAt: now()->getTimestamp(),
             sourceUrl: $sourceUrl,
@@ -47,14 +47,7 @@ class TestMetaConversionsCommand extends Command
                 'em' => [$parameterBuilder->normalizedAndHashedPii('meta-test@prodeals.lk', MetaParameterBuilderService::PII_EMAIL)],
                 'external_id' => [$parameterBuilder->normalizedAndHashedPii('prodeals-deployment-verification', MetaParameterBuilderService::PII_EXTERNAL_ID)],
             ],
-            customData: [
-                'currency' => 'LKR',
-                'value' => '1.00',
-                'content_ids' => ['deployment-test'],
-                'content_type' => 'product',
-                'content_name' => 'Deployment verification',
-                'contents' => [['id' => 'deployment-test', 'quantity' => 1, 'item_price' => '1.00']],
-            ],
+            customData: ['content_name' => 'Deployment verification'],
         ), $testEventCode);
 
         $this->components->info('Meta accepted the synthetic test event.');
