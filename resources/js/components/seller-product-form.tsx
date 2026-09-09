@@ -2691,39 +2691,6 @@ export function SellerProductForm({
                             </div>
                         </FormCard>
                     )}
-                    <ProductInternalFields
-                        supplierName={form.data.supplier_name}
-                        internalNotes={form.data.internal_notes}
-                        costPrice={form.data.cost_price}
-                        variants={
-                            isVariantProduct
-                                ? form.data.variants.map((variant) => ({
-                                      label:
-                                          variant.sku ||
-                                          variant.selections.join(' / '),
-                                      costPrice: variant.cost_price,
-                                  }))
-                                : undefined
-                        }
-                        onSupplierChange={(value) =>
-                            setField('supplier_name', value)
-                        }
-                        onNotesChange={(value) =>
-                            setField('internal_notes', value)
-                        }
-                        onCostChange={(value) => setField('cost_price', value)}
-                        onVariantCostChange={(index, value) =>
-                            setField(
-                                'variants',
-                                form.data.variants.map((variant, row) =>
-                                    row === index
-                                        ? { ...variant, cost_price: value }
-                                        : variant,
-                                ),
-                            )
-                        }
-                        errorFor={errorFor}
-                    />
                 </div>
 
                 <aside className="grid content-start gap-5 xl:sticky xl:top-24">
@@ -2968,6 +2935,40 @@ export function SellerProductForm({
                         </div>
                     </FormCard>
                 </aside>
+            </div>
+
+            <div className="mt-5">
+                <ProductInternalFields
+                    supplierName={form.data.supplier_name}
+                    internalNotes={form.data.internal_notes}
+                    costPrice={form.data.cost_price}
+                    variants={
+                        isVariantProduct
+                            ? form.data.variants.map((variant) => ({
+                                  label:
+                                      variant.sku ||
+                                      variant.selections.join(' / '),
+                                  costPrice: variant.cost_price,
+                              }))
+                            : undefined
+                    }
+                    onSupplierChange={(value) =>
+                        setField('supplier_name', value)
+                    }
+                    onNotesChange={(value) => setField('internal_notes', value)}
+                    onCostChange={(value) => setField('cost_price', value)}
+                    onVariantCostChange={(index, value) =>
+                        setField(
+                            'variants',
+                            form.data.variants.map((variant, row) =>
+                                row === index
+                                    ? { ...variant, cost_price: value }
+                                    : variant,
+                            ),
+                        )
+                    }
+                    errorFor={errorFor}
+                />
             </div>
 
             <div className="sticky bottom-3 z-20 mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-2xl shadow-slate-950/10 backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/95">

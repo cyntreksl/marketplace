@@ -105,8 +105,6 @@ type Listing = {
     variants: ListingVariant[];
 };
 
-const editableStatuses = ['draft', 'changes_requested', 'rejected'];
-
 const statusStyles: Record<string, string> = {
     approved:
         'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300',
@@ -263,7 +261,6 @@ function ProductGallery({ listing }: { listing: Listing }) {
 }
 
 export default function ShowSellerListing({ listing }: { listing: Listing }) {
-    const canEdit = editableStatuses.includes(listing.status);
     const brandName = listing.brand?.name ?? listing.brand_name ?? 'Not set';
     const availableStock = Math.max(
         0,
@@ -329,10 +326,7 @@ export default function ShowSellerListing({ listing }: { listing: Listing }) {
                                 href={edit(listing.id)}
                                 className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20"
                             >
-                                <Edit3 className="size-4" />{' '}
-                                {canEdit
-                                    ? 'Edit product'
-                                    : 'Edit internal details'}
+                                <Edit3 className="size-4" /> Edit
                             </Link>
                         )}
                     </div>

@@ -10,6 +10,8 @@ let server;
 let ProductInternalFields;
 let SellerInternalDetailsForm;
 let formState;
+let EditSellerListing;
+let SellerListings;
 
 before(async () => {
     server = await createServer({
@@ -26,13 +28,33 @@ before(async () => {
                 name: 'internal-form-test',
                 enforce: 'pre',
                 resolveId(source) {
+                    if (source.endsWith('/components/seller-portal-layout')) {
+                        return '\0seller-layout';
+                    }
+
+                    if (source.endsWith('/components/seller-product-form')) {
+                        return '\0full-product-form';
+                    }
+
                     if (source === '\0internal-form-inertia') {
-return '\0internal-form-inertia';
-}
+                        return '\0internal-form-inertia';
+                    }
                 },
                 load(id) {
+                    if (id === '\0seller-layout') {
+                        return 'export const SellerPortalLayout = ({children}) => children;';
+                    }
+
+                    if (id === '\0full-product-form') {
+                        return 'export const SellerProductForm = () => "FULL_PRODUCT_FORM";';
+                    }
+
                     if (id === '\0internal-form-inertia') {
-return `
+                        return `
+                    import { createElement } from 'react';
+                    export const Head = () => null;
+                    export const Link = ({ href, children, ...props }) => createElement('a', { ...props, href: href?.url ?? href }, children);
+                    export const Form = ({ children, ...props }) => createElement('form', props, typeof children === 'function' ? children({ errors: {}, processing: false }) : children);
                     export const state = {};
                     export function useForm(data) {
                         state.data = data;
@@ -43,7 +65,7 @@ return `
                         };
                     }
                 `;
-}
+                    }
                 },
             },
         ],
@@ -58,6 +80,16 @@ return `
         '/resources/js/components/seller-internal-details-form.tsx',
     ));
     formState = (await server.ssrLoadModule('\0internal-form-inertia')).state;
+    EditSellerListing = (
+        await server.ssrLoadModule(
+            '/resources/js/pages/seller/listings/edit.tsx',
+        )
+    ).default;
+    SellerListings = (
+        await server.ssrLoadModule(
+            '/resources/js/pages/seller/listings/index.tsx',
+        )
+    ).default;
 });
 
 after(async () => {
@@ -154,7 +186,7 @@ test('live variant save preserves ids and sends changed costs without a product 
     });
 });
 
-test('seller product form places internal details at the end of the main section', () => {
+test('seller product form places internal details below both columns and above save actions', () => {
     const source = readFileSync(
         fileURLToPath(
             new URL(
@@ -168,6 +200,8 @@ test('seller product form places internal details at the end of the main section
     const basicInfoPos = source.indexOf('title="Basic Information"');
     const pricingStockPos = source.indexOf('title="Pricing & Stock"');
     const internalDetailsPos = source.indexOf('<ProductInternalFields');
+    const sidebarEnd = source.indexOf('</aside>');
+    const saveActions = source.indexOf('className="sticky bottom-3');
 
     assert.ok(salesChannelsPos > 0, 'Sales Channels section should exist');
     assert.ok(
@@ -180,6 +214,80 @@ test('seller product form places internal details at the end of the main section
     );
     assert.ok(
         internalDetailsPos > pricingStockPos,
-        'Internal details section should be at the end, after pricing & stock',
+        'Internal details section should follow pricing & stock',
+    );
+    assert.ok(
+        internalDetailsPos > sidebarEnd,
+        'Internal details follows images, status, and SEO on all screen sizes',
+    );
+    assert.ok(
+        internalDetailsPos < saveActions,
+        'Save actions follow internal details',
+    );
+});
+
+test('approved products expose Edit and render only the internal editor', () => {
+    const listing = {
+        id: 42,
+        title: 'Approved shirt',
+        status: 'approved',
+        product_type: 'simple',
+        cost_price: '25.00',
+        supplier_name: 'Supplier',
+        internal_notes: 'Private note',
+    };
+    const indexHtml = renderToStaticMarkup(
+        createElement(SellerListings, {
+            sellerStatus: 'approved',
+            listings: {
+                data: [listing],
+                links: [],
+                current_page: 1,
+                last_page: 1,
+                total: 1,
+            },
+            filters: { q: '', status: 'all', sort: 'newest' },
+        }),
+    );
+    assert.match(
+        indexHtml,
+        /href="[^"]*\/seller\/listings\/42\/edit"[^>]*>Edit<\/a>/,
+    );
+    const editHtml = renderToStaticMarkup(
+        createElement(EditSellerListing, {
+            listing,
+            selectedCategory: null,
+            brands: [],
+            sellerStatus: 'approved',
+        }),
+    );
+    assert.match(editHtml, /Internal details/);
+    assert.match(editHtml, /Save internal details/);
+    assert.doesNotMatch(editHtml, /FULL_PRODUCT_FORM/);
+});
+
+test('draft edit retains the full product form and archived listings remain read-only', () => {
+    const props = {
+        selectedCategory: null,
+        brands: [],
+        sellerStatus: 'approved',
+    };
+    const draftHtml = renderToStaticMarkup(
+        createElement(EditSellerListing, {
+            ...props,
+            listing: { id: 42, title: 'Draft', status: 'draft' },
+        }),
+    );
+    assert.match(draftHtml, /FULL_PRODUCT_FORM/);
+    const archivedHtml = renderToStaticMarkup(
+        createElement(EditSellerListing, {
+            ...props,
+            listing: { id: 42, title: 'Archived', status: 'archived' },
+        }),
+    );
+    assert.match(archivedHtml, /Archived products are read-only/);
+    assert.doesNotMatch(
+        archivedHtml,
+        /FULL_PRODUCT_FORM|Save internal details/,
     );
 });

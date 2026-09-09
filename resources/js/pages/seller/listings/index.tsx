@@ -36,7 +36,6 @@ type Listing = {
     category: { name: string } | null;
 };
 type Filters = { q: string; status: string; sort: string };
-const editable = ['draft', 'changes_requested', 'rejected'];
 
 function Actions({ listing }: { listing: Listing }) {
     return (
@@ -46,9 +45,7 @@ function Actions({ listing }: { listing: Listing }) {
                     href={edit(listing.id)}
                     className="min-h-10 rounded-xl border px-3 py-2 text-xs font-bold"
                 >
-                    {editable.includes(listing.status)
-                        ? 'Edit'
-                        : 'Edit internal details'}
+                    Edit
                 </Link>
             )}
             <Link
