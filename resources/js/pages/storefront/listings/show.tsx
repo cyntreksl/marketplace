@@ -289,7 +289,7 @@ export default function ListingShow({
         isOutOfStock,
         needsVariant:
             listing.productType === 'variant' && selectedVariant === undefined,
-        price: formatPrice(displayedSellingPrice),
+        unitPrice: displayedSellingPrice ?? 0,
         minimumQuantity: listing.retailEnabled ? 1 : (wholesaleMinimum ?? 2),
     };
     const offerSummary = (

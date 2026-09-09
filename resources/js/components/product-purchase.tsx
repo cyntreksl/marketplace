@@ -11,7 +11,7 @@ export function ProductPurchase({
     canPurchase,
     isOutOfStock,
     needsVariant,
-    price,
+    unitPrice,
     stockLimit,
     minimumQuantity = 1,
     instanceId = 'inline',
@@ -23,7 +23,7 @@ export function ProductPurchase({
     canPurchase: boolean;
     isOutOfStock: boolean;
     needsVariant: boolean;
-    price: string;
+    unitPrice: string | number;
     stockLimit: number;
     minimumQuantity?: number;
     instanceId?: string;
@@ -52,18 +52,15 @@ export function ProductPurchase({
             id={formId}
             className="mt-5"
             onSuccess={() =>
-                trackEvent('add_to_cart', {
-                    currency: 'LKR',
-                    value: Number(price.replace(/[^0-9.]/g, '')) * quantity,
-                    items: [
-                        {
-                            item_id: String(variantId ?? listingId),
-                            item_group_id: String(listingId),
-                            price: Number(price.replace(/[^0-9.]/g, '')),
-                            quantity,
-                        },
-                    ],
-                })
+                trackEvent(
+                    'add_to_cart',
+                    buildAddToCartParameters(
+                        listingId,
+                        variantId,
+                        unitPrice,
+                        quantity,
+                    ),
+                )
             }
         >
             {({ processing, errors }) => (
@@ -233,4 +230,26 @@ export function ProductPurchase({
             )}
         </Form>
     );
+}
+
+export function buildAddToCartParameters(
+    listingId: number,
+    variantId: number | undefined,
+    unitPrice: string | number,
+    quantity: number,
+): Record<string, unknown> {
+    const numericUnitPrice = Number(unitPrice);
+
+    return {
+        currency: 'LKR',
+        value: numericUnitPrice * quantity,
+        items: [
+            {
+                item_id: String(variantId ?? listingId),
+                item_group_id: String(listingId),
+                price: numericUnitPrice,
+                quantity,
+            },
+        ],
+    };
 }
