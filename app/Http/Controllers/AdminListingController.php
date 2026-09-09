@@ -13,10 +13,12 @@ use App\Services\AdminListingService;
 use App\Services\HomeMerchandisingService;
 use App\Services\ListingService;
 use App\Services\MarketplaceModerationService;
+use App\Services\MetaCatalogueExportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminListingController extends Controller
 {
@@ -40,6 +42,17 @@ class AdminListingController extends Controller
             'filters' => $filters,
             'view' => 'all',
         ]);
+    }
+
+    public function metaCatalogueExport(AdminListingIndexRequest $request, MetaCatalogueExportService $export): BinaryFileResponse
+    {
+        return response()
+            ->download(
+                $export->createTemporaryFile(),
+                'catalog_products_'.now()->format('Y-m-d_H-i-s').'.xlsx',
+                ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+            )
+            ->deleteFileAfterSend(true);
     }
 
     public function show(Request $request, Listing $listing, AdminListingService $listings): Response

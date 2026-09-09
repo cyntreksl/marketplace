@@ -1,6 +1,9 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { ArrowRight, ImageIcon, Search } from 'lucide-react';
-import { show } from '@/actions/App/Http/Controllers/AdminListingController';
+import { ArrowRight, Download, ImageIcon, Search } from 'lucide-react';
+import {
+    metaCatalogueExport,
+    show,
+} from '@/actions/App/Http/Controllers/AdminListingController';
 import { AdminPagination } from '@/components/admin-pagination';
 import { PortalLayout } from '@/components/portal-layout';
 import { dashboard } from '@/routes/admin';
@@ -127,19 +130,30 @@ export default function AdminListings({
                                 : 'Search and manage every product in the marketplace catalog.'}
                         </p>
                     </div>
-                    <div className="flex rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">
-                        <Link
-                            href={listingReviewsIndex()}
-                            className={`rounded-lg px-4 py-2 text-sm font-semibold ${isModeration ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                        >
-                            Listing reviews
-                        </Link>
-                        <Link
-                            href={productsIndex()}
-                            className={`rounded-lg px-4 py-2 text-sm font-semibold ${!isModeration ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                        >
-                            All products
-                        </Link>
+                    <div className="flex flex-wrap items-center gap-3">
+                        {!isModeration && (
+                            <a
+                                href={metaCatalogueExport.url()}
+                                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary px-4 text-sm font-bold text-primary transition hover:bg-primary hover:text-primary-foreground"
+                            >
+                                <Download className="size-4" />
+                                Meta catalogue export
+                            </a>
+                        )}
+                        <div className="flex rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">
+                            <Link
+                                href={listingReviewsIndex()}
+                                className={`rounded-lg px-4 py-2 text-sm font-semibold ${isModeration ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                Listing reviews
+                            </Link>
+                            <Link
+                                href={productsIndex()}
+                                className={`rounded-lg px-4 py-2 text-sm font-semibold ${!isModeration ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                All products
+                            </Link>
+                        </div>
                     </div>
                 </div>
 
