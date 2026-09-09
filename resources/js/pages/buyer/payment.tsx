@@ -3,6 +3,7 @@ import { Banknote, Check, CreditCard, MapPin, ShieldCheck } from 'lucide-react';
 import { CartTotals } from '@/components/cart-contents';
 import { CheckoutProgress } from '@/components/checkout-progress';
 import { StorefrontLayout } from '@/components/storefront-layout';
+import { cn } from '@/lib/utils';
 import { show as checkoutShow } from '@/routes/checkout';
 import { store as paymentStore } from '@/routes/checkout/payment';
 import type {
@@ -20,6 +21,7 @@ export default function BuyerPayment({
     paymentMethod: CheckoutPaymentMethod | null;
     shippingAddress: ShippingAddress;
 }) {
+    const codAvailable = cart.paymentMethods.includes('cod');
     const selected =
         paymentMethod && cart.paymentMethods.includes(paymentMethod)
             ? paymentMethod
@@ -43,7 +45,10 @@ export default function BuyerPayment({
                     <Form {...paymentStore.form()} className="grid gap-4">
                         {({ errors, processing }) => (
                             <>
-                                <fieldset className="grid gap-3 sm:grid-cols-2">
+                                <fieldset
+                                    key={`${cart.paymentMethods.join('-')}:${selected ?? 'unavailable'}`}
+                                    className="grid gap-3 sm:grid-cols-2"
+                                >
                                     <legend className="sr-only">
                                         Payment method
                                     </legend>
@@ -58,7 +63,7 @@ export default function BuyerPayment({
                                                 }
                                                 className="peer sr-only"
                                             />
-                                            <span className="flex min-h-32 gap-3 rounded-xl border border-slate-200 bg-white p-4 transition peer-checked:border-[#ff5a00] peer-checked:bg-orange-50/60 peer-checked:shadow-[0_0_0_1px_#ff5a00] peer-focus-visible:ring-2 peer-focus-visible:ring-orange-500 peer-focus-visible:ring-offset-2 hover:border-orange-300 hover:bg-orange-50/40">
+                                            <span className="flex h-full min-h-32 gap-3 rounded-xl border border-slate-200 bg-white p-4 transition peer-checked:border-[#ff5a00] peer-checked:bg-orange-50/60 peer-checked:shadow-[0_0_0_1px_#ff5a00] peer-focus-visible:ring-2 peer-focus-visible:ring-orange-500 peer-focus-visible:ring-offset-2 hover:border-orange-300 hover:bg-orange-50/40">
                                                 <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-orange-50 text-[#ff5a00] group-hover:bg-white">
                                                     <CreditCard className="size-5" />
                                                 </span>
@@ -77,36 +82,65 @@ export default function BuyerPayment({
                                             </span>
                                         </label>
                                     )}
-                                    {cart.paymentMethods.includes('cod') && (
-                                        <label className="group relative cursor-pointer">
-                                            <input
-                                                type="radio"
-                                                name="payment_method"
-                                                value="cod"
-                                                defaultChecked={
-                                                    selected === 'cod'
-                                                }
-                                                className="peer sr-only"
-                                            />
-                                            <span className="flex min-h-32 gap-3 rounded-xl border border-slate-200 bg-white p-4 transition peer-checked:border-[#ff5a00] peer-checked:bg-orange-50/60 peer-checked:shadow-[0_0_0_1px_#ff5a00] peer-focus-visible:ring-2 peer-focus-visible:ring-orange-500 peer-focus-visible:ring-offset-2 hover:border-orange-300 hover:bg-orange-50/40">
-                                                <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-orange-50 text-[#ff5a00] group-hover:bg-white">
-                                                    <Banknote className="size-5" />
-                                                </span>
-                                                <span className="min-w-0">
-                                                    <strong className="block text-base text-slate-950">
-                                                        Cash on Delivery
-                                                    </strong>
-                                                    <span className="mt-1 block text-sm leading-5 text-slate-600">
-                                                        Pay the total when your
-                                                        delivery arrives.
+                                    <label
+                                        className={cn(
+                                            'group relative',
+                                            codAvailable
+                                                ? 'cursor-pointer'
+                                                : 'cursor-not-allowed',
+                                        )}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="payment_method"
+                                            value="cod"
+                                            disabled={!codAvailable}
+                                            defaultChecked={selected === 'cod'}
+                                            aria-describedby="cod-description"
+                                            className="peer sr-only"
+                                        />
+                                        <span
+                                            className={cn(
+                                                'flex h-full min-h-32 gap-3 rounded-xl border p-4 transition peer-checked:border-[#ff5a00] peer-checked:bg-orange-50/60 peer-checked:shadow-[0_0_0_1px_#ff5a00] peer-focus-visible:ring-2 peer-focus-visible:ring-orange-500 peer-focus-visible:ring-offset-2',
+                                                codAvailable
+                                                    ? 'border-slate-200 bg-white hover:border-orange-300 hover:bg-orange-50/40'
+                                                    : 'border-slate-200 bg-slate-50',
+                                            )}
+                                        >
+                                            <span
+                                                className={cn(
+                                                    'grid size-10 shrink-0 place-items-center rounded-lg',
+                                                    codAvailable
+                                                        ? 'bg-orange-50 text-[#ff5a00] group-hover:bg-white'
+                                                        : 'bg-slate-200/60 text-slate-500',
+                                                )}
+                                            >
+                                                <Banknote className="size-5" />
+                                            </span>
+                                            <span className="min-w-0">
+                                                <strong className="block text-base text-slate-950">
+                                                    Cash on Delivery
+                                                </strong>
+                                                {!codAvailable && (
+                                                    <span className="mt-2 inline-block rounded-md bg-slate-200 px-2 py-1 text-sm font-semibold text-slate-700">
+                                                        Unavailable for this
+                                                        order
                                                     </span>
+                                                )}
+                                                <span
+                                                    id="cod-description"
+                                                    className="mt-1 block text-sm leading-5 text-slate-600"
+                                                >
+                                                    {codAvailable
+                                                        ? 'Pay the total when your delivery arrives.'
+                                                        : 'Available only for order totals of LKR 5,000 or less, including delivery.'}
                                                 </span>
                                             </span>
-                                            <span className="absolute top-3 right-3 hidden size-5 place-items-center rounded-full bg-[#ff5a00] text-white peer-checked:grid">
-                                                <Check className="size-3.5" />
-                                            </span>
-                                        </label>
-                                    )}
+                                        </span>
+                                        <span className="absolute top-3 right-3 hidden size-5 place-items-center rounded-full bg-[#ff5a00] text-white peer-checked:grid">
+                                            <Check className="size-3.5" />
+                                        </span>
+                                    </label>
                                 </fieldset>
                                 {cart.paymentMethods.length === 0 && (
                                     <p

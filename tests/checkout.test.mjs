@@ -7,6 +7,7 @@ import { createServer } from 'vite';
 
 let server;
 let Checkout;
+let Payment;
 let Review;
 let ThankYou;
 
@@ -56,6 +57,9 @@ before(async () => {
     });
     Checkout = (
         await server.ssrLoadModule('/resources/js/pages/buyer/checkout.tsx')
+    ).default;
+    Payment = (
+        await server.ssrLoadModule('/resources/js/pages/buyer/payment.tsx')
     ).default;
     Review = (
         await server.ssrLoadModule('/resources/js/pages/buyer/review.tsx')
@@ -275,4 +279,65 @@ test('review and confirmation show the chosen billing address without a misleadi
         ),
         /Same as shipping address/,
     );
+});
+
+function renderPayment(total, paymentMethods, paymentMethod = null) {
+    return renderToStaticMarkup(
+        createElement(Payment, {
+            paymentMethod,
+            shippingAddress: {
+                recipient_name: 'Test Buyer',
+                address_line_one: '10 Main Road',
+                city: 'Colombo',
+                phone: '0771234567',
+            },
+            cart: {
+                items: [item],
+                subtotal: String(Number(total) - 600),
+                shippingTotal: '600.00',
+                total,
+                canCheckout: true,
+                paymentMethods,
+            },
+        }),
+    );
+}
+
+test('payment keeps ineligible COD visible, disabled and explained, replacing stale selections', () => {
+    const html = renderPayment('5000.01', ['stripe'], 'cod');
+    const cod = html.match(/<input[^>]*value="cod"[^>]*>/)[0];
+    const stripe = html.match(/<input[^>]*value="stripe"[^>]*>/)[0];
+
+    assert.equal((html.match(/type="radio"/g) ?? []).length, 2);
+    assert.match(cod, /disabled=""/);
+    assert.doesNotMatch(cod, /checked=""/);
+    assert.match(stripe, /checked=""/);
+    assert.match(cod, /aria-describedby="cod-description"/);
+    assert.match(html, /Unavailable for this order/);
+    assert.match(
+        html,
+        /id="cod-description"[^>]*>Available only for order totals of LKR 5,000 or less, including delivery\./,
+    );
+});
+
+for (const total of ['4999.99', '5000.00']) {
+    test(`payment enables COD at an eligible total of ${total} including delivery`, () => {
+        const html = renderPayment(total, ['stripe', 'cod'], 'cod');
+        const cod = html.match(/<input[^>]*value="cod"[^>]*>/)[0];
+
+        assert.doesNotMatch(cod, /disabled=""/);
+        assert.match(cod, /checked=""/);
+        assert.doesNotMatch(html, /Unavailable for this order/);
+        assert.match(html, /Pay the total when your delivery arrives/);
+    });
+}
+
+test('payment cannot continue when no method is eligible but still explains COD', () => {
+    const html = renderPayment('5000.01', [], 'cod');
+
+    const cod = html.match(/<input[^>]*value="cod"[^>]*>/)[0];
+    assert.match(cod, /disabled=""/);
+    assert.match(html, /<button[^>]*disabled=""/);
+    assert.match(html, /No payment method is available for this order/);
+    assert.match(html, /Unavailable for this order/);
 });
