@@ -3,18 +3,19 @@
 namespace App\Services;
 
 use App\Contracts\CourierAdapter;
-use App\Contracts\Repositories\SellerPortalRepository;
+use App\Contracts\Repositories\OrderOperationsRepository;
 use App\Models\SellerOrder;
 use App\Models\User;
 use App\Notifications\BuyerOrderStatusNotification;
 use App\SellerOrderStatus;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class SellerOrderWorkflowService
 {
     public function __construct(
-        private readonly SellerPortalRepository $orders,
+        private readonly OrderOperationsRepository $orders,
         private readonly CourierAdapter $courier,
         private readonly AuditLogService $auditLogs,
     ) {}
@@ -33,7 +34,7 @@ class SellerOrderWorkflowService
     {
         $notify = false;
         $order = DB::transaction(function () use ($seller, $sellerOrderId, $courierName, $trackingNumber, &$notify): SellerOrder {
-            $order = $this->ownedLockedOrder($seller, $sellerOrderId);
+            $order = $this->lockedOrderForActor($seller, $sellerOrderId);
             if ($order->status === SellerOrderStatus::Shipped->value) {
                 return $order;
             }
@@ -59,7 +60,7 @@ class SellerOrderWorkflowService
     {
         $notify = false;
         $order = DB::transaction(function () use ($seller, $sellerOrderId, &$notify): SellerOrder {
-            $order = $this->ownedLockedOrder($seller, $sellerOrderId);
+            $order = $this->lockedOrderForActor($seller, $sellerOrderId);
             if ($order->status === SellerOrderStatus::Completed->value) {
                 return $order;
             }
@@ -86,7 +87,7 @@ class SellerOrderWorkflowService
     private function transition(User $seller, int $sellerOrderId, SellerOrderStatus $from, SellerOrderStatus $to, string $timestamp): SellerOrder
     {
         return DB::transaction(function () use ($seller, $sellerOrderId, $from, $to, $timestamp): SellerOrder {
-            $order = $this->ownedLockedOrder($seller, $sellerOrderId);
+            $order = $this->lockedOrderForActor($seller, $sellerOrderId);
             if ($order->status === $to->value) {
                 return $order;
             }
@@ -99,9 +100,12 @@ class SellerOrderWorkflowService
         });
     }
 
-    private function ownedLockedOrder(User $seller, int $sellerOrderId): SellerOrder
+    private function lockedOrderForActor(User $actor, int $sellerOrderId): SellerOrder
     {
-        return $this->orders->lockOrder($seller, $sellerOrderId) ?? abort(404);
+        $sellerOrder = $this->orders->lockSellerOrder($sellerOrderId) ?? abort(404);
+        Gate::forUser($actor)->authorize('updateStatus', $sellerOrder);
+
+        return $sellerOrder;
     }
 
     private function ensureCurrentStatus(SellerOrder $order, SellerOrderStatus $expected): void

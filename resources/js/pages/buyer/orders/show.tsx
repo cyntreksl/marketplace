@@ -124,6 +124,34 @@ export default function BuyerOrderDetail({ order }: { order: BuyerOrder }) {
                                         status={sellerOrder.status}
                                     />
                                 </div>
+                                {sellerOrder.cancellation && (
+                                    <div className="border-b border-red-100 bg-red-50 px-5 py-4 text-sm text-red-900 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
+                                        <p className="font-black">
+                                            This package was cancelled
+                                        </p>
+                                        <p className="mt-1">
+                                            {sellerOrder.cancellation.reason}
+                                        </p>
+                                        <p className="mt-2 text-xs">
+                                            {new Date(
+                                                sellerOrder.cancellation
+                                                    .cancelled_at,
+                                            ).toLocaleString()}
+                                        </p>
+                                        {sellerOrder.refund && (
+                                            <p className="mt-2 font-semibold capitalize">
+                                                Refund{' '}
+                                                {sellerOrder.refund.status.replaceAll(
+                                                    '_',
+                                                    ' ',
+                                                )}
+                                                {sellerOrder.refund.amount
+                                                    ? ` · ${money(sellerOrder.refund.amount)}`
+                                                    : ' · Amount pending'}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
                                 {sellerOrder.shipment && (
                                     <div className="flex flex-wrap items-center gap-x-5 gap-y-2 bg-orange-50 px-5 py-3 text-sm dark:bg-orange-500/10">
                                         <span className="flex items-center gap-2 font-bold text-orange-800 dark:text-orange-300">

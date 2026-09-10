@@ -22,6 +22,7 @@ class RefundService
         private readonly RefundRepository $refunds,
         private readonly PaymentGateway $gateway,
         private readonly AuditLogService $auditLogs,
+        private readonly PaymentRefundStatusService $paymentStatuses,
     ) {}
 
     /** @return LengthAwarePaginator<int, array<string, mixed>> */
@@ -121,6 +122,10 @@ class RefundService
         });
 
         try {
+            if ($refund->amount === null) {
+                throw ValidationException::withMessages(['refund' => 'The refund amount is missing.']);
+            }
+
             $result = $this->gateway->refund($payment, $refund->amount, $refund->idempotency_key);
 
             return $this->persistGatewayResult($operator, $returnRequestId, $result);
@@ -151,6 +156,9 @@ class RefundService
             $refund = $this->refunds->saveRefund($refund);
             $returnRequest->forceFill(['status' => ReturnStatus::Refunded, 'resolved_at' => now()]);
             $this->refunds->saveReturn($returnRequest);
+            if ($refund->payment !== null) {
+                $this->paymentStatuses->recalculate($refund->payment);
+            }
             $this->auditLogs->record($operator, 'refund.completed_manually', $refund, $before, $refund->getAttributes(), $reference);
 
             return $refund;
@@ -188,6 +196,9 @@ class RefundService
                 'resolved_at' => $status === RefundStatus::Succeeded ? now() : $returnRequest->resolved_at,
             ]);
             $this->refunds->saveReturn($returnRequest);
+            if ($status === RefundStatus::Succeeded && $refund->payment !== null) {
+                $this->paymentStatuses->recalculate($refund->payment);
+            }
             $this->auditLogs->record($operator, 'refund.gateway_result', $refund, $before, $refund->getAttributes());
 
             return $refund;

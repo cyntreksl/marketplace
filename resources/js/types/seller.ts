@@ -39,11 +39,25 @@ export type SellerOrder = {
         pricing_tier: 'retail' | 'wholesale';
     }[];
     shipment: {
-        courier_name: string;
-        tracking_number: string;
+        courier_name: string | null;
+        tracking_number: string | null;
         status: string;
         status_history:
             { status: string; at: string; reason?: string }[] | null;
+    } | null;
+    can_cancel: boolean;
+    cancellation: {
+        reason: string;
+        cancelled_at: string;
+        cancelled_by: { name: string; email: string } | null;
+    } | null;
+    refund: {
+        id: number;
+        status: 'pending' | 'processing' | 'succeeded' | 'failed';
+        amount: string | null;
+        manual_reference: string | null;
+        completed_at: string | null;
+        processed_by: { name: string; email: string } | null;
     } | null;
     next_action: { action: string; label: string } | null;
     recipient: {

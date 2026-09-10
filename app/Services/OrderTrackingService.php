@@ -36,6 +36,8 @@ class OrderTrackingService
                     'readyAt' => $sellerOrder->ready_to_ship_at?->toIso8601String(),
                     'shippedAt' => $sellerOrder->shipped_at?->toIso8601String(),
                     'deliveredAt' => $sellerOrder->delivered_at?->toIso8601String(),
+                    'cancelledAt' => $sellerOrder->cancelled_at?->toIso8601String(),
+                    'cancellationReason' => $sellerOrder->cancellation_reason,
                     'courier' => $shipment?->courier_name,
                     'trackingNumber' => $shipment?->tracking_number,
                     'shipmentStatus' => $shipment?->status,

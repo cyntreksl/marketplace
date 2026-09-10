@@ -1,4 +1,5 @@
 export type * from './auth';
+export type * from './admin-order';
 export type * from './auction';
 export type * from './buyer';
 export type * from './checkout';

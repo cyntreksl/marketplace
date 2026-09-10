@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CancelSellerOrderRequest;
 use App\Http\Requests\MarkSellerOrderShippedRequest;
 use App\Http\Requests\SellerOrderIndexRequest;
 use App\Models\SellerOrder;
+use App\Services\SellerOrderCancellationService;
 use App\Services\SellerOrderWorkflowService;
 use App\Services\SellerPortalService;
 use Illuminate\Http\RedirectResponse;
@@ -54,5 +56,12 @@ class SellerOrderController extends Controller
         $workflow->deliver($request->user(), $sellerOrder->id);
 
         return back()->with('status', 'Delivery confirmed. The seven-day return window is now open.');
+    }
+
+    public function cancel(CancelSellerOrderRequest $request, SellerOrder $sellerOrder, SellerOrderCancellationService $cancellations): RedirectResponse
+    {
+        $cancellations->cancel($request->user(), $sellerOrder->id, (string) $request->validated('reason'));
+
+        return back()->with('status', 'Order cancelled. Any required refund is now waiting for an administrator.');
     }
 }

@@ -48,6 +48,8 @@ class EloquentBuyerPortalRepository implements BuyerPortalRepository
                 'sellerOrders.items.listing.media',
                 'sellerOrders.items.review',
                 'sellerOrders.items.returnRequests.refund',
+                'sellerOrders.refund.processor:id,name,email',
+                'sellerOrders.cancelledBy:id,name,email',
                 'payments.attempts',
             ])
             ->findOrFail($customerOrder->id);
@@ -127,11 +129,11 @@ class EloquentBuyerPortalRepository implements BuyerPortalRepository
             BuyerOrderStage::Shipped => $query
                 ->where('status', 'confirmed')
                 ->whereHas('sellerOrders', fn (Builder $query): Builder => $query->where('status', 'shipped'))
-                ->whereDoesntHave('sellerOrders', fn (Builder $query): Builder => $query->whereNotIn('status', ['shipped', 'completed'])),
+                ->whereDoesntHave('sellerOrders', fn (Builder $query): Builder => $query->whereNotIn('status', ['shipped', 'completed', 'cancelled', 'expired'])),
             BuyerOrderStage::Completed => $query
                 ->where('status', 'confirmed')
-                ->whereHas('sellerOrders')
-                ->whereDoesntHave('sellerOrders', fn (Builder $query): Builder => $query->where('status', '!=', 'completed')),
+                ->whereHas('sellerOrders', fn (Builder $query): Builder => $query->where('status', 'completed'))
+                ->whereDoesntHave('sellerOrders', fn (Builder $query): Builder => $query->whereNotIn('status', ['completed', 'cancelled', 'expired'])),
             BuyerOrderStage::Archived => $query->whereIn('status', ['expired', 'cancelled']),
         };
     }
@@ -144,6 +146,8 @@ class EloquentBuyerPortalRepository implements BuyerPortalRepository
             'sellerOrders.shipment:id,seller_order_id,status,tracking_number,courier_name',
             'sellerOrders.items.listing.media',
             'sellerOrders.items.review:id,order_item_id,rating,comment',
+            'sellerOrders.refund.processor:id,name,email',
+            'sellerOrders.cancelledBy:id,name,email',
             'payments.attempts',
         ];
     }

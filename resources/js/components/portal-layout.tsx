@@ -44,6 +44,7 @@ import { index as adminCategoriesIndex } from '@/routes/admin/categories';
 import { index as adminFeaturesIndex } from '@/routes/admin/features';
 import { index as adminHomepageIndex } from '@/routes/admin/homepage';
 import { index as adminListingsIndex } from '@/routes/admin/listings';
+import { index as adminOrdersIndex } from '@/routes/admin/orders';
 import { index as adminProductsIndex } from '@/routes/admin/products';
 import { index as adminReturnsIndex } from '@/routes/admin/returns';
 import { index as adminSearchInsightsIndex } from '@/routes/admin/search-insights';
@@ -101,6 +102,13 @@ const portalDetails: Record<Portal, PortalDetails> = {
                 href: adminSearchInsightsIndex(),
                 icon: Search,
                 group: 'Dashboard',
+            },
+            {
+                title: 'All orders',
+                href: adminOrdersIndex(),
+                icon: ShoppingBag,
+                group: 'Marketplace',
+                activePrefix: true,
             },
             {
                 title: 'Seller approvals',

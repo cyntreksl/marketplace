@@ -37,4 +37,10 @@ class Payment extends Model
     {
         return $this->hasMany(PaymentAttempt::class)->orderByDesc('attempt_number');
     }
+
+    /** @return HasMany<Refund, $this> */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class);
+    }
 }

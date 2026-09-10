@@ -8,6 +8,7 @@ import {
     Truck,
 } from 'lucide-react';
 import {
+    cancel,
     delivered,
     processing,
     ready,
@@ -233,7 +234,71 @@ export default function SellerOrderShow({ order }: { order: SellerOrder }) {
                                     'No action required'}
                             </p>
                             <ActionPanel order={order} />
+                            {order.can_cancel && (
+                                <Form
+                                    {...cancel.form(order.number)}
+                                    className="mt-4 grid gap-2 border-t border-orange-200 pt-4"
+                                >
+                                    {({ errors, processing: busy }) => (
+                                        <>
+                                            <label className="grid gap-1 text-sm font-semibold">
+                                                Cancellation reason
+                                                <textarea
+                                                    name="reason"
+                                                    required
+                                                    minLength={10}
+                                                    maxLength={1000}
+                                                    rows={3}
+                                                    placeholder="For example: item is out of stock"
+                                                    className="rounded-xl border bg-white p-3 font-normal dark:bg-slate-950"
+                                                />
+                                            </label>
+                                            {(errors.reason ||
+                                                errors.order) && (
+                                                <p className="text-xs text-red-600">
+                                                    {errors.reason ??
+                                                        errors.order}
+                                                </p>
+                                            )}
+                                            <button
+                                                disabled={busy}
+                                                className="min-h-11 rounded-xl border border-red-300 bg-white px-4 text-sm font-bold text-red-700 disabled:opacity-50 dark:bg-slate-950"
+                                            >
+                                                Cancel order
+                                            </button>
+                                        </>
+                                    )}
+                                </Form>
+                            )}
                         </section>
+                        {order.cancellation && (
+                            <section className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-900 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
+                                <h2 className="font-black">Cancellation</h2>
+                                <p className="mt-2">
+                                    {order.cancellation.reason}
+                                </p>
+                                <p className="mt-2 text-xs">
+                                    {new Date(
+                                        order.cancellation.cancelled_at,
+                                    ).toLocaleString()}
+                                    {order.cancellation.cancelled_by
+                                        ? ` · ${order.cancellation.cancelled_by.name}`
+                                        : ''}
+                                </p>
+                                {order.refund && (
+                                    <p className="mt-3 border-t border-red-200 pt-3 font-semibold capitalize">
+                                        Refund{' '}
+                                        {order.refund.status.replaceAll(
+                                            '_',
+                                            ' ',
+                                        )}
+                                        {order.refund.amount
+                                            ? ` · LKR ${Number(order.refund.amount).toLocaleString()}`
+                                            : ' · Awaiting administrator entry'}
+                                    </p>
+                                )}
+                            </section>
+                        )}
                         <section className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
                             <h2 className="flex items-center gap-2 font-black">
                                 <MapPin className="size-4" /> Delivery

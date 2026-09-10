@@ -25,6 +25,12 @@ interface RefundRepository
 
     public function saveRefund(Refund $refund): Refund;
 
+    public function successfulAmount(Payment $payment): string;
+
+    public function lockPayment(int $paymentId): Payment;
+
+    public function savePayment(Payment $payment): Payment;
+
     public function withContext(Refund $refund): Refund;
 
     /** @return Collection<int, User> */

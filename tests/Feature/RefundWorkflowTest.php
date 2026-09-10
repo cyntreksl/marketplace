@@ -116,6 +116,7 @@ test('stripe partial refunds send the idempotency key and persist provider succe
     expect($refund->refresh()->status)->toBe(RefundStatus::Succeeded)
         ->and($refund->provider_reference)->toBe('re_partial_123')
         ->and($refund->completed_at)->not->toBeNull()
+        ->and($payment->refresh()->status)->toBe('partially_refunded')
         ->and($returnRequest->refresh()->status)->toBe(ReturnStatus::Refunded);
 });
 

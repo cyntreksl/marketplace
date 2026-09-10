@@ -8,6 +8,7 @@ use App\Models\Refund;
 use App\Models\ReturnRequest;
 use App\Models\Role;
 use App\Models\User;
+use App\RefundStatus;
 use App\ReturnStatus;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -74,6 +75,26 @@ class EloquentRefundRepository implements RefundRepository
         $refund->save();
 
         return $refund->refresh();
+    }
+
+    public function successfulAmount(Payment $payment): string
+    {
+        return (string) Refund::query()
+            ->whereBelongsTo($payment)
+            ->where('status', RefundStatus::Succeeded)
+            ->sum('amount');
+    }
+
+    public function lockPayment(int $paymentId): Payment
+    {
+        return Payment::query()->lockForUpdate()->findOrFail($paymentId);
+    }
+
+    public function savePayment(Payment $payment): Payment
+    {
+        $payment->save();
+
+        return $payment->refresh();
     }
 
     public function withContext(Refund $refund): Refund

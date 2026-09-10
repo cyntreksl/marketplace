@@ -102,6 +102,17 @@ class BuyerPortalService
             'status' => $sellerOrder->status,
             'store_name' => $sellerOrder->sellerProfile->store_name,
             'delivered_at' => $sellerOrder->delivered_at?->toIso8601String(),
+            'cancellation' => $sellerOrder->cancelled_at === null ? null : [
+                'reason' => $sellerOrder->cancellation_reason,
+                'cancelled_at' => $sellerOrder->cancelled_at->toIso8601String(),
+                'cancelled_by' => $sellerOrder->cancelledBy?->name,
+            ],
+            'refund' => $sellerOrder->refund === null ? null : [
+                'status' => $sellerOrder->refund->status->value,
+                'amount' => $sellerOrder->refund->amount,
+                'manual_reference' => $sellerOrder->refund->manual_reference,
+                'completed_at' => $sellerOrder->refund->completed_at?->toIso8601String(),
+            ],
             'shipment' => $sellerOrder->shipment === null ? null : [
                 'status' => $sellerOrder->shipment->status,
                 'courier_name' => $sellerOrder->shipment->courier_name,

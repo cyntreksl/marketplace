@@ -79,7 +79,7 @@ class SellerPortalService
     }
 
     /** @return array<string, mixed> */
-    private function serializeOrder(SellerOrder $order, bool $detailed = false): array
+    public function serializeOrder(SellerOrder $order, bool $detailed = false): array
     {
         $status = SellerOrderStatus::tryFrom($order->status);
         $address = $order->customerOrder->shipping_address;
@@ -110,6 +110,28 @@ class SellerPortalService
                 'status' => $order->shipment->status,
                 'status_history' => $detailed ? ($order->shipment->status_history ?? []) : null,
             ],
+            'can_cancel' => $detailed
+                && $order->status === SellerOrderStatus::Paid->value
+                && $order->customerOrder->auction_offer_id === null,
+            'cancellation' => $order->cancelled_at === null ? null : [
+                'reason' => $order->cancellation_reason,
+                'cancelled_at' => $order->cancelled_at->toIso8601String(),
+                'cancelled_by' => $order->cancelledBy === null ? null : [
+                    'name' => $order->cancelledBy->name,
+                    'email' => $order->cancelledBy->email,
+                ],
+            ],
+            'refund' => $order->refund === null ? null : [
+                'id' => $order->refund->id,
+                'status' => $order->refund->status->value,
+                'amount' => $order->refund->amount,
+                'manual_reference' => $order->refund->manual_reference,
+                'completed_at' => $order->refund->completed_at?->toIso8601String(),
+                'processed_by' => $order->refund->processor === null ? null : [
+                    'name' => $order->refund->processor->name,
+                    'email' => $order->refund->processor->email,
+                ],
+            ],
             'next_action' => $this->nextAction($order->status),
             'recipient' => $detailed ? [
                 'name' => $address['name'] ?? $address['recipient_name'] ?? $order->customerOrder->buyer->name,
@@ -127,6 +149,25 @@ class SellerPortalService
     /** @return array<int, array{status: string, label: string, at: string|null, complete: bool, current: bool}> */
     private function timeline(SellerOrder $order): array
     {
+        if ($order->status === SellerOrderStatus::Cancelled->value) {
+            return [
+                [
+                    'status' => SellerOrderStatus::Paid->value,
+                    'label' => 'Order received',
+                    'at' => $order->created_at?->toIso8601String(),
+                    'complete' => true,
+                    'current' => false,
+                ],
+                [
+                    'status' => SellerOrderStatus::Cancelled->value,
+                    'label' => SellerOrderStatus::Cancelled->label(),
+                    'at' => $order->cancelled_at?->toIso8601String(),
+                    'complete' => true,
+                    'current' => true,
+                ],
+            ];
+        }
+
         $current = SellerOrderStatus::tryFrom($order->status);
         $rank = [
             SellerOrderStatus::PendingPayment->value => 0,

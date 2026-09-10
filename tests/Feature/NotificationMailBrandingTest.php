@@ -2,7 +2,9 @@
 
 use App\Models\User;
 use App\Notifications\AuctionOfferNotification;
+use App\Notifications\BuyerOrderCancelledNotification;
 use App\Notifications\BuyerOrderStatusNotification;
+use App\Notifications\CancellationRefundCompletedNotification;
 use App\Notifications\NewReturnRequestNotification;
 use App\Notifications\OrderAcknowledgmentNotification;
 use App\Notifications\PaymentConfirmedNotification;
@@ -125,6 +127,20 @@ test('every transactional notification has consistent branded content', function
         '/buyer/orders/PRO000234',
         'Seller order SO-260906-ABC12345 is on its way.',
     ],
+    'buyer order cancelled' => [
+        fn (): BuyerOrderCancelledNotification => new BuyerOrderCancelledNotification('PRO000234', 'SO-260906-ABC12345', 'Camera Centre', 'The item is out of stock.', true),
+        'Order cancelled: SO-260906-ABC12345',
+        'View order',
+        '/buyer/orders/PRO000234',
+        'Reason: The item is out of stock.',
+    ],
+    'cancellation refund completed' => [
+        fn (): CancellationRefundCompletedNotification => new CancellationRefundCompletedNotification('PRO000234', 'SO-260906-ABC12345', '1250.00', 'BANK-10001'),
+        'Refund recorded: SO-260906-ABC12345',
+        'View order',
+        '/buyer/orders/PRO000234',
+        'Your manual refund for the cancelled package has been recorded.',
+    ],
     'return decision' => [
         fn (): ReturnDecisionNotification => new ReturnDecisionNotification(42, 'Travel Backpack', 'rejected', 'The item is outside the return window.'),
         'Return request rejected: Travel Backpack',
@@ -157,7 +173,9 @@ test('the branded email inventory covers every application notification', functi
 
     $coveredClasses = collect([
         AuctionOfferNotification::class,
+        BuyerOrderCancelledNotification::class,
         BuyerOrderStatusNotification::class,
+        CancellationRefundCompletedNotification::class,
         NewReturnRequestNotification::class,
         OrderAcknowledgmentNotification::class,
         PaymentConfirmedNotification::class,

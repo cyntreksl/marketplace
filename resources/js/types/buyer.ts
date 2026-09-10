@@ -51,6 +51,17 @@ export type BuyerSellerOrder = {
     status: string;
     store_name: string;
     delivered_at: string | null;
+    cancellation: {
+        reason: string;
+        cancelled_at: string;
+        cancelled_by: string | null;
+    } | null;
+    refund: {
+        status: 'pending' | 'processing' | 'succeeded' | 'failed';
+        amount: string | null;
+        manual_reference: string | null;
+        completed_at: string | null;
+    } | null;
     shipment: {
         status: string;
         courier_name: string | null;

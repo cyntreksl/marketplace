@@ -17,6 +17,8 @@ type TrackingResult = {
             readyAt: string | null;
             shippedAt: string | null;
             deliveredAt: string | null;
+            cancelledAt: string | null;
+            cancellationReason: string | null;
             courier: string | null;
             trackingNumber: string | null;
             shipmentStatus: string | null;
@@ -129,6 +131,23 @@ export default function OrderTracking({
                                                 shipment.status
                                             ).replaceAll('_', ' ')}
                                         </p>
+                                        {shipment.cancelledAt && (
+                                            <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+                                                <p className="font-bold">
+                                                    Cancelled ·{' '}
+                                                    {new Date(
+                                                        shipment.cancelledAt,
+                                                    ).toLocaleString()}
+                                                </p>
+                                                {shipment.cancellationReason && (
+                                                    <p className="mt-1">
+                                                        {
+                                                            shipment.cancellationReason
+                                                        }
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
                                         {shipment.courier && (
                                             <p className="mt-2 text-xs text-slate-500">
                                                 {shipment.courier} ·{' '}

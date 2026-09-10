@@ -9,13 +9,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use LogicException;
 
 /**
  * @property RefundStatus $status
- * @property string $amount
+ * @property string|null $amount
  * @property Carbon|null $completed_at
  */
-#[Fillable(['return_request_id', 'payment_id', 'method', 'amount', 'status', 'idempotency_key', 'provider_reference', 'manual_reference', 'failure_details', 'processed_by', 'completed_at'])]
+#[Fillable(['return_request_id', 'seller_order_id', 'payment_id', 'method', 'amount', 'status', 'idempotency_key', 'provider_reference', 'manual_reference', 'failure_details', 'processed_by', 'completed_at'])]
 class Refund extends Model
 {
     /** @use HasFactory<RefundFactory> */
@@ -26,10 +27,28 @@ class Refund extends Model
         return ['status' => RefundStatus::class, 'amount' => 'decimal:2', 'completed_at' => 'datetime'];
     }
 
+    protected static function booted(): void
+    {
+        static::saving(function (Refund $refund): void {
+            $hasReturnRequest = $refund->return_request_id !== null;
+            $hasSellerOrder = $refund->seller_order_id !== null;
+
+            if ($hasReturnRequest === $hasSellerOrder) {
+                throw new LogicException('A refund must belong to either a return request or a cancelled seller order.');
+            }
+        });
+    }
+
     /** @return BelongsTo<ReturnRequest, $this> */
     public function returnRequest(): BelongsTo
     {
         return $this->belongsTo(ReturnRequest::class);
+    }
+
+    /** @return BelongsTo<SellerOrder, $this> */
+    public function sellerOrder(): BelongsTo
+    {
+        return $this->belongsTo(SellerOrder::class);
     }
 
     /** @return BelongsTo<Payment, $this> */
