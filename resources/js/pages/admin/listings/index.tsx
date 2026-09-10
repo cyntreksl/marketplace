@@ -1,9 +1,12 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { ArrowRight, Download, ImageIcon, Search } from 'lucide-react';
 import {
+    downloadExport,
     metaCatalogueExport,
     show,
 } from '@/actions/App/Http/Controllers/AdminListingController';
+import { AdminExportDialog } from '@/components/admin-export-dialog';
+import type { ExportColumnOption } from '@/components/admin-export-dialog';
 import { AdminPagination } from '@/components/admin-pagination';
 import { PortalLayout } from '@/components/portal-layout';
 import { dashboard } from '@/routes/admin';
@@ -28,6 +31,7 @@ type Listing = {
     seller_profile: { store_name: string };
     category: { name: string } | null;
     seo_score: SeoScore;
+    created_at: string;
 };
 
 type SeoScore = {
@@ -50,6 +54,8 @@ type Filters = {
     listing_type: string;
     product_type: string;
     condition: string;
+    created_from: string;
+    created_to: string;
     sort: string;
 };
 
@@ -92,10 +98,12 @@ export default function AdminListings({
     listings,
     filters,
     view,
+    exportColumns = [],
 }: {
     listings: Paginator<Listing>;
     filters: Filters;
     view: 'moderation' | 'all';
+    exportColumns?: ExportColumnOption[];
 }) {
     const isModeration = view === 'moderation';
     const listRoute = isModeration ? listingReviewsIndex : productsIndex;
@@ -107,6 +115,8 @@ export default function AdminListings({
         filters.listing_type !== 'all' ||
         filters.product_type !== 'all' ||
         filters.condition !== 'all' ||
+        filters.created_from !== '' ||
+        filters.created_to !== '' ||
         filters.sort !== 'newest';
 
     return (
@@ -132,13 +142,21 @@ export default function AdminListings({
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                         {!isModeration && (
-                            <a
-                                href={metaCatalogueExport.url()}
-                                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary px-4 text-sm font-bold text-primary transition hover:bg-primary hover:text-primary-foreground"
-                            >
-                                <Download className="size-4" />
-                                Meta catalogue export
-                            </a>
+                            <>
+                                <AdminExportDialog
+                                    action={downloadExport.url()}
+                                    filters={filters}
+                                    columns={exportColumns}
+                                    title="Export products to Excel"
+                                />
+                                <a
+                                    href={metaCatalogueExport.url()}
+                                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-primary px-4 text-sm font-bold text-primary transition hover:bg-primary hover:text-primary-foreground"
+                                >
+                                    <Download className="size-4" />
+                                    Meta catalogue export
+                                </a>
+                            </>
                         )}
                         <div className="flex rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">
                             <Link
@@ -164,7 +182,7 @@ export default function AdminListings({
                         preserveState: true,
                         replace: true,
                     }}
-                    className="mt-6 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 xl:grid-cols-[minmax(15rem,1fr)_11rem_11rem_11rem_10rem_11rem_auto] dark:border-slate-800 dark:bg-slate-900"
+                    className="mt-6 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 xl:grid-cols-4 dark:border-slate-800 dark:bg-slate-900"
                 >
                     <label className="relative sm:col-span-2 xl:col-span-1">
                         <Search className="absolute top-3.5 left-3 size-4 text-slate-400" />
@@ -191,6 +209,28 @@ export default function AdminListings({
                             ),
                         )}
                     </select>
+                    {!isModeration && (
+                        <>
+                            <label className="grid gap-1 text-xs font-semibold text-muted-foreground">
+                                Created from
+                                <input
+                                    type="date"
+                                    name="created_from"
+                                    defaultValue={filters.created_from}
+                                    className="min-h-11 rounded-xl border bg-transparent px-3 text-sm text-foreground"
+                                />
+                            </label>
+                            <label className="grid gap-1 text-xs font-semibold text-muted-foreground">
+                                Created to
+                                <input
+                                    type="date"
+                                    name="created_to"
+                                    defaultValue={filters.created_to}
+                                    className="min-h-11 rounded-xl border bg-transparent px-3 text-sm text-foreground"
+                                />
+                            </label>
+                        </>
+                    )}
                     <select
                         name="listing_type"
                         defaultValue={filters.listing_type}
@@ -238,7 +278,7 @@ export default function AdminListings({
                     {hasActiveFilters && (
                         <Link
                             href={listRoute()}
-                            className="text-center text-sm font-semibold text-primary sm:col-span-2 xl:col-span-7"
+                            className="text-center text-sm font-semibold text-primary sm:col-span-2 xl:col-span-4"
                         >
                             Clear filters
                         </Link>
@@ -309,6 +349,14 @@ export default function AdminListings({
                                     <p className="mt-1 text-xs text-stone-500">
                                         SKU {listing.sku ?? 'not set'}
                                     </p>
+                                    {!isModeration && (
+                                        <p className="mt-1 text-xs text-stone-500">
+                                            Created{' '}
+                                            {new Date(
+                                                listing.created_at,
+                                            ).toLocaleString()}
+                                        </p>
+                                    )}
                                     {listing.short_description && (
                                         <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                                             {listing.short_description}

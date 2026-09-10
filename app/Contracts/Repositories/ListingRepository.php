@@ -57,6 +57,12 @@ interface ListingRepository
      */
     public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator;
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return LazyCollection<int, Listing>
+     */
+    public function lazyForAdminExport(array $filters): LazyCollection;
+
     /** @param array{is_featured: bool, is_best_offer: bool, is_best_seller: bool, is_new_arrival: bool, is_clearance: bool} $placements */
     public function updateMerchandising(Listing $listing, array $placements): Listing;
 

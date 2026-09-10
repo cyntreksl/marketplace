@@ -2,24 +2,38 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AdminOrderExportRequest;
 use App\Http\Requests\AdminOrderIndexRequest;
 use App\Http\Requests\AdminSellerOrderActionRequest;
 use App\Http\Requests\CancelSellerOrderRequest;
 use App\Http\Requests\CompleteCancellationRefundRequest;
 use App\Models\CustomerOrder;
 use App\Models\SellerOrder;
+use App\Services\AdminOrderExportService;
 use App\Services\AdminOrderService;
 use App\Services\SellerOrderCancellationService;
 use App\Services\SellerOrderWorkflowService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminOrderController extends Controller
 {
     public function index(AdminOrderIndexRequest $request, AdminOrderService $orders): Response
     {
         return Inertia::render('admin/orders/index', $orders->index($request->filters()));
+    }
+
+    public function downloadExport(AdminOrderExportRequest $request, AdminOrderExportService $export): BinaryFileResponse
+    {
+        return response()
+            ->download(
+                $export->createTemporaryFile($request->filters(), $request->columns()),
+                'orders_'.now()->format('Y-m-d_H-i-s').'.xlsx',
+                ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+            )
+            ->deleteFileAfterSend(true);
     }
 
     public function show(AdminOrderIndexRequest $request, CustomerOrder $customerOrder, AdminOrderService $orders): Response

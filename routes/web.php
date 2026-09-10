@@ -15,6 +15,7 @@ use App\Http\Controllers\AdminReturnController;
 use App\Http\Controllers\AdminSearchInsightsController;
 use App\Http\Controllers\AdminSellerController;
 use App\Http\Controllers\AdminTaxonomyController;
+use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AuctionBidController;
 use App\Http\Controllers\BrandDirectoryController;
 use App\Http\Controllers\BuyerAddressController;
@@ -210,6 +211,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): v
     Route::get('/features', [AdminFeatureSettingsController::class, 'index'])->name('features.index');
     Route::put('/features', [AdminFeatureSettingsController::class, 'update'])->name('features.update');
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/export.xlsx', [AdminOrderController::class, 'downloadExport'])->name('orders.export');
     Route::get('/orders/{customerOrder:number}', [AdminOrderController::class, 'show'])->name('orders.show');
     Route::prefix('/orders/{customerOrder:number}/packages/{sellerOrder:number}')
         ->name('orders.packages.')
@@ -239,8 +241,11 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): v
     Route::post('/returns/{returnRequest}/manual-refund', [AdminReturnController::class, 'manual'])->name('returns.manual');
     Route::get('/sellers', [AdminSellerController::class, 'index'])->name('sellers.index');
     Route::patch('/sellers/{seller}', [AdminSellerController::class, 'update'])->name('sellers.update');
+    Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
+    Route::get('/users/export.xlsx', [AdminUserController::class, 'downloadExport'])->name('users.export');
     Route::get('/listings', [AdminListingController::class, 'index'])->name('listings.index');
     Route::get('/products', [AdminListingController::class, 'products'])->name('products.index');
+    Route::get('/products/export.xlsx', [AdminListingController::class, 'downloadExport'])->name('products.export');
     Route::get('/products/meta-catalogue-export', [AdminListingController::class, 'metaCatalogueExport'])->name('products.meta-catalogue-export');
     Route::get('/listings/{listing}/edit', [AdminListingController::class, 'edit'])->name('listings.edit');
     Route::get('/listings/{listing}', [AdminListingController::class, 'show'])->name('listings.show');

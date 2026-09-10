@@ -211,8 +211,7 @@ class EloquentListingRepository implements ListingRepository
 
     public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator
     {
-        $search = trim((string) ($filters['search'] ?? ''));
-        $query = Listing::query()
+        return $this->adminQuery($filters)
             ->with([
                 'auction',
                 'brand:id,name,deleted_at',
@@ -223,6 +222,31 @@ class EloquentListingRepository implements ListingRepository
                 'wholesalePriceTiers',
                 'variants.wholesalePriceTiers',
             ])
+            ->paginate($perPage)
+            ->withQueryString();
+    }
+
+    public function lazyForAdminExport(array $filters): LazyCollection
+    {
+        return $this->adminQuery($filters)
+            ->with([
+                'brand:id,name,deleted_at',
+                'category:id,name,deleted_at',
+                'sellerProfile:id,store_name',
+                'variants:id,listing_id,sku,gtin,mpn,selling_price,market_price,wholesale_price,wholesale_min_quantity,cost_price,stock_quantity,reserved_quantity,is_active,position',
+                'variants.optionValues.option:id,name,position',
+            ])
+            ->lazy(200);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Builder<Listing>
+     */
+    private function adminQuery(array $filters): Builder
+    {
+        $search = trim((string) ($filters['search'] ?? ''));
+        $query = Listing::query()
             ->when($filters['review_only'] ?? false, fn (Builder $query): Builder => $query->whereIn('status', ['pending_review', 'changes_requested', 'rejected', 'suspended']))
             ->when($search !== '', fn (Builder $query): Builder => $query->where(function (Builder $query) use ($search): void {
                 $query->where('title', 'like', "%{$search}%")
@@ -232,17 +256,17 @@ class EloquentListingRepository implements ListingRepository
             ->when(($filters['status'] ?? 'all') !== 'all', fn (Builder $query): Builder => $query->where('status', $filters['status']))
             ->when(($filters['listing_type'] ?? 'all') !== 'all', fn (Builder $query): Builder => $query->where('listing_type', $filters['listing_type']))
             ->when(($filters['product_type'] ?? 'all') !== 'all', fn (Builder $query): Builder => $query->where('product_type', $filters['product_type']))
-            ->when(($filters['condition'] ?? 'all') !== 'all', fn (Builder $query): Builder => $query->where('condition', $filters['condition']));
+            ->when(($filters['condition'] ?? 'all') !== 'all', fn (Builder $query): Builder => $query->where('condition', $filters['condition']))
+            ->when($filters['created_from'] ?? null, fn (Builder $query, string $date): Builder => $query->where('created_at', '>=', $date.' 00:00:00'))
+            ->when($filters['created_to'] ?? null, fn (Builder $query, string $date): Builder => $query->where('created_at', '<=', $date.' 23:59:59'));
 
         match ($filters['sort'] ?? 'newest') {
-            'oldest' => $query->oldest(),
+            'oldest' => $query->orderBy('created_at')->orderBy('id'),
             'title' => $query->orderBy('title')->orderBy('id'),
-            default => $query->latest(),
+            default => $query->orderByDesc('created_at')->orderByDesc('id'),
         };
 
-        return $query
-            ->paginate($perPage)
-            ->withQueryString();
+        return $query;
     }
 
     public function updateMerchandising(Listing $listing, array $placements): Listing

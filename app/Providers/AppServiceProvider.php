@@ -7,6 +7,7 @@ use App\Contracts\GoogleMerchantGateway;
 use App\Contracts\GoogleMerchantTokenProvider;
 use App\Contracts\MetaConversionsGateway;
 use App\Contracts\PaymentGateway;
+use App\Contracts\Repositories\AdminUserRepository;
 use App\Contracts\Repositories\AuctionRepository;
 use App\Contracts\Repositories\BuyerAddressRepository;
 use App\Contracts\Repositories\BuyerPortalRepository;
@@ -36,6 +37,7 @@ use App\Couriers\ManualCourierAdapter;
 use App\Models\User;
 use App\Payments\StripePaymentGateway;
 use App\Repositories\CacheSeoMonitoringRepository;
+use App\Repositories\EloquentAdminUserRepository;
 use App\Repositories\EloquentAuctionRepository;
 use App\Repositories\EloquentBuyerAddressRepository;
 use App\Repositories\EloquentBuyerPortalRepository;
@@ -84,6 +86,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(AdminUserRepository::class, EloquentAdminUserRepository::class);
         $this->app->bind(SeoMonitoringRepository::class, CacheSeoMonitoringRepository::class);
         $this->app->bind(GoogleMerchantTokenProvider::class, GoogleMerchantTokenService::class);
         $this->app->bind(GoogleMerchantGateway::class, GoogleMerchantApiService::class);

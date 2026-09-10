@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Contracts\Repositories\CatalogRepository;
 use App\Http\Requests\AdminListingIndexRequest;
+use App\Http\Requests\AdminProductExportRequest;
 use App\Http\Requests\UpdateListingDetailsRequest;
 use App\Http\Requests\UpdateListingMerchandisingRequest;
 use App\Http\Requests\UpdateListingModerationRequest;
 use App\Models\Brand;
 use App\Models\Listing;
 use App\Services\AdminListingService;
+use App\Services\AdminProductExportService;
 use App\Services\HomeMerchandisingService;
 use App\Services\ListingService;
 use App\Services\MarketplaceModerationService;
@@ -41,7 +43,19 @@ class AdminListingController extends Controller
             'listings' => $listings->allProducts($filters),
             'filters' => $filters,
             'view' => 'all',
+            'exportColumns' => AdminProductExportService::columnOptions(),
         ]);
+    }
+
+    public function downloadExport(AdminProductExportRequest $request, AdminProductExportService $export): BinaryFileResponse
+    {
+        return response()
+            ->download(
+                $export->createTemporaryFile($request->filters('all'), $request->columns()),
+                'products_'.now()->format('Y-m-d_H-i-s').'.xlsx',
+                ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+            )
+            ->deleteFileAfterSend(true);
     }
 
     public function metaCatalogueExport(AdminListingIndexRequest $request, MetaCatalogueExportService $export): BinaryFileResponse

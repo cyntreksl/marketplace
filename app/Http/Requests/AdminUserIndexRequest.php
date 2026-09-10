@@ -8,7 +8,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
-class AdminListingIndexRequest extends FormRequest
+class AdminUserIndexRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -27,26 +27,24 @@ class AdminListingIndexRequest extends FormRequest
     {
         return [
             'search' => ['nullable', 'string', 'max:100'],
-            'status' => ['nullable', Rule::in(['all', 'draft', 'pending_review', 'approved', 'changes_requested', 'rejected', 'suspended', 'archived'])],
-            'listing_type' => ['nullable', Rule::in(['all', 'buy_now', 'auction'])],
-            'product_type' => ['nullable', Rule::in(['all', 'simple', 'variant'])],
-            'condition' => ['nullable', Rule::in(['all', 'new', 'used', 'refurbished'])],
+            'account_type' => ['nullable', Rule::in(['all', 'admin', 'seller', 'buyer'])],
+            'active' => ['nullable', Rule::in(['all', 'active', 'inactive'])],
+            'verification' => ['nullable', Rule::in(['all', 'verified', 'unverified'])],
             'created_from' => ['nullable', 'date_format:Y-m-d'],
             'created_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:created_from'],
-            'sort' => ['nullable', Rule::in(['newest', 'oldest', 'title'])],
+            'sort' => ['nullable', Rule::in(['newest', 'oldest', 'name'])],
             'page' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
-    /** @return array{search: string, status: string, listing_type: string, product_type: string, condition: string, created_from: string, created_to: string, sort: string} */
-    public function filters(string $defaultStatus): array
+    /** @return array{search: string, account_type: string, active: string, verification: string, created_from: string, created_to: string, sort: string} */
+    public function filters(): array
     {
         return [
             'search' => Str::squish((string) $this->validated('search', '')),
-            'status' => (string) ($this->validated('status') ?: $defaultStatus),
-            'listing_type' => (string) ($this->validated('listing_type') ?: 'all'),
-            'product_type' => (string) ($this->validated('product_type') ?: 'all'),
-            'condition' => (string) ($this->validated('condition') ?: 'all'),
+            'account_type' => (string) ($this->validated('account_type') ?: 'all'),
+            'active' => (string) ($this->validated('active') ?: 'all'),
+            'verification' => (string) ($this->validated('verification') ?: 'all'),
             'created_from' => (string) ($this->validated('created_from') ?: ''),
             'created_to' => (string) ($this->validated('created_to') ?: ''),
             'sort' => (string) ($this->validated('sort') ?: 'newest'),

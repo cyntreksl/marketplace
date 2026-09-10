@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Models\Refund;
 use App\Models\SellerOrder;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\LazyCollection;
 
 interface OrderOperationsRepository
 {
@@ -15,6 +16,12 @@ interface OrderOperationsRepository
      * @return LengthAwarePaginator<int, CustomerOrder>
      */
     public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator;
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return LazyCollection<int, CustomerOrder>
+     */
+    public function lazyForAdminExport(array $filters): LazyCollection;
 
     public function findDetailedForAdmin(CustomerOrder $customerOrder): CustomerOrder;
 

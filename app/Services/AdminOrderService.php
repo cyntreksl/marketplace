@@ -15,7 +15,7 @@ class AdminOrderService
     ) {}
 
     /**
-     * @param  array{search?: string, status?: string, sort?: string}  $filters
+     * @param  array{search?: string, status?: string, payment_method?: string, payment_status?: string, created_from?: string, created_to?: string, sort?: string}  $filters
      * @return array<string, mixed>
      */
     public function index(array $filters): array
@@ -26,6 +26,10 @@ class AdminOrderService
             'filters' => [
                 'search' => $filters['search'] ?? '',
                 'status' => $filters['status'] ?? 'all',
+                'payment_method' => $filters['payment_method'] ?? 'all',
+                'payment_status' => $filters['payment_status'] ?? 'all',
+                'created_from' => $filters['created_from'] ?? '',
+                'created_to' => $filters['created_to'] ?? '',
                 'sort' => $filters['sort'] ?? 'newest',
             ],
             'statuses' => [
@@ -35,6 +39,23 @@ class AdminOrderService
                 ['value' => 'cancelled', 'label' => 'Cancelled'],
                 ['value' => 'expired', 'label' => 'Expired'],
             ],
+            'paymentMethods' => [
+                ['value' => 'all', 'label' => 'All payment methods'],
+                ['value' => 'stripe', 'label' => 'Stripe'],
+                ['value' => 'cod', 'label' => 'Cash on delivery'],
+                ['value' => 'bank_transfer', 'label' => 'Bank transfer'],
+            ],
+            'paymentStatuses' => [
+                ['value' => 'all', 'label' => 'All payment statuses'],
+                ['value' => 'pending', 'label' => 'Pending'],
+                ['value' => 'pending_collection', 'label' => 'Pending collection'],
+                ['value' => 'paid', 'label' => 'Paid'],
+                ['value' => 'expired', 'label' => 'Expired'],
+                ['value' => 'cancelled', 'label' => 'Cancelled'],
+                ['value' => 'partially_refunded', 'label' => 'Partially refunded'],
+                ['value' => 'refunded', 'label' => 'Refunded'],
+            ],
+            'exportColumns' => AdminOrderExportService::columnOptions(),
         ];
     }
 

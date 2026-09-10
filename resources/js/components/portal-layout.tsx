@@ -13,6 +13,7 @@ import {
     Tags,
     ShoppingBag,
     Store,
+    Users,
     WalletCards,
     Gavel,
 } from 'lucide-react';
@@ -50,6 +51,7 @@ import { index as adminReturnsIndex } from '@/routes/admin/returns';
 import { index as adminSearchInsightsIndex } from '@/routes/admin/search-insights';
 import { index as adminSellersIndex } from '@/routes/admin/sellers';
 import { index as adminTaxonomyIndex } from '@/routes/admin/taxonomy';
+import { index as adminUsersIndex } from '@/routes/admin/users';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
 import { index as buyerReturnsIndex } from '@/routes/buyer/returns';
 import { show as cartShow } from '@/routes/cart';
@@ -114,6 +116,12 @@ const portalDetails: Record<Portal, PortalDetails> = {
                 title: 'Seller approvals',
                 href: adminSellersIndex(),
                 icon: Store,
+                group: 'Marketplace',
+            },
+            {
+                title: 'All users',
+                href: adminUsersIndex(),
+                icon: Users,
                 group: 'Marketplace',
             },
             {
