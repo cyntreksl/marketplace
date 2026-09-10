@@ -87,6 +87,8 @@ test('GTM and commerce events remain gated until versioned consent is granted', 
     tracking.initializeTracking();
 
     assert.equal(scripts.length, 0);
+    assert.equal(Array.isArray(window.dataLayer[0]), false);
+    assert.equal(Object.prototype.toString.call(window.dataLayer[0]), '[object Arguments]');
     assert.deepEqual(window.dataLayer[0][2], {
         ad_storage: 'denied',
         ad_user_data: 'denied',

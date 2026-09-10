@@ -5,7 +5,7 @@ export type ConsentState = {
     decidedAt: string;
 };
 
-type DataLayerValue = Record<string, unknown> | unknown[];
+type DataLayerValue = Record<string, unknown> | IArguments;
 
 declare global {
     interface Window {
@@ -33,7 +33,12 @@ function ensureConsentDefaults(): void {
     consentDefaultsInitialized = true;
     window.dataLayer = window.dataLayer ?? [];
     window.gtag =
-        window.gtag ?? ((...args: unknown[]) => window.dataLayer.push(args));
+        window.gtag ??
+        function (): void {
+            // GTM recognizes consent commands only when they use the standard Arguments object.
+            // eslint-disable-next-line prefer-rest-params
+            window.dataLayer.push(arguments);
+        };
     window.gtag('consent', 'default', {
         ad_storage: 'denied',
         ad_user_data: 'denied',
