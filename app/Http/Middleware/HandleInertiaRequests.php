@@ -75,6 +75,7 @@ class HandleInertiaRequests extends Middleware
             },
             'marketplace' => config('marketplace'),
             'auctionFlags' => fn (): array => $this->settings->auctionFlags(),
+            'reviewFlags' => fn (): array => $this->settings->reviewFlags(),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

@@ -3,6 +3,7 @@ import type { AuctionFlags } from '@/types/auction';
 import type { Auth } from '@/types/auth';
 import type { CheckoutCart } from '@/types/checkout';
 import type { MarketplaceDetails } from '@/types/marketplace';
+import type { ReviewFlags } from '@/types/reviews';
 
 declare module 'react' {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -24,6 +25,7 @@ declare module '@inertiajs/core' {
             };
             marketplace: MarketplaceDetails;
             auctionFlags: AuctionFlags;
+            reviewFlags: ReviewFlags;
             seo: SeoPayload;
             sidebarOpen: boolean;
             [key: string]: unknown;

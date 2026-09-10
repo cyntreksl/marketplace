@@ -8,6 +8,7 @@ use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminHomepageController;
 use App\Http\Controllers\AdminListingController;
+use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminPromotionController;
 use App\Http\Controllers\AdminReturnController;
 use App\Http\Controllers\AdminSearchInsightsController;
@@ -144,6 +145,7 @@ Route::middleware('auth')->prefix('seller')->name('seller.')->group(function ():
     Route::post('/orders/{sellerOrder:number}/ready', [SellerOrderController::class, 'ready'])->name('orders.ready');
     Route::post('/orders/{sellerOrder:number}/shipped', [SellerOrderController::class, 'shipped'])->name('orders.shipped');
     Route::post('/orders/{sellerOrder:number}/delivered', [SellerOrderController::class, 'delivered'])->name('orders.delivered');
+    Route::post('/orders/{sellerOrder:number}/cancel', [SellerOrderController::class, 'cancel'])->name('orders.cancel');
     Route::get('/returns', [SellerReturnRequestController::class, 'index'])->name('returns.index');
     Route::patch('/returns/{returnRequest}', [SellerReturnRequestController::class, 'update'])->name('returns.update');
     Route::get('/wallet', [SellerWalletController::class, 'index'])->name('wallet.index');
@@ -204,6 +206,19 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{customerOrder:number}', [AdminOrderController::class, 'show'])->name('orders.show');
+    Route::prefix('/orders/{customerOrder:number}/packages/{sellerOrder:number}')
+        ->name('orders.packages.')
+        ->scopeBindings()
+        ->group(function (): void {
+            Route::post('/processing', [AdminOrderController::class, 'processing'])->name('processing');
+            Route::post('/ready', [AdminOrderController::class, 'ready'])->name('ready');
+            Route::post('/shipped', [AdminOrderController::class, 'shipped'])->name('shipped');
+            Route::post('/delivered', [AdminOrderController::class, 'delivered'])->name('delivered');
+            Route::post('/cancel', [AdminOrderController::class, 'cancel'])->name('cancel');
+            Route::post('/refund', [AdminOrderController::class, 'refund'])->name('refund');
+        });
     Route::get('/search-insights', AdminSearchInsightsController::class)->name('search-insights.index');
     Route::get('/auctions', [AdminAuctionController::class, 'index'])->name('auctions.index');
     Route::get('/auctions/settings', [AdminAuctionSettingsController::class, 'index'])->name('auctions.settings.index');

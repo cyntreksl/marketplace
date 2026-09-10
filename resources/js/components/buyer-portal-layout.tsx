@@ -41,11 +41,13 @@ import { index as returnsIndex } from '@/routes/buyer/returns';
 import { edit as settingsEdit } from '@/routes/buyer/settings/profile';
 import { show as cartShow } from '@/routes/cart';
 import type { Auth } from '@/types';
+import type { ReviewFlags } from '@/types/reviews';
 
 type BuyerRoute = ReturnType<typeof dashboard>;
 type PageProps = {
     auth: Auth;
     commerce: { cart_quantity: number };
+    reviewFlags: ReviewFlags;
 };
 
 const navigation: {
@@ -106,12 +108,21 @@ const navigation: {
     },
 ];
 
-function BuyerNavigation({ onNavigate }: { onNavigate?: () => void }) {
+function BuyerNavigation({
+    productReviewsEnabled,
+    onNavigate,
+}: {
+    productReviewsEnabled: boolean;
+    onNavigate?: () => void;
+}) {
     const currentPath = usePage().url.split('?')[0];
+    const visibleNavigation = productReviewsEnabled
+        ? navigation
+        : navigation.filter((item) => item.match !== '/buyer/feedback');
 
     return (
         <nav className="grid gap-1" aria-label="Buyer portal navigation">
-            {navigation.map((item) => {
+            {visibleNavigation.map((item) => {
                 const active = item.exact
                     ? currentPath === item.match
                     : currentPath.startsWith(item.match);
@@ -145,7 +156,7 @@ export function BuyerPortalLayout({
     children: React.ReactNode;
     title: string;
 }) {
-    const { auth, commerce } = usePage<PageProps>().props;
+    const { auth, commerce, reviewFlags } = usePage<PageProps>().props;
     const getInitials = useInitials();
 
     return (
@@ -157,7 +168,7 @@ export function BuyerPortalLayout({
                 <p className="mt-8 px-3 text-[0.68rem] font-bold tracking-[0.14em] text-slate-400 uppercase">
                     Your account
                 </p>
-                <BuyerNavigation />
+                <BuyerNavigation productReviewsEnabled={reviewFlags.product} />
                 <div className="mt-auto rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 p-4 text-white shadow-lg shadow-orange-600/15">
                     <p className="text-sm font-bold">Ready for another deal?</p>
                     <p className="mt-1 text-xs leading-5 text-orange-50">
@@ -198,7 +209,11 @@ export function BuyerPortalLayout({
                                     </SheetTitle>
                                 </SheetHeader>
                                 <div className="mt-8">
-                                    <BuyerNavigation />
+                                    <BuyerNavigation
+                                        productReviewsEnabled={
+                                            reviewFlags.product
+                                        }
+                                    />
                                 </div>
                                 <Link
                                     href={home()}

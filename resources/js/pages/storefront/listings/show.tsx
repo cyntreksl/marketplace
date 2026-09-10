@@ -124,7 +124,7 @@ export default function ListingShow({
         initialQuantity: number;
     };
 }) {
-    const { auth } = usePage().props;
+    const { auth, reviewFlags } = usePage().props;
     const comparison = useProductComparison();
     const [quantity, setQuantity] = useState(purchaseContext.initialQuantity);
     const initialVariant = listing.variants.find(
@@ -430,13 +430,18 @@ export default function ListingShow({
                             {listing.title}
                         </h1>
                         <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                            <span className="flex items-center gap-1 font-bold text-amber-500">
-                                <Star className="size-4 fill-current" />
-                                {listing.ratingAverage?.toFixed(1) ?? 'New'}
-                            </span>
-                            <span className="text-slate-400">
-                                ({listing.reviewCount} reviews)
-                            </span>
+                            {reviewFlags.product && (
+                                <>
+                                    <span className="flex items-center gap-1 font-bold text-amber-500">
+                                        <Star className="size-4 fill-current" />
+                                        {listing.ratingAverage?.toFixed(1) ??
+                                            'New'}
+                                    </span>
+                                    <span className="text-slate-400">
+                                        ({listing.reviewCount} reviews)
+                                    </span>
+                                </>
+                            )}
                             <a
                                 href="#qa"
                                 className="text-slate-500 hover:text-[#ff5a00]"
@@ -779,6 +784,7 @@ export default function ListingShow({
                 <ProductDetails
                     listing={listing}
                     reviews={reviews}
+                    reviewsEnabled={reviewFlags.product}
                     questions={questions}
                     pendingQuestions={pendingQuestions}
                     categoryPolicies={categoryPolicies}

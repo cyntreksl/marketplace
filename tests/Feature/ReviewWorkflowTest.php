@@ -2,6 +2,7 @@
 
 use App\Models\CustomerOrder;
 use App\Models\Listing;
+use App\Models\MarketplaceSetting;
 use App\Models\OrderItem;
 use App\Models\Review;
 use App\Models\SellerOrder;
@@ -34,6 +35,38 @@ test('a buyer can review each delivered order item once', function () {
         'rating' => 4,
         'comment' => 'A duplicate review should not be accepted.',
     ])->assertSessionHasErrors('order_item');
+});
+
+test('disabled product reviews redirect the feedback page without blocking direct submissions', function (): void {
+    $buyer = User::factory()->create();
+    $item = deliveredItemFor($buyer);
+
+    $this->actingAs($buyer)
+        ->get(route('buyer.feedback.index'))
+        ->assertRedirect(route('buyer.dashboard'));
+
+    $this->actingAs($buyer)->post(route('buyer.reviews.store', $item), [
+        'rating' => 5,
+        'comment' => 'The direct endpoint remains available.',
+    ])->assertRedirect();
+
+    $this->assertDatabaseHas('reviews', [
+        'order_item_id' => $item->id,
+        'buyer_id' => $buyer->id,
+        'rating' => 5,
+    ]);
+});
+
+test('enabled product reviews expose the buyer feedback page', function (): void {
+    $buyer = User::factory()->create();
+    MarketplaceSetting::query()
+        ->where('key', 'reviews.product.enabled')
+        ->firstOrFail()
+        ->update(['value' => true]);
+
+    $this->actingAs($buyer)
+        ->get(route('buyer.feedback.index'))
+        ->assertInertia(fn (Assert $page) => $page->component('buyer/feedback/index'));
 });
 
 test('reviews require valid ratings and ownership of a delivered purchase', function () {

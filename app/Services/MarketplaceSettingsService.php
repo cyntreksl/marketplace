@@ -40,6 +40,25 @@ class MarketplaceSettingsService
         return $this->auctionsEnabled() && $this->boolean($type->settingKey(), true);
     }
 
+    public function productReviewsEnabled(): bool
+    {
+        return $this->boolean('reviews.product.enabled');
+    }
+
+    public function sellerReviewsEnabled(): bool
+    {
+        return $this->boolean('reviews.seller.enabled');
+    }
+
+    /** @return array{product: bool, seller: bool} */
+    public function reviewFlags(): array
+    {
+        return [
+            'product' => $this->productReviewsEnabled(),
+            'seller' => $this->sellerReviewsEnabled(),
+        ];
+    }
+
     /** @return array{enabled: bool, types: array<string, bool>} */
     public function auctionFlags(): array
     {

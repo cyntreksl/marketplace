@@ -1,4 +1,4 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     CreditCard,
@@ -55,6 +55,8 @@ function Address({
 }
 
 export default function BuyerOrderDetail({ order }: { order: BuyerOrder }) {
+    const { reviewFlags } = usePage().props;
+
     return (
         <BuyerPortalLayout title={`Order ${order.number}`}>
             <Head title={`Order ${order.number}`} />
@@ -213,28 +215,34 @@ export default function BuyerOrderDetail({ order }: { order: BuyerOrder }) {
                                                             </Link>
                                                         </Button>
                                                     )}
-                                                    {item.can_review && (
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            className="rounded-lg"
-                                                            asChild
-                                                        >
-                                                            <Link
-                                                                href={feedbackIndex()}
+                                                    {reviewFlags.product &&
+                                                        item.can_review && (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="rounded-lg"
+                                                                asChild
                                                             >
-                                                                <Star className="size-3.5" />{' '}
-                                                                Leave feedback
-                                                            </Link>
-                                                        </Button>
-                                                    )}
-                                                    {item.review && (
-                                                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700">
-                                                            <Star className="size-3.5 fill-current" />{' '}
-                                                            {item.review.rating}
-                                                            /5 submitted
-                                                        </span>
-                                                    )}
+                                                                <Link
+                                                                    href={feedbackIndex()}
+                                                                >
+                                                                    <Star className="size-3.5" />{' '}
+                                                                    Leave
+                                                                    feedback
+                                                                </Link>
+                                                            </Button>
+                                                        )}
+                                                    {reviewFlags.product &&
+                                                        item.review && (
+                                                            <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-700">
+                                                                <Star className="size-3.5 fill-current" />{' '}
+                                                                {
+                                                                    item.review
+                                                                        .rating
+                                                                }
+                                                                /5 submitted
+                                                            </span>
+                                                        )}
                                                 </div>
                                             </div>
                                             <p className="shrink-0 font-bold">

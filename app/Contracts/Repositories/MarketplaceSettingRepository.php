@@ -13,5 +13,5 @@ interface MarketplaceSettingRepository
      */
     public function values(array $keys): array;
 
-    public function update(string $key, mixed $value, int $actorId): MarketplaceSetting;
+    public function update(string $key, mixed $value, string $group, int $actorId): MarketplaceSetting;
 }

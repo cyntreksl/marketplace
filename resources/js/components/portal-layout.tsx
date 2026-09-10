@@ -9,6 +9,7 @@ import {
     Plus,
     RotateCcw,
     Search,
+    SlidersHorizontal,
     Tags,
     ShoppingBag,
     Store,
@@ -40,6 +41,7 @@ import { dashboard as adminDashboard } from '@/routes/admin';
 import { index as adminAuctionsIndex } from '@/routes/admin/auctions';
 import { index as adminBrandsIndex } from '@/routes/admin/brands';
 import { index as adminCategoriesIndex } from '@/routes/admin/categories';
+import { index as adminFeaturesIndex } from '@/routes/admin/features';
 import { index as adminHomepageIndex } from '@/routes/admin/homepage';
 import { index as adminListingsIndex } from '@/routes/admin/listings';
 import { index as adminProductsIndex } from '@/routes/admin/products';
@@ -122,6 +124,12 @@ const portalDetails: Record<Portal, PortalDetails> = {
                 title: 'Auctions',
                 href: adminAuctionsIndex(),
                 icon: Gavel,
+                group: 'Marketplace',
+            },
+            {
+                title: 'Feature settings',
+                href: adminFeaturesIndex(),
+                icon: SlidersHorizontal,
                 group: 'Marketplace',
             },
             {

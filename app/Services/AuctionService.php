@@ -213,7 +213,7 @@ class AuctionService
     {
         DB::transaction(function () use ($admin, $flags): void {
             foreach ($flags as $key => $value) {
-                $setting = $this->settingRepository->update($key, $value, $admin->id);
+                $setting = $this->settingRepository->update($key, $value, 'auction', $admin->id);
                 $this->auditLogs->record($admin, 'auction.setting_updated', $setting, after: ['value' => $value]);
             }
         });

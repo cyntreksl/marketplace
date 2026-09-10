@@ -29,23 +29,31 @@ export type ProductPolicies = {
     returnWindowDays: number;
     codEnabled: boolean;
 } | null;
-const sectionIds = ['overview', 'specs', 'reviews', 'qa', 'shipping'];
+const productSectionIds = ['overview', 'specs', 'reviews', 'qa', 'shipping'];
+const productSectionIdsWithoutReviews = productSectionIds.filter(
+    (id) => id !== 'reviews',
+);
 
 export function ProductDetails({
     listing,
     reviews,
+    reviewsEnabled,
     questions,
     pendingQuestions,
     categoryPolicies,
 }: {
     listing: StorefrontListing;
     reviews: StorefrontReview[];
+    reviewsEnabled: boolean;
     questions: ProductQuestion[];
     pendingQuestions: ProductQuestion[];
     categoryPolicies: ProductPolicies;
 }) {
     const { auth } = usePage().props;
     const headerHeight = useStorefrontHeaderHeight();
+    const sectionIds = reviewsEnabled
+        ? productSectionIds
+        : productSectionIdsWithoutReviews;
     const [active, setActive] = useState('overview');
     const [expanded, setExpanded] = useState<Record<string, boolean>>({
         overview: true,
@@ -96,14 +104,14 @@ export function ProductDetails({
             window.removeEventListener('hashchange', openHash);
             cancelAnimationFrame(frame);
         };
-    }, [headerHeight]);
+    }, [headerHeight, sectionIds]);
     const sections = [
         ['overview', 'Overview'],
         ['specs', 'Specifications'],
         ['reviews', `Reviews (${listing.reviewCount})`],
         ['qa', `Q&A (${questions.length})`],
         ['shipping', 'Shipping & Returns'],
-    ];
+    ].filter(([id]) => reviewsEnabled || id !== 'reviews');
     const specificationRows = [
         ['Brand', listing.brand?.name],
         ['Model', listing.model],

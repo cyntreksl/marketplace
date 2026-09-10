@@ -1,4 +1,4 @@
-import { Deferred, Head, Link } from '@inertiajs/react';
+import { Deferred, Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
     CreditCard,
@@ -76,6 +76,7 @@ export default function BuyerOverview({
     activity?: Activity;
 }) {
     const unpaid = summary.order_counts.to_pay ?? 0;
+    const { reviewFlags } = usePage().props;
 
     return (
         <BuyerPortalLayout title="Overview">
@@ -107,7 +108,7 @@ export default function BuyerOverview({
                     </Link>
                 )}
                 <section
-                    className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+                    className={`grid gap-4 sm:grid-cols-2 ${reviewFlags.product ? 'xl:grid-cols-4' : 'xl:grid-cols-3'}`}
                     aria-label="Buyer activity summary"
                 >
                     <Stat
@@ -125,12 +126,14 @@ export default function BuyerOverview({
                         icon={PackageCheck}
                         href={ordersIndex({ query: { stage: 'processing' } })}
                     />
-                    <Stat
-                        label="Awaiting feedback"
-                        value={summary.pending_feedback_count}
-                        icon={MessageSquareText}
-                        href={feedbackIndex()}
-                    />
+                    {reviewFlags.product && (
+                        <Stat
+                            label="Awaiting feedback"
+                            value={summary.pending_feedback_count}
+                            icon={MessageSquareText}
+                            href={feedbackIndex()}
+                        />
+                    )}
                     <Stat
                         label="Active returns"
                         value={summary.active_return_count}

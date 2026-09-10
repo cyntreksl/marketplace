@@ -22,11 +22,11 @@ class EloquentMarketplaceSettingRepository implements MarketplaceSettingReposito
             ->all();
     }
 
-    public function update(string $key, mixed $value, int $actorId): MarketplaceSetting
+    public function update(string $key, mixed $value, string $group, int $actorId): MarketplaceSetting
     {
         return MarketplaceSetting::query()->updateOrCreate(
             ['key' => $key],
-            ['group' => 'auction', 'value' => $value, 'updated_by' => $actorId],
+            ['group' => $group, 'value' => $value, 'updated_by' => $actorId],
         );
     }
 }
