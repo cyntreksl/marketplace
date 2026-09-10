@@ -13,6 +13,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 /**
+ * @property numeric-string $subtotal
+ * @property numeric-string $shipping_charge
+ * @property numeric-string $seller_earnings
  * @property Carbon|null $ready_to_ship_at
  * @property Carbon|null $processing_at
  * @property Carbon|null $shipped_at

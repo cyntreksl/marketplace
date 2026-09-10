@@ -28,6 +28,15 @@ class UpdateFeatureSettingsRequest extends FormRequest
         ];
     }
 
+    /** @return array{product: bool, seller: bool} */
+    public function reviewFlags(): array
+    {
+        return [
+            'product' => $this->boolean('product'),
+            'seller' => $this->boolean('seller'),
+        ];
+    }
+
     protected function prepareForValidation(): void
     {
         $this->merge([

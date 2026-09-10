@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property numeric-string $amount
  * @property Carbon|null $expires_at
+ * @property Carbon|null $paid_at
  */
 #[Fillable(['checkout_session_id', 'checkout_url', 'expires_at', 'customer_order_id', 'method', 'status', 'provider_reference', 'idempotency_key', 'amount', 'proof_path', 'provider_payload', 'paid_at'])]
 class Payment extends Model

@@ -21,7 +21,7 @@ class AdminFeatureSettingsController extends Controller
 
     public function update(UpdateFeatureSettingsRequest $request, MarketplaceFeatureService $features): RedirectResponse
     {
-        $features->updateReviewFlags($request->user(), $request->validated());
+        $features->updateReviewFlags($request->user(), $request->reviewFlags());
 
         return back()->with('status', 'Feature settings updated.');
     }
