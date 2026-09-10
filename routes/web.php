@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminBrandController;
 use App\Http\Controllers\AdminCategoryBrowseController;
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\AdminFeatureSettingsController;
 use App\Http\Controllers\AdminHomepageController;
 use App\Http\Controllers\AdminListingController;
 use App\Http\Controllers\AdminOrderController;
@@ -206,6 +207,8 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/features', [AdminFeatureSettingsController::class, 'index'])->name('features.index');
+    Route::put('/features', [AdminFeatureSettingsController::class, 'update'])->name('features.update');
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{customerOrder:number}', [AdminOrderController::class, 'show'])->name('orders.show');
     Route::prefix('/orders/{customerOrder:number}/packages/{sellerOrder:number}')
