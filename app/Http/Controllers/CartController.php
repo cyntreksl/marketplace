@@ -26,12 +26,15 @@ class CartController extends Controller
     public function store(AddCartItemRequest $request): RedirectResponse
     {
         $addedItem = $this->carts->add($request, (int) $request->validated('listing_id'), $request->validated('listing_variant_id') === null ? null : (int) $request->validated('listing_variant_id'), (int) $request->validated('quantity'));
-        $this->metaConversions->trackAddToCart($request, $addedItem);
+        $metaEventId = $this->metaConversions->trackAddToCart($request, $addedItem);
         if ($request->validated('buy_now', false)) {
-            return to_route('checkout.show');
+            return to_route('checkout.show')->with('meta_event_id', $metaEventId);
         }
 
-        return back()->with('cart_added', true)->with('toast', ['type' => 'success', 'message' => 'Added to cart.']);
+        return back()
+            ->with('cart_added', true)
+            ->with('meta_event_id', $metaEventId)
+            ->with('toast', ['type' => 'success', 'message' => 'Added to cart.']);
     }
 
     public function update(UpdateCartItemRequest $request, string $item): RedirectResponse

@@ -226,6 +226,13 @@ export function buildCatalogItem(
     };
 }
 
+export function withMetaEventId(
+    parameters: Record<string, unknown>,
+    eventId: string | null | undefined,
+): Record<string, unknown> {
+    return eventId ? { ...parameters, event_id: eventId } : parameters;
+}
+
 export function trackPageView(url: string): void {
     const consent = readConsent();
 

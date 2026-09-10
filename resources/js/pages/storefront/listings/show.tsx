@@ -25,7 +25,7 @@ import { SellerSummary } from '@/components/seller-summary';
 import { StorefrontBreadcrumbs } from '@/components/storefront-breadcrumbs';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { useProductComparison } from '@/hooks/use-product-comparison';
-import { buildCatalogItem, trackEvent } from '@/lib/tracking';
+import { buildCatalogItem, trackEvent, withMetaEventId } from '@/lib/tracking';
 import { home, login } from '@/routes';
 import { show as brandShow } from '@/routes/brands';
 import { show as categoryShow } from '@/routes/categories';
@@ -105,6 +105,7 @@ export default function ListingShow({
     selectedVariantId,
     sellerSummary,
     purchaseContext,
+    metaEventId,
 }: {
     listing: StorefrontListing;
     categories: StorefrontCategory[];
@@ -123,6 +124,7 @@ export default function ListingShow({
         channel: 'retail' | 'wholesale';
         initialQuantity: number;
     };
+    metaEventId: string | null;
 }) {
     const { auth, reviewFlags } = usePage().props;
     const comparison = useProductComparison();
@@ -194,25 +196,35 @@ export default function ListingShow({
         (listing.productType === 'variant' &&
             selectedVariant?.stockQuantity === 0);
     useEffect(() => {
-        trackEvent('view_item', {
-            currency: 'LKR',
-            value: Number(displayedSellingPrice ?? 0),
-            items: [
-                buildCatalogItem(listing.id, selectedVariant?.id, {
-                    item_name: listing.title,
-                    item_brand: listing.brand?.name,
-                    item_category: listing.category?.name,
-                    price: Number(displayedSellingPrice ?? 0),
-                }),
-            ],
-        });
+        trackEvent(
+            'view_item',
+            withMetaEventId(
+                {
+                    currency: 'LKR',
+                    value: Number(displayedSellingPrice ?? 0),
+                    items: [
+                        buildCatalogItem(listing.id, selectedVariant?.id, {
+                            item_name: listing.title,
+                            item_brand: listing.brand?.name,
+                            item_category: listing.category?.name,
+                            price: Number(displayedSellingPrice ?? 0),
+                        }),
+                    ],
+                },
+                selectedVariantId === (selectedVariant?.id ?? null)
+                    ? metaEventId
+                    : null,
+            ),
+        );
     }, [
         displayedSellingPrice,
         listing.brand?.name,
         listing.category?.name,
         listing.id,
         listing.title,
+        metaEventId,
         selectedVariant?.id,
+        selectedVariantId,
     ]);
 
     useEffect(() => {

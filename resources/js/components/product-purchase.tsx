@@ -1,7 +1,7 @@
 import { Form } from '@inertiajs/react';
 import { Minus, Plus, ShoppingCart, ArrowRight } from 'lucide-react';
 import { store as addCartItem } from '@/actions/App/Http/Controllers/CartController';
-import { buildCatalogItem, trackEvent } from '@/lib/tracking';
+import { buildCatalogItem, trackEvent, withMetaEventId } from '@/lib/tracking';
 
 export function ProductPurchase({
     listingId,
@@ -51,7 +51,7 @@ export function ProductPurchase({
             {...addCartItem.form()}
             id={formId}
             className="mt-5"
-            onSuccess={() =>
+            onSuccess={(page) =>
                 trackEvent(
                     'add_to_cart',
                     buildAddToCartParameters(
@@ -59,6 +59,7 @@ export function ProductPurchase({
                         variantId,
                         unitPrice,
                         quantity,
+                        page.props.commerce.meta_event_id,
                     ),
                 )
             }
@@ -237,17 +238,21 @@ export function buildAddToCartParameters(
     variantId: number | undefined,
     unitPrice: string | number,
     quantity: number,
+    metaEventId?: string | null,
 ): Record<string, unknown> {
     const numericUnitPrice = Number(unitPrice);
 
-    return {
-        currency: 'LKR',
-        value: numericUnitPrice * quantity,
-        items: [
-            buildCatalogItem(listingId, variantId, {
-                price: numericUnitPrice,
-                quantity,
-            }),
-        ],
-    };
+    return withMetaEventId(
+        {
+            currency: 'LKR',
+            value: numericUnitPrice * quantity,
+            items: [
+                buildCatalogItem(listingId, variantId, {
+                    price: numericUnitPrice,
+                    quantity,
+                }),
+            ],
+        },
+        metaEventId,
+    );
 }

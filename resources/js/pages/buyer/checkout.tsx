@@ -17,7 +17,7 @@ import type { ReactNode } from 'react';
 import { CheckoutProgress } from '@/components/checkout-progress';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { useStorefrontHeaderHeight } from '@/hooks/use-storefront-header-height';
-import { buildCatalogItem, trackEvent } from '@/lib/tracking';
+import { buildCatalogItem, trackEvent, withMetaEventId } from '@/lib/tracking';
 import { show as cartShow } from '@/routes/cart';
 import { store as checkoutStore } from '@/routes/checkout';
 import type {
@@ -185,11 +185,13 @@ export default function BuyerCheckout({
     shippingAddress,
     billingAddress = null,
     savedAddresses,
+    metaEventId,
 }: {
     cart: CheckoutCart;
     shippingAddress: ShippingAddress | null;
     billingAddress?: ShippingAddress | null;
     savedAddresses: BuyerAddress[];
+    metaEventId: string | null;
 }) {
     const { auth } = usePage().props;
     const headerHeight = useStorefrontHeaderHeight();
@@ -210,18 +212,28 @@ export default function BuyerCheckout({
     const subtotal = Number(cart.subtotal);
 
     useEffect(() => {
-        trackEvent('begin_checkout', {
-            currency: 'LKR',
-            value: Number(cart.total),
-            items: cart.items.map((item) =>
-                buildCatalogItem(item.listing_id, item.listing_variant_id, {
-                    item_name: item.listing.title,
-                    price: Number(item.unitPrice),
-                    quantity: item.quantity,
-                }),
+        trackEvent(
+            'begin_checkout',
+            withMetaEventId(
+                {
+                    currency: 'LKR',
+                    value: Number(cart.total),
+                    items: cart.items.map((item) =>
+                        buildCatalogItem(
+                            item.listing_id,
+                            item.listing_variant_id,
+                            {
+                                item_name: item.listing.title,
+                                price: Number(item.unitPrice),
+                                quantity: item.quantity,
+                            },
+                        ),
+                    ),
+                },
+                metaEventId,
             ),
-        });
-    }, [cart.items, cart.total]);
+        );
+    }, [cart.items, cart.total, metaEventId]);
 
     return (
         <StorefrontLayout title="Checkout" showMobileNavigation={false}>

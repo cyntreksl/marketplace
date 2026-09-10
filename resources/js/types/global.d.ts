@@ -22,6 +22,7 @@ declare module '@inertiajs/core' {
                 wishlist_count: number;
                 cart: CheckoutCart;
                 cart_added: boolean;
+                meta_event_id: string | null;
             };
             marketplace: MarketplaceDetails;
             auctionFlags: AuctionFlags;

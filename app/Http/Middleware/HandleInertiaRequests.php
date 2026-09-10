@@ -70,6 +70,7 @@ class HandleInertiaRequests extends Middleware
                     'cart_quantity' => $cart['quantity'],
                     'cart' => $cart,
                     'cart_added' => (bool) $request->session()->get('cart_added', false),
+                    'meta_event_id' => $request->session()->get('meta_event_id'),
                     'wishlist_count' => $request->user()?->watchlistEntries()->count() ?? 0,
                 ];
             },

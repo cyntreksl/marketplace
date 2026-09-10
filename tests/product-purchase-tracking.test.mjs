@@ -28,16 +28,35 @@ after(async () => {
     await server?.close();
 });
 
-test('add to cart uses the raw LKR unit price without display-label scaling', () => {
-    assert.deepEqual(buildAddToCartParameters(84, undefined, '3490.00', 2), {
+test('add to cart uses the raw LKR unit price and shared server event id', () => {
+    assert.deepEqual(
+        buildAddToCartParameters(84, undefined, '3490.00', 2, 'add-event-84'),
+        {
+            currency: 'LKR',
+            value: 6980,
+            event_id: 'add-event-84',
+            items: [
+                {
+                    item_id: '84',
+                    item_group_id: '84',
+                    price: 3490,
+                    quantity: 2,
+                },
+            ],
+        },
+    );
+});
+
+test('add to cart uses the variant id while retaining the listing group id', () => {
+    assert.deepEqual(buildAddToCartParameters(84, 901, 3490, 1), {
         currency: 'LKR',
-        value: 6980,
+        value: 3490,
         items: [
             {
-                item_id: '84',
+                item_id: '901',
                 item_group_id: '84',
                 price: 3490,
-                quantity: 2,
+                quantity: 1,
             },
         ],
     });

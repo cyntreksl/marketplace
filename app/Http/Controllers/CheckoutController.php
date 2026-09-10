@@ -52,10 +52,11 @@ class CheckoutController extends Controller
         }
 
         $cart = $this->carts->summary($request);
-        $this->metaConversions->trackInitiateCheckout($request, $cart);
+        $metaEventId = $this->metaConversions->trackInitiateCheckout($request, $cart);
 
         return Inertia::render('buyer/checkout', [
             'cart' => $cart,
+            'metaEventId' => $metaEventId,
             'shippingAddress' => $shippingAddress,
             'billingAddress' => $billingAddress,
             'savedAddresses' => $this->buyerAddresses->all($request->user()),

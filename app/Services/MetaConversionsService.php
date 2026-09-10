@@ -34,19 +34,20 @@ class MetaConversionsService
     }
 
     /** @param array<string, mixed> $listing */
-    public function trackViewContent(Request $request, array $listing, ?int $selectedVariantId): void
+    public function trackViewContent(Request $request, array $listing, ?int $selectedVariantId): ?string
     {
         if (! $this->isEnabled() || $this->shouldIgnoreListingView($request)) {
-            return;
+            return null;
         }
 
         $contentId = (string) ($selectedVariantId ?? $listing['id']);
+        $eventId = (string) Str::uuid();
         $price = (float) ($listing['effectivePrice'] ?? 0);
         $context = $this->parameterBuilder->process($request);
 
         $this->queue(new MetaConversionEvent(
             name: 'ViewContent',
-            id: (string) Str::uuid(),
+            id: $eventId,
             occurredAt: now()->getTimestamp(),
             sourceUrl: $context->sourceUrl ?? $request->fullUrl(),
             userData: $this->requestUserData($request, $context),
@@ -60,23 +61,26 @@ class MetaConversionsService
             ],
             referrerUrl: $context->referrerUrl,
         ));
+
+        return $eventId;
     }
 
     /** @param array<string, mixed> $item */
-    public function trackAddToCart(Request $request, array $item): void
+    public function trackAddToCart(Request $request, array $item): ?string
     {
         if (! $this->isEnabled()) {
-            return;
+            return null;
         }
 
         $contentId = (string) ($item['listing_variant_id'] ?? $item['listing_id']);
+        $eventId = (string) Str::uuid();
         $quantity = (int) $item['quantity'];
         $unitPrice = (float) $item['unitPrice'];
         $context = $this->parameterBuilder->process($request);
 
         $this->queue(new MetaConversionEvent(
             name: 'AddToCart',
-            id: (string) Str::uuid(),
+            id: $eventId,
             occurredAt: now()->getTimestamp(),
             sourceUrl: $context->sourceUrl ?? $request->fullUrl(),
             userData: $this->requestUserData($request, $context),
@@ -90,15 +94,18 @@ class MetaConversionsService
             ],
             referrerUrl: $context->referrerUrl,
         ));
+
+        return $eventId;
     }
 
     /** @param array<string, mixed> $cart */
-    public function trackInitiateCheckout(Request $request, array $cart): void
+    public function trackInitiateCheckout(Request $request, array $cart): ?string
     {
         if (! $this->isEnabled() || $cart['items'] === [] || $cart['canCheckout'] !== true) {
-            return;
+            return null;
         }
 
+        $eventId = (string) Str::uuid();
         $contents = array_map(fn (array $item): array => [
             'id' => (string) ($item['listing_variant_id'] ?? $item['listing_id']),
             'quantity' => (int) $item['quantity'],
@@ -108,7 +115,7 @@ class MetaConversionsService
 
         $this->queue(new MetaConversionEvent(
             name: 'InitiateCheckout',
-            id: (string) Str::uuid(),
+            id: $eventId,
             occurredAt: now()->getTimestamp(),
             sourceUrl: $context->sourceUrl ?? $request->fullUrl(),
             userData: $this->requestUserData($request, $context),
@@ -122,6 +129,8 @@ class MetaConversionsService
             ],
             referrerUrl: $context->referrerUrl,
         ));
+
+        return $eventId;
     }
 
     /** @return array<string, string|null>|null */

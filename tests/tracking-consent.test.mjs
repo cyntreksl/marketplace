@@ -173,3 +173,21 @@ test('catalog items always use the exported listing or variant id', () => {
         item_group_id: '65',
     });
 });
+
+test('Meta event ids are included only when a server event id is available', () => {
+    assert.deepEqual(
+        tracking.withMetaEventId({ currency: 'LKR', value: 3490 }, 'event-84'),
+        {
+            currency: 'LKR',
+            value: 3490,
+            event_id: 'event-84',
+        },
+    );
+    assert.deepEqual(
+        tracking.withMetaEventId({ currency: 'LKR', value: 3490 }, null),
+        {
+            currency: 'LKR',
+            value: 3490,
+        },
+    );
+});

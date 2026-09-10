@@ -105,7 +105,11 @@ class StorefrontController extends Controller
             $variantId === false ? null : $variantId,
             $request->query('wholesale') === '1',
         );
-        $this->metaConversions->trackViewContent($request, $details['listing'], $details['selectedVariantId']);
+        $details['metaEventId'] = $this->metaConversions->trackViewContent(
+            $request,
+            $details['listing'],
+            $details['selectedVariantId'],
+        );
 
         return Inertia::render('storefront/listings/show', $details);
     }

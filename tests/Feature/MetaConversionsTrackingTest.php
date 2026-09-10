@@ -67,6 +67,14 @@ test('valid public listing views queue ViewContent while crawlers and prefetches
             && ! array_key_exists('fbp', $job->event->userData)
             && ! array_key_exists('fbclid', $job->event->userData);
     });
+    $viewContentEventId = null;
+    Queue::assertPushed(SendMetaConversion::class, function (SendMetaConversion $job) use (&$viewContentEventId): bool {
+        $viewContentEventId = $job->event->id;
+
+        return $job->event->name === 'ViewContent';
+    });
+    expect($viewContentEventId)->toBeString();
+    $response->assertInertia(fn ($page) => $page->where('metaEventId', $viewContentEventId));
 
     Queue::fake();
     $this->withHeader('User-Agent', 'Googlebot')->get(route('listings.show', $listing->slug))->assertOk();
@@ -229,13 +237,27 @@ test('successful cart additions queue the added quantity and invalid mutations d
     $fbc = 'fb.1.1788775200123.CartClick.AQEAAQMB';
     $fbp = 'fb.1.1788775200123.1116446470.AQEAAQMB';
 
-    $this->withUnencryptedCookies([
+    $response = $this->withUnencryptedCookies([
         '_fbc' => $fbc,
         '_fbp' => $fbp,
         TrackingConsent::COOKIE_NAME => marketingConsentCookie(),
     ])
         ->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 2])
         ->assertSessionHasNoErrors();
+    $addToCartEventId = null;
+    Queue::assertPushed(SendMetaConversion::class, function (SendMetaConversion $job) use (&$addToCartEventId): bool {
+        if ($job->event->name !== 'AddToCart' || $job->event->customData['contents'][0]['quantity'] !== 2) {
+            return false;
+        }
+
+        $addToCartEventId = $job->event->id;
+
+        return true;
+    });
+    expect($addToCartEventId)->toBeString();
+    $response->assertSessionHas('meta_event_id', $addToCartEventId);
+    $this->get(route('cart.show'))->assertInertia(fn ($page) => $page->where('commerce.meta_event_id', $addToCartEventId));
+
     $this->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 1])->assertSessionHasNoErrors();
 
     Queue::assertPushed(SendMetaConversion::class, 2);
@@ -254,20 +276,32 @@ test('checkout queues only for a non-empty valid cart and disabled tracking is s
     Queue::fake();
     $buyer = User::factory()->create();
 
-    $this->actingAs($buyer)->get(route('checkout.show'))->assertOk();
+    $this->actingAs($buyer)->get(route('checkout.show'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('metaEventId', null));
     Queue::assertNothingPushed();
 
     $listing = Listing::factory()->create();
     $fbc = 'fb.1.1788775200123.CheckoutClick.AQEAAQMB';
     $this->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 1]);
     Queue::fake();
-    $this->withUnencryptedCookie('_fbc', $fbc)->get(route('checkout.show'))->assertOk();
+    $response = $this->withUnencryptedCookie('_fbc', $fbc)->get(route('checkout.show'))->assertOk();
+    $initiateCheckoutEventId = null;
     Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => $job->event->name === 'InitiateCheckout'
         && $job->event->userData['fbc'] === $fbc);
+    Queue::assertPushed(SendMetaConversion::class, function (SendMetaConversion $job) use (&$initiateCheckoutEventId): bool {
+        $initiateCheckoutEventId = $job->event->id;
+
+        return $job->event->name === 'InitiateCheckout';
+    });
+    expect($initiateCheckoutEventId)->toBeString();
+    $response->assertInertia(fn ($page) => $page->where('metaEventId', $initiateCheckoutEventId));
 
     config(['services.meta_conversions.enabled' => false]);
     Queue::fake();
-    $this->get(route('checkout.show'))->assertOk();
+    $this->get(route('checkout.show'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page->where('metaEventId', null));
     Queue::assertNothingPushed();
 });
 
