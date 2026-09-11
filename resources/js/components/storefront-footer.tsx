@@ -138,11 +138,19 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                         ))}
                     </nav>
                 </div>
-                <div className="border-t py-5 text-xs text-slate-600">
+                <div className="flex flex-wrap gap-x-1 border-t py-5 text-xs text-slate-600">
                     <span>
                         © {new Date().getFullYear()} ProDeals.lk. All rights
                         reserved.
                     </span>
+                    <a
+                        href="https://cyntrek.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold hover:text-[#ff5a00]"
+                    >
+                        Cyntrek Solutions Private Limited
+                    </a>
                 </div>
             </div>
         </footer>

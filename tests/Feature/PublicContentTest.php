@@ -67,6 +67,8 @@ test('the storefront footer keeps support details on support pages and shows a c
         ->toContain('Which payment methods are available?')
         ->toContain('How do returns work?')
         ->toContain('View all FAQs')
+        ->toContain('Cyntrek Solutions Private Limited')
+        ->toContain('href="https://cyntrek.com"')
         ->not->toContain('marketplace.support.email')
         ->not->toContain('Eligible returns')
         ->not->toContain('Fast Delivery')
