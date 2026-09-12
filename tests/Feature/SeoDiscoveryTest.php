@@ -201,7 +201,12 @@ test('GTM noscript fallback is emitted only for a valid granting consent cookie'
 });
 
 test('robots permits crawling and declares the absolute sitemap URL', function () {
-    expect(public_path('robots.txt'))->not->toBeFile();
+    $productionRobots = file_get_contents(public_path('robots.txt'));
+
+    expect($productionRobots)
+        ->not->toBeFalse()
+        ->toContain("User-agent: *\nAllow: /")
+        ->toContain('Sitemap: https://prodeals.lk/sitemap.xml');
 
     $this->get(route('robots'))
         ->assertOk()

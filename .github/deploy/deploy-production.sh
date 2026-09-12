@@ -278,7 +278,6 @@ smoke_mcp() {
 
 smoke_discovery() {
     local sitemap_headers="${runtime_dir}/sitemap-headers.txt"
-    local robots_headers="${runtime_dir}/robots-headers.txt"
     local merchant_headers="${runtime_dir}/merchant-headers.txt"
     local robots_body="${runtime_dir}/robots.txt"
 
@@ -293,17 +292,12 @@ smoke_discovery() {
     grep -iq '^etag:' "$sitemap_headers"
 
     curl --fail --silent --show-error --max-time 30 --retry 20 --retry-delay 3 --retry-max-time 90 \
-        --retry-connrefused --retry-all-errors --dump-header "$robots_headers" \
+        --retry-connrefused --retry-all-errors \
         "https://prodeals.lk/robots.txt?deploy=${RELEASE_ID}" > "$robots_body"
     test "$(grep -c '^Sitemap: https://prodeals.lk/sitemap.xml$' "$robots_body")" -eq 1
     grep -q '^User-agent: \*$' "$robots_body"
     grep -q '^User-agent: Google-Extended$' "$robots_body"
     grep -q '^User-agent: OAI-SearchBot$' "$robots_body"
-    grep -iq 'cache-control:.*public' "$robots_headers"
-    grep -iq 'cache-control:.*max-age=300' "$robots_headers"
-    grep -iq 'cache-control:.*s-maxage=3600' "$robots_headers"
-    grep -iq 'cache-control:.*stale-while-revalidate=86400' "$robots_headers"
-
     curl --fail --silent --show-error --max-time 30 --retry 20 --retry-delay 3 --retry-max-time 90 \
         --retry-connrefused --retry-all-errors --dump-header "$merchant_headers" \
         --output /dev/null "https://prodeals.lk/feeds/google-merchant.xml?deploy=${RELEASE_ID}"

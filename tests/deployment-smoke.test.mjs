@@ -159,9 +159,9 @@ test('production smoke checks run sequentially without inherited rollback races'
 
 test('deployment verifies authoritative cached discovery and keeps Search Console failure non-blocking', async () => {
     assert.match(discoverySmoke, /sitemaps\/guides\.xml/);
-    assert.match(discoverySmoke, /max-age=300/);
-    assert.match(discoverySmoke, /s-maxage=3600/);
-    assert.match(discoverySmoke, /stale-while-revalidate=86400/);
+    assert.match(discoverySmoke, /sitemap_headers/);
+    assert.match(discoverySmoke, /robots\.txt/);
+    assert.doesNotMatch(discoverySmoke, /robots_headers/);
     assert.match(discoverySmoke, /grep -c '\^Sitemap:/);
     assert.match(discoverySmoke, /OAI-SearchBot/);
     assert.match(discoverySmoke, /feeds\/google-merchant\.xml/);
