@@ -239,7 +239,7 @@ smoke_homepage() {
 
     echo 'Smoke checking homepage.'
     curl --fail --silent --show-error --max-time 30 --retry 20 --retry-delay 3 --retry-max-time 90 \
-        --retry-connrefused --retry-all-errors https://prodeals.lk/ > "$homepage_html"
+        --retry-connrefused --retry-all-errors "https://prodeals.lk/?deploy=${RELEASE_ID}" > "$homepage_html"
     grep -q 'Online Shopping &amp; Auctions in Sri Lanka' "$homepage_html"
     grep -qE 'href="[^"]*/(listings|auctions)' "$homepage_html"
 }
@@ -251,13 +251,13 @@ smoke_product() {
 
     echo 'Smoke checking a product from the live sitemap.'
     product_sitemap_url="$(curl --fail --silent --show-error --max-time 30 --retry 20 --retry-delay 3 \
-        --retry-max-time 90 --retry-connrefused --retry-all-errors https://prodeals.lk/sitemap.xml \
+        --retry-max-time 90 --retry-connrefused --retry-all-errors "https://prodeals.lk/sitemap.xml?deploy=${RELEASE_ID}" \
         | grep -oE '<loc>[^<]*sitemaps/products-[^<]+' | sed -n '1p' | cut -c6-)"
     product_url="$(curl --fail --silent --show-error --max-time 30 --retry 20 --retry-delay 3 \
-        --retry-max-time 90 --retry-connrefused --retry-all-errors "$product_sitemap_url" \
+        --retry-max-time 90 --retry-connrefused --retry-all-errors "${product_sitemap_url}?deploy=${RELEASE_ID}" \
         | grep -oE '<loc>[^<]+' | sed -n '1p' | cut -c6-)"
     curl --fail --silent --show-error --max-time 30 --retry 20 --retry-delay 3 --retry-max-time 90 \
-        --retry-connrefused --retry-all-errors "$product_url" > "$product_html"
+        --retry-connrefused --retry-all-errors "${product_url}?deploy=${RELEASE_ID}" > "$product_html"
     grep -q '<h1' "$product_html"
     grep -qE 'Rs\.|LKR' "$product_html"
     grep -q 'application/ld+json' "$product_html"
@@ -272,7 +272,7 @@ smoke_mcp() {
         --header 'Accept: application/json, text/event-stream' \
         --header 'Content-Type: application/json' \
         --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"deployment-smoke-test","version":"1.0.0"}}}' \
-        https://prodeals.lk/mcp/marketplace > "$response_path"
+        "https://prodeals.lk/mcp/marketplace?deploy=${RELEASE_ID}" > "$response_path"
     grep -q '"protocolVersion":"2025-06-18"' "$response_path"
 }
 
@@ -285,7 +285,7 @@ smoke_discovery() {
     echo 'Smoke checking SEO discovery endpoints.'
     curl --fail --silent --show-error --max-time 30 --retry 20 --retry-delay 3 --retry-max-time 90 \
         --retry-connrefused --retry-all-errors --dump-header "$sitemap_headers" \
-        --output /dev/null https://prodeals.lk/sitemap.xml
+        --output /dev/null "https://prodeals.lk/sitemap.xml?deploy=${RELEASE_ID}"
     grep -iq 'cache-control:.*public' "$sitemap_headers"
     grep -iq 'cache-control:.*max-age=300' "$sitemap_headers"
     grep -iq 'cache-control:.*s-maxage=3600' "$sitemap_headers"
@@ -294,7 +294,7 @@ smoke_discovery() {
 
     curl --fail --silent --show-error --max-time 30 --retry 20 --retry-delay 3 --retry-max-time 90 \
         --retry-connrefused --retry-all-errors --dump-header "$robots_headers" \
-        https://prodeals.lk/robots.txt > "$robots_body"
+        "https://prodeals.lk/robots.txt?deploy=${RELEASE_ID}" > "$robots_body"
     test "$(grep -c '^Sitemap: https://prodeals.lk/sitemap.xml$' "$robots_body")" -eq 1
     grep -q '^User-agent: \*$' "$robots_body"
     grep -q '^User-agent: Google-Extended$' "$robots_body"
@@ -306,20 +306,20 @@ smoke_discovery() {
 
     curl --fail --silent --show-error --max-time 30 --retry 20 --retry-delay 3 --retry-max-time 90 \
         --retry-connrefused --retry-all-errors --dump-header "$merchant_headers" \
-        --output /dev/null https://prodeals.lk/feeds/google-merchant.xml
+        --output /dev/null "https://prodeals.lk/feeds/google-merchant.xml?deploy=${RELEASE_ID}"
     grep -iq 'cache-control:.*no-cache' "$merchant_headers"
 
     curl --fail --silent --show-error --max-time 30 --retry 20 --retry-delay 3 --retry-max-time 90 \
-        --retry-connrefused --retry-all-errors https://prodeals.lk/sitemaps/guides.xml \
+        --retry-connrefused --retry-all-errors "https://prodeals.lk/sitemaps/guides.xml?deploy=${RELEASE_ID}" \
         | grep -q '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
     test "$(curl --silent --show-error --max-time 30 --retry 20 --retry-delay 3 --retry-max-time 90 \
         --retry-connrefused --retry-all-errors --output /dev/null --write-out '%{http_code}' \
-        https://prodeals.lk/shop)" -eq 301
+        "https://prodeals.lk/shop?deploy=${RELEASE_ID}")" -eq 301
 }
 
 run_external_smoke_tests() {
     curl --fail --silent --show-error --output /dev/null --retry 20 --retry-delay 3 --retry-max-time 90 \
-        --retry-connrefused --retry-all-errors https://prodeals.lk/up
+        --retry-connrefused --retry-all-errors "https://prodeals.lk/up?deploy=${RELEASE_ID}"
 
     smoke_homepage &
     local homepage_pid="$!"

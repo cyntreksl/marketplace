@@ -38,11 +38,12 @@ test('product smoke checks consume large sitemaps without breaking the pipe', as
         );
         const script = `set -Eeuo pipefail
 runtime_dir="$1"
+RELEASE_ID=release
 curl() {
     case "\${!#}" in
-        https://prodeals.lk/sitemap.xml) cat "$runtime_dir/index.xml" ;;
-        https://prodeals.lk/sitemaps/products-1.xml) cat "$runtime_dir/products.xml" ;;
-        https://prodeals.lk/listings/product-1) printf '%s' '<h1>Product</h1>LKR<script type="application/ld+json">{}</script>' ;;
+        'https://prodeals.lk/sitemap.xml?deploy=release') cat "$runtime_dir/index.xml" ;;
+        'https://prodeals.lk/sitemaps/products-1.xml?deploy=release') cat "$runtime_dir/products.xml" ;;
+        'https://prodeals.lk/listings/product-1?deploy=release') printf '%s' '<h1>Product</h1>LKR<script type="application/ld+json">{}</script>' ;;
         *) return 22 ;;
     esac
 }
@@ -147,6 +148,7 @@ test('deployment verifies authoritative cached discovery and keeps Search Consol
     assert.match(discoverySmoke, /no-cache/);
     assert.match(discoverySmoke, /https:\/\/prodeals\.lk\/shop/);
     assert.match(discoverySmoke, /--retry-all-errors/);
+    assert.match(discoverySmoke, /\?deploy=\$\{RELEASE_ID\}/);
 
     for (const smoke of ['smoke_homepage', 'smoke_product', 'smoke_mcp']) {
         const functionSource = source.match(
@@ -154,7 +156,13 @@ test('deployment verifies authoritative cached discovery and keeps Search Consol
         )?.[0];
         assert.ok(functionSource);
         assert.match(functionSource, /--retry-all-errors/);
+        assert.match(functionSource, /\?deploy=\$\{RELEASE_ID\}/);
     }
+
+    assert.match(
+        source,
+        /https:\/\/prodeals\.lk\/up\?deploy=\$\{RELEASE_ID\}/,
+    );
 
     const submitFunction = source.match(
         /submit_search_console_sitemap\(\) \{[\s\S]*?\n\}/,
