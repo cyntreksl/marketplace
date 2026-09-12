@@ -146,6 +146,15 @@ test('deployment verifies authoritative cached discovery and keeps Search Consol
     assert.match(discoverySmoke, /feeds\/google-merchant\.xml/);
     assert.match(discoverySmoke, /no-cache/);
     assert.match(discoverySmoke, /https:\/\/prodeals\.lk\/shop/);
+    assert.match(discoverySmoke, /--retry-all-errors/);
+
+    for (const smoke of ['smoke_homepage', 'smoke_product', 'smoke_mcp']) {
+        const functionSource = source.match(
+            new RegExp(`${smoke}\\(\\) \\{[\\s\\S]*?\\n\\}`),
+        )?.[0];
+        assert.ok(functionSource);
+        assert.match(functionSource, /--retry-all-errors/);
+    }
 
     const submitFunction = source.match(
         /submit_search_console_sitemap\(\) \{[\s\S]*?\n\}/,
