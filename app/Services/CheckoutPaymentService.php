@@ -23,13 +23,14 @@ class CheckoutPaymentService
         private readonly PaymentAttemptService $attempts,
         private readonly MetaConversionsService $metaConversions,
         private readonly AuctionPaymentCompletionService $auctionPayments,
+        private readonly OrderCustomerNotificationService $customerNotifications,
     ) {}
 
-    public function start(CustomerOrder $order): ?string
+    public function start(CustomerOrder $order, ?string $guestAccessToken = null): ?string
     {
         $payment = $this->orders->payment($order);
 
-        return Cache::lock('checkout-payment-'.$payment->id, 30)->block(5, function () use ($payment): ?string {
+        return Cache::lock('checkout-payment-'.$payment->id, 30)->block(5, function () use ($payment, $guestAccessToken): ?string {
             $payment = $this->orders->findPayment($payment->id);
             if ($payment === null || $payment->status !== 'pending') {
                 return null;
@@ -46,7 +47,7 @@ class CheckoutPaymentService
             $this->attempts->begin($payment);
 
             try {
-                $session = $this->gateway->createPayment($payment);
+                $session = $this->gateway->createPayment($payment, $guestAccessToken);
             } catch (Throwable $exception) {
                 $this->attempts->fail($payment, $exception);
 
@@ -147,7 +148,14 @@ class CheckoutPaymentService
                 $this->attempts->succeed($payment);
                 $this->orders->confirm($payment->customerOrder);
                 $this->auctionPayments->complete($payment->customerOrder);
-                $payment->customerOrder->buyer->notify(new PaymentConfirmedNotification($payment->customerOrder->number, $payment->amount));
+                $this->customerNotifications->notify($payment->customerOrder, new PaymentConfirmedNotification(
+                    orderNumber: $payment->customerOrder->number,
+                    amount: $payment->amount,
+                    recipientName: $this->customerNotifications->recipientName($payment->customerOrder),
+                    actionUrl: $payment->customerOrder->buyer_id === null
+                        ? route('order-tracking.index')
+                        : route('checkout.thank_you.show', $payment->customerOrder->number),
+                ));
                 $this->sellerOrderNotifications->notifyReady($payment->customerOrder, $payment->method);
                 $confirmedOrder = $payment->customerOrder;
             } elseif (($session['status'] ?? '') === 'expired' && ($session['payment_status'] ?? '') === 'unpaid') {

@@ -4,13 +4,12 @@ namespace App\Services;
 
 use App\Contracts\Repositories\CheckoutRepository;
 use App\Contracts\Repositories\CustomerOrderRepository;
-use App\Models\CartItem;
 use App\Models\CustomerOrder;
 use App\Models\Listing;
 use App\Models\ListingVariant;
 use App\Models\SellerOrder;
-use App\Models\User;
 use App\Notifications\OrderAcknowledgmentNotification;
+use App\Support\CheckoutContext;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +28,8 @@ class CheckoutService
         private readonly PaymentAttemptService $paymentAttempts,
         private readonly MetaConversionsService $metaConversions,
         private readonly ListingPricingService $pricing,
+        private readonly OrderCustomerNotificationService $customerNotifications,
+        private readonly GuestOrderAccessService $guestOrderAccess,
     ) {}
 
     /**
@@ -36,16 +37,19 @@ class CheckoutService
      * @param  array<string, string|null>|null  $billingAddress
      * @param  array<string, string|null>|null  $metaAttribution
      */
-    public function checkout(User $buyer, string $paymentMethod, array $shippingAddress, ?string $token = null, ?string $reviewHash = null, ?array $billingAddress = null, ?array $metaAttribution = null): CustomerOrder
+    public function checkout(CheckoutContext $context, string $paymentMethod, array $shippingAddress, ?string $token = null, ?string $reviewHash = null, ?array $billingAddress = null, ?array $metaAttribution = null): CustomerOrder
     {
         $created = false;
-        $order = DB::transaction(function () use ($buyer, $paymentMethod, $shippingAddress, $billingAddress, $metaAttribution, $token, $reviewHash, &$created): CustomerOrder {
-            $cart = $this->repository->cart($buyer);
-            if ($token !== null && ($existing = $this->repository->findSubmission($buyer, $token)) !== null) {
+        $order = DB::transaction(function () use ($context, $paymentMethod, $shippingAddress, $billingAddress, $metaAttribution, $token, $reviewHash, &$created): CustomerOrder {
+            $cart = $context->buyer === null ? null : $this->repository->cart($context->buyer);
+            if ($token !== null && ($existing = $this->repository->findSubmission($context->buyer, $token, $context->guestIdentityHash)) !== null) {
                 return $this->repository->details($existing);
             }
-            $cartItems = $cart->items;
-            $summary = $this->cartService->summarize($cartItems->toArray());
+
+            $cartItems = $context->buyer === null
+                ? collect($context->guestCartEntries)->values()
+                : $cart->items->map(fn ($item): array => $item->toArray())->values();
+            $summary = $this->cartService->summarize($cartItems->all());
             if (! $summary['canCheckout']) {
                 throw ValidationException::withMessages(['cart' => 'Update unavailable items in your cart before checking out.']);
             }
@@ -63,36 +67,37 @@ class CheckoutService
             $lockedListings = [];
             $lockedVariants = [];
             foreach ($cartItems as $cartItem) {
-                $listing = $this->repository->listing($cartItem->listing_id);
+                $listing = $this->repository->listing((int) $cartItem['listing_id']);
 
                 if ($listing->listing_type !== 'buy_now' || $listing->status !== 'approved' || ! $listing->is_active) {
                     throw ValidationException::withMessages(['cart' => "{$listing->title} is no longer available to purchase."]);
                 }
 
-                $variant = $cartItem->listing_variant_id === null
+                $variant = ($cartItem['listing_variant_id'] ?? null) === null
                     ? null
-                    : $this->repository->variant($cartItem->listing_variant_id);
+                    : $this->repository->variant((int) $cartItem['listing_variant_id']);
 
                 if ($listing->product_type === 'variant' && ($variant === null || $variant->listing_id !== $listing->id || ! $variant->is_active)) {
                     throw ValidationException::withMessages(['cart' => "Choose an available option for {$listing->title}."]);
                 }
 
                 $availableQuantity = $variant?->availableQuantity() ?? ($listing->stock_quantity - $listing->reserved_quantity);
-                if (! $listing->allow_backorders && $availableQuantity < $cartItem->quantity) {
+                if (! $listing->allow_backorders && $availableQuantity < (int) $cartItem['quantity']) {
                     throw ValidationException::withMessages(['cart' => "{$listing->title} no longer has enough stock."]);
                 }
 
                 $lockedListings[$listing->id] = $listing;
                 if ($variant !== null) {
-                    $lockedVariants[$cartItem->id] = $variant;
+                    $lockedVariants[$this->entryKey($cartItem)] = $variant;
                 }
             }
 
             $subtotal = BigDecimal::zero();
             foreach ($cartItems as $cartItem) {
-                $listing = $lockedListings[$cartItem->listing_id];
-                $variant = $lockedVariants[$cartItem->id] ?? null;
-                $subtotal = $subtotal->plus(BigDecimal::of($this->buyNowPrice($listing, $variant, $cartItem->quantity))->multipliedBy($cartItem->quantity));
+                $listing = $lockedListings[$cartItem['listing_id']];
+                $variant = $lockedVariants[$this->entryKey($cartItem)] ?? null;
+                $quantity = (int) $cartItem['quantity'];
+                $subtotal = $subtotal->plus(BigDecimal::of($this->buyNowPrice($listing, $variant, $quantity))->multipliedBy($quantity));
             }
 
             $shippingTotal = BigDecimal::of($summary['shippingTotal']);
@@ -100,7 +105,7 @@ class CheckoutService
             $this->cashOnDelivery->ensureAllowed($paymentMethod, (string) $total);
             $lockedSummary = $summary;
             $lockedSummary['items'] = array_map(function (array $item) use ($lockedListings, $lockedVariants): array {
-                $lockedPricing = $this->priceForQuantity($lockedListings[$item['listing_id']], $lockedVariants[$item['id']] ?? null, $item['quantity']);
+                $lockedPricing = $this->priceForQuantity($lockedListings[$item['listing_id']], $lockedVariants[$this->entryKey($item)] ?? null, $item['quantity']);
                 $item['unitPrice'] = $lockedPricing['unitPrice'];
                 $item['pricingTier'] = $lockedPricing['tier'];
                 $item['minimumQuantity'] = $lockedPricing['minimumQuantity'];
@@ -115,8 +120,12 @@ class CheckoutService
             }
             $order = $this->repository->createOrder([
                 'checkout_token' => $token,
+                'checkout_identity_hash' => $context->guestIdentityHash,
+                'guest_access_token_hash' => $context->guestAccessTokenHash(),
+                'marketing_opt_in' => $context->marketingOptIn,
                 'number' => (string) Str::uuid(),
-                'buyer_id' => $buyer->id,
+                'buyer_id' => $context->buyer?->id,
+                'contact_email' => Str::lower($context->contactEmail),
                 'status' => $paymentMethod === 'cod' ? 'confirmed' : 'pending_payment',
                 'subtotal' => (string) $subtotal,
                 'total' => (string) $total,
@@ -126,12 +135,13 @@ class CheckoutService
                 'meta_attribution' => $metaAttribution,
             ]);
 
-            foreach ($cartItems->groupBy(fn (CartItem $item): int => $item->listing->seller_profile_id) as $sellerProfileId => $items) {
+            foreach ($cartItems->groupBy(fn (array $item): int => $lockedListings[$item['listing_id']]->seller_profile_id) as $sellerProfileId => $items) {
                 $sellerSubtotal = BigDecimal::zero();
                 foreach ($items as $item) {
-                    $listing = $lockedListings[$item->listing_id];
-                    $variant = $lockedVariants[$item->id] ?? null;
-                    $sellerSubtotal = $sellerSubtotal->plus(BigDecimal::of($this->buyNowPrice($listing, $variant, $item->quantity))->multipliedBy($item->quantity));
+                    $listing = $lockedListings[$item['listing_id']];
+                    $variant = $lockedVariants[$this->entryKey($item)] ?? null;
+                    $quantity = (int) $item['quantity'];
+                    $sellerSubtotal = $sellerSubtotal->plus(BigDecimal::of($this->buyNowPrice($listing, $variant, $quantity))->multipliedBy($quantity));
                 }
 
                 $sellerOrder = $this->repository->createSellerOrder([
@@ -144,11 +154,12 @@ class CheckoutService
                 ]);
 
                 foreach ($items as $item) {
-                    $listing = $lockedListings[$item->listing_id];
-                    $variant = $lockedVariants[$item->id] ?? null;
-                    $lockedPricing = $this->priceForQuantity($listing, $variant, $item->quantity);
+                    $listing = $lockedListings[$item['listing_id']];
+                    $variant = $lockedVariants[$this->entryKey($item)] ?? null;
+                    $quantity = (int) $item['quantity'];
+                    $lockedPricing = $this->priceForQuantity($listing, $variant, $quantity);
                     $effectivePrice = $lockedPricing['unitPrice'];
-                    $lineTotal = BigDecimal::of($effectivePrice)->multipliedBy($item->quantity);
+                    $lineTotal = BigDecimal::of($effectivePrice)->multipliedBy($quantity);
                     $commission = $lineTotal->multipliedBy((string) $listing->commission_percentage)->dividedBy(100, 2, RoundingMode::Down);
                     $this->repository->addItem($sellerOrder, [
                         'listing_id' => $listing->id,
@@ -156,14 +167,14 @@ class CheckoutService
                         'title' => $listing->title,
                         'variant_sku' => $variant?->sku,
                         'variant_options' => $variant === null ? null : $this->variantOptions($variant),
-                        'quantity' => $item->quantity,
+                        'quantity' => $quantity,
                         'unit_price' => $effectivePrice,
                         'pricing_tier' => $lockedPricing['tier'],
                         'commission_percentage' => $listing->commission_percentage,
                         'commission_amount' => (string) $commission,
                         'total' => (string) $lineTotal,
                     ]);
-                    $this->repository->reserve($listing, $variant, $item->quantity);
+                    $this->repository->reserve($listing, $variant, $quantity);
                 }
             }
 
@@ -176,19 +187,24 @@ class CheckoutService
                 'expires_at' => $paymentMethod === 'stripe' ? now()->addMinutes(30) : null,
             ]);
             $this->paymentAttempts->begin($payment);
-            $this->repository->clear($cart);
+            if ($cart !== null) {
+                $this->repository->clear($cart);
+            }
             $created = true;
-            $this->auditLogs->record($buyer, 'checkout.created', $order, after: $order->getAttributes());
+            $this->auditLogs->record($context->buyer, 'checkout.created', $order, after: $order->getAttributes());
 
             return $this->repository->details($order);
         }, attempts: 3);
 
         if ($created) {
-            $buyer->notify(new OrderAcknowledgmentNotification(
+            $this->customerNotifications->notify($order, new OrderAcknowledgmentNotification(
                 orderNumber: $order->number,
                 orderTotal: $order->total,
                 paymentMethod: $paymentMethod,
                 itemCount: (int) $order->sellerOrders->sum(fn (SellerOrder $sellerOrder): int => (int) $sellerOrder->items->sum('quantity')),
+                recipientName: $this->customerNotifications->recipientName($order),
+                confirmationUrl: $this->guestOrderAccess->confirmationUrl($order, $context->guestAccessToken),
+                claimUrl: $context->isGuest() ? $this->guestOrderAccess->claimUrl($order) : null,
             ));
 
             if ($paymentMethod === 'cod') {
@@ -198,6 +214,12 @@ class CheckoutService
         }
 
         return $order;
+    }
+
+    /** @param array<string, mixed> $entry */
+    private function entryKey(array $entry): string
+    {
+        return (string) $entry['id'];
     }
 
     /** @return array<string, mixed> */

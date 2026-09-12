@@ -69,7 +69,10 @@ test('guide category and product links are bidirectional and crawlable', functio
 
     $this->get(route('listings.show', $listing->slug))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->where('relatedGuides.0.slug', (string) $guide->slug));
+        ->assertInertia(fn ($page) => $page
+            ->missing('deferredContent')
+            ->loadDeferredProps('product-content', fn ($reload) => $reload
+                ->where('deferredContent.relatedGuides.0.slug', (string) $guide->slug)));
 
     $this->get(route('brands.show', $brand->slug))
         ->assertOk()

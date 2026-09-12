@@ -72,8 +72,8 @@ class AdminOrderService
             'total' => $customerOrder->total,
             'created_at' => $customerOrder->created_at?->toIso8601String(),
             'buyer' => [
-                'name' => $customerOrder->buyer->name,
-                'email' => $customerOrder->buyer->email,
+                'name' => $customerOrder->buyer->name ?? $customerOrder->shipping_address['recipient_name'] ?? 'Guest customer',
+                'email' => $customerOrder->contact_email,
             ],
             'shipping_address' => $customerOrder->shipping_address,
             'billing_address' => $customerOrder->billing_address,
@@ -107,8 +107,8 @@ class AdminOrderService
             'total' => $order->total,
             'created_at' => $order->created_at?->toIso8601String(),
             'buyer' => [
-                'name' => $order->buyer->name,
-                'email' => $order->buyer->email,
+                'name' => $order->buyer->name ?? $order->shipping_address['recipient_name'] ?? 'Guest customer',
+                'email' => $order->contact_email,
             ],
             'payments' => $order->payments->map(fn (Payment $payment): array => [
                 'method' => $payment->method,

@@ -18,6 +18,7 @@ class SellerOrderWorkflowService
         private readonly OrderOperationsRepository $orders,
         private readonly CourierAdapter $courier,
         private readonly AuditLogService $auditLogs,
+        private readonly OrderCustomerNotificationService $customerNotifications,
     ) {}
 
     public function startProcessing(User $seller, int $sellerOrderId): SellerOrder
@@ -49,8 +50,14 @@ class SellerOrderWorkflowService
             return $order->refresh()->load(['shipment', 'customerOrder.buyer']);
         });
 
-        if ($notify && $order->customerOrder?->buyer !== null) {
-            $order->customerOrder->buyer->notify(new BuyerOrderStatusNotification($order->customerOrder->number, $order->number, 'shipped'));
+        if ($notify && $order->customerOrder !== null) {
+            $this->customerNotifications->notify($order->customerOrder, new BuyerOrderStatusNotification(
+                $order->customerOrder->number,
+                $order->number,
+                'shipped',
+                $this->customerNotifications->recipientName($order->customerOrder),
+                $this->customerActionUrl($order),
+            ));
         }
 
         return $order;
@@ -77,8 +84,14 @@ class SellerOrderWorkflowService
             return $order->refresh()->load(['shipment', 'customerOrder.buyer']);
         });
 
-        if ($notify && $order->customerOrder?->buyer !== null) {
-            $order->customerOrder->buyer->notify(new BuyerOrderStatusNotification($order->customerOrder->number, $order->number, 'delivered'));
+        if ($notify && $order->customerOrder !== null) {
+            $this->customerNotifications->notify($order->customerOrder, new BuyerOrderStatusNotification(
+                $order->customerOrder->number,
+                $order->number,
+                'delivered',
+                $this->customerNotifications->recipientName($order->customerOrder),
+                $this->customerActionUrl($order),
+            ));
         }
 
         return $order;
@@ -113,5 +126,12 @@ class SellerOrderWorkflowService
         if ($order->status !== $expected->value) {
             throw ValidationException::withMessages(['status' => "This order must be {$expected->label()} before continuing."]);
         }
+    }
+
+    private function customerActionUrl(SellerOrder $order): string
+    {
+        return $order->customerOrder->buyer_id === null
+            ? route('order-tracking.index')
+            : route('buyer.orders.show', $order->customerOrder->number);
     }
 }

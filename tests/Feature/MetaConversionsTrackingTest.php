@@ -402,6 +402,48 @@ test('Purchase uses a stable event id hashes PII and clears accepted attribution
         ->and($order->fresh()->meta_attribution)->toBeNull();
 });
 
+test('guest Purchase hashes the order contact email without an external id', function (): void {
+    Queue::fake();
+    $listing = Listing::factory()->create(['price' => '1000.00', 'sale_price' => null]);
+
+    $this->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 1]);
+    $this->post(route('checkout.store'), [
+        'email' => 'Guest.Buyer@example.com',
+        'recipient_name' => 'Guest Buyer',
+        'address_line_one' => '10 Main Road',
+        'city' => 'Colombo',
+        'postal_code' => '01000',
+        'phone' => '0771234567',
+    ]);
+    $this->post(route('checkout.payment.store'), ['payment_method' => 'cod']);
+    $this->post(route('checkout.review.store'), checkoutReviewData());
+
+    $order = CustomerOrder::sole();
+    $order->forceFill([
+        'meta_attribution' => ['source_url' => route('checkout.review.store')],
+    ])->save();
+    $gateway = new class implements MetaConversionsGateway
+    {
+        public ?MetaConversionEvent $event = null;
+
+        public function send(MetaConversionEvent $event, ?string $testEventCode = null): void
+        {
+            $this->event = $event;
+        }
+    };
+    app()->instance(MetaConversionsGateway::class, $gateway);
+
+    app(MetaConversionsService::class)->sendPurchase($order->id);
+
+    expect($gateway->event?->userData['em'][0])->toMatch('/^'.hash('sha256', 'guest.buyer@example.com').'\.[A-Za-z0-9_-]{8}$/')
+        ->and($gateway->event?->userData)->not->toHaveKey('external_id')
+        ->and($gateway->event?->customData['currency'])->toBe('LKR')
+        ->and($gateway->event?->customData['value'])->toBeFloat()
+        ->and($gateway->event?->customData['contents'][0]['id'])->toBe((string) $listing->id)
+        ->and($gateway->event?->customData['contents'][0]['item_price'])->toBe(1000.0)
+        ->and($gateway->event?->customData['contents'][0]['quantity'])->toBe(1);
+});
+
 test('queued jobs are unique and use bounded retry settings', function (): void {
     $event = new MetaConversionEvent('ViewContent', 'event-unique', now()->timestamp, 'https://prodeals.lk/', [], []);
     $eventJob = new SendMetaConversion($event);

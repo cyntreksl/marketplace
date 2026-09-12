@@ -22,12 +22,19 @@ class CartService
     /** @return CartSummary */
     public function summary(Request $request): array
     {
+        return $this->summarize($this->entries($request));
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function entries(Request $request): array
+    {
         $this->mergeGuest($request);
+
         $entries = $request->user() === null
             ? array_values($request->session()->get('guest_cart', []))
             : $this->carts->forBuyer($request->user())->items->toArray();
 
-        return $this->summarize($entries);
+        return array_values($entries);
     }
 
     /** @param array<int, array<string, mixed>> $entries

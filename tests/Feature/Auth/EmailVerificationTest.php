@@ -12,14 +12,14 @@ beforeEach(function () {
     $this->skipUnlessFortifyHas(Features::emailVerification());
 });
 
-test('application routes do not require email verification', function () {
+test('only guest order claiming requires email verification', function () {
     $routesRequiringVerification = collect(app('router')->getRoutes())
         ->filter(fn (LaravelRoute $route): bool => in_array('verified', $route->gatherMiddleware(), true))
         ->map(fn (LaravelRoute $route): string => $route->getName() ?? $route->uri())
         ->values()
         ->all();
 
-    expect($routesRequiringVerification)->toBeEmpty();
+    expect($routesRequiringVerification)->toBe(['guest-orders.claim']);
 });
 
 test('email verification screen can be rendered', function () {

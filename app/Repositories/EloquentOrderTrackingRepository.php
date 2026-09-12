@@ -11,7 +11,7 @@ class EloquentOrderTrackingRepository implements OrderTrackingRepository
     {
         return CustomerOrder::query()
             ->where('number', $number)
-            ->whereHas('buyer', fn ($query) => $query->where('email', $email))
+            ->where('contact_email', $email)
             ->with([
                 'sellerOrders:id,customer_order_id,seller_profile_id,number,status,cancellation_reason,processing_at,ready_to_ship_at,shipped_at,delivered_at,cancelled_at',
                 'sellerOrders.sellerProfile:id,store_name',

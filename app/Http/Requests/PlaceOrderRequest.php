@@ -8,7 +8,7 @@ class PlaceOrderRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return true;
     }
 
     /** @return array<string, list<string>> */

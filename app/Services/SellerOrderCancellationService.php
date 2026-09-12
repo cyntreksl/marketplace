@@ -24,6 +24,7 @@ class SellerOrderCancellationService
         private readonly OrderOperationsRepository $orders,
         private readonly PaymentRefundStatusService $paymentStatuses,
         private readonly AuditLogService $auditLogs,
+        private readonly OrderCustomerNotificationService $customerNotifications,
     ) {}
 
     public function cancel(User $actor, int $sellerOrderId, string $reason): SellerOrder
@@ -92,13 +93,15 @@ class SellerOrderCancellationService
             return $sellerOrder->load(['customerOrder.buyer', 'sellerProfile', 'refund']);
         }, attempts: 3);
 
-        if ($notify && $sellerOrder->customerOrder->buyer !== null) {
-            $sellerOrder->customerOrder->buyer->notify(new BuyerOrderCancelledNotification(
+        if ($notify) {
+            $this->customerNotifications->notify($sellerOrder->customerOrder, new BuyerOrderCancelledNotification(
                 customerOrderNumber: $sellerOrder->customerOrder->number,
                 sellerOrderNumber: $sellerOrder->number,
                 sellerName: $sellerOrder->sellerProfile->store_name ?? 'Marketplace seller',
                 reason: $reason,
                 refundPending: $refundPending,
+                recipientName: $this->customerNotifications->recipientName($sellerOrder->customerOrder),
+                actionUrl: $this->customerActionUrl($sellerOrder),
             ));
         }
 
@@ -145,12 +148,14 @@ class SellerOrderCancellationService
         }, attempts: 3);
 
         $sellerOrder = $refund->sellerOrder;
-        if ($sellerOrder?->customerOrder?->buyer !== null && $refund->amount !== null) {
-            $sellerOrder->customerOrder->buyer->notify(new CancellationRefundCompletedNotification(
+        if ($sellerOrder?->customerOrder !== null && $refund->amount !== null) {
+            $this->customerNotifications->notify($sellerOrder->customerOrder, new CancellationRefundCompletedNotification(
                 customerOrderNumber: $sellerOrder->customerOrder->number,
                 sellerOrderNumber: $sellerOrder->number,
                 amount: $refund->amount,
                 reference: $reference,
+                recipientName: $this->customerNotifications->recipientName($sellerOrder->customerOrder),
+                actionUrl: $this->customerActionUrl($sellerOrder),
             ));
         }
 
@@ -175,6 +180,13 @@ class SellerOrderCancellationService
         $unallocatedShipping = BigDecimal::of($sellerOrder->customerOrder->shipping_total)->minus($allocatedShipping);
 
         return $unallocatedShipping->isPositive() ? $ceiling->plus($unallocatedShipping) : $ceiling;
+    }
+
+    private function customerActionUrl(SellerOrder $sellerOrder): string
+    {
+        return $sellerOrder->customerOrder->buyer_id === null
+            ? route('order-tracking.index')
+            : route('buyer.orders.show', $sellerOrder->customerOrder->number);
     }
 
     private function successfulRefundAmount(Payment $payment): BigDecimal

@@ -33,6 +33,7 @@ use App\Http\Controllers\CategoryLookupController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CheckoutPaymentController;
 use App\Http\Controllers\ComparisonController;
+use App\Http\Controllers\GuestOrderClaimController;
 use App\Http\Controllers\GuideController;
 use App\Http\Controllers\MerchantFeedController;
 use App\Http\Controllers\OrderTrackingController;
@@ -170,17 +171,20 @@ Route::post('/cart/items', [CartController::class, 'store'])->block()->name('car
 Route::patch('/cart/items/{item}', [CartController::class, 'update'])->block()->name('cart.items.update');
 Route::delete('/cart/items/{item}', [CartController::class, 'destroy'])->block()->name('cart.items.destroy');
 Route::post('/webhooks/stripe', [CheckoutPaymentController::class, 'webhook'])->name('webhooks.stripe');
+Route::post('/checkout/orders/{customerOrder:number}/pay', [CheckoutPaymentController::class, 'retry'])->name('checkout.card.retry');
+Route::get('/checkout/orders/{customerOrder:number}/return', [CheckoutPaymentController::class, 'returned'])->name('checkout.card.return');
+Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
+Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+Route::get('/checkout/payment', [CheckoutController::class, 'showPayment'])->name('checkout.payment.show');
+Route::post('/checkout/payment', [CheckoutController::class, 'storePayment'])->name('checkout.payment.store');
+Route::get('/checkout/review', [CheckoutController::class, 'showReview'])->name('checkout.review.show');
+Route::post('/checkout/review', [CheckoutController::class, 'placeOrder'])->block(30, 10)->name('checkout.review.store');
+Route::get('/checkout/thank-you/{customerOrder:number}', [CheckoutController::class, 'thankYou'])->name('checkout.thank_you.show');
 
 Route::middleware('auth')->group(function () {
-    Route::post('/checkout/orders/{customerOrder:number}/pay', [CheckoutPaymentController::class, 'retry'])->name('checkout.card.retry');
-    Route::get('/checkout/orders/{customerOrder:number}/return', [CheckoutPaymentController::class, 'returned'])->name('checkout.card.return');
-    Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
-    Route::get('/checkout/payment', [CheckoutController::class, 'showPayment'])->name('checkout.payment.show');
-    Route::post('/checkout/payment', [CheckoutController::class, 'storePayment'])->name('checkout.payment.store');
-    Route::get('/checkout/review', [CheckoutController::class, 'showReview'])->name('checkout.review.show');
-    Route::post('/checkout/review', [CheckoutController::class, 'placeOrder'])->block(30, 10)->name('checkout.review.store');
-    Route::get('/checkout/thank-you/{customerOrder:number}', [CheckoutController::class, 'thankYou'])->name('checkout.thank_you.show');
+    Route::get('/orders/{customerOrder:number}/claim', GuestOrderClaimController::class)
+        ->middleware(['verified', 'signed'])
+        ->name('guest-orders.claim');
     Route::get('/buyer', [BuyerDashboardController::class, 'index'])->name('buyer.dashboard');
     Route::get('/buyer/orders', [BuyerOrderController::class, 'index'])->name('buyer.orders.index');
     Route::get('/buyer/auction-offers', [BuyerAuctionOfferController::class, 'index'])->name('buyer.auction-offers.index');

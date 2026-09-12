@@ -9,6 +9,17 @@ export type ConsentState = {
 
 type DataLayerValue = Record<string, unknown> | IArguments;
 
+export type CommerceEventName =
+    'page_view' | 'view_item' | 'add_to_cart' | 'begin_checkout' | 'purchase';
+
+const commerceEvents: readonly CommerceEventName[] = [
+    'page_view',
+    'view_item',
+    'add_to_cart',
+    'begin_checkout',
+    'purchase',
+];
+
 declare global {
     interface Window {
         dataLayer: DataLayerValue[];
@@ -25,6 +36,19 @@ let consentDefaultsInitialized = false;
 
 function hasWindow(): boolean {
     return typeof window !== 'undefined' && typeof document !== 'undefined';
+}
+
+function isExcludedTrackingPath(pathname?: string): boolean {
+    const currentPath =
+        pathname ??
+        (typeof window.location.pathname === 'string'
+            ? window.location.pathname
+            : new URL(window.location.href).pathname);
+
+    return ['/admin', '/seller', '/settings', '/buyer/settings'].some(
+        (prefix) =>
+            currentPath === prefix || currentPath.startsWith(`${prefix}/`),
+    );
 }
 
 function ensureConsentDefaults(): void {
@@ -98,6 +122,7 @@ function writeConsent(consent: ConsentState): void {
 function loadGtm(): void {
     if (
         !hasWindow() ||
+        isExcludedTrackingPath() ||
         document.documentElement.dataset.environment !== 'production' ||
         !containerId?.match(/^GTM-[A-Z0-9]+$/) ||
         document.querySelector('script[data-prodeals-gtm]')
@@ -198,11 +223,15 @@ export function revokeConsent(): void {
 }
 
 export function trackEvent(
-    event: string,
+    event: CommerceEventName,
     parameters: Record<string, unknown> = {},
     category: 'analytics' | 'marketing' | 'either' = 'either',
 ): void {
-    if (!hasWindow()) {
+    if (
+        !commerceEvents.includes(event) ||
+        !hasWindow() ||
+        isExcludedTrackingPath()
+    ) {
         return;
     }
 
@@ -219,7 +248,102 @@ export function trackEvent(
     }
 
     ensureConsentDefaults();
-    window.dataLayer.push({ event, eventModel: parameters });
+    loadGtm();
+    const eventModel = normalizeEventModel(event, parameters);
+    const eventId = eventModel.event_id;
+    const deliveryKey =
+        typeof eventId === 'string'
+            ? `prodeals.event.${event}.${eventId}`
+            : null;
+
+    if (deliveryKey && window.sessionStorage.getItem(deliveryKey)) {
+        return;
+    }
+
+    window.dataLayer.push({ event, eventModel });
+
+    if (deliveryKey) {
+        window.sessionStorage.setItem(deliveryKey, '1');
+    }
+}
+
+function normalizeEventModel(
+    event: CommerceEventName,
+    parameters: Record<string, unknown>,
+): Record<string, unknown> {
+    const normalized: Record<string, unknown> = {};
+    const stringKeys = [
+        'event_id',
+        'transaction_id',
+        'page_location',
+        'page_path',
+        'page_title',
+    ] as const;
+
+    for (const key of stringKeys) {
+        if (typeof parameters[key] === 'string') {
+            normalized[key] = parameters[key];
+        }
+    }
+
+    for (const key of ['value', 'shipping'] as const) {
+        if (
+            typeof parameters[key] === 'number' &&
+            Number.isFinite(parameters[key])
+        ) {
+            normalized[key] = parameters[key];
+        }
+    }
+
+    if (parameters.currency === 'LKR') {
+        normalized.currency = 'LKR';
+    }
+
+    if (Array.isArray(parameters.items)) {
+        normalized.items = parameters.items.map((item) => {
+            if (!item || typeof item !== 'object') {
+                return {};
+            }
+
+            const source = item as Record<string, unknown>;
+            const result: Record<string, unknown> = {};
+
+            for (const key of [
+                'item_id',
+                'item_group_id',
+                'item_name',
+                'item_brand',
+                'item_category',
+            ] as const) {
+                if (typeof source[key] === 'string') {
+                    result[key] = source[key];
+                }
+            }
+
+            if (
+                typeof source.price === 'number' &&
+                Number.isFinite(source.price)
+            ) {
+                result.price = source.price;
+            }
+
+            if (
+                typeof source.quantity === 'number' &&
+                Number.isInteger(source.quantity) &&
+                source.quantity > 0
+            ) {
+                result.quantity = source.quantity;
+            }
+
+            return result;
+        });
+    }
+
+    if (event !== 'page_view') {
+        normalized.currency = 'LKR';
+    }
+
+    return normalized;
 }
 
 export function buildCatalogItem(
@@ -262,7 +386,11 @@ export function withMetaEventId(
 export function trackPageView(url: string): void {
     const consent = readConsent();
 
-    if (!hasWindow() || (!consent?.analytics && !consent?.marketing)) {
+    if (
+        !hasWindow() ||
+        isExcludedTrackingPath() ||
+        (!consent?.analytics && !consent?.marketing)
+    ) {
         return;
     }
 

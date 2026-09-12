@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\CustomerOrderRepository;
 use App\Models\CustomerOrder;
+use App\Models\User;
 
 class EloquentCustomerOrderRepository implements CustomerOrderRepository
 {
@@ -35,5 +36,21 @@ class EloquentCustomerOrderRepository implements CustomerOrderRepository
     public function clearMetaAttribution(CustomerOrder $customerOrder): void
     {
         $customerOrder->forceFill(['meta_attribution' => null])->save();
+    }
+
+    public function lockForClaim(int $id): CustomerOrder
+    {
+        return CustomerOrder::query()->lockForUpdate()->findOrFail($id);
+    }
+
+    public function claim(CustomerOrder $customerOrder, User $buyer): CustomerOrder
+    {
+        $customerOrder->forceFill([
+            'buyer_id' => $buyer->id,
+            'checkout_identity_hash' => null,
+            'guest_access_token_hash' => null,
+        ])->save();
+
+        return $customerOrder->refresh();
     }
 }

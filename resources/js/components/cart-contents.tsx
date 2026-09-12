@@ -1,7 +1,6 @@
 import { Link, router, useForm } from '@inertiajs/react';
 import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { buildCatalogItem, trackEvent } from '@/lib/tracking';
 import { destroy, update } from '@/routes/cart/items';
 import { show as checkoutShow } from '@/routes/checkout';
 import { index as listingsIndex, show as listingShow } from '@/routes/listings';
@@ -21,21 +20,6 @@ function CartLine({ item }: { item: CheckoutCartItem }) {
         form.transform(() => ({ quantity }));
         form.patch(update.url(String(item.id)), {
             preserveScroll: true,
-            onSuccess: () =>
-                trackEvent('update_cart', {
-                    currency: 'LKR',
-                    items: [
-                        buildCatalogItem(
-                            item.listing_id,
-                            item.listing_variant_id,
-                            {
-                                item_name: item.listing.title,
-                                price: Number(item.unitPrice),
-                                quantity,
-                            },
-                        ),
-                    ],
-                }),
         });
     }
 
@@ -144,25 +128,6 @@ function CartLine({ item }: { item: CheckoutCartItem }) {
                                 preserveScroll: true,
                                 onStart: () => setRemoving(true),
                                 onFinish: () => setRemoving(false),
-                                onSuccess: () =>
-                                    trackEvent('remove_from_cart', {
-                                        currency: 'LKR',
-                                        value: Number(item.total),
-                                        items: [
-                                            buildCatalogItem(
-                                                item.listing_id,
-                                                item.listing_variant_id,
-                                                {
-                                                    item_name:
-                                                        item.listing.title,
-                                                    price: Number(
-                                                        item.unitPrice,
-                                                    ),
-                                                    quantity: item.quantity,
-                                                },
-                                            ),
-                                        ],
-                                    }),
                             })
                         }
                         aria-label={`Remove ${item.listing.title}`}

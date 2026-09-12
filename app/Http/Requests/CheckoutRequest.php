@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class CheckoutRequest extends FormRequest
 {
@@ -11,7 +12,7 @@ class CheckoutRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return true;
     }
 
     /**
@@ -31,12 +32,14 @@ class CheckoutRequest extends FormRequest
         ];
 
         $rules = $addressRules;
+        $rules['email'] = [Rule::requiredIf($this->user() === null), 'nullable', 'email:rfc', 'max:255'];
+        $rules['marketing_opt_in'] = ['sometimes', 'boolean'];
         $rules['billing_address'] = ['sometimes', 'required', 'in:shipping,different'];
-        $rules['save_shipping_address'] = ['sometimes', 'boolean'];
-        $rules['shipping_address_label'] = ['required_if:save_shipping_address,1', 'nullable', 'string', 'max:80'];
-        $rules['save_shipping_for_billing'] = ['sometimes', 'boolean'];
-        $rules['save_billing_address'] = ['sometimes', 'boolean'];
-        $rules['billing_address_label'] = ['required_if:save_billing_address,1', 'nullable', 'string', 'max:80'];
+        $rules['save_shipping_address'] = [Rule::excludeIf($this->user() === null), 'sometimes', 'boolean'];
+        $rules['shipping_address_label'] = [Rule::excludeIf($this->user() === null), 'required_if:save_shipping_address,1', 'nullable', 'string', 'max:80'];
+        $rules['save_shipping_for_billing'] = [Rule::excludeIf($this->user() === null), 'sometimes', 'boolean'];
+        $rules['save_billing_address'] = [Rule::excludeIf($this->user() === null), 'sometimes', 'boolean'];
+        $rules['billing_address_label'] = [Rule::excludeIf($this->user() === null), 'required_if:save_billing_address,1', 'nullable', 'string', 'max:80'];
 
         foreach ($addressRules as $field => $fieldRules) {
             $rules['billing_'.$field] = ['exclude_unless:billing_address,different', ...$fieldRules];

@@ -1,6 +1,5 @@
 import { Form, Link } from '@inertiajs/react';
 import { Filter, LayoutGrid, PackageSearch, Search, Store } from 'lucide-react';
-import { useEffect, useRef } from 'react';
 import { StorefrontBreadcrumbs } from '@/components/storefront-breadcrumbs';
 import { StorefrontCategoryArtwork } from '@/components/storefront-category-artwork';
 import { StorefrontLayout } from '@/components/storefront-layout';
@@ -15,7 +14,6 @@ import {
     SheetTitle,
     SheetTrigger,
 } from '@/components/ui/sheet';
-import { trackEvent } from '@/lib/tracking';
 import { home } from '@/routes';
 import { show as categoryShow } from '@/routes/categories';
 import { show as guideShow } from '@/routes/guides';
@@ -177,53 +175,6 @@ export default function ListingsIndex({
     const trail = categoryContext
         ? [...categoryContext.ancestors, categoryContext.current]
         : [];
-    const trackedListingIds = useRef(new Set<number>());
-    const trackingContext = JSON.stringify({
-        browseUrl,
-        catalogMode,
-        filters,
-        pageHeading,
-    });
-    const previousTrackingContext = useRef(trackingContext);
-
-    useEffect(() => {
-        if (previousTrackingContext.current !== trackingContext) {
-            trackedListingIds.current.clear();
-            previousTrackingContext.current = trackingContext;
-        }
-
-        const untrackedItems = listings.data.flatMap((listing, index) => {
-            if (trackedListingIds.current.has(listing.id)) {
-                return [];
-            }
-
-            trackedListingIds.current.add(listing.id);
-
-            return [
-                {
-                    item_id: String(listing.id),
-                    item_name: listing.title,
-                    price: Number(listing.effectivePrice ?? 0),
-                    index,
-                },
-            ];
-        });
-
-        if (untrackedItems.length === 0) {
-            return;
-        }
-
-        trackEvent('view_item_list', {
-            item_list_name: pageHeading,
-            items: untrackedItems,
-        });
-    }, [listings.data, pageHeading, trackingContext]);
-
-    useEffect(() => {
-        if (filters.search) {
-            trackEvent('search', { search_term: filters.search });
-        }
-    }, [filters.search]);
 
     return (
         <StorefrontLayout

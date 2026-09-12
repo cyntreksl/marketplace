@@ -378,8 +378,13 @@ class StorefrontService
     }
 
     /** @return array<string, mixed> */
-    public function listingDetailsData(string $slug, ?User $viewer = null, ?int $requestedVariantId = null, bool $wholesaleIntent = false): array
-    {
+    public function listingDetailsData(
+        string $slug,
+        ?User $viewer = null,
+        ?int $requestedVariantId = null,
+        bool $wholesaleIntent = false,
+        bool $includeDeferredContent = true,
+    ): array {
         $listing = $this->listings->findPublicBySlug($slug);
         $channel = ($wholesaleIntent || ! $listing->is_retail_enabled) && $listing->is_wholesale_enabled
             ? 'wholesale'
@@ -400,7 +405,7 @@ class StorefrontService
             : $selectedVariant->wholesalePriceTiers->min('minimum_quantity');
         $engagement = $this->listings->engagement($listing);
 
-        return [
+        $data = [
             'head' => $this->seo->tags($seo),
             'seo' => $seo,
             'listing' => $this->listingData($listing, detailed: true, channel: $channel, viewer: $viewer),
@@ -417,31 +422,35 @@ class StorefrontService
                 'watcherCount' => $engagement['watchers']['total'],
                 'viewCount' => $engagement['views']['total'],
             ],
-            'reviews' => $this->reviews->forListing((int) $listing->id, 20)->map(fn ($review): array => [
-                'id' => $review->id,
-                'rating' => $review->rating,
-                'comment' => $review->comment,
-                'buyerName' => $review->buyer->name,
-                'createdAt' => $review->created_at->toDateString(),
-            ])->values(),
             'categories' => $this->storefrontCategories($channel),
             'categoryTrail' => $categoryTrail,
-            'questions' => $this->questions->answeredFor($listing)->map(fn ($question): array => $this->questionData($question))->values(),
-            'pendingQuestions' => $this->questions->pendingForViewer($listing, $viewer)->map(fn ($question): array => $this->questionData($question))->values(),
             'isWishlisted' => $viewer === null ? false : $this->watchlists->contains($viewer, $listing),
             'activeCampaign' => $this->activeCampaignFor($listing),
             'categoryPolicies' => $listing->category === null ? null : [
                 'returnWindowDays' => $listing->category->return_window_days,
                 'codEnabled' => $listing->category->cod_enabled,
             ],
-            'relatedListings' => $this->listings->related($listing, $channel)->map(fn (Listing $related): array => $this->listingData($related, channel: $channel))->values(),
-            'sellerListings' => $this->listings->otherListingsFromSeller($listing, $channel)->map(fn (Listing $sellerListing): array => $this->listingData($sellerListing, channel: $channel))->values(),
-            'relatedGuides' => $listing->category_id === null
-                ? []
-                : $this->guides->publishedForCategory((int) $listing->category_id)
-                    ->map(fn ($guide): array => $this->guideLinkData($guide))
-                    ->values(),
         ];
+
+        if (! $includeDeferredContent) {
+            return $data;
+        }
+
+        return [
+            ...$data,
+            'deferredContent' => $this->listingDeferredContent($listing, $viewer, $channel),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function listingDeferredData(string $slug, ?User $viewer = null, bool $wholesaleIntent = false): array
+    {
+        $listing = $this->listings->findPublicBySlug($slug);
+        $channel = ($wholesaleIntent || ! $listing->is_retail_enabled) && $listing->is_wholesale_enabled
+            ? 'wholesale'
+            : 'retail';
+
+        return $this->listingDeferredContent($listing, $viewer, $channel);
     }
 
     /**
@@ -623,6 +632,29 @@ class StorefrontService
     private function catalogItems(array $data): array
     {
         return array_values($data['listings']->items());
+    }
+
+    /** @return array<string, mixed> */
+    private function listingDeferredContent(Listing $listing, ?User $viewer, string $channel): array
+    {
+        return [
+            'reviews' => $this->reviews->forListing((int) $listing->id, 20)->map(fn ($review): array => [
+                'id' => $review->id,
+                'rating' => $review->rating,
+                'comment' => $review->comment,
+                'buyerName' => $review->buyer->name,
+                'createdAt' => $review->created_at->toDateString(),
+            ])->values(),
+            'questions' => $this->questions->answeredFor($listing)->map(fn ($question): array => $this->questionData($question))->values(),
+            'pendingQuestions' => $this->questions->pendingForViewer($listing, $viewer)->map(fn ($question): array => $this->questionData($question))->values(),
+            'relatedListings' => $this->listings->related($listing, $channel)->map(fn (Listing $related): array => $this->listingData($related, channel: $channel))->values(),
+            'sellerListings' => $this->listings->otherListingsFromSeller($listing, $channel)->map(fn (Listing $sellerListing): array => $this->listingData($sellerListing, channel: $channel))->values(),
+            'relatedGuides' => $listing->category_id === null
+                ? []
+                : $this->guides->publishedForCategory((int) $listing->category_id)
+                    ->map(fn ($guide): array => $this->guideLinkData($guide))
+                    ->values(),
+        ];
     }
 
     /** @return array<string, mixed> */

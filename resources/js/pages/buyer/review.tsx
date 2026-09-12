@@ -12,10 +12,8 @@ import {
     Truck,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useEffect } from 'react';
 import { CheckoutProgress } from '@/components/checkout-progress';
 import { StorefrontLayout } from '@/components/storefront-layout';
-import { buildCheckoutEventModel, trackEvent } from '@/lib/tracking';
 import { show as cartShow } from '@/routes/cart';
 import { show as checkoutShow } from '@/routes/checkout';
 import { show as paymentShow } from '@/routes/checkout/payment';
@@ -380,16 +378,6 @@ export default function BuyerReview({
     billingAddress: ShippingAddress | null;
     paymentMethod: CheckoutPaymentMethod;
 }) {
-    useEffect(() => {
-        trackEvent(
-            'add_payment_info',
-            buildCheckoutEventModel(cart, {
-                payment_type: paymentMethod,
-            }),
-            'analytics',
-        );
-    }, [cart, paymentMethod]);
-
     return (
         <StorefrontLayout
             title="Review & Place Order"

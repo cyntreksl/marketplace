@@ -1,4 +1,4 @@
-import { Form, Link, usePage } from '@inertiajs/react';
+import { Deferred, Form, Link, usePage } from '@inertiajs/react';
 import {
     Check,
     GitCompareArrows,
@@ -55,6 +55,14 @@ type Question = {
 };
 type Campaign = { title: string; subtitle: string | null; endsAt: string };
 type Policies = { returnWindowDays: number; codEnabled: boolean } | null;
+type DeferredContent = {
+    reviews: StorefrontReview[];
+    questions: Question[];
+    pendingQuestions: Question[];
+    relatedListings: StorefrontListing[];
+    relatedGuides: { title: string; slug: string; excerpt: string }[];
+    sellerListings: StorefrontListing[];
+};
 
 function formatPrice(value: string | null): string {
     return `Rs. ${Number(value ?? 0).toLocaleString('en-LK')}`;
@@ -64,15 +72,10 @@ export default function ListingShow({
     listing,
     categories,
     categoryTrail,
-    reviews,
-    questions,
-    pendingQuestions,
+    deferredContent,
     isWishlisted,
     activeCampaign,
     categoryPolicies,
-    relatedListings,
-    relatedGuides,
-    sellerListings,
     selectedVariantId,
     sellerSummary,
     engagement,
@@ -82,15 +85,10 @@ export default function ListingShow({
     listing: StorefrontListing;
     categories: StorefrontCategory[];
     categoryTrail: StorefrontCategoryNode[];
-    reviews: StorefrontReview[];
-    questions: Question[];
-    pendingQuestions: Question[];
+    deferredContent?: DeferredContent;
     isWishlisted: boolean;
     activeCampaign: Campaign | null;
     categoryPolicies: Policies;
-    relatedListings: StorefrontListing[];
-    relatedGuides: { title: string; slug: string; excerpt: string }[];
-    sellerListings: StorefrontListing[];
     selectedVariantId: number | null;
     sellerSummary: PublicSellerSummary | null;
     engagement: StorefrontEngagement;
@@ -101,6 +99,12 @@ export default function ListingShow({
     metaEventId: string | null;
 }) {
     const { auth, reviewFlags } = usePage().props;
+    const reviews = deferredContent?.reviews ?? [];
+    const questions = deferredContent?.questions ?? [];
+    const pendingQuestions = deferredContent?.pendingQuestions ?? [];
+    const relatedListings = deferredContent?.relatedListings ?? [];
+    const relatedGuides = deferredContent?.relatedGuides ?? [];
+    const sellerListings = deferredContent?.sellerListings ?? [];
     const comparison = useProductComparison();
     const [quantity, setQuantity] = useState(purchaseContext.initialQuantity);
     const initialVariant = listing.variants.find(
@@ -437,10 +441,41 @@ export default function ListingShow({
                                 href="#qa"
                                 className="text-slate-500 hover:text-[#ff5a00]"
                             >
-                                {questions.length} answered questions
+                                Product questions
                             </a>
                         </div>
                         <div className="mt-4">{offerSummary}</div>
+                        <div
+                            className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3 text-xs font-semibold text-slate-700 sm:text-sm"
+                            aria-label="Purchase protections"
+                        >
+                            <Link
+                                href={shipping()}
+                                className="flex items-center gap-2 hover:text-orange-700"
+                            >
+                                <Truck className="size-4 shrink-0 text-emerald-700" />
+                                Delivery fee &amp; estimate at checkout
+                            </Link>
+                            <span className="flex items-center gap-2">
+                                <CreditCard className="size-4 shrink-0 text-emerald-700" />
+                                {categoryPolicies?.codEnabled
+                                    ? 'Cash on Delivery eligible'
+                                    : 'Secure card payments'}
+                            </span>
+                            <Link
+                                href={returns()}
+                                className="flex items-center gap-2 hover:text-orange-700"
+                            >
+                                <RotateCcw className="size-4 shrink-0 text-emerald-700" />
+                                {categoryPolicies?.returnWindowDays
+                                    ? `${categoryPolicies.returnWindowDays}-day returns`
+                                    : 'Returns policy'}
+                            </Link>
+                            <span className="flex items-center gap-2">
+                                <ShieldCheck className="size-4 shrink-0 text-emerald-700" />
+                                Verified seller
+                            </span>
+                        </div>
                         {listing.shortDescription && (
                             <p className="mt-4 text-base leading-6 text-slate-600">
                                 {listing.shortDescription}
@@ -774,107 +809,126 @@ export default function ListingShow({
                         )}
                     </aside>
                 </div>
-                <ProductDetails
-                    listing={listing}
-                    reviews={reviews}
-                    reviewsEnabled={reviewFlags.product}
-                    questions={questions}
-                    pendingQuestions={pendingQuestions}
-                    categoryPolicies={categoryPolicies}
-                />
-
-                {relatedGuides.length > 0 && (
-                    <section className="mt-8 rounded-2xl border border-orange-100 bg-orange-50/60 p-5 sm:p-6">
-                        <h2 className="text-lg font-black tracking-tight text-slate-950">
-                            Learn before you buy
-                        </h2>
-                        <div className="mt-4 grid gap-3 md:grid-cols-2">
-                            {relatedGuides.map((guide) => (
-                                <Link
-                                    key={guide.slug}
-                                    href={guideShow(guide.slug)}
-                                    className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-orange-100 transition hover:ring-orange-300"
-                                >
-                                    <h3 className="font-extrabold text-slate-950">
-                                        {guide.title}
-                                    </h3>
-                                    <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-600">
-                                        {guide.excerpt}
-                                    </p>
-                                </Link>
-                            ))}
+                <Deferred
+                    data="deferredContent"
+                    fallback={
+                        <div
+                            className="mt-8 grid gap-4"
+                            aria-label="Loading product information"
+                        >
+                            <div className="h-14 animate-pulse rounded-xl bg-slate-100" />
+                            <div className="h-48 animate-pulse rounded-xl bg-slate-100" />
+                            <div className="h-40 animate-pulse rounded-xl bg-slate-100" />
                         </div>
-                    </section>
-                )}
+                    }
+                >
+                    <div>
+                        <ProductDetails
+                            listing={listing}
+                            reviews={reviews}
+                            reviewsEnabled={reviewFlags.product}
+                            questions={questions}
+                            pendingQuestions={pendingQuestions}
+                            categoryPolicies={categoryPolicies}
+                        />
 
-                {sellerListings.length > 0 && (
-                    <section className="mt-6">
-                        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                            <h2 className="text-lg font-black tracking-tight">
-                                More from{' '}
-                                {sellerSummary ? (
+                        {relatedGuides.length > 0 && (
+                            <section className="mt-8 rounded-2xl border border-orange-100 bg-orange-50/60 p-5 sm:p-6">
+                                <h2 className="text-lg font-black tracking-tight text-slate-950">
+                                    Learn before you buy
+                                </h2>
+                                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                                    {relatedGuides.map((guide) => (
+                                        <Link
+                                            key={guide.slug}
+                                            href={guideShow(guide.slug)}
+                                            className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-orange-100 transition hover:ring-orange-300"
+                                        >
+                                            <h3 className="font-extrabold text-slate-950">
+                                                {guide.title}
+                                            </h3>
+                                            <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-600">
+                                                {guide.excerpt}
+                                            </p>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {sellerListings.length > 0 && (
+                            <section className="mt-6">
+                                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                                    <h2 className="text-lg font-black tracking-tight">
+                                        More from{' '}
+                                        {sellerSummary ? (
+                                            <Link
+                                                href={storeShow(
+                                                    sellerSummary.slug,
+                                                )}
+                                                className="hover:text-orange-700"
+                                            >
+                                                {sellerSummary.store_name}
+                                            </Link>
+                                        ) : (
+                                            'this seller'
+                                        )}
+                                    </h2>
+                                    {sellerSummary && (
+                                        <Link
+                                            href={storeShow(sellerSummary.slug)}
+                                            className="inline-flex min-h-11 items-center text-sm font-bold text-orange-700"
+                                        >
+                                            View store →
+                                        </Link>
+                                    )}
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                                    {sellerListings.map((sellerListing) => (
+                                        <ListingCard
+                                            key={sellerListing.id}
+                                            listing={sellerListing}
+                                        />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {relatedListings.length > 0 && (
+                            <section className="mt-6">
+                                <div className="mb-3 flex items-center border-b pb-2">
+                                    <h2 className="text-lg font-black tracking-tight">
+                                        Related items
+                                    </h2>
                                     <Link
-                                        href={storeShow(sellerSummary.slug)}
-                                        className="hover:text-orange-700"
+                                        href={
+                                            listing.category
+                                                ? listingsIndex({
+                                                      query: {
+                                                          category:
+                                                              listing.category
+                                                                  .slug,
+                                                      },
+                                                  })
+                                                : listingsIndex()
+                                        }
+                                        className="ml-auto text-sm font-bold text-slate-500 transition hover:text-[#FF6D00]"
                                     >
-                                        {sellerSummary.store_name}
+                                        View All
                                     </Link>
-                                ) : (
-                                    'this seller'
-                                )}
-                            </h2>
-                            {sellerSummary && (
-                                <Link
-                                    href={storeShow(sellerSummary.slug)}
-                                    className="inline-flex min-h-11 items-center text-sm font-bold text-orange-700"
-                                >
-                                    View store →
-                                </Link>
-                            )}
-                        </div>
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                            {sellerListings.map((sellerListing) => (
-                                <ListingCard
-                                    key={sellerListing.id}
-                                    listing={sellerListing}
-                                />
-                            ))}
-                        </div>
-                    </section>
-                )}
-
-                {relatedListings.length > 0 && (
-                    <section className="mt-6">
-                        <div className="mb-3 flex items-center border-b pb-2">
-                            <h2 className="text-lg font-black tracking-tight">
-                                Related items
-                            </h2>
-                            <Link
-                                href={
-                                    listing.category
-                                        ? listingsIndex({
-                                              query: {
-                                                  category:
-                                                      listing.category.slug,
-                                              },
-                                          })
-                                        : listingsIndex()
-                                }
-                                className="ml-auto text-sm font-bold text-slate-500 transition hover:text-[#FF6D00]"
-                            >
-                                View All
-                            </Link>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                            {relatedListings.map((related) => (
-                                <ListingCard
-                                    key={related.id}
-                                    listing={related}
-                                />
-                            ))}
-                        </div>
-                    </section>
-                )}
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                                    {relatedListings.map((related) => (
+                                        <ListingCard
+                                            key={related.id}
+                                            listing={related}
+                                        />
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+                    </div>
+                </Deferred>
             </main>
         </StorefrontLayout>
     );

@@ -1,4 +1,4 @@
-import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { Form, Head, Link } from '@inertiajs/react';
 import {
     ArrowRight,
     Clock3,
@@ -81,7 +81,7 @@ function Field({
     placeholder?: string;
     defaultValue?: string;
     required?: boolean;
-    type?: 'text' | 'tel';
+    type?: 'text' | 'tel' | 'email';
     error?: string;
 }) {
     return (
@@ -95,7 +95,13 @@ function Field({
                 name={name}
                 type={type}
                 inputMode={type === 'tel' ? 'numeric' : undefined}
-                autoComplete={type === 'tel' ? 'tel' : undefined}
+                autoComplete={
+                    type === 'tel'
+                        ? 'tel'
+                        : type === 'email'
+                          ? 'email'
+                          : undefined
+                }
                 maxLength={type === 'tel' ? 10 : undefined}
                 pattern={type === 'tel' ? '0[0-9]{9}' : undefined}
                 title={
@@ -190,14 +196,19 @@ export default function BuyerCheckout({
     billingAddress = null,
     savedAddresses,
     metaEventId,
+    contactEmail,
+    customerName,
+    isGuest,
 }: {
     cart: CheckoutCart;
     shippingAddress: ShippingAddress | null;
     billingAddress?: ShippingAddress | null;
     savedAddresses: BuyerAddress[];
     metaEventId: string | null;
+    contactEmail: string;
+    customerName: string;
+    isGuest: boolean;
 }) {
-    const { auth } = usePage().props;
     const headerHeight = useStorefrontHeaderHeight();
     const [billingMethod, setBillingMethod] = useState(
         billingAddress ? 'different' : 'shipping',
@@ -275,13 +286,37 @@ export default function BuyerCheckout({
                                     >
                                         <div className="grid gap-4 sm:grid-cols-2">
                                             <label className="grid gap-1.5 text-sm font-semibold text-slate-700">
-                                                <span>Email Address</span>
+                                                <span>
+                                                    Email Address
+                                                    <span className="ml-0.5 text-[#ff5a00]">
+                                                        *
+                                                    </span>
+                                                </span>
                                                 <input
                                                     type="email"
-                                                    value={auth.user.email}
-                                                    readOnly
-                                                    className={`${inputClassName} bg-slate-50 text-slate-500`}
+                                                    name="email"
+                                                    required
+                                                    readOnly={!isGuest}
+                                                    autoComplete="email"
+                                                    defaultValue={contactEmail}
+                                                    aria-invalid={Boolean(
+                                                        errors.email,
+                                                    )}
+                                                    aria-describedby={
+                                                        errors.email
+                                                            ? 'email-error'
+                                                            : undefined
+                                                    }
+                                                    className={`${inputClassName} ${isGuest ? '' : 'bg-slate-50 text-slate-500'}`}
                                                 />
+                                                {errors.email && (
+                                                    <span
+                                                        id="email-error"
+                                                        className="text-sm text-red-600"
+                                                    >
+                                                        {errors.email}
+                                                    </span>
+                                                )}
                                             </label>
                                             <Field
                                                 key={`phone-${shippingAddressKey}`}
@@ -299,7 +334,8 @@ export default function BuyerCheckout({
                                         <label className="mt-4 flex items-center gap-2 text-sm text-slate-600">
                                             <input
                                                 type="checkbox"
-                                                defaultChecked
+                                                name="marketing_opt_in"
+                                                value="1"
                                                 className="size-4 rounded accent-[#ff5a00]"
                                             />
                                             Keep me updated on deals, offers and
@@ -378,7 +414,7 @@ export default function BuyerCheckout({
                                                 name="recipient_name"
                                                 defaultValue={
                                                     selectedShipping?.recipient_name ??
-                                                    auth.user.name
+                                                    customerName
                                                 }
                                                 placeholder="Saman Perera"
                                                 required
@@ -426,37 +462,40 @@ export default function BuyerCheckout({
                                                     error={errors.postal_code}
                                                 />
                                             </div>
-                                            <div className="rounded-lg bg-orange-50 p-3">
-                                                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                                                    <input
-                                                        type="checkbox"
-                                                        name="save_shipping_address"
-                                                        value="1"
-                                                        className="size-4 accent-[#ff5a00]"
-                                                    />
-                                                    Save these details as a new
-                                                    address
-                                                </label>
-                                                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                                                    <input
-                                                        name="shipping_address_label"
-                                                        placeholder="Label, e.g. Home"
-                                                        aria-label="New shipping address label"
-                                                        className={
-                                                            inputClassName
-                                                        }
-                                                    />
-                                                    <label className="flex items-center gap-2 text-sm text-slate-600">
+                                            {!isGuest && (
+                                                <div className="rounded-lg bg-orange-50 p-3">
+                                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
                                                         <input
                                                             type="checkbox"
-                                                            name="save_shipping_for_billing"
+                                                            name="save_shipping_address"
                                                             value="1"
                                                             className="size-4 accent-[#ff5a00]"
                                                         />
-                                                        Also allow for billing
+                                                        Save these details as a
+                                                        new address
                                                     </label>
+                                                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                                        <input
+                                                            name="shipping_address_label"
+                                                            placeholder="Label, e.g. Home"
+                                                            aria-label="New shipping address label"
+                                                            className={
+                                                                inputClassName
+                                                            }
+                                                        />
+                                                        <label className="flex items-center gap-2 text-sm text-slate-600">
+                                                            <input
+                                                                type="checkbox"
+                                                                name="save_shipping_for_billing"
+                                                                value="1"
+                                                                className="size-4 accent-[#ff5a00]"
+                                                            />
+                                                            Also allow for
+                                                            billing
+                                                        </label>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
                                         </div>
                                     </CheckoutSection>
 
@@ -719,24 +758,26 @@ export default function BuyerCheckout({
                                                     />
                                                 </div>
                                             ))}
-                                            <div className="rounded-lg bg-orange-50 p-3 sm:col-span-2">
-                                                <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                            {!isGuest && (
+                                                <div className="rounded-lg bg-orange-50 p-3 sm:col-span-2">
+                                                    <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                                                        <input
+                                                            type="checkbox"
+                                                            name="save_billing_address"
+                                                            value="1"
+                                                            className="size-4 accent-[#ff5a00]"
+                                                        />
+                                                        Save this as a new
+                                                        billing address
+                                                    </label>
                                                     <input
-                                                        type="checkbox"
-                                                        name="save_billing_address"
-                                                        value="1"
-                                                        className="size-4 accent-[#ff5a00]"
+                                                        name="billing_address_label"
+                                                        placeholder="Label, e.g. Office billing"
+                                                        aria-label="New billing address label"
+                                                        className={`${inputClassName} mt-3`}
                                                     />
-                                                    Save this as a new billing
-                                                    address
-                                                </label>
-                                                <input
-                                                    name="billing_address_label"
-                                                    placeholder="Label, e.g. Office billing"
-                                                    aria-label="New billing address label"
-                                                    className={`${inputClassName} mt-3`}
-                                                />
-                                            </div>
+                                                </div>
+                                            )}
                                         </fieldset>
                                     </CheckoutSection>
                                 </div>

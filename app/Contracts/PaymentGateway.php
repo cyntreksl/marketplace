@@ -11,7 +11,7 @@ interface PaymentGateway
      *
      * @return array{reference: string, redirect_url: string|null, expires_at: int}
      */
-    public function createPayment(Payment $payment): array;
+    public function createPayment(Payment $payment, ?string $guestAccessToken = null): array;
 
     /**
      * Verify and normalize an incoming provider callback.

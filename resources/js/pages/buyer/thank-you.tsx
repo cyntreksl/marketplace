@@ -15,7 +15,7 @@ import { useEffect } from 'react';
 import { OrderPaymentStatus } from '@/components/order-payment-status';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { buildCatalogItem, trackPurchase } from '@/lib/tracking';
-import { home } from '@/routes';
+import { home, register } from '@/routes';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
 import type {
     CheckoutConfirmationOrder,
@@ -226,9 +226,13 @@ function OrderSummary({ order }: { order: CheckoutConfirmationOrder }) {
 export default function BuyerThankYou({
     order,
     shouldTrackPurchase,
+    isGuestOrder,
+    claimUrl,
 }: {
     order: CheckoutConfirmationOrder;
     shouldTrackPurchase: boolean;
+    isGuestOrder: boolean;
+    claimUrl: string | null;
 }) {
     const placedDate = order.placedAt
         ? new Date(order.placedAt).toLocaleDateString('en-LK', {
@@ -327,13 +331,33 @@ export default function BuyerThankYou({
                 </div>
 
                 <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-                    <Link
-                        href={buyerOrdersIndex()}
-                        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#ff5a00] px-6 text-base font-extrabold text-white transition hover:bg-[#eb5200]"
-                    >
-                        View my orders
-                        <ArrowRight className="size-4" />
-                    </Link>
+                    {isGuestOrder ? (
+                        <>
+                            <Link
+                                href={register()}
+                                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#ff5a00] px-6 text-base font-extrabold text-white transition hover:bg-[#eb5200]"
+                            >
+                                Create an account
+                                <ArrowRight className="size-4" />
+                            </Link>
+                            {claimUrl && (
+                                <Link
+                                    href={claimUrl}
+                                    className="inline-flex h-11 items-center justify-center rounded-lg border border-orange-300 bg-orange-50 px-6 text-base font-bold text-orange-800 transition hover:bg-orange-100"
+                                >
+                                    Link to an existing account
+                                </Link>
+                            )}
+                        </>
+                    ) : (
+                        <Link
+                            href={buyerOrdersIndex()}
+                            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#ff5a00] px-6 text-base font-extrabold text-white transition hover:bg-[#eb5200]"
+                        >
+                            View my orders
+                            <ArrowRight className="size-4" />
+                        </Link>
+                    )}
                     <Link
                         href={home()}
                         className="inline-flex h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-6 text-base font-bold text-slate-700 transition hover:border-slate-400 hover:bg-slate-50"

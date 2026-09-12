@@ -89,7 +89,9 @@ test('verified review aggregates appear on products while the homepage review wa
     $this->get(route('listings.show', $listing->slug))->assertInertia(fn (Assert $page) => $page
         ->where('listing.ratingAverage', 4)
         ->where('listing.reviewCount', 1)
-        ->has('reviews', 1));
+        ->missing('deferredContent')
+        ->loadDeferredProps('product-content', fn (Assert $reload) => $reload
+            ->has('deferredContent.reviews', 1)));
 
     $this->get(route('home'))->assertInertia(fn (Assert $page) => $page->missing('socialProof'));
 });

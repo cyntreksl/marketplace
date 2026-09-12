@@ -31,7 +31,7 @@ class EloquentSellerPortalRepository implements SellerPortalRepository
     public function orders(User $seller, array $filters, int $perPage = 15): LengthAwarePaginator
     {
         $query = $this->orderQuery($seller)
-            ->with(['customerOrder:id,number,buyer_id,auction_offer_id,shipping_address', 'customerOrder.buyer:id,name', 'items:id,seller_order_id,title,quantity,variant_options', 'shipment:id,seller_order_id,courier_name,tracking_number,status', 'refund.processor:id,name,email', 'cancelledBy:id,name,email']);
+            ->with(['customerOrder:id,number,buyer_id,contact_email,auction_offer_id,shipping_address', 'customerOrder.buyer:id,name', 'items:id,seller_order_id,title,quantity,variant_options', 'shipment:id,seller_order_id,courier_name,tracking_number,status', 'refund.processor:id,name,email', 'cancelledBy:id,name,email']);
 
         if (($filters['status'] ?? 'all') !== 'all') {
             $status = $filters['status'];
@@ -47,6 +47,7 @@ class EloquentSellerPortalRepository implements SellerPortalRepository
                 $query->where('number', 'like', "%{$search}%")
                     ->orWhereHas('customerOrder', fn (Builder $order): Builder => $order
                         ->where('number', 'like', "%{$search}%")
+                        ->orWhere('contact_email', 'like', "%{$search}%")
                         ->orWhere('shipping_address->name', 'like', "%{$search}%")
                         ->orWhere('shipping_address->recipient_name', 'like', "%{$search}%"))
                     ->orWhereHas('shipment', fn (Builder $shipment): Builder => $shipment->where('tracking_number', 'like', "%{$search}%"))
@@ -113,7 +114,7 @@ class EloquentSellerPortalRepository implements SellerPortalRepository
 
     public function recentOrders(User $seller, int $limit): Collection
     {
-        return $this->orderQuery($seller)->with(['customerOrder:id,number,buyer_id,auction_offer_id,shipping_address', 'customerOrder.buyer:id,name', 'items:id,seller_order_id,title,quantity', 'shipment:id,seller_order_id,courier_name,tracking_number,status', 'refund.processor:id,name,email', 'cancelledBy:id,name,email'])->latest()->limit($limit)->get();
+        return $this->orderQuery($seller)->with(['customerOrder:id,number,buyer_id,contact_email,auction_offer_id,shipping_address', 'customerOrder.buyer:id,name', 'items:id,seller_order_id,title,quantity', 'shipment:id,seller_order_id,courier_name,tracking_number,status', 'refund.processor:id,name,email', 'cancelledBy:id,name,email'])->latest()->limit($limit)->get();
     }
 
     public function lowStockProducts(User $seller, int $limit): Collection

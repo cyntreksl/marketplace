@@ -61,14 +61,16 @@ test('buyers can ask questions and only answered questions are public', function
     auth()->logout();
     $this->get(route('listings.show', $listing->slug))
         ->assertInertia(fn ($page) => $page
-            ->has('questions', 0)
-            ->has('pendingQuestions', 0));
+            ->loadDeferredProps('product-content', fn ($reload) => $reload
+                ->has('deferredContent.questions', 0)
+                ->has('deferredContent.pendingQuestions', 0)));
 
     $this->actingAs($buyer)->get(route('listings.show', $listing->slug))
         ->assertInertia(fn ($page) => $page
-            ->has('questions', 0)
-            ->has('pendingQuestions', 1)
-            ->where('pendingQuestions.0.question', 'Does this include the original charger?'));
+            ->loadDeferredProps('product-content', fn ($reload) => $reload
+                ->has('deferredContent.questions', 0)
+                ->has('deferredContent.pendingQuestions', 1)
+                ->where('deferredContent.pendingQuestions.0.question', 'Does this include the original charger?')));
 
     $this->actingAs($seller)->patch(route('product-questions.update', $question), [
         'answer' => 'Yes, the original charger is included.',
@@ -76,8 +78,9 @@ test('buyers can ask questions and only answered questions are public', function
 
     $this->get(route('listings.show', $listing->slug))
         ->assertInertia(fn ($page) => $page
-            ->has('questions', 1)
-            ->where('questions.0.answer', 'Yes, the original charger is included.'));
+            ->loadDeferredProps('product-content', fn ($reload) => $reload
+                ->has('deferredContent.questions', 1)
+                ->where('deferredContent.questions.0.answer', 'Yes, the original charger is included.')));
 });
 
 test('a different seller cannot answer a product question', function () {

@@ -49,7 +49,12 @@ test('product pages receive a full root to leaf category trail', function () {
             ->where('listing.specifications.Details', '16GB RAM, 512GB SSD')
             ->where('categoryTrail.0.id', $root->id)
             ->where('categoryTrail.1.id', $parent->id)
-            ->where('categoryTrail.2.id', $leaf->id));
+            ->where('categoryTrail.2.id', $leaf->id)
+            ->missing('deferredContent')
+            ->loadDeferredProps('product-content', fn (Assert $reload) => $reload
+                ->has('deferredContent.reviews', 0)
+                ->has('deferredContent.questions', 0)
+                ->has('deferredContent.relatedListings')));
 });
 
 test('storefront browsing filters and sorts by the displayed effective price', function () {

@@ -12,8 +12,12 @@ class PaymentConfirmedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public readonly string $orderNumber, public readonly string $amount)
-    {
+    public function __construct(
+        public readonly string $orderNumber,
+        public readonly string $amount,
+        public readonly ?string $recipientName = null,
+        public readonly ?string $actionUrl = null,
+    ) {
         $this->afterCommit();
     }
 
@@ -23,11 +27,13 @@ class PaymentConfirmedNotification extends Notification implements ShouldQueue
         return ['mail'];
     }
 
-    public function toMail(User $notifiable): MailMessage
+    public function toMail(object $notifiable): MailMessage
     {
+        $name = $this->recipientName ?? ($notifiable instanceof User ? $notifiable->name : 'Customer');
+
         return (new MailMessage)->subject('Payment confirmed: '.$this->orderNumber)
-            ->greeting("Hello {$notifiable->name},")
+            ->greeting("Hello {$name},")
             ->line('We received your payment of LKR '.$this->amount.'. Your order is confirmed.')
-            ->action('View order', route('checkout.thank_you.show', $this->orderNumber));
+            ->action('View order', $this->actionUrl ?? route('checkout.thank_you.show', $this->orderNumber));
     }
 }

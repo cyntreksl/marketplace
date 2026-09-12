@@ -101,11 +101,18 @@ class StorefrontController extends Controller
     public function show(Request $request, string $listing): Response
     {
         $variantId = filter_var($request->query('variant'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        $selectedVariantId = $variantId === false ? null : $variantId;
+        $wholesaleIntent = $request->query('wholesale') === '1';
         $details = $this->storefront->listingDetailsData(
             $listing,
             $request->user(),
-            $variantId === false ? null : $variantId,
-            $request->query('wholesale') === '1',
+            $selectedVariantId,
+            $wholesaleIntent,
+            includeDeferredContent: false,
+        );
+        $details['deferredContent'] = Inertia::defer(
+            fn (): array => $this->storefront->listingDeferredData($listing, $request->user(), $wholesaleIntent),
+            'product-content',
         );
         if ($this->pageViews->trackListing($request, (int) $details['listing']['id'])) {
             $details['engagement']['viewCount']++;

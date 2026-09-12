@@ -51,8 +51,7 @@ test('catalog and seller store share the product grid without legacy pagination'
     }
 
     assert.match(catalog, /listings\.data\.length/);
-    assert.match(catalog, /trackedListingIds/);
-    assert.match(catalog, /untrackedItems/);
+    assert.doesNotMatch(catalog, /trackedListingIds|untrackedItems|trackEvent/);
     assert.match(catalog, /method="get"/);
     assert.match(store, /storeShow\.form\(seller\.slug\)/);
     assert.match(filters, /method="get"/);

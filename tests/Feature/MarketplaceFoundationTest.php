@@ -77,10 +77,13 @@ test('listing details include six related items and other products from the sell
         'seller_profile_id' => $listing->seller_profile_id,
     ]);
 
-    $response = $this->get(route('listings.show', $listing->slug))->assertOk();
-
-    expect($response->inertiaProps('relatedListings'))->toHaveCount(6)
-        ->and($response->inertiaProps('sellerListings'))->toHaveCount(6);
+    $this->get(route('listings.show', $listing->slug))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->missing('deferredContent')
+            ->loadDeferredProps('product-content', fn ($reload) => $reload
+                ->has('deferredContent.relatedListings', 6)
+                ->has('deferredContent.sellerListings', 6)));
 });
 
 test('a buyer can place a valid bid and cannot bid on their own auction', function () {

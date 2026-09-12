@@ -19,7 +19,7 @@ interface CheckoutRepository
 
     public function variant(int $id): ?ListingVariant;
 
-    public function findSubmission(User $buyer, string $token): ?CustomerOrder;
+    public function findSubmission(?User $buyer, string $token, ?string $guestIdentityHash = null): ?CustomerOrder;
 
     /** @param array<string, mixed> $data */
     public function createOrder(array $data): CustomerOrder;

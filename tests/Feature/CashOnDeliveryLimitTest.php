@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\CartService;
 use App\Services\CashOnDeliveryService;
 use App\Services\CheckoutService;
+use App\Support\CheckoutContext;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
@@ -21,6 +22,11 @@ function codCart(string $price): array
     return [$buyer, $listing, $cart];
 }
 
+function authenticatedCheckoutContext(User $buyer): CheckoutContext
+{
+    return new CheckoutContext($buyer, $buyer->email, false);
+}
+
 test('COD eligibility includes delivery and uses an inclusive decimal limit', function (string $subtotal, string $total, bool $allowed) {
     Notification::fake();
     [$buyer, $listing, $cart] = codCart($subtotal);
@@ -29,10 +35,10 @@ test('COD eligibility includes delivery and uses an inclusive decimal limit', fu
         ->and(in_array('cod', $summary['paymentMethods'], true))->toBe($allowed);
 
     if ($allowed) {
-        $order = app(CheckoutService::class)->checkout($buyer, 'cod', []);
+        $order = app(CheckoutService::class)->checkout(authenticatedCheckoutContext($buyer), 'cod', []);
         expect($order->total)->toBe($total)->and($order->status)->toBe('confirmed');
     } else {
-        expect(fn () => app(CheckoutService::class)->checkout($buyer, 'cod', []))->toThrow(ValidationException::class);
+        expect(fn () => app(CheckoutService::class)->checkout(authenticatedCheckoutContext($buyer), 'cod', []))->toThrow(ValidationException::class);
         expect(CustomerOrder::count())->toBe(0)->and($listing->refresh()->reserved_quantity)->toBe(0)
             ->and($cart->items()->count())->toBe(1);
     }
@@ -65,7 +71,7 @@ test('final checkout rejects COD when a price increases after review', function 
     $service = app(CheckoutService::class);
     $reviewHash = $service->reviewHash(app(CartService::class)->summarize($cart->items->toArray()));
     $listing->update(['price' => '4400.01']);
-    expect(fn () => $service->checkout($buyer, 'cod', [], reviewHash: $reviewHash))->toThrow(ValidationException::class);
+    expect(fn () => $service->checkout(authenticatedCheckoutContext($buyer), 'cod', [], reviewHash: $reviewHash))->toThrow(ValidationException::class);
     expect(CustomerOrder::count())->toBe(0)->and($listing->refresh()->reserved_quantity)->toBe(0);
 });
 
@@ -74,6 +80,6 @@ test('final locked pricing still enforces COD when the initial summary was eligi
     $summary = app(CartService::class)->summarize($cart->items->toArray());
     $this->mock(CartService::class)->shouldReceive('summarize')->once()->andReturn($summary);
     $listing->update(['price' => '4400.01']);
-    expect(fn () => app(CheckoutService::class)->checkout($buyer, 'cod', []))->toThrow(ValidationException::class);
+    expect(fn () => app(CheckoutService::class)->checkout(authenticatedCheckoutContext($buyer), 'cod', []))->toThrow(ValidationException::class);
     expect(CustomerOrder::count())->toBe(0)->and($listing->refresh()->reserved_quantity)->toBe(0);
 });

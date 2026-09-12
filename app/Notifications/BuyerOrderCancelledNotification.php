@@ -21,6 +21,8 @@ class BuyerOrderCancelledNotification extends Notification implements ShouldQueu
         public readonly string $sellerName,
         public readonly string $reason,
         public readonly bool $refundPending,
+        public readonly ?string $recipientName = null,
+        public readonly ?string $actionUrl = null,
     ) {
         $this->afterCommit();
     }
@@ -38,11 +40,13 @@ class BuyerOrderCancelledNotification extends Notification implements ShouldQueu
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(User $notifiable): MailMessage
+    public function toMail(object $notifiable): MailMessage
     {
+        $name = $this->recipientName ?? ($notifiable instanceof User ? $notifiable->name : 'Customer');
+
         return (new MailMessage)
             ->subject("Order cancelled: {$this->sellerOrderNumber}")
-            ->greeting("Hello {$notifiable->name},")
+            ->greeting("Hello {$name},")
             ->line("The package {$this->sellerOrderNumber} from {$this->sellerName} has been cancelled.")
             ->line("Reason: {$this->reason}")
             ->when(
@@ -50,7 +54,7 @@ class BuyerOrderCancelledNotification extends Notification implements ShouldQueu
                 fn (MailMessage $message): MailMessage => $message->line('A manual refund is pending. You will receive another update when it is recorded.'),
                 fn (MailMessage $message): MailMessage => $message->line('No payment refund is required for this cancellation.'),
             )
-            ->action('View order', route('buyer.orders.show', ['customerOrder' => $this->customerOrderNumber]));
+            ->action('View order', $this->actionUrl ?? route('buyer.orders.show', ['customerOrder' => $this->customerOrderNumber]));
     }
 
     /**

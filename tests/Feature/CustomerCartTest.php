@@ -14,7 +14,10 @@ test('guests can manage a cart with authoritative totals and no account', functi
     $id = $listing->id.'-base';
     $this->get(route('cart.show'))->assertInertia(fn ($page) => $page->where('cart.quantity', 3)->where('cart.total', '3600.00')->where('commerce.cart_quantity', 3));
     $this->patch(route('cart.items.update', $id), ['quantity' => 2])->assertSessionHasNoErrors();
-    $this->get(route('checkout.show'))->assertRedirect(route('login'));
+    $this->get(route('checkout.show'))->assertInertia(fn ($page) => $page
+        ->where('isGuest', true)
+        ->where('contactEmail', '')
+        ->has('savedAddresses', 0));
     $this->delete(route('cart.items.destroy', $id))->assertSessionHasNoErrors();
     $this->get(route('cart.show'))->assertInertia(fn ($page) => $page->where('cart.quantity', 0)->where('cart.total', '0.00')->where('cart.canCheckout', false));
     expect(Cart::count())->toBe(0);
@@ -80,13 +83,12 @@ test('unverified customers can continue through checkout', function (): void {
     $this->get(route('checkout.show'))->assertInertia(fn ($page) => $page->has('cart.items', 1));
 });
 
-test('guest checkout survives login without requiring email verification', function (): void {
-    $buyer = User::factory()->unverified()->create(['two_factor_secret' => null, 'two_factor_confirmed_at' => null]);
+test('guest checkout can continue without login or email verification', function (): void {
     $listing = Listing::factory()->create();
     $this->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 1, 'buy_now' => true])->assertRedirect(route('checkout.show'));
-    $this->get(route('checkout.show'))->assertRedirect(route('login'));
-    $this->post(route('login'), ['email' => $buyer->email, 'password' => 'password'])->assertRedirect(route('checkout.show'));
-    $this->get(route('checkout.show'))->assertInertia(fn ($page) => $page->has('cart.items', 1));
+    $this->get(route('checkout.show'))->assertInertia(fn ($page) => $page
+        ->where('isGuest', true)
+        ->has('cart.items', 1));
 });
 
 test('replayed guest merges cannot duplicate quantities', function (): void {

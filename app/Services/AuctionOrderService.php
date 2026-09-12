@@ -51,6 +51,8 @@ class AuctionOrderService
             $order = $this->orders->createOrder([
                 'number' => (string) Str::uuid(),
                 'buyer_id' => $buyer->id,
+                'contact_email' => $buyer->email,
+                'marketing_opt_in' => false,
                 'auction_offer_id' => $offer->id,
                 'status' => 'pending_payment',
                 'subtotal' => (string) $subtotal->toScale(2),

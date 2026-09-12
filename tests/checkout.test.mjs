@@ -106,7 +106,10 @@ function renderCheckout(overrides = {}, billingAddress = null) {
 
 test('checkout defaults billing to shipping and offers an editable alternative', () => {
     const html = renderCheckout();
-    assert.match(html, /<input[^>]*type="checkbox"[^>]*checked=""/);
+    const marketingOptIn = html.match(
+        /<input[^>]*name="marketing_opt_in"[^>]*>/,
+    )[0];
+    assert.doesNotMatch(marketingOptIn, /checked=""/);
     const billing = html.match(
         /<input[^>]*name="billing_address"[^>]*value="shipping"[^>]*>/,
     )[0];

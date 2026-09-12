@@ -100,11 +100,11 @@ test('GTM and commerce events remain gated until versioned consent is granted', 
         wait_for_update: 500,
     });
 
-    tracking.trackEvent('view_item', { item_id: '1' });
+    tracking.trackEvent('view_item', { items: [{ item_id: '1' }] });
     assert.equal(trackedEvents('view_item').length, 0);
 
     tracking.saveConsent(true, false);
-    tracking.trackEvent('view_item', { item_id: '1' });
+    tracking.trackEvent('view_item', { items: [{ item_id: '1' }] });
 
     assert.equal(scripts.length, 1);
     assert.equal(
@@ -113,7 +113,50 @@ test('GTM and commerce events remain gated until versioned consent is granted', 
     );
     assert.deepEqual(trackedEvents('view_item')[0], {
         event: 'view_item',
-        eventModel: { item_id: '1' },
+        eventModel: { currency: 'LKR', items: [{ item_id: '1' }] },
+    });
+});
+
+test('the data layer rejects non-commerce events and strips PII', () => {
+    tracking.trackEvent('select_item', { item_id: '2' });
+    tracking.trackEvent('add_to_cart', {
+        currency: 'LKR',
+        value: 1200,
+        event_id: 'AddToCart:test-event',
+        email: 'customer@example.com',
+        user_data: { email: 'customer@example.com' },
+        items: [
+            {
+                item_id: 12,
+                item_group_id: '10',
+                price: 1200,
+                quantity: 1,
+                phone: '0771234567',
+            },
+        ],
+    });
+    tracking.trackEvent('add_to_cart', {
+        currency: 'LKR',
+        value: 1200,
+        event_id: 'AddToCart:test-event',
+    });
+
+    assert.equal(trackedEvents('select_item').length, 0);
+    assert.equal(trackedEvents('add_to_cart').length, 1);
+    assert.deepEqual(trackedEvents('add_to_cart')[0], {
+        event: 'add_to_cart',
+        eventModel: {
+            currency: 'LKR',
+            value: 1200,
+            event_id: 'AddToCart:test-event',
+            items: [
+                {
+                    item_group_id: '10',
+                    price: 1200,
+                    quantity: 1,
+                },
+            ],
+        },
     });
 });
 
@@ -199,11 +242,16 @@ test('revocation denies consent, clears known vendor cookies, and reloads', () =
 
 test('marketing-only consent makes commerce events available to consent-checked tags', () => {
     tracking.saveConsent(false, true);
-    tracking.trackEvent('view_item', { item_id: 'marketing-item' });
+    tracking.trackEvent('view_item', {
+        items: [{ item_id: 'marketing-item' }],
+    });
 
     assert.deepEqual(trackedEvents('view_item').at(-1), {
         event: 'view_item',
-        eventModel: { item_id: 'marketing-item' },
+        eventModel: {
+            currency: 'LKR',
+            items: [{ item_id: 'marketing-item' }],
+        },
     });
 });
 

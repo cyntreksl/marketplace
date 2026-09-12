@@ -21,6 +21,9 @@ class OrderAcknowledgmentNotification extends Notification implements ShouldQueu
         public readonly float|string $orderTotal,
         public readonly string $paymentMethod,
         public readonly int $itemCount,
+        public readonly ?string $recipientName = null,
+        public readonly ?string $confirmationUrl = null,
+        public readonly ?string $claimUrl = null,
     ) {
         $this->afterCommit();
     }
@@ -38,16 +41,22 @@ class OrderAcknowledgmentNotification extends Notification implements ShouldQueu
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(User $notifiable): MailMessage
+    public function toMail(object $notifiable): MailMessage
     {
+        $name = $this->recipientName ?? ($notifiable instanceof User ? $notifiable->name : 'Customer');
+
         return (new MailMessage)
             ->subject("Order received: {$this->orderNumber}")
-            ->greeting("Hello {$notifiable->name},")
+            ->greeting("Hello {$name},")
             ->line("Thank you for your order. We've received {$this->itemCount} ".str('item')->plural($this->itemCount)." under order {$this->orderNumber}.")
             ->line('Order total: LKR '.Number::format((float) $this->orderTotal, precision: 2, locale: 'en'))
             ->line('Payment method: '.$this->paymentMethodLabel())
             ->line($this->paymentStatusMessage())
-            ->action('View order confirmation', route('checkout.thank_you.show', ['customerOrder' => $this->orderNumber]))
+            ->action(
+                $this->claimUrl === null ? 'View order confirmation' : 'Create or link an account',
+                $this->claimUrl ?? $this->confirmationUrl ?? route('checkout.thank_you.show', ['customerOrder' => $this->orderNumber]),
+            )
+            ->when($this->claimUrl !== null, fn (MailMessage $message): MailMessage => $message->line('The secure account-linking link expires in seven days. You can still track this order with its number and this email address.'))
             ->line('We will email you again when there is an update to your order.');
     }
 

@@ -18,7 +18,7 @@ class EloquentOrderOperationsRepository implements OrderOperationsRepository
     public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator
     {
         return $this->adminQuery($filters)
-            ->select(['id', 'number', 'buyer_id', 'status', 'total', 'created_at'])
+            ->select(['id', 'number', 'buyer_id', 'contact_email', 'shipping_address', 'status', 'total', 'created_at'])
             ->with([
                 'buyer:id,name,email',
                 'sellerOrders:id,number,customer_order_id,seller_profile_id,status',
@@ -32,7 +32,7 @@ class EloquentOrderOperationsRepository implements OrderOperationsRepository
     public function lazyForAdminExport(array $filters): LazyCollection
     {
         return $this->adminQuery($filters)
-            ->select(['id', 'number', 'buyer_id', 'status', 'subtotal', 'shipping_total', 'total', 'shipping_address', 'created_at', 'updated_at'])
+            ->select(['id', 'number', 'buyer_id', 'contact_email', 'status', 'subtotal', 'shipping_total', 'total', 'shipping_address', 'created_at', 'updated_at'])
             ->with([
                 'buyer:id,name,email',
                 'payments:id,customer_order_id,method,status,paid_at',
@@ -58,6 +58,7 @@ class EloquentOrderOperationsRepository implements OrderOperationsRepository
         if ($search = trim((string) ($filters['search'] ?? ''))) {
             $query->where(function (Builder $query) use ($search): void {
                 $query->where('number', 'like', "%{$search}%")
+                    ->orWhere('contact_email', 'like', "%{$search}%")
                     ->orWhereHas('buyer', fn (Builder $buyer): Builder => $buyer
                         ->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%"))

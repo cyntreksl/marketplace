@@ -91,7 +91,7 @@ class SellerPortalService
             'status' => $order->status,
             'status_label' => $status?->label() ?? str($order->status)->headline()->toString(),
             'created_at' => $order->created_at?->toIso8601String(),
-            'recipient_name' => $address['name'] ?? $address['recipient_name'] ?? $order->customerOrder->buyer->name,
+            'recipient_name' => $address['name'] ?? $address['recipient_name'] ?? $order->customerOrder->buyer->name ?? 'Guest customer',
             'subtotal' => $order->subtotal,
             'shipping_charge' => $order->shipping_charge,
             'seller_earnings' => $order->seller_earnings,
@@ -134,7 +134,8 @@ class SellerPortalService
             ],
             'next_action' => $this->nextAction($order->status),
             'recipient' => $detailed ? [
-                'name' => $address['name'] ?? $address['recipient_name'] ?? $order->customerOrder->buyer->name,
+                'name' => $address['name'] ?? $address['recipient_name'] ?? $order->customerOrder->buyer->name ?? 'Guest customer',
+                'email' => $order->customerOrder->contact_email,
                 'phone' => $address['phone'] ?? null,
                 'address_line_one' => $address['address_line_one'] ?? $address['line_1'] ?? $address['line1'] ?? null,
                 'address_line_two' => $address['address_line_two'] ?? $address['line_2'] ?? $address['line2'] ?? null,

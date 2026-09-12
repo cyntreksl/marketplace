@@ -1,6 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Zap } from 'lucide-react';
-import { trackEvent } from '@/lib/tracking';
 import { show as listingShow } from '@/routes/listings';
 import type { StorefrontListing } from '@/types';
 
@@ -42,17 +41,6 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
                   Math.round(Number(listing.effectivePrice) * 100)) /
               100
             : 0;
-    const trackSelection = () =>
-        trackEvent('select_item', {
-            item_list_name: 'storefront',
-            items: [
-                {
-                    item_id: String(listing.id),
-                    item_name: listing.title,
-                    price: Number(listing.effectivePrice ?? 0),
-                },
-            ],
-        });
 
     return (
         <article className="group @container flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-100/50">
@@ -64,7 +52,6 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
                 )}
                 <Link
                     href={detailHref}
-                    onClick={trackSelection}
                     className="relative block aspect-[1.02/1] overflow-hidden bg-gradient-to-br from-white via-orange-50/50 to-slate-50"
                 >
                     {image ? (
@@ -87,7 +74,6 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
             <div className="flex flex-1 flex-col p-3 @min-[180px]:p-4">
                 <Link
                     href={detailHref}
-                    onClick={trackSelection}
                     title={listing.title}
                     className="truncate text-sm leading-6 font-normal text-slate-900 transition hover:text-[#FF6D00] @min-[180px]:text-base"
                 >

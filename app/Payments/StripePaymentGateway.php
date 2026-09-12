@@ -10,15 +10,15 @@ use Illuminate\Support\Facades\Http;
 
 class StripePaymentGateway implements PaymentGateway
 {
-    public function createPayment(Payment $payment): array
+    public function createPayment(Payment $payment, ?string $guestAccessToken = null): array
     {
         $order = $payment->customerOrder;
-        $metadata = [
+        $metadata = array_filter([
             'payment_id' => (string) $payment->id,
             'customer_order_id' => (string) $order->id,
             'order_number' => $order->number,
-            'buyer_id' => (string) $order->buyer_id,
-        ];
+            'buyer_id' => $order->buyer_id === null ? null : (string) $order->buyer_id,
+        ], fn (?string $value): bool => $value !== null);
 
         $response = Http::asForm()
             ->withBasicAuth((string) config('services.stripe.secret'), '')
@@ -35,12 +35,12 @@ class StripePaymentGateway implements PaymentGateway
                     ],
                     'quantity' => 1,
                 ]],
-                'customer_email' => $order->buyer->email,
+                'customer_email' => $order->contact_email,
                 'client_reference_id' => (string) $order->id,
                 'metadata' => $metadata,
                 'payment_intent_data' => ['metadata' => $metadata],
-                'success_url' => route('checkout.card.return', $order->number),
-                'cancel_url' => route('checkout.thank_you.show', $order->number),
+                'success_url' => route('checkout.card.return', array_filter(['customerOrder' => $order->number, 'access' => $guestAccessToken])),
+                'cancel_url' => route('checkout.thank_you.show', array_filter(['customerOrder' => $order->number, 'access' => $guestAccessToken])),
             ])->throw()->json();
 
         return ['reference' => $response['id'], 'redirect_url' => $response['url'], 'expires_at' => $response['expires_at']];

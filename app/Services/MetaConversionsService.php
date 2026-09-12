@@ -244,7 +244,7 @@ class MetaConversionsService
     private function purchaseUserData(CustomerOrder $order, array $attribution): array
     {
         $address = $order->shipping_address;
-        $recipientName = (string) ($address['recipient_name'] ?? $order->buyer->name);
+        $recipientName = (string) ($address['recipient_name'] ?? $order->buyer->name ?? 'Customer');
         [$firstName, $lastName] = $this->splitName($recipientName);
         $data = array_filter([
             'client_ip_address' => $attribution['client_ip_address'] ?? null,
@@ -253,8 +253,10 @@ class MetaConversionsService
             'fbc' => $attribution['fbc'] ?? null,
         ], fn (?string $value): bool => filled($value));
 
-        $this->addBuilderHash($data, 'em', $order->buyer->email, MetaParameterBuilderService::PII_EMAIL);
-        $this->addBuilderHash($data, 'external_id', (string) $order->buyer->id, MetaParameterBuilderService::PII_EXTERNAL_ID);
+        $this->addBuilderHash($data, 'em', $order->contact_email, MetaParameterBuilderService::PII_EMAIL);
+        if ($order->buyer !== null) {
+            $this->addBuilderHash($data, 'external_id', (string) $order->buyer->id, MetaParameterBuilderService::PII_EXTERNAL_ID);
+        }
         $this->addBuilderHash(
             $data,
             'ph',

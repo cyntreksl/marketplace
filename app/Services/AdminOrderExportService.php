@@ -92,8 +92,8 @@ class AdminOrderExportService
         return match ($column) {
             'order_number' => $order->number,
             'order_status' => $order->status,
-            'buyer_name' => $order->buyer?->name,
-            'buyer_email' => $order->buyer?->email,
+            'buyer_name' => $order->buyer->name ?? $order->shipping_address['recipient_name'] ?? 'Guest customer',
+            'buyer_email' => $order->contact_email,
             'subtotal' => (float) $order->subtotal,
             'shipping_total' => (float) $order->shipping_total,
             'total' => (float) $order->total,

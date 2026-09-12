@@ -19,6 +19,8 @@ class BuyerOrderStatusNotification extends Notification implements ShouldQueue
         public readonly string $customerOrderNumber,
         public readonly string $sellerOrderNumber,
         public readonly string $status,
+        public readonly ?string $recipientName = null,
+        public readonly ?string $actionUrl = null,
     ) {
         $this->afterCommit();
     }
@@ -36,17 +38,18 @@ class BuyerOrderStatusNotification extends Notification implements ShouldQueue
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(User $notifiable): MailMessage
+    public function toMail(object $notifiable): MailMessage
     {
         $delivered = $this->status === 'delivered';
+        $name = $this->recipientName ?? ($notifiable instanceof User ? $notifiable->name : 'Customer');
 
         return (new MailMessage)
             ->subject(($delivered ? 'Order delivered: ' : 'Order shipped: ').$this->sellerOrderNumber)
-            ->greeting("Hello {$notifiable->name},")
+            ->greeting("Hello {$name},")
             ->line($delivered
                 ? "Seller order {$this->sellerOrderNumber} was marked delivered. Your return window is now open."
                 : "Seller order {$this->sellerOrderNumber} is on its way.")
-            ->action('View order', route('buyer.orders.show', ['customerOrder' => $this->customerOrderNumber]));
+            ->action('View order', $this->actionUrl ?? route('buyer.orders.show', ['customerOrder' => $this->customerOrderNumber]));
     }
 
     /**

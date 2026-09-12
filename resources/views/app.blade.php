@@ -31,6 +31,7 @@
     <body class="font-sans antialiased">
         @if (
             app()->isProduction()
+            && ! request()->is('admin*', 'seller*', 'settings*', 'buyer/settings*')
             && $trackingConsent->allowsGtmCookie(request()->cookie($trackingConsent::COOKIE_NAME))
             && filled(config('services.google_tag_manager.container_id'))
         )

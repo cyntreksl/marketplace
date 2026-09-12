@@ -39,9 +39,16 @@ class EloquentCheckoutRepository implements CheckoutRepository
         return ListingVariant::query()->with(['optionValues.option', 'wholesalePriceTiers'])->lockForUpdate()->find($id);
     }
 
-    public function findSubmission(User $buyer, string $token): ?CustomerOrder
+    public function findSubmission(?User $buyer, string $token, ?string $guestIdentityHash = null): ?CustomerOrder
     {
-        return CustomerOrder::query()->where('buyer_id', $buyer->id)->where('checkout_token', $token)->first();
+        return CustomerOrder::query()
+            ->where('checkout_token', $token)
+            ->when(
+                $buyer === null,
+                fn ($query) => $query->whereNull('buyer_id')->where('checkout_identity_hash', $guestIdentityHash),
+                fn ($query) => $query->where('buyer_id', $buyer->id),
+            )
+            ->first();
     }
 
     public function createOrder(array $data): CustomerOrder

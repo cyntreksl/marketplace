@@ -122,5 +122,5 @@ test('listing details include an empty media collection and category trail', fun
             'watcherCount' => 0,
             'viewCount' => 0,
         ])
-        ->and($data['sellerListings'])->toBeEmpty();
+        ->and($data['deferredContent']['sellerListings'])->toBeEmpty();
 });

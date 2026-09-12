@@ -21,6 +21,8 @@ class CancellationRefundCompletedNotification extends Notification implements Sh
         public readonly string $sellerOrderNumber,
         public readonly string $amount,
         public readonly string $reference,
+        public readonly ?string $recipientName = null,
+        public readonly ?string $actionUrl = null,
     ) {
         $this->afterCommit();
     }
@@ -38,15 +40,17 @@ class CancellationRefundCompletedNotification extends Notification implements Sh
     /**
      * Get the mail representation of the notification.
      */
-    public function toMail(User $notifiable): MailMessage
+    public function toMail(object $notifiable): MailMessage
     {
+        $name = $this->recipientName ?? ($notifiable instanceof User ? $notifiable->name : 'Customer');
+
         return (new MailMessage)
             ->subject("Refund recorded: {$this->sellerOrderNumber}")
-            ->greeting("Hello {$notifiable->name},")
+            ->greeting("Hello {$name},")
             ->line('Your manual refund for the cancelled package has been recorded.')
             ->line('Amount: LKR '.Number::format((float) $this->amount, precision: 2, locale: 'en'))
             ->line("Reference: {$this->reference}")
-            ->action('View order', route('buyer.orders.show', ['customerOrder' => $this->customerOrderNumber]));
+            ->action('View order', $this->actionUrl ?? route('buyer.orders.show', ['customerOrder' => $this->customerOrderNumber]));
     }
 
     /**
