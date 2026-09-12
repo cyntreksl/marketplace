@@ -54,7 +54,7 @@ type Question = {
     answeredAt: string | null;
 };
 type Campaign = { title: string; subtitle: string | null; endsAt: string };
-type Policies = { returnWindowDays: number; codEnabled: boolean } | null;
+type Policies = { returnWindowDays: number } | null;
 type DeferredContent = {
     reviews: StorefrontReview[];
     questions: Question[];
@@ -458,9 +458,7 @@ export default function ListingShow({
                             </Link>
                             <span className="flex items-center gap-2">
                                 <CreditCard className="size-4 shrink-0 text-emerald-700" />
-                                {categoryPolicies?.codEnabled
-                                    ? 'Cash on Delivery eligible'
-                                    : 'Secure card payments'}
+                                Secure card payments
                             </span>
                             <Link
                                 href={returns()}
@@ -718,12 +716,6 @@ export default function ListingShow({
                                 <Truck className="size-4 text-orange-600" />
                                 Shipping information
                             </Link>
-                            {listing.retailEnabled &&
-                                categoryPolicies?.codEnabled && (
-                                    <span className="inline-flex items-center">
-                                        Cash on Delivery available
-                                    </span>
-                                )}
                         </div>
                         {sellerSummary && (
                             <div className="xl:hidden">
@@ -792,14 +784,10 @@ export default function ListingShow({
                                 <CreditCard className="size-4 shrink-0 text-[#ff5a00]" />
                                 <div>
                                     <strong className="block">
-                                        {categoryPolicies?.codEnabled
-                                            ? 'Cash on Delivery'
-                                            : 'Secure payments'}
+                                        Secure payments
                                     </strong>
                                     <p className="mt-1 text-slate-500">
-                                        {categoryPolicies?.codEnabled
-                                            ? 'Available for eligible orders'
-                                            : 'Choose your method at checkout'}
+                                        Choose your method at checkout
                                     </p>
                                 </div>
                             </div>

@@ -33,7 +33,6 @@ export type ProductQuestion = {
 
 export type ProductPolicies = {
     returnWindowDays: number;
-    codEnabled: boolean;
 } | null;
 
 type SectionId = 'overview' | 'specs' | 'reviews' | 'qa' | 'shipping';
@@ -456,15 +455,10 @@ export function ProductDetails({
                 </Policy>
                 <Policy
                     icon={<CreditCard className="size-5" />}
-                    title={
-                        categoryPolicies?.codEnabled
-                            ? 'Cash on Delivery'
-                            : 'Payment options'
-                    }
+                    title="Payment options"
                 >
-                    {categoryPolicies?.codEnabled
-                        ? 'Available for eligible orders. Confirm the available payment method at checkout.'
-                        : 'Available payment methods are shown before you place the order.'}
+                    Available payment methods are shown before you place the
+                    order.
                 </Policy>
                 <Policy
                     icon={<ShieldCheck className="size-5" />}

@@ -46,7 +46,9 @@ test('product pages put purchase assurances below price and defer secondary cont
     assert.notEqual(offerIndex, -1);
     assert.ok(trustIndex > offerIndex);
     assert.match(productSource, /Delivery fee &amp; estimate at checkout/);
-    assert.match(productSource, /Cash on Delivery eligible/);
+    assert.doesNotMatch(productSource, /Cash on Delivery/);
+    assert.match(productSource, /Secure card payments/);
+    assert.match(productSource, /Secure payments/);
     assert.match(productSource, /-day returns/);
     assert.match(productSource, /Verified seller/);
     assert.match(productSource, /<Deferred[\s\S]*?data="deferredContent"/);

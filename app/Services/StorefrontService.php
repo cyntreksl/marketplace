@@ -428,7 +428,6 @@ class StorefrontService
             'activeCampaign' => $this->activeCampaignFor($listing),
             'categoryPolicies' => $listing->category === null ? null : [
                 'returnWindowDays' => $listing->category->return_window_days,
-                'codEnabled' => $listing->category->cod_enabled,
             ],
         ];
 

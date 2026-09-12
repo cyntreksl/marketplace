@@ -169,7 +169,7 @@ test('public store pages retain seller account age', async () => {
     assert.match(source, /Selling since \{seller\.sellingSince\}/);
 });
 
-test('product information renders true tabs, mobile accordions, and long overview disclosure', () => {
+test('product information renders true tabs, mobile accordions, and long overview disclosure', async () => {
     const html = renderToStaticMarkup(
         createElement(ProductDetails, {
             listing,
@@ -189,6 +189,21 @@ test('product information renders true tabs, mobile accordions, and long overvie
     assert.match(
         html,
         /The seller has not added a detailed description yet|Useful product details/,
+    );
+
+    const source = await readFile(
+        new URL(
+            '../resources/js/components/product-details.tsx',
+            import.meta.url,
+        ),
+        'utf8',
+    );
+
+    assert.doesNotMatch(source, /Cash on Delivery/);
+    assert.match(source, /title="Payment options"/);
+    assert.match(
+        source,
+        /Available payment methods are shown before you place the\s+order\./,
     );
 });
 
