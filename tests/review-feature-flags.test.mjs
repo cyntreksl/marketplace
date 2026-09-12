@@ -132,7 +132,7 @@ test('product review sections follow the product review flag', () => {
     assert.doesNotMatch(disabled, /Reviews \(1\)/);
     assert.doesNotMatch(disabled, /Visible verified feedback/);
     assert.match(enabled, /Reviews \(1\)/);
-    assert.match(enabled, /Visible verified feedback/);
+    assert.match(enabled, /role="tab"[^>]*aria-controls="reviews-panel"/);
 });
 
 test('buyer overview hides feedback activity while product reviews are disabled', () => {

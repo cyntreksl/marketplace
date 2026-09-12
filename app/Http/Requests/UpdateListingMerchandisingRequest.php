@@ -21,6 +21,12 @@ class UpdateListingMerchandisingRequest extends FormRequest
                 $this->merge([$field => (bool) $listing->getAttribute($field)]);
             }
         }
+
+        foreach (['sold_count_baseline', 'watch_count_baseline', 'view_count_baseline'] as $field) {
+            if (! $this->has($field)) {
+                $this->merge([$field => (int) $listing->getAttribute($field)]);
+            }
+        }
     }
 
     /**
@@ -46,6 +52,9 @@ class UpdateListingMerchandisingRequest extends FormRequest
             'is_best_seller' => ['required', 'boolean'],
             'is_new_arrival' => ['required', 'boolean'],
             'is_clearance' => ['required', 'boolean'],
+            'sold_count_baseline' => ['required', 'integer', 'min:0', 'max:10000000'],
+            'watch_count_baseline' => ['required', 'integer', 'min:0', 'max:10000000'],
+            'view_count_baseline' => ['required', 'integer', 'min:0', 'max:10000000'],
             'reason' => ['required', 'string', 'min:5', 'max:1000'],
         ];
     }

@@ -4,7 +4,10 @@ import {
     updateDetails,
 } from '@/actions/App/Http/Controllers/AdminListingController';
 import { AdminListingMerchandisingForm } from '@/components/admin-listing-merchandising-form';
-import type { MerchandisingListing } from '@/components/admin-listing-merchandising-form';
+import type {
+    AdminListingEngagement,
+    MerchandisingListing,
+} from '@/components/admin-listing-merchandising-form';
 import type { CategoryOption } from '@/components/category-picker';
 import { PortalLayout } from '@/components/portal-layout';
 import { SellerProductForm } from '@/components/seller-product-form';
@@ -14,10 +17,12 @@ type Brand = { id: number; name: string };
 
 export default function EditAdminListing({
     listing,
+    engagement,
     selectedCategory,
     brands,
 }: {
     listing: SellerProductFormListing & MerchandisingListing;
+    engagement: AdminListingEngagement;
     selectedCategory: CategoryOption | null;
     brands: Brand[];
 }) {
@@ -51,6 +56,7 @@ export default function EditAdminListing({
                 </div>
                 <AdminListingMerchandisingForm
                     listing={listing}
+                    engagement={engagement}
                     className="mt-6"
                 />
                 <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">

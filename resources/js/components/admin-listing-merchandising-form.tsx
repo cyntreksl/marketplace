@@ -13,6 +13,21 @@ export type MerchandisingListing = {
     is_best_seller: boolean;
     is_new_arrival: boolean;
     is_clearance: boolean;
+    sold_count_baseline: number;
+    watch_count_baseline: number;
+    view_count_baseline: number;
+};
+
+export type AdminListingEngagement = {
+    sold: EngagementMetric;
+    watchers: EngagementMetric;
+    views: EngagementMetric;
+};
+
+type EngagementMetric = {
+    baseline: number;
+    actual: number;
+    total: number;
 };
 
 const placements: {
@@ -56,9 +71,11 @@ const placements: {
 
 export function AdminListingMerchandisingForm({
     listing,
+    engagement,
     className = '',
 }: {
     listing: MerchandisingListing;
+    engagement: AdminListingEngagement;
     className?: string;
 }) {
     const hasValidDiscount =
@@ -131,6 +148,69 @@ export function AdminListingMerchandisingForm({
                                 regular price.
                             </p>
                         )}
+
+                        <div>
+                            <h3 className="text-sm font-black">
+                                Historical engagement
+                            </h3>
+                            <p className="mt-1 text-xs leading-5 text-slate-500">
+                                Enter documented historical or off-platform
+                                figures only. Actual marketplace activity is
+                                calculated automatically.
+                            </p>
+                            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                                {(
+                                    [
+                                        [
+                                            'sold_count_baseline',
+                                            'Sold',
+                                            engagement.sold,
+                                        ],
+                                        [
+                                            'watch_count_baseline',
+                                            'Watching',
+                                            engagement.watchers,
+                                        ],
+                                        [
+                                            'view_count_baseline',
+                                            'Views',
+                                            engagement.views,
+                                        ],
+                                    ] as const
+                                ).map(([name, label, metric]) => (
+                                    <label
+                                        key={name}
+                                        className="rounded-xl border border-slate-200 p-3 dark:border-slate-700"
+                                    >
+                                        <span className="block text-sm font-bold">
+                                            {label} baseline
+                                        </span>
+                                        <input
+                                            type="number"
+                                            name={name}
+                                            min={0}
+                                            max={10000000}
+                                            step={1}
+                                            required
+                                            defaultValue={listing[name]}
+                                            className="mt-2 h-11 w-full rounded-lg border border-slate-300 bg-transparent px-3 font-normal dark:border-slate-700"
+                                        />
+                                        <span className="mt-2 block text-xs leading-5 text-slate-500">
+                                            Actual{' '}
+                                            {metric.actual.toLocaleString(
+                                                'en-LK',
+                                            )}{' '}
+                                            · Public total{' '}
+                                            <strong className="text-slate-700 dark:text-slate-200">
+                                                {metric.total.toLocaleString(
+                                                    'en-LK',
+                                                )}
+                                            </strong>
+                                        </span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
 
                         <label className="grid gap-1.5 text-sm font-bold">
                             Merchandising reason

@@ -20,6 +20,7 @@ import {
     update,
 } from '@/actions/App/Http/Controllers/AdminListingController';
 import { AdminListingMerchandisingForm } from '@/components/admin-listing-merchandising-form';
+import type { AdminListingEngagement } from '@/components/admin-listing-merchandising-form';
 import { PortalLayout } from '@/components/portal-layout';
 import { RichTextContent } from '@/components/rich-text-editor';
 
@@ -88,6 +89,9 @@ type Listing = {
     is_best_seller: boolean;
     is_new_arrival: boolean;
     is_clearance: boolean;
+    sold_count_baseline: number;
+    watch_count_baseline: number;
+    view_count_baseline: number;
     price: string | null;
     sale_price: string | null;
     is_retail_enabled: boolean;
@@ -117,7 +121,13 @@ const decisionStatuses = [
     'archived',
 ];
 
-export default function ShowAdminListing({ listing }: { listing: Listing }) {
+export default function ShowAdminListing({
+    listing,
+    engagement,
+}: {
+    listing: Listing;
+    engagement: AdminListingEngagement;
+}) {
     const [selectedImage, setSelectedImage] = useState(0);
     const specifications = listing.specifications ?? {};
     const availableStock = Math.max(
@@ -526,7 +536,10 @@ export default function ShowAdminListing({ listing }: { listing: Listing }) {
                             </Form>
                         </section>
 
-                        <AdminListingMerchandisingForm listing={listing} />
+                        <AdminListingMerchandisingForm
+                            listing={listing}
+                            engagement={engagement}
+                        />
 
                         <DetailCard icon={Store} title="Seller">
                             <dl>

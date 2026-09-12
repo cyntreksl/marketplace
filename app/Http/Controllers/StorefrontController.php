@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\RecentlyViewedListingsRequest;
 use App\Http\Requests\StorefrontBrowseRequest;
+use App\Services\HumanPageViewService;
 use App\Services\MetaConversionsService;
 use App\Services\SearchAnalyticsService;
 use App\Services\StorefrontService;
@@ -19,6 +20,7 @@ class StorefrontController extends Controller
         private readonly StorefrontService $storefront,
         private readonly MetaConversionsService $metaConversions,
         private readonly SearchAnalyticsService $searchAnalytics,
+        private readonly HumanPageViewService $pageViews,
     ) {}
 
     public function home(): Response
@@ -105,6 +107,9 @@ class StorefrontController extends Controller
             $variantId === false ? null : $variantId,
             $request->query('wholesale') === '1',
         );
+        if ($this->pageViews->trackListing($request, (int) $details['listing']['id'])) {
+            $details['engagement']['viewCount']++;
+        }
         $details['metaEventId'] = $this->metaConversions->trackViewContent(
             $request,
             $details['listing'],

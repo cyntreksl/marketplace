@@ -19,6 +19,7 @@ import {
 } from '@/actions/App/Http/Controllers/WatchlistController';
 import { ListingCard } from '@/components/listing-card';
 import { ProductDetails } from '@/components/product-details';
+import { ProductEngagement } from '@/components/product-engagement';
 import { ProductGallery } from '@/components/product-gallery';
 import { ProductPurchase } from '@/components/product-purchase';
 import { SellerSummary } from '@/components/seller-summary';
@@ -38,6 +39,7 @@ import type {
     PublicSellerSummary,
     StorefrontCategory,
     StorefrontCategoryNode,
+    StorefrontEngagement,
     StorefrontListing,
     StorefrontReview,
 } from '@/types';
@@ -58,39 +60,6 @@ function formatPrice(value: string | null): string {
     return `Rs. ${Number(value ?? 0).toLocaleString('en-LK')}`;
 }
 
-function OfferCountdown({ endsAt }: { endsAt: string }) {
-    const [remaining, setRemaining] = useState(0);
-    useEffect(() => {
-        const update = () =>
-            setRemaining(Math.max(0, new Date(endsAt).getTime() - Date.now()));
-        const initialTimer = window.setTimeout(update, 0);
-        const timer = window.setInterval(update, 1000);
-
-        return () => {
-            window.clearTimeout(initialTimer);
-            window.clearInterval(timer);
-        };
-    }, [endsAt]);
-    const total = Math.floor(remaining / 1000);
-
-    return (
-        <div className="flex items-center gap-1">
-            {[
-                Math.floor(total / 3600),
-                Math.floor((total % 3600) / 60),
-                total % 60,
-            ].map((value, index) => (
-                <span
-                    key={index}
-                    className="rounded border bg-white px-2 py-1 text-sm font-black"
-                >
-                    {String(value).padStart(2, '0')}
-                </span>
-            ))}
-        </div>
-    );
-}
-
 export default function ListingShow({
     listing,
     categories,
@@ -106,6 +75,7 @@ export default function ListingShow({
     sellerListings,
     selectedVariantId,
     sellerSummary,
+    engagement,
     purchaseContext,
     metaEventId,
 }: {
@@ -123,6 +93,7 @@ export default function ListingShow({
     sellerListings: StorefrontListing[];
     selectedVariantId: number | null;
     sellerSummary: PublicSellerSummary | null;
+    engagement: StorefrontEngagement;
     purchaseContext: {
         channel: 'retail' | 'wholesale';
         initialQuantity: number;
@@ -308,12 +279,13 @@ export default function ListingShow({
     const offerSummary = (
         <div className="overflow-hidden rounded-xl border border-rose-100 bg-gradient-to-br from-rose-50 via-white to-orange-50 shadow-[0_8px_24px_-20px_rgba(244,63,94,0.8)]">
             {activeCampaign && (
-                <div className="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-[#ff334f] to-[#ff6d00] px-3 py-2 text-sm font-bold text-white sm:px-4">
+                <div className="bg-gradient-to-r from-[#ff334f] to-[#ff6d00] px-3 py-2 text-sm font-bold text-white sm:px-4">
                     <span>{activeCampaign.title}</span>
-                    <span className="flex items-center gap-2">
-                        Ends in{' '}
-                        <OfferCountdown endsAt={activeCampaign.endsAt} />
-                    </span>
+                    {activeCampaign.subtitle && (
+                        <span className="ml-2 font-medium text-white/90">
+                            {activeCampaign.subtitle}
+                        </span>
+                    )}
                 </div>
             )}
             <div className="p-3 sm:p-4">
@@ -400,6 +372,7 @@ export default function ListingShow({
                             )}
                         </p>
                     )}
+                <ProductEngagement engagement={engagement} />
             </div>
         </div>
     );
@@ -432,7 +405,10 @@ export default function ListingShow({
                         listing={listing}
                         featuredImageUrl={selectedVariant?.image?.cardUrl}
                     />
-                    <section className="min-w-0 rounded-xl bg-white p-4 shadow-[0_2px_16px_rgba(15,23,42,0.05)] lg:rounded-none lg:p-0 lg:shadow-none">
+                    <section
+                        id="purchase"
+                        className="min-w-0 scroll-mt-32 rounded-xl bg-white p-4 shadow-[0_2px_16px_rgba(15,23,42,0.05)] lg:rounded-none lg:p-0 lg:shadow-none"
+                    >
                         {listing.brand && (
                             <Link
                                 href={brandShow(listing.brand.slug)}
@@ -493,7 +469,9 @@ export default function ListingShow({
                                     ? 'Out of stock'
                                     : listing.stockStatus === 'backorder'
                                       ? 'Available on backorder'
-                                      : 'In stock'}
+                                      : listing.stockStatus === 'low_stock'
+                                        ? `Only ${listing.stockQuantity} ${listing.stockQuantity === 1 ? 'item' : 'items'} left`
+                                        : 'In stock'}
                             </span>
                             <span className="text-slate-500 capitalize">
                                 {listing.condition} condition
@@ -736,7 +714,7 @@ export default function ListingShow({
                                 <Truck className="size-4 shrink-0 text-[#ff5a00]" />
                                 <div>
                                     <strong className="block">
-                                        Islandwide Delivery
+                                        Delivery available
                                     </strong>
                                     <Link
                                         href={shipping()}

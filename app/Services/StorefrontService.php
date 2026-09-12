@@ -398,6 +398,7 @@ class StorefrontService
         $initialWholesaleQuantity = $selectedVariant === null
             ? $listing->wholesalePriceTiers->min('minimum_quantity')
             : $selectedVariant->wholesalePriceTiers->min('minimum_quantity');
+        $engagement = $this->listings->engagement($listing);
 
         return [
             'head' => $this->seo->tags($seo),
@@ -411,6 +412,11 @@ class StorefrontService
                     : 1,
             ],
             'sellerSummary' => $listing->sellerProfile === null ? null : $this->sellerSummaries->forSeller($this->sellers->findPublic($listing->sellerProfile->slug)),
+            'engagement' => [
+                'soldCount' => $engagement['sold']['total'],
+                'watcherCount' => $engagement['watchers']['total'],
+                'viewCount' => $engagement['views']['total'],
+            ],
             'reviews' => $this->reviews->forListing((int) $listing->id, 20)->map(fn ($review): array => [
                 'id' => $review->id,
                 'rating' => $review->rating,

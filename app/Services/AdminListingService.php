@@ -48,4 +48,10 @@ class AdminListingService
 
         return $listing;
     }
+
+    /** @return array{sold: array{baseline: int, actual: int, total: int}, watchers: array{baseline: int, actual: int, total: int}, views: array{baseline: int, actual: int, total: int}} */
+    public function engagement(Listing $listing): array
+    {
+        return $this->listings->engagement($listing);
+    }
 }

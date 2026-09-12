@@ -63,8 +63,13 @@ interface ListingRepository
      */
     public function lazyForAdminExport(array $filters): LazyCollection;
 
-    /** @param array{is_featured: bool, is_best_offer: bool, is_best_seller: bool, is_new_arrival: bool, is_clearance: bool} $placements */
+    /** @param array{is_featured: bool, is_best_offer: bool, is_best_seller: bool, is_new_arrival: bool, is_clearance: bool, sold_count_baseline: int, watch_count_baseline: int, view_count_baseline: int} $placements */
     public function updateMerchandising(Listing $listing, array $placements): Listing;
+
+    /** @return array{sold: array{baseline: int, actual: int, total: int}, watchers: array{baseline: int, actual: int, total: int}, views: array{baseline: int, actual: int, total: int}} */
+    public function engagement(Listing $listing): array;
+
+    public function incrementViewCount(int $listingId): void;
 
     /** @return Collection<int, Listing> */
     public function featuredDeals(int $limit = 18): Collection;

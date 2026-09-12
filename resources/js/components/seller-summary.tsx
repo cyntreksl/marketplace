@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { ArrowUpRight, Store } from 'lucide-react';
+import { ArrowUpRight, BadgeCheck } from 'lucide-react';
 import { show as storeShow } from '@/routes/stores';
 import type { PublicSellerSummary } from '@/types';
 
@@ -74,13 +74,10 @@ export function SellerSummary({
             </div>
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
                 <span className="inline-flex items-center gap-1.5">
-                    <Store className="size-4" />
-                    Approved seller
+                    <BadgeCheck className="size-4 text-blue-600" />
+                    Verified seller
                 </span>
                 <span>{seller.productCount} available products</span>
-                {seller.sellingSince && (
-                    <span>Selling since {seller.sellingSince}</span>
-                )}
             </div>
             {seller.about && (
                 <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">

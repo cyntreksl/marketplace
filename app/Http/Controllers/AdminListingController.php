@@ -72,9 +72,11 @@ class AdminListingController extends Controller
     public function show(Request $request, Listing $listing, AdminListingService $listings): Response
     {
         abort_unless($request->user()->can('view', $listing), 403);
+        $listing = $listings->product($listing->id);
 
         return Inertia::render('admin/listings/show', [
-            'listing' => $listings->product($listing->id),
+            'listing' => $listing,
+            'engagement' => $listings->engagement($listing),
         ]);
     }
 
@@ -85,6 +87,7 @@ class AdminListingController extends Controller
 
         return Inertia::render('admin/listings/edit', [
             'listing' => $listing,
+            'engagement' => $listings->engagement($listing),
             'selectedCategory' => $listing->category === null ? null : $catalog->categoryOption($listing->category),
             'brands' => Brand::query()->orderBy('name')->get(['id', 'name']),
         ]);
@@ -108,6 +111,9 @@ class AdminListingController extends Controller
                 'is_best_seller' => $request->boolean('is_best_seller'),
                 'is_new_arrival' => $request->boolean('is_new_arrival'),
                 'is_clearance' => $request->boolean('is_clearance'),
+                'sold_count_baseline' => (int) $request->validated('sold_count_baseline'),
+                'watch_count_baseline' => (int) $request->validated('watch_count_baseline'),
+                'view_count_baseline' => (int) $request->validated('view_count_baseline'),
             ],
             $request->validated('reason'),
         );

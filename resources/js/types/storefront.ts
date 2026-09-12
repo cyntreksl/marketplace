@@ -76,6 +76,12 @@ export type StorefrontWholesalePriceTier = {
     unitPrice: string;
 };
 
+export type StorefrontEngagement = {
+    soldCount: number;
+    watcherCount: number;
+    viewCount: number;
+};
+
 export type StorefrontListing = {
     id: number;
     title: string;

@@ -9,6 +9,7 @@ use App\Models\Listing;
 use App\Models\ListingMedia;
 use App\Models\ListingVariant;
 use App\Models\SellerProfile;
+use App\SellerOrderStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -16,6 +17,15 @@ use Illuminate\Support\LazyCollection;
 
 class EloquentListingRepository implements ListingRepository
 {
+    /** @var array<int, string> */
+    private const array SOLD_ORDER_STATUSES = [
+        SellerOrderStatus::Paid->value,
+        SellerOrderStatus::Processing->value,
+        SellerOrderStatus::ReadyToShip->value,
+        SellerOrderStatus::Shipped->value,
+        SellerOrderStatus::Completed->value,
+    ];
+
     public function __construct(private readonly CatalogRepository $catalog) {}
 
     public function slugExists(string $slug, ?int $exceptListingId = null): bool
@@ -70,7 +80,7 @@ class EloquentListingRepository implements ListingRepository
 
     public function findPublicBySlug(string $slug): Listing
     {
-        return $this->directPublicQuery()
+        return $this->withEngagement($this->directPublicQuery())
             ->with([
                 'sellerProfile.user:id,name',
                 'activeAuction.bids',
@@ -274,6 +284,31 @@ class EloquentListingRepository implements ListingRepository
         $listing->forceFill($placements)->save();
 
         return $listing;
+    }
+
+    public function engagement(Listing $listing): array
+    {
+        if (! $listing->hasAttribute('actual_watch_count') || ! $listing->hasAttribute('actual_sold_count')) {
+            $listing = $this->withEngagement(Listing::query()->whereKey($listing->getKey()))->firstOrFail();
+        }
+
+        $soldBaseline = (int) $listing->sold_count_baseline;
+        $soldActual = (int) $listing->getAttribute('actual_sold_count');
+        $watchBaseline = (int) $listing->watch_count_baseline;
+        $watchActual = (int) $listing->getAttribute('actual_watch_count');
+        $viewBaseline = (int) $listing->view_count_baseline;
+        $viewActual = (int) $listing->view_count;
+
+        return [
+            'sold' => ['baseline' => $soldBaseline, 'actual' => $soldActual, 'total' => $soldBaseline + $soldActual],
+            'watchers' => ['baseline' => $watchBaseline, 'actual' => $watchActual, 'total' => $watchBaseline + $watchActual],
+            'views' => ['baseline' => $viewBaseline, 'actual' => $viewActual, 'total' => $viewBaseline + $viewActual],
+        ];
+    }
+
+    public function incrementViewCount(int $listingId): void
+    {
+        Listing::query()->whereKey($listingId)->toBase()->increment('view_count');
     }
 
     public function featuredDeals(int $limit = 18): Collection
@@ -503,6 +538,23 @@ class EloquentListingRepository implements ListingRepository
         }
 
         return $query;
+    }
+
+    /**
+     * @param  Builder<Listing>  $query
+     * @return Builder<Listing>
+     */
+    private function withEngagement(Builder $query): Builder
+    {
+        return $query
+            ->withCount(['watchlistEntries as actual_watch_count'])
+            ->withSum([
+                'orderItems as actual_sold_count' => fn (Builder $orderItems): Builder => $orderItems
+                    ->whereNull('order_items.deleted_at')
+                    ->whereHas('sellerOrder', fn (Builder $sellerOrders): Builder => $sellerOrders
+                        ->whereNull('seller_orders.deleted_at')
+                        ->whereIn('status', self::SOLD_ORDER_STATUSES)),
+            ], 'quantity');
     }
 
     /** @return Builder<Listing> */

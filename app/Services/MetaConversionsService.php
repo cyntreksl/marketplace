@@ -18,12 +18,11 @@ use Throwable;
 
 class MetaConversionsService
 {
-    private const string CRAWLER_PATTERN = '/bot|crawler|spider|slurp|bingpreview|facebookexternalhit|facebot|headless|lighthouse|pagespeed|preview/i';
-
     public function __construct(
         private readonly MetaConversionsGateway $gateway,
         private readonly CustomerOrderRepository $orders,
         private readonly MetaParameterBuilderService $parameterBuilder,
+        private readonly HumanPageViewService $pageViews,
     ) {}
 
     public function isEnabled(): bool
@@ -36,7 +35,7 @@ class MetaConversionsService
     /** @param array<string, mixed> $listing */
     public function trackViewContent(Request $request, array $listing, ?int $selectedVariantId): ?string
     {
-        if (! $this->isEnabled() || $this->shouldIgnoreListingView($request)) {
+        if (! $this->isEnabled() || ! $this->pageViews->isTrackable($request)) {
             return null;
         }
 
@@ -287,22 +286,6 @@ class MetaConversionsService
         $parts = preg_split('/\s+/', trim($name), 2);
 
         return [$parts[0] ?? null, $parts[1] ?? null];
-    }
-
-    private function shouldIgnoreListingView(Request $request): bool
-    {
-        $purpose = implode(' ', array_filter([
-            $request->header('Purpose'),
-            $request->header('Sec-Purpose'),
-            $request->header('X-Purpose'),
-        ]));
-        $userAgent = $request->userAgent();
-
-        return str_contains(Str::lower($purpose), 'prefetch')
-            || str_contains(Str::lower($purpose), 'prerender')
-            || ! is_string($userAgent)
-            || $userAgent === ''
-            || preg_match(self::CRAWLER_PATTERN, $userAgent) === 1;
     }
 
     private function bounded(mixed $value): ?string

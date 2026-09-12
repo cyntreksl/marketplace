@@ -93,7 +93,7 @@ test('product merchandising controls live on admin product detail and edit pages
     $homepageComponent = file_get_contents(resource_path('js/pages/admin/homepage/index.tsx'));
 
     expect($showComponent)
-        ->toContain('<AdminListingMerchandisingForm listing={listing} />')
+        ->toContain('engagement={engagement}')
         ->and($editComponent)
         ->toContain('<AdminListingMerchandisingForm')
         ->and($homepageComponent)
