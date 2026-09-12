@@ -156,11 +156,16 @@ class SeoGrowthContentService
 
             $categoryNames = $attributes['category_names'];
             unset($attributes['category_names']);
-            $categoryIds = collect($categoryNames)
-                ->map(fn (string $name): ?int => $this->content->categoryByName($name)?->id)
-                ->filter()
-                ->values()
-                ->all();
+            /** @var array<int, string> $categoryNames */
+            $categoryIds = [];
+
+            foreach ($categoryNames as $categoryName) {
+                $categoryId = $this->content->categoryByName($categoryName)?->id;
+
+                if (is_int($categoryId)) {
+                    $categoryIds[] = $categoryId;
+                }
+            }
 
             if ($categoryIds === []) {
                 continue;

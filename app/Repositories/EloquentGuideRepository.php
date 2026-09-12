@@ -6,8 +6,8 @@ use App\Contracts\Repositories\GuideRepository;
 use App\Models\Category;
 use App\Models\Guide;
 use App\Models\Listing;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 class EloquentGuideRepository implements GuideRepository
@@ -78,9 +78,10 @@ class EloquentGuideRepository implements GuideRepository
     public function publishedForBrand(int $brandId, int $limit = 6): Collection
     {
         return $this->publishedQuery()
-            ->whereHas('categories.listings', fn (Builder $query): Builder => $query
-                ->where('brand_id', $brandId)
-                ->retailVisible())
+            ->whereHas('categories.listings', function (Builder $query) use ($brandId): void {
+                /** @var Builder<Listing> $query */
+                $query->where('brand_id', $brandId)->retailVisible();
+            })
             ->latest('published_at')
             ->limit($limit)
             ->get();

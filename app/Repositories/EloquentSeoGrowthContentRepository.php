@@ -7,6 +7,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Listing;
 use App\Models\SellerProfile;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 class EloquentSeoGrowthContentRepository implements SeoGrowthContentRepository
@@ -36,7 +37,10 @@ class EloquentSeoGrowthContentRepository implements SeoGrowthContentRepository
         return SellerProfile::query()
             ->whereIn('status', ['approved', 'active'])
             ->where(fn ($query) => $query->whereNull('about')->orWhere('about', ''))
-            ->whereHas('listings', fn ($query) => $query->retailVisible())
+            ->whereHas('listings', function (Builder $query): void {
+                /** @var Builder<Listing> $query */
+                $query->retailVisible();
+            })
             ->get();
     }
 

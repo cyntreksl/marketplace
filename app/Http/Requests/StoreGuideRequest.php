@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\NormalizesSeoSupportingQueries;
 use App\Models\Guide;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -9,10 +10,12 @@ use Illuminate\Validation\Rule;
 
 class StoreGuideRequest extends FormRequest
 {
+    use NormalizesSeoSupportingQueries;
+
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'supporting_queries' => collect($this->input('supporting_queries', []))->map(fn (mixed $query): string => trim((string) $query))->filter()->values()->all(),
+            'supporting_queries' => $this->normalizeSeoSupportingQueries($this->input('supporting_queries', [])),
         ]);
     }
 

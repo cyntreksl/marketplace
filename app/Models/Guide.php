@@ -8,8 +8,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
+/**
+ * @property Carbon|null $published_at
+ * @property Carbon|null $trends_researched_at
+ * @property Carbon|null $updated_at
+ */
 #[Fillable(['title', 'slug', 'excerpt', 'quick_answer', 'sections', 'buying_checklist', 'hero_image_disk', 'hero_image_path', 'hero_image_alt', 'seo_title', 'seo_description', 'primary_query', 'supporting_queries', 'trends_researched_at', 'status', 'published_at'])]
 class Guide extends Model
 {

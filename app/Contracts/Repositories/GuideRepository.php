@@ -5,7 +5,7 @@ namespace App\Contracts\Repositories;
 use App\Models\Category;
 use App\Models\Guide;
 use App\Models\Listing;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 interface GuideRepository
