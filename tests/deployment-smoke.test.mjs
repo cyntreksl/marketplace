@@ -15,6 +15,10 @@ const discoverySmoke = source.match(
     /smoke_discovery\(\) \{[\s\S]*?\n\}/,
 )?.[0];
 assert.ok(discoverySmoke);
+const externalSmoke = source.match(
+    /run_external_smoke_tests\(\) \{[\s\S]*?\n\}/,
+)?.[0];
+assert.ok(externalSmoke);
 
 test('product smoke checks consume large sitemaps without breaking the pipe', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'prodeals-smoke-'));
@@ -134,6 +138,22 @@ resume_order_creation
     assert.match(
         result.stdout,
         /deploy@worker release-script maintenance-up release/,
+    );
+});
+
+test('production smoke checks run sequentially without inherited rollback races', () => {
+    assert.doesNotMatch(externalSmoke, /smoke_(homepage|product|mcp|discovery)\s*&/);
+
+    const homepage = externalSmoke.indexOf('smoke_homepage');
+    const product = externalSmoke.indexOf('smoke_product');
+    const mcp = externalSmoke.indexOf('smoke_mcp');
+    const discovery = externalSmoke.indexOf('smoke_discovery');
+
+    assert.ok(
+        homepage >= 0 &&
+            homepage < product &&
+            product < mcp &&
+            mcp < discovery,
     );
 });
 

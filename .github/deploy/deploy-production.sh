@@ -321,15 +321,10 @@ run_external_smoke_tests() {
     curl --fail --silent --show-error --output /dev/null --retry 20 --retry-delay 3 --retry-max-time 90 \
         --retry-connrefused --retry-all-errors "https://prodeals.lk/up?deploy=${RELEASE_ID}"
 
-    smoke_homepage &
-    local homepage_pid="$!"
-    smoke_product &
-    local product_pid="$!"
-    smoke_mcp &
-    local mcp_pid="$!"
-    smoke_discovery &
-    local discovery_pid="$!"
-    wait_for_processes "$homepage_pid" "$product_pid" "$mcp_pid" "$discovery_pid"
+    smoke_homepage
+    smoke_product
+    smoke_mcp
+    smoke_discovery
 }
 
 cleanup_release() {
