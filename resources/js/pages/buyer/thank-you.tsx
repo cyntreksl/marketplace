@@ -225,8 +225,10 @@ function OrderSummary({ order }: { order: CheckoutConfirmationOrder }) {
 
 export default function BuyerThankYou({
     order,
+    shouldTrackPurchase,
 }: {
     order: CheckoutConfirmationOrder;
+    shouldTrackPurchase: boolean;
 }) {
     const placedDate = order.placedAt
         ? new Date(order.placedAt).toLocaleDateString('en-LK', {
@@ -237,6 +239,10 @@ export default function BuyerThankYou({
         : null;
 
     useEffect(() => {
+        if (!shouldTrackPurchase) {
+            return;
+        }
+
         trackPurchase(order.number, {
             currency: 'LKR',
             value: Number(order.total),
@@ -249,7 +255,7 @@ export default function BuyerThankYou({
                 }),
             ),
         });
-    }, [order]);
+    }, [order, shouldTrackPurchase]);
 
     return (
         <StorefrontLayout

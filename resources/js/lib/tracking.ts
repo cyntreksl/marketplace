@@ -1,3 +1,5 @@
+import type { CheckoutCart } from '@/types/checkout';
+
 export type ConsentState = {
     version: 1;
     analytics: boolean;
@@ -96,6 +98,7 @@ function writeConsent(consent: ConsentState): void {
 function loadGtm(): void {
     if (
         !hasWindow() ||
+        document.documentElement.dataset.environment !== 'production' ||
         !containerId?.match(/^GTM-[A-Z0-9]+$/) ||
         document.querySelector('script[data-prodeals-gtm]')
     ) {
@@ -228,6 +231,24 @@ export function buildCatalogItem(
         ...parameters,
         item_id: String(listingVariantId ?? listingId),
         item_group_id: String(listingId),
+    };
+}
+
+export function buildCheckoutEventModel(
+    cart: Pick<CheckoutCart, 'items' | 'total'>,
+    parameters: Record<string, unknown> = {},
+): Record<string, unknown> {
+    return {
+        currency: 'LKR',
+        value: Number(cart.total),
+        items: cart.items.map((item) =>
+            buildCatalogItem(item.listing_id, item.listing_variant_id, {
+                item_name: item.listing.title,
+                price: Number(item.unitPrice),
+                quantity: item.quantity,
+            }),
+        ),
+        ...parameters,
     };
 }
 

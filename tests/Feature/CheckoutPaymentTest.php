@@ -104,11 +104,18 @@ test('verified card payment confirms seller orders and notifies once', function 
     Queue::assertNotPushed(SendMetaPurchase::class);
     Notification::assertNotSentTo($seller, SellerOrderReadyNotification::class);
     $payment = Payment::sole();
+    $this->get(route('checkout.thank_you.show', $payment->customerOrder->number))
+        ->assertInertia(fn ($page) => $page->where('shouldTrackPurchase', false));
     fakeStripeCheckout('paid');
     sendStripeEvent($payment)->assertNoContent();
     sendStripeEvent($payment)->assertNoContent();
     Queue::assertPushed(SendMetaPurchase::class, 1);
-    $this->get(route('checkout.card.return', $payment->customerOrder->number))->assertRedirect();
+    $this->get(route('checkout.card.return', $payment->customerOrder->number))
+        ->assertRedirect(route('checkout.thank_you.show', $payment->customerOrder->number));
+    $this->get(route('checkout.thank_you.show', $payment->customerOrder->number))
+        ->assertInertia(fn ($page) => $page->where('shouldTrackPurchase', true));
+    $this->get(route('checkout.thank_you.show', $payment->customerOrder->number))
+        ->assertInertia(fn ($page) => $page->where('shouldTrackPurchase', false));
     expect($payment->fresh()->status)->toBe('paid')->and($payment->fresh()->provider_reference)->toBe('pi_test_paid')->and($payment->customerOrder->fresh()->status)->toBe('confirmed')->and($payment->customerOrder->sellerOrders()->sole()->status)->toBe('paid')->and($listing->fresh()->reserved_quantity)->toBe(2);
     expect($payment->attempts()->sole()->status->value)->toBe('succeeded');
     Notification::assertSentTimes(PaymentConfirmedNotification::class, 1);

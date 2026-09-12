@@ -191,6 +191,12 @@ test('GTM noscript fallback is emitted only for a valid granting consent cookie'
 
     $this->withUnencryptedCookie(TrackingConsent::COOKIE_NAME, $consent)
         ->get(route('home'))
+        ->assertDontSee('googletagmanager.com/ns.html', false);
+
+    $this->app->detectEnvironment(fn (): string => 'production');
+
+    $this->withUnencryptedCookie(TrackingConsent::COOKIE_NAME, $consent)
+        ->get(route('home'))
         ->assertSee('googletagmanager.com/ns.html?id=GTM-KTT94R7G', false);
 });
 

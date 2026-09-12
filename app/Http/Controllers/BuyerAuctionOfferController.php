@@ -7,6 +7,7 @@ use App\Services\AuctionOrderService;
 use App\Services\AuctionService;
 use App\Services\CheckoutAddressService;
 use App\Services\CheckoutPaymentService;
+use App\Services\PurchaseTrackingSessionService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -36,6 +37,7 @@ class BuyerAuctionOfferController extends Controller
         AuctionOrderService $orders,
         CheckoutAddressService $addresses,
         CheckoutPaymentService $payments,
+        PurchaseTrackingSessionService $purchaseTracking,
     ): HttpResponse {
         $prepared = $addresses->prepare($request->validated());
         $order = $orders->accept(
@@ -45,6 +47,10 @@ class BuyerAuctionOfferController extends Controller
             $prepared['billing_address'],
         );
         $url = $payments->start($order);
+
+        if ($url !== null) {
+            $purchaseTracking->register($request, $order);
+        }
 
         return $url === null
             ? to_route('checkout.thank_you.show', $order->number)

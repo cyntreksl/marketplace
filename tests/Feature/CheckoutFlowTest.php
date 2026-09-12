@@ -233,6 +233,7 @@ test('buyer reviews and places an order before the checkout session and cart are
         ->assertInertia(fn ($page) => $page
             ->component('buyer/thank-you')
             ->where('order.number', $order->number)
+            ->where('shouldTrackPurchase', true)
             ->where('order.status', 'confirmed')
             ->where('order.total', '2800.00')
             ->where('order.payment.method', 'cod')
@@ -246,6 +247,10 @@ test('buyer reviews and places an order before the checkout session and cart are
             ->where('order.items.0.listingVariantId', null)
             ->where('order.items.0.title', $listing->title)
             ->where('order.items.0.quantity', 1));
+
+    $this->actingAs($user)
+        ->get(route('checkout.thank_you.show', ['customerOrder' => $order->number]))
+        ->assertInertia(fn ($page) => $page->where('shouldTrackPurchase', false));
 
     Notification::assertSentTo(
         $user,
@@ -324,6 +329,10 @@ test('buyer can create a pending order with an online payment method', function 
     expect($order->status)->toBe('pending_payment')
         ->and($payment->method)->toBe($paymentMethod)
         ->and($payment->status)->toBe('pending');
+
+    $this->actingAs($user)
+        ->get(route('checkout.thank_you.show', $order->number))
+        ->assertInertia(fn ($page) => $page->where('shouldTrackPurchase', false));
 })->with(['stripe']);
 
 test('a different billing address survives checkout review and order confirmation', function (): void {

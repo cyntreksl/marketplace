@@ -36,6 +36,7 @@ before(async () => {
             }
         },
         title: 'Test page',
+        documentElement: { dataset: { environment: 'production' } },
         head: { append: (script) => scripts.push(script) },
         createElement: () => ({ async: false, dataset: {}, src: '' }),
         querySelector: (selector) =>
@@ -130,6 +131,53 @@ test('purchase events are deduplicated by stable transaction ID', () => {
             transaction_id: 'SO-100',
         },
     });
+});
+
+test('checkout event models use the confirmed cart values', () => {
+    const cart = {
+        total: '4690.00',
+        items: [
+            {
+                listing_id: 65,
+                listing_variant_id: 901,
+                quantity: 2,
+                unitPrice: '2045.00',
+                listing: { title: 'Smartwatch' },
+            },
+        ],
+    };
+
+    assert.deepEqual(
+        tracking.buildCheckoutEventModel(cart, {
+            payment_type: 'cod',
+        }),
+        {
+            currency: 'LKR',
+            value: 4690,
+            items: [
+                {
+                    item_id: '901',
+                    item_group_id: '65',
+                    item_name: 'Smartwatch',
+                    price: 2045,
+                    quantity: 2,
+                },
+            ],
+            payment_type: 'cod',
+        },
+    );
+});
+
+test('local environments never load the production GTM container', () => {
+    const loadedScripts = scripts.splice(0);
+    document.documentElement.dataset.environment = 'local';
+
+    tracking.saveConsent(true, true);
+
+    assert.equal(scripts.length, 0);
+
+    document.documentElement.dataset.environment = 'production';
+    scripts.push(...loadedScripts);
 });
 
 test('revocation denies consent, clears known vendor cookies, and reloads', () => {

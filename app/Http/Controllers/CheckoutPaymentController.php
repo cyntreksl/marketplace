@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CustomerOrder;
 use App\Services\CheckoutPaymentService;
+use App\Services\PurchaseTrackingSessionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -12,14 +13,19 @@ use Throwable;
 
 class CheckoutPaymentController extends Controller
 {
-    public function __construct(private readonly CheckoutPaymentService $payments) {}
+    public function __construct(
+        private readonly CheckoutPaymentService $payments,
+        private readonly PurchaseTrackingSessionService $purchaseTracking,
+    ) {}
 
-    public function retry(CustomerOrder $customerOrder): Response
+    public function retry(Request $request, CustomerOrder $customerOrder): Response
     {
         Gate::authorize('view', $customerOrder);
         try {
             $url = $this->payments->start($customerOrder);
             if ($url !== null) {
+                $this->purchaseTracking->register($request, $customerOrder);
+
                 return Inertia::location($url);
             }
         } catch (Throwable $exception) {

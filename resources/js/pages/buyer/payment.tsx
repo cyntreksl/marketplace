@@ -1,8 +1,10 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { Banknote, Check, CreditCard, MapPin, ShieldCheck } from 'lucide-react';
+import { useEffect } from 'react';
 import { CartTotals } from '@/components/cart-contents';
 import { CheckoutProgress } from '@/components/checkout-progress';
 import { StorefrontLayout } from '@/components/storefront-layout';
+import { buildCheckoutEventModel, trackEvent } from '@/lib/tracking';
 import { cn } from '@/lib/utils';
 import { show as checkoutShow } from '@/routes/checkout';
 import { store as paymentStore } from '@/routes/checkout/payment';
@@ -28,6 +30,16 @@ export default function BuyerPayment({
             : cart.paymentMethods.includes('stripe')
               ? 'stripe'
               : cart.paymentMethods[0];
+
+    useEffect(() => {
+        trackEvent(
+            'add_shipping_info',
+            buildCheckoutEventModel(cart, {
+                shipping_tier: 'standard',
+            }),
+            'analytics',
+        );
+    }, [cart]);
 
     return (
         <StorefrontLayout title="Payment" showMobileNavigation={false}>

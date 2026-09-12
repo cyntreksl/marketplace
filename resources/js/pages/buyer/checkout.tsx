@@ -17,7 +17,11 @@ import type { ReactNode } from 'react';
 import { CheckoutProgress } from '@/components/checkout-progress';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { useStorefrontHeaderHeight } from '@/hooks/use-storefront-header-height';
-import { buildCatalogItem, trackEvent, withMetaEventId } from '@/lib/tracking';
+import {
+    buildCheckoutEventModel,
+    trackEvent,
+    withMetaEventId,
+} from '@/lib/tracking';
 import { show as cartShow } from '@/routes/cart';
 import { store as checkoutStore } from '@/routes/checkout';
 import type {
@@ -214,26 +218,9 @@ export default function BuyerCheckout({
     useEffect(() => {
         trackEvent(
             'begin_checkout',
-            withMetaEventId(
-                {
-                    currency: 'LKR',
-                    value: Number(cart.total),
-                    items: cart.items.map((item) =>
-                        buildCatalogItem(
-                            item.listing_id,
-                            item.listing_variant_id,
-                            {
-                                item_name: item.listing.title,
-                                price: Number(item.unitPrice),
-                                quantity: item.quantity,
-                            },
-                        ),
-                    ),
-                },
-                metaEventId,
-            ),
+            withMetaEventId(buildCheckoutEventModel(cart), metaEventId),
         );
-    }, [cart.items, cart.total, metaEventId]);
+    }, [cart, metaEventId]);
 
     return (
         <StorefrontLayout title="Checkout" showMobileNavigation={false}>

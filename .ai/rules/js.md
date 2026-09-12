@@ -10,3 +10,6 @@ Customer product review UI is controlled by `reviews.product.enabled`; future se
 
 ## Share Meta event IDs across browser and server
 For ViewContent, AddToCart, InitiateCheckout, and Purchase, send the same event ID through the browser dataLayer and Conversions API so Meta deduplicates the pair. Keep product content IDs as strings: use the variant ID when selected, otherwise the listing ID; keep the listing ID only as item_group_id.
+
+## Track browser purchases only after confirmation
+Expose browser Purchase only from an order-specific checkout-session marker, and consume it once after the customer order is confirmed. Pending card orders, direct thank-you visits, refreshes, and later sessions must not emit Purchase; preserve the stable Purchase:{order-number} event ID for browser/server deduplication.

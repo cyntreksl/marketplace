@@ -14,6 +14,7 @@ use App\Services\CheckoutAddressService;
 use App\Services\CheckoutPaymentService;
 use App\Services\CheckoutService;
 use App\Services\MetaConversionsService;
+use App\Services\PurchaseTrackingSessionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -34,6 +35,7 @@ class CheckoutController extends Controller
         private readonly CheckoutAddressService $checkoutAddresses,
         private readonly BuyerAddressService $buyerAddresses,
         private readonly MetaConversionsService $metaConversions,
+        private readonly PurchaseTrackingSessionService $purchaseTracking,
     ) {}
 
     public function show(Request $request): Response
@@ -183,6 +185,7 @@ class CheckoutController extends Controller
             $request->session()->get('checkout.billing_address'),
             $this->metaConversions->captureAttribution($request),
         );
+        $this->purchaseTracking->register($request, $order);
         $request->session()->forget('checkout');
 
         if ($paymentMethod === 'stripe') {
@@ -201,12 +204,13 @@ class CheckoutController extends Controller
         return to_route('checkout.thank_you.show', ['customerOrder' => $order->number]);
     }
 
-    public function thankYou(CustomerOrder $customerOrder): Response
+    public function thankYou(Request $request, CustomerOrder $customerOrder): Response
     {
         Gate::authorize('view', $customerOrder);
 
         return Inertia::render('buyer/thank-you', [
             'order' => $this->checkout->confirmationSummary($customerOrder),
+            'shouldTrackPurchase' => $this->purchaseTracking->consume($request, $customerOrder),
         ]);
     }
 
