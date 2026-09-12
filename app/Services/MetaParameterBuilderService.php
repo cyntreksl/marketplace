@@ -37,9 +37,9 @@ class MetaParameterBuilderService
 
     private const int MAX_CLICK_ID_LENGTH = 500;
 
-    private const string CLICK_ID_PATTERN = '/\A[A-Za-z0-9_-]+\z/D';
+    private const string CLICK_ID_PATTERN = '/\A[A-Za-z0-9._-]+\z/D';
 
-    private const string FBC_PATTERN = '/\Afb\.\d+\.\d{13}\.[A-Za-z0-9_-]+(?:\.(?:[A-Za-z0-9_-]{8}|AQ|Ag|Aw|BA|BQ|Bg))?\z/D';
+    private const string FBC_PATTERN = '/\Afb\.\d+\.\d{13}\.[A-Za-z0-9._-]+(?:\.(?:[A-Za-z0-9_-]{8}|AQ|Ag|Aw|BA|BQ|Bg))?\z/D';
 
     private const string FBP_PATTERN = '/\Afb\.\d+\.\d{13}\.\d+(?:\.(?:[A-Za-z0-9_-]{8}|AQ|Ag|Aw|BA|BQ|Bg))?\z/D';
 
@@ -65,7 +65,8 @@ class MetaParameterBuilderService
             $this->processBuilder($builder, $this->serverContext($request));
 
             return $this->remember($request, new MetaParameterContext(
-                fbc: $this->validFbc($builder->getFbc()),
+                fbc: $this->validFbc($builder->getFbc())
+                    ?? $this->validFbc($request->cookie(self::CLICK_COOKIE_NAME)),
                 fbp: $allowsMarketing ? $this->validFbp($builder->getFbp()) : null,
                 clientIpAddress: $this->bounded($builder->getClientIpAddress()),
                 sourceUrl: $this->boundedUrl($builder->getEventSourceUrl()),

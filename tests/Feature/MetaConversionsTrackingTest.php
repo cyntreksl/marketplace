@@ -143,6 +143,29 @@ test('a newer Meta click replaces stored attribution and preserves case', functi
     Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => $job->event->userData['fbc'] === $newFbc);
 });
 
+test('dotted Meta click ids remain exact across the landing request and later events', function (): void {
+    Queue::fake();
+    $listing = Listing::factory()->create();
+    $clickId = 'IwAR3xYz.AbC_123-test';
+
+    $response = $this->withHeader('User-Agent', 'Mozilla/5.0')
+        ->get(route('listings.show', $listing->slug).'?fbclid='.$clickId)
+        ->assertOk();
+
+    $fbc = $response->getCookie('_fbc', false)?->getValue();
+    expect($fbc)->toMatch('/^fb\.\d+\.\d{13}\.IwAR3xYz\.AbC_123-test\.[A-Za-z0-9_-]{8}$/');
+    Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => $job->event->userData['fbc'] === $fbc);
+
+    Queue::fake();
+    $this->withUnencryptedCookie('_fbc', $fbc)
+        ->withHeader('User-Agent', 'Mozilla/5.0')
+        ->post(route('cart.items.store'), ['listing_id' => $listing->id, 'quantity' => 1])
+        ->assertSessionHasNoErrors();
+
+    Queue::assertPushed(SendMetaConversion::class, fn (SendMetaConversion $job): bool => $job->event->name === 'AddToCart'
+        && $job->event->userData['fbc'] === $fbc);
+});
+
 test('a valid click id in the referrer creates fbc and propagates builder request data', function (): void {
     Queue::fake();
     $listing = Listing::factory()->create();
