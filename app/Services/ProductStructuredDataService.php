@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Guide;
 use App\Models\Listing;
 use App\Models\ListingMedia;
 use App\Models\ListingVariant;
@@ -74,6 +75,43 @@ class ProductStructuredDataService
         ];
 
         return [$this->withoutEmpty($organization), $website];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function forGuide(Guide $guide): array
+    {
+        $url = route('guides.show', $guide->slug);
+        $staticMedia = app(StaticMediaService::class);
+
+        return [
+            $this->withoutEmpty([
+                '@context' => 'https://schema.org',
+                '@type' => 'Article',
+                '@id' => $url.'#article',
+                'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => $url],
+                'headline' => $guide->title,
+                'description' => $guide->seo_description ?: $guide->excerpt,
+                'image' => $guide->heroImageUrl() ?: $staticMedia->url('prodeals-social-card.png'),
+                'datePublished' => $guide->published_at?->toIso8601String(),
+                'dateModified' => $guide->updated_at?->toIso8601String(),
+                'author' => ['@type' => 'Organization', 'name' => (string) config('app.name', 'ProDeals.lk')],
+                'publisher' => [
+                    '@type' => 'Organization',
+                    '@id' => route('home').'#organization',
+                    'name' => (string) config('app.name', 'ProDeals.lk'),
+                    'logo' => [
+                        '@type' => 'ImageObject',
+                        'url' => $staticMedia->url('prodeals-logo.svg'),
+                    ],
+                ],
+                'inLanguage' => 'en-LK',
+            ]),
+            $this->breadcrumbs([
+                ['name' => 'Home', 'url' => route('home')],
+                ['name' => 'Buying Guides', 'url' => route('guides.index')],
+                ['name' => $guide->title, 'url' => $url],
+            ]),
+        ];
     }
 
     /** @param array<int, array{name: string, url: string}> $items
@@ -285,6 +323,7 @@ class ProductStructuredDataService
             'applicableCountry' => 'LK',
             'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
             'merchantReturnDays' => $days,
+            'returnMethod' => 'https://schema.org/ReturnByMail',
             'returnFees' => 'https://schema.org/FreeReturn',
         ];
     }

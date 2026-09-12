@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['name', 'slug', 'seo_title', 'seo_description', 'seo_intro', 'logo_path', 'logo_disk', 'is_featured', 'homepage_order'])]
+#[Fillable(['name', 'slug', 'seo_title', 'seo_description', 'seo_intro', 'seo_focus_query', 'seo_supporting_queries', 'seo_researched_at', 'logo_path', 'logo_disk', 'is_featured', 'homepage_order'])]
 class Brand extends Model
 {
     /** @use HasFactory<BrandFactory> */
@@ -18,7 +18,12 @@ class Brand extends Model
 
     protected function casts(): array
     {
-        return ['is_featured' => 'boolean', 'homepage_order' => 'integer'];
+        return [
+            'is_featured' => 'boolean',
+            'homepage_order' => 'integer',
+            'seo_supporting_queries' => 'array',
+            'seo_researched_at' => 'date',
+        ];
     }
 
     public function logoUrl(): ?string

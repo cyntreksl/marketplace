@@ -32,6 +32,7 @@ class ListingService
         private readonly WholesalePriceTierRepository $wholesalePriceTiers,
         private readonly ListingSeoMetadataService $seoMetadata,
         private readonly AuctionService $auctions,
+        private readonly SeoRedirectService $redirects,
     ) {}
 
     /**
@@ -119,6 +120,7 @@ class ListingService
     /** @param array<string, mixed> $attributes */
     public function updateDraft(User $seller, Listing $listing, array $attributes): Listing
     {
+        $oldSlug = $listing->slug;
         $profile = $this->sellerProfileFor($seller);
         $submitForReview = (bool) ($attributes['submit_for_review'] ?? false);
 
@@ -126,7 +128,7 @@ class ListingService
             $this->ensureCanSubmit($profile);
         }
 
-        return DB::transaction(function () use ($seller, $profile, $listing, $attributes, $submitForReview): Listing {
+        return DB::transaction(function () use ($seller, $profile, $listing, $attributes, $submitForReview, $oldSlug): Listing {
             $listing = $this->listings->findForSellerOrFail($profile, $listing->id, lockForUpdate: true);
 
             if (! in_array($listing->status, ['draft', 'changes_requested', 'rejected'], true)) {
@@ -152,14 +154,19 @@ class ListingService
 
             $this->auditLogs->record($seller, 'listing.draft_updated', $listing, $before, $listing->getAttributes());
 
-            return $submitForReview ? $this->submitListing($seller, $listing) : $listing;
+            $listing = $submitForReview ? $this->submitListing($seller, $listing) : $listing;
+            $this->redirects->recordSlugChange('listings', $oldSlug, $listing->slug);
+
+            return $listing;
         });
     }
 
     /** @param array<string, mixed> $attributes */
     public function updateForModeration(User $actor, Listing $listing, array $attributes): Listing
     {
-        return DB::transaction(function () use ($actor, $listing, $attributes): Listing {
+        $oldSlug = $listing->slug;
+
+        return DB::transaction(function () use ($actor, $listing, $attributes, $oldSlug): Listing {
             $listing = $this->listings->findForAdminOrFail($listing->id, lockForUpdate: true);
             $before = $listing->getAttributes();
 
@@ -181,6 +188,7 @@ class ListingService
             }
 
             $this->auditLogs->record($actor, 'listing.details_updated_by_admin', $listing, $before, $listing->getAttributes());
+            $this->redirects->recordSlugChange('listings', $oldSlug, $listing->slug);
 
             return $listing;
         });
@@ -197,6 +205,7 @@ class ListingService
 
         return DB::transaction(function () use ($seller, $profile, $listingId, $attributes, $images, $crops): Listing {
             $listing = $this->listings->findForSellerOrFail($profile, $listingId, lockForUpdate: true);
+            $oldSlug = $listing->slug;
 
             if (! in_array($listing->status, ['draft', 'changes_requested', 'rejected'], true)) {
                 throw new AuthorizationException('Only drafts and returned listings can be edited.');
@@ -239,6 +248,7 @@ class ListingService
                 ...$listing->getAttributes(),
                 'media_count' => $this->listings->mediaCount($listing),
             ]);
+            $this->redirects->recordSlugChange('listings', $oldSlug, $listing->slug);
 
             return $listing;
         });

@@ -6,6 +6,7 @@ use App\Models\Listing;
 use App\Models\ListingMedia;
 use App\Models\OrderItem;
 use App\Models\SellerProfile;
+use App\Models\SeoRedirect;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -147,6 +148,7 @@ test('a seller can revise a returned listing before submitting it again', functi
         'moderation_reason' => 'Please clarify the warranty coverage.',
         'specifications' => ['Details' => 'Body only kit'],
     ]);
+    $oldSlug = $listing->slug;
 
     $this->actingAs($seller->user)
         ->get(route('seller.listings.edit', $listing))
@@ -176,7 +178,9 @@ test('a seller can revise a returned listing before submitting it again', functi
         ->status->toBe('draft')
         ->title->toBe('Canon EOS R6 with warranty')
         ->specifications->toBe(['Details' => 'Full-frame sensor with dual card slots'])
-        ->commission_percentage->toBe('10.00');
+        ->commission_percentage->toBe('10.00')
+        ->and(SeoRedirect::query()->where('source_path', '/listings/'.$oldSlug)->value('destination_path'))
+        ->toBe('/listings/'.$listing->slug);
 });
 
 test('a seller can view their product details', function () {

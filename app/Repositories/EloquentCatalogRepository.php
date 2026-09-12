@@ -642,7 +642,7 @@ class EloquentCatalogRepository implements CatalogRepository
     {
         $indexableCategoryIds = $this->indexableCategoryIds($channel);
         $category = Category::query()
-            ->select(['id', 'parent_id', 'name', 'slug', 'seo_title', 'seo_description', 'seo_intro', 'image_path', 'image_disk'])
+            ->select(['id', 'parent_id', 'name', 'slug', 'seo_title', 'seo_description', 'seo_intro', 'seo_focus_query', 'seo_supporting_queries', 'seo_researched_at', 'image_path', 'image_disk'])
             ->where('slug', $slug)
             ->storefrontAvailable()
             ->first();

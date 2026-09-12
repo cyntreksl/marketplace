@@ -4,6 +4,7 @@ use App\Models\AuditLog;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Role;
+use App\Models\SeoRedirect;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -32,6 +33,8 @@ test('operations admins can create and archive local categories with an audit re
         'name' => 'Wearables', 'slug' => 'wearables', 'commission_percentage' => 9,
         'return_window_days' => 14, 'cod_enabled' => true, 'is_active' => true, 'reason' => 'Aligning with buyer navigation',
     ])->assertRedirect();
+    expect(SeoRedirect::query()->where('source_path', '/categories/wearable-technology')->value('destination_path'))
+        ->toBe('/categories/wearables');
     $this->actingAs($admin)->delete(route('admin.categories.destroy', $category), ['reason' => 'Category is being consolidated'])->assertRedirect();
 
     expect($category->seo_title)->toBe('Wearable Technology in Sri Lanka')
@@ -58,6 +61,13 @@ test('operations admins can browse and maintain brands', function () {
         'reason' => 'Approved manufacturer catalogue',
     ])->assertRedirect();
     $brand = Brand::query()->where('slug', 'circuit')->sole();
+    $this->actingAs($admin)->patch(route('admin.brands.update', $brand), [
+        'name' => 'Circuit Pro',
+        'slug' => 'circuit-pro',
+        'reason' => 'Use the current public brand name',
+    ])->assertRedirect();
+    expect(SeoRedirect::query()->where('source_path', '/brands/circuit')->value('destination_path'))
+        ->toBe('/brands/circuit-pro');
     $this->actingAs($admin)->delete(route('admin.brands.destroy', $brand), ['reason' => 'Duplicate manufacturer entry'])->assertRedirect();
 
     expect($brand->seo_title)->toBe('Circuit Products in Sri Lanka')

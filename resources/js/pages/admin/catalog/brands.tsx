@@ -13,6 +13,9 @@ export default function Brands({
             seo_title: string | null;
             seo_description: string | null;
             seo_intro: string | null;
+            seo_focus_query: string | null;
+            seo_supporting_queries: string[];
+            seo_researched_at: string | null;
             deleted_at: string | null;
             logo_url: string | null;
             is_featured: boolean;
@@ -59,6 +62,21 @@ export default function Brands({
                                     maxLength={5000}
                                     placeholder="Visible brand introduction"
                                     className="min-h-28 rounded-xl border p-3"
+                                />
+                                <input
+                                    name="seo_focus_query"
+                                    placeholder="Internal focus query"
+                                    className="rounded-xl border p-3"
+                                />
+                                <textarea
+                                    name="seo_supporting_queries"
+                                    placeholder="Supporting queries, one per line"
+                                    className="min-h-20 rounded-xl border p-3"
+                                />
+                                <input
+                                    type="date"
+                                    name="seo_researched_at"
+                                    className="rounded-xl border p-3"
                                 />
                                 <input
                                     type="file"
@@ -161,6 +179,30 @@ export default function Brands({
                                         defaultValue={brand.seo_intro ?? ''}
                                         placeholder="Visible brand introduction"
                                         className="min-h-24 rounded-lg border bg-transparent p-2 text-sm"
+                                    />
+                                    <input
+                                        name="seo_focus_query"
+                                        defaultValue={
+                                            brand.seo_focus_query ?? ''
+                                        }
+                                        placeholder="Internal focus query"
+                                        className="rounded-lg border bg-transparent p-2 text-sm"
+                                    />
+                                    <textarea
+                                        name="seo_supporting_queries"
+                                        defaultValue={brand.seo_supporting_queries.join(
+                                            '\n',
+                                        )}
+                                        placeholder="Supporting queries, one per line"
+                                        className="min-h-20 rounded-lg border bg-transparent p-2 text-sm"
+                                    />
+                                    <input
+                                        type="date"
+                                        name="seo_researched_at"
+                                        defaultValue={
+                                            brand.seo_researched_at ?? ''
+                                        }
+                                        className="rounded-lg border bg-transparent p-2 text-sm"
                                     />
                                     <input
                                         type="file"

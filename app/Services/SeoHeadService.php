@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Guide;
 use App\Models\Listing;
 use App\Models\ListingMedia;
 use App\Support\SeoText;
@@ -130,6 +131,25 @@ class SeoHeadService
                 $this->structuredData->breadcrumbs($breadcrumbs),
                 ...($items === [] ? [] : [$this->structuredData->itemList($items, $canonical, $title)]),
             ],
+        );
+    }
+
+    /** @return array<string, mixed> */
+    public function guidePayload(Guide $guide): array
+    {
+        $this->indexability->mark(request(), true);
+        $image = $guide->heroImageUrl() ?: $this->staticMedia->url('prodeals-social-card.png');
+
+        return $this->payload(
+            title: $this->plainText($guide->seo_title ?: $guide->title.' - '.config('app.name')),
+            description: $this->plainText($guide->seo_description ?: $guide->excerpt),
+            canonical: route('guides.show', $guide->slug),
+            type: 'article',
+            image: $image,
+            imageWidth: $guide->heroImageUrl() === null ? 1200 : null,
+            imageHeight: $guide->heroImageUrl() === null ? 630 : null,
+            robots: 'index,follow,max-image-preview:large',
+            graphs: $this->structuredData->forGuide($guide),
         );
     }
 

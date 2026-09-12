@@ -25,6 +25,8 @@ class SeoIndexabilityService
         'collections.show',
         'auctions.index',
         'stores.show',
+        'guides.index',
+        'guides.show',
         'policies.shipping',
         'policies.returns',
         'policies.sellers',

@@ -88,6 +88,13 @@ migrate_media_release() {
     )
 }
 
+seed_seo_growth_content() {
+    (
+        cd "$release_dir"
+        php8.4 artisan seo:seed-growth-content --no-interaction
+    )
+}
+
 activate_release() {
     local previous_release
     local next_link="${app_root}/.current-${release_id}"
@@ -189,6 +196,9 @@ case "$command_name" in
     migrate-media)
         migrate_media_release
         ;;
+    seed-seo)
+        seed_seo_growth_content
+        ;;
     activate)
         activate_release
         ;;
@@ -205,7 +215,7 @@ case "$command_name" in
         cleanup_releases
         ;;
     *)
-        echo "Usage: $0 {prepare|maintenance-down|maintenance-up|migrate|migrate-media|activate|rollback|rollback-to|current|cleanup} RELEASE_ID [ARGUMENT]" >&2
+        echo "Usage: $0 {prepare|maintenance-down|maintenance-up|migrate|migrate-media|seed-seo|activate|rollback|rollback-to|current|cleanup} RELEASE_ID [ARGUMENT]" >&2
         exit 1
         ;;
 esac

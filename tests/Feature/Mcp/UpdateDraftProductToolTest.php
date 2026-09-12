@@ -7,6 +7,7 @@ use App\Models\Listing;
 use App\Models\ListingMedia;
 use App\Models\ListingVariant;
 use App\Models\SellerProfile;
+use App\Models\SeoRedirect;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Queue;
@@ -139,6 +140,7 @@ test('updates draft content without images or a duplicate listing', function () 
         'specifications' => ['Old' => 'Specification'],
     ]);
     $originalTitle = $listing->title;
+    $originalSlug = $listing->slug;
 
     MarketplaceServer::actingAs($seller->user)->tool(UpdateDraftProductTool::class, [
         'listing_id' => $listing->id,
@@ -160,7 +162,9 @@ test('updates draft content without images or a duplicate listing', function () 
         ->and($listing->warranty)->toBe('Two years parts and labour')
         ->and($listing->status)->toBe('draft')
         ->and($listing->approved_at)->toBeNull()
-        ->and($listing->media)->toBeEmpty();
+        ->and($listing->media)->toBeEmpty()
+        ->and(SeoRedirect::query()->where('source_path', '/listings/'.$originalSlug)->value('destination_path'))
+        ->toBe('/listings/updated-laptop');
 
     $audit = AuditLog::query()->where('action', 'listing.draft_updated')->sole();
     expect($audit->actor_id)->toBe($seller->user_id)

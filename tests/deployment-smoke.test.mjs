@@ -11,6 +11,10 @@ const source = await readFile(
 );
 const productSmoke = source.match(/smoke_product\(\) \{[\s\S]*?\n\}/)?.[0];
 assert.ok(productSmoke);
+const discoverySmoke = source.match(
+    /smoke_discovery\(\) \{[\s\S]*?\n\}/,
+)?.[0];
+assert.ok(discoverySmoke);
 
 test('product smoke checks consume large sitemaps without breaking the pipe', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'prodeals-smoke-'));
@@ -130,4 +134,41 @@ resume_order_creation
         result.stdout,
         /deploy@worker release-script maintenance-up release/,
     );
+});
+
+test('deployment verifies authoritative cached discovery and keeps Search Console failure non-blocking', async () => {
+    assert.match(discoverySmoke, /sitemaps\/guides\.xml/);
+    assert.match(discoverySmoke, /max-age=300/);
+    assert.match(discoverySmoke, /s-maxage=3600/);
+    assert.match(discoverySmoke, /stale-while-revalidate=86400/);
+    assert.match(discoverySmoke, /grep -c '\^Sitemap:/);
+    assert.match(discoverySmoke, /OAI-SearchBot/);
+    assert.match(discoverySmoke, /feeds\/google-merchant\.xml/);
+    assert.match(discoverySmoke, /no-cache/);
+    assert.match(discoverySmoke, /https:\/\/prodeals\.lk\/shop/);
+
+    const submitFunction = source.match(
+        /submit_search_console_sitemap\(\) \{[\s\S]*?\n\}/,
+    )?.[0];
+    assert.ok(submitFunction);
+    assert.match(submitFunction, /if ! ssh/);
+    assert.match(submitFunction, /healthy deployment remains active/);
+
+    const stages = source.slice(
+        source.indexOf("run_stage 'Restart services'"),
+    );
+    assert.ok(
+        stages.indexOf("'Disable Cloudflare Managed Robots'") <
+            stages.indexOf("'Run production smoke tests'"),
+    );
+    assert.ok(
+        stages.indexOf("'Run production smoke tests'") <
+            stages.indexOf("'Submit sitemap to Search Console'"),
+    );
+
+    const remoteRelease = await readFile(
+        new URL('../.github/deploy/remote-release.sh', import.meta.url),
+        'utf8',
+    );
+    assert.match(remoteRelease, /seo:seed-growth-content --no-interaction/);
 });

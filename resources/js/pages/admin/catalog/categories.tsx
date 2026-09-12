@@ -40,6 +40,9 @@ type Category = {
     seo_title: string | null;
     seo_description: string | null;
     seo_intro: string | null;
+    seo_focus_query: string | null;
+    seo_supporting_queries: string[];
+    seo_researched_at: string | null;
     path: string;
     google_product_category_id: number | null;
     image_url: string | null;
@@ -373,6 +376,41 @@ function CategoryMetadataForm({
                                 defaultValue={category.seo_intro ?? ''}
                                 placeholder="Helpful copy shown above category products"
                                 className={`${inputClassName} min-h-32`}
+                            />
+                        </label>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <label className="grid gap-1.5 text-sm font-bold">
+                                Focus query
+                                <input
+                                    name="seo_focus_query"
+                                    defaultValue={
+                                        category.seo_focus_query ?? ''
+                                    }
+                                    placeholder="Internal research query"
+                                    className={inputClassName}
+                                />
+                            </label>
+                            <label className="grid gap-1.5 text-sm font-bold">
+                                Trends research date
+                                <input
+                                    type="date"
+                                    name="seo_researched_at"
+                                    defaultValue={
+                                        category.seo_researched_at ?? ''
+                                    }
+                                    className={inputClassName}
+                                />
+                            </label>
+                        </div>
+                        <label className="grid gap-1.5 text-sm font-bold">
+                            Supporting queries
+                            <textarea
+                                name="seo_supporting_queries"
+                                defaultValue={category.seo_supporting_queries.join(
+                                    '\n',
+                                )}
+                                placeholder="One internal research query per line"
+                                className={`${inputClassName} min-h-24`}
                             />
                         </label>
                     </div>
@@ -971,6 +1009,32 @@ function CreateCategory({
                                     maxLength={5000}
                                     placeholder="Helpful copy shown above category products"
                                     className={`${inputClassName} min-h-32`}
+                                />
+                            </label>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <label className="grid gap-1.5 text-sm font-bold">
+                                    Focus query
+                                    <input
+                                        name="seo_focus_query"
+                                        placeholder="Internal research query"
+                                        className={inputClassName}
+                                    />
+                                </label>
+                                <label className="grid gap-1.5 text-sm font-bold">
+                                    Trends research date
+                                    <input
+                                        type="date"
+                                        name="seo_researched_at"
+                                        className={inputClassName}
+                                    />
+                                </label>
+                            </div>
+                            <label className="grid gap-1.5 text-sm font-bold">
+                                Supporting queries
+                                <textarea
+                                    name="seo_supporting_queries"
+                                    placeholder="One internal research query per line"
+                                    className={`${inputClassName} min-h-24`}
                                 />
                             </label>
                         </div>

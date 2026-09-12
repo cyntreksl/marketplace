@@ -23,6 +23,7 @@ class AdminCatalogService
         private readonly CatalogRepository $catalog,
         private readonly AuditLogService $auditLogs,
         private readonly CategoryArtworkService $artwork,
+        private readonly SeoRedirectService $redirects,
     ) {}
 
     /** @return array<string, array{group: string, label: string, min: int}> */
@@ -91,13 +92,15 @@ class AdminCatalogService
     /** @param array<string, mixed> $attributes */
     public function updateCategory(User $actor, Category $category, array $attributes, string $reason): Category
     {
+        $oldSlug = $category->slug;
         $attributes['slug'] = $attributes['slug'] ?: Str::slug($attributes['name']);
 
-        return DB::transaction(function () use ($actor, $category, $attributes, $reason): Category {
+        return DB::transaction(function () use ($actor, $category, $attributes, $reason, $oldSlug): Category {
             $before = $category->getAttributes();
             $category->fill($attributes);
             $this->catalog->saveCategory($category);
             $this->auditLogs->record($actor, 'category.updated', $category, $before, $category->getAttributes(), $reason);
+            $this->redirects->recordSlugChange('categories', $oldSlug, $category->slug);
 
             return $category;
         });
@@ -186,9 +189,11 @@ class AdminCatalogService
     /** @param array<string, mixed> $attributes */
     public function updateBrand(User $actor, Brand $brand, array $attributes, string $reason): Brand
     {
+        $oldSlug = $brand->slug;
         $logo = Arr::pull($attributes, 'logo');
         $oldPath = $brand->logo_path;
         $oldDisk = $brand->logo_disk ?: (string) config('filesystems.media', 'public');
+        $stored = null;
 
         if ($logo instanceof UploadedFile) {
             $stored = $this->storeBrandLogo($logo);
@@ -196,7 +201,20 @@ class AdminCatalogService
             $attributes['logo_disk'] = $stored['disk'];
         }
 
-        $brand = $this->update($actor, $brand, $attributes, $reason, 'brand.updated');
+        try {
+            $brand = DB::transaction(function () use ($actor, $brand, $attributes, $reason, $oldSlug): Brand {
+                $brand = $this->update($actor, $brand, $attributes, $reason, 'brand.updated');
+                $this->redirects->recordSlugChange('brands', $oldSlug, $brand->slug);
+
+                return $brand;
+            });
+        } catch (Throwable $exception) {
+            if ($stored !== null) {
+                Storage::disk($stored['disk'])->delete($stored['path']);
+            }
+
+            throw $exception;
+        }
 
         if ($logo instanceof UploadedFile && $oldPath !== null) {
             Storage::disk($oldDisk)->delete($oldPath);

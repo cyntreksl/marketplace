@@ -4,6 +4,7 @@ use App\Http\Middleware\AddSearchRobotHeaders;
 use App\Http\Middleware\CaptureMetaClickId;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\ResolveSeoRedirects;
 use App\Services\MetaParameterBuilderService;
 use App\Support\TrackingConsent;
 use Illuminate\Foundation\Application;
@@ -34,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             CaptureMetaClickId::class,
             AddSearchRobotHeaders::class,
+            ResolveSeoRedirects::class,
             AddLinkHeadersForPreloadedAssets::using(5),
         ]);
     })

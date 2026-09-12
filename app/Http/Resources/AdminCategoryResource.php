@@ -25,6 +25,9 @@ class AdminCategoryResource extends JsonResource
             'seo_title' => $this->resource->seo_title,
             'seo_description' => $this->resource->seo_description,
             'seo_intro' => $this->resource->seo_intro,
+            'seo_focus_query' => $this->resource->seo_focus_query,
+            'seo_supporting_queries' => $this->resource->seo_supporting_queries ?? [],
+            'seo_researched_at' => $this->resource->seo_researched_at?->toDateString(),
             'path' => (string) ($this->resource->getAttribute('category_path') ?: $this->resource->name),
             'google_product_category_id' => $this->resource->google_product_category_id === null
                 ? null

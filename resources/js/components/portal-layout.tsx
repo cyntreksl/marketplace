@@ -16,6 +16,8 @@ import {
     Users,
     WalletCards,
     Gavel,
+    BookOpen,
+    CornerUpRight,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Fragment } from 'react';
@@ -43,6 +45,7 @@ import { index as adminAuctionsIndex } from '@/routes/admin/auctions';
 import { index as adminBrandsIndex } from '@/routes/admin/brands';
 import { index as adminCategoriesIndex } from '@/routes/admin/categories';
 import { index as adminFeaturesIndex } from '@/routes/admin/features';
+import { index as adminGuidesIndex } from '@/routes/admin/guides';
 import { index as adminHomepageIndex } from '@/routes/admin/homepage';
 import { index as adminListingsIndex } from '@/routes/admin/listings';
 import { index as adminOrdersIndex } from '@/routes/admin/orders';
@@ -50,6 +53,7 @@ import { index as adminProductsIndex } from '@/routes/admin/products';
 import { index as adminReturnsIndex } from '@/routes/admin/returns';
 import { index as adminSearchInsightsIndex } from '@/routes/admin/search-insights';
 import { index as adminSellersIndex } from '@/routes/admin/sellers';
+import { index as adminSeoRedirectsIndex } from '@/routes/admin/seo-redirects';
 import { index as adminTaxonomyIndex } from '@/routes/admin/taxonomy';
 import { index as adminUsersIndex } from '@/routes/admin/users';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
@@ -171,6 +175,18 @@ const portalDetails: Record<Portal, PortalDetails> = {
                 href: adminTaxonomyIndex(),
                 icon: FolderTree,
                 group: 'Catalog',
+            },
+            {
+                title: 'Buying guides',
+                href: adminGuidesIndex(),
+                icon: BookOpen,
+                group: 'SEO',
+            },
+            {
+                title: 'SEO redirects',
+                href: adminSeoRedirectsIndex(),
+                icon: CornerUpRight,
+                group: 'SEO',
             },
         ],
     },

@@ -29,6 +29,7 @@ import { buildCatalogItem, trackEvent, withMetaEventId } from '@/lib/tracking';
 import { home, login } from '@/routes';
 import { show as brandShow } from '@/routes/brands';
 import { show as categoryShow } from '@/routes/categories';
+import { show as guideShow } from '@/routes/guides';
 import { index as listingsIndex } from '@/routes/listings';
 import { show as listingShow } from '@/routes/listings';
 import { shipping, returns } from '@/routes/policies';
@@ -101,6 +102,7 @@ export default function ListingShow({
     activeCampaign,
     categoryPolicies,
     relatedListings,
+    relatedGuides,
     sellerListings,
     selectedVariantId,
     sellerSummary,
@@ -117,6 +119,7 @@ export default function ListingShow({
     activeCampaign: Campaign | null;
     categoryPolicies: Policies;
     relatedListings: StorefrontListing[];
+    relatedGuides: { title: string; slug: string; excerpt: string }[];
     sellerListings: StorefrontListing[];
     selectedVariantId: number | null;
     sellerSummary: PublicSellerSummary | null;
@@ -801,6 +804,30 @@ export default function ListingShow({
                     pendingQuestions={pendingQuestions}
                     categoryPolicies={categoryPolicies}
                 />
+
+                {relatedGuides.length > 0 && (
+                    <section className="mt-8 rounded-2xl border border-orange-100 bg-orange-50/60 p-5 sm:p-6">
+                        <h2 className="text-lg font-black tracking-tight text-slate-950">
+                            Learn before you buy
+                        </h2>
+                        <div className="mt-4 grid gap-3 md:grid-cols-2">
+                            {relatedGuides.map((guide) => (
+                                <Link
+                                    key={guide.slug}
+                                    href={guideShow(guide.slug)}
+                                    className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-orange-100 transition hover:ring-orange-300"
+                                >
+                                    <h3 className="font-extrabold text-slate-950">
+                                        {guide.title}
+                                    </h3>
+                                    <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-600">
+                                        {guide.excerpt}
+                                    </p>
+                                </Link>
+                            ))}
+                        </div>
+                    </section>
+                )}
 
                 {sellerListings.length > 0 && (
                     <section className="mt-6">

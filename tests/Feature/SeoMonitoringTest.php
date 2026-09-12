@@ -44,6 +44,7 @@ function seoPublicDocuments(): array
         route('sitemap.stores') => $sitemaps->stores(),
         route('sitemap.categories') => $sitemaps->categories(),
         route('sitemap.brands') => $sitemaps->brands(),
+        route('sitemap.guides') => $sitemaps->guides(),
     ];
     for ($page = 1; ($xml = $sitemaps->products($page)) !== null; $page++) {
         $documents[route('sitemap.products', $page)] = $xml;

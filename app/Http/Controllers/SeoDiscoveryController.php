@@ -34,6 +34,11 @@ class SeoDiscoveryController extends Controller
         return $this->xml($this->sitemaps->stores());
     }
 
+    public function guides(): Response
+    {
+        return $this->xml($this->sitemaps->guides());
+    }
+
     public function products(int $page): Response
     {
         $xml = $this->sitemaps->products($page);

@@ -7,6 +7,7 @@ use App\Http\Controllers\AdminCategoryBrowseController;
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminFeatureSettingsController;
+use App\Http\Controllers\AdminGuideController;
 use App\Http\Controllers\AdminHomepageController;
 use App\Http\Controllers\AdminListingController;
 use App\Http\Controllers\AdminOrderController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\AdminPromotionController;
 use App\Http\Controllers\AdminReturnController;
 use App\Http\Controllers\AdminSearchInsightsController;
 use App\Http\Controllers\AdminSellerController;
+use App\Http\Controllers\AdminSeoRedirectController;
 use App\Http\Controllers\AdminTaxonomyController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AuctionBidController;
@@ -31,6 +33,7 @@ use App\Http\Controllers\CategoryLookupController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CheckoutPaymentController;
 use App\Http\Controllers\ComparisonController;
+use App\Http\Controllers\GuideController;
 use App\Http\Controllers\MerchantFeedController;
 use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\ProductQuestionController;
@@ -48,6 +51,7 @@ use App\Http\Controllers\SellerStoreController;
 use App\Http\Controllers\SellerWalletController;
 use App\Http\Controllers\SellerWholesaleController;
 use App\Http\Controllers\SeoDiscoveryController;
+use App\Http\Controllers\SeoRedirectController;
 use App\Http\Controllers\Settings\ProfileController as SettingsProfileController;
 use App\Http\Controllers\Settings\SecurityController as SettingsSecurityController;
 use App\Http\Controllers\SiteManifestController;
@@ -60,7 +64,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::get('/', [StorefrontController::class, 'home'])->name('home');
-Route::middleware('cache.headers:public;no_cache;must_revalidate;etag')
+Route::middleware('cache.headers:public;max_age=300;s_maxage=3600;stale_while_revalidate=86400;etag')
     ->withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, PreventRequestForgery::class])
     ->group(function (): void {
         Route::get('/sitemap.xml', [SeoDiscoveryController::class, 'sitemap'])->name('sitemap.index');
@@ -69,7 +73,12 @@ Route::middleware('cache.headers:public;no_cache;must_revalidate;etag')
         Route::get('/sitemaps/brands.xml', [SeoDiscoveryController::class, 'brands'])->name('sitemap.brands');
         Route::get('/sitemaps/products-{page}.xml', [SeoDiscoveryController::class, 'products'])->whereNumber('page')->name('sitemap.products');
         Route::get('/sitemaps/stores.xml', [SeoDiscoveryController::class, 'stores'])->name('sitemap.stores');
+        Route::get('/sitemaps/guides.xml', [SeoDiscoveryController::class, 'guides'])->name('sitemap.guides');
         Route::get('/robots.txt', [SeoDiscoveryController::class, 'robots'])->name('robots');
+    });
+Route::middleware('cache.headers:public;no_cache;must_revalidate;etag')
+    ->withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, PreventRequestForgery::class])
+    ->group(function (): void {
         Route::get('/feeds/google-merchant.xml', MerchantFeedController::class)->name('feeds.google_merchant');
     });
 Route::get('/manifest.webmanifest', SiteManifestController::class)->name('site.manifest');
@@ -94,6 +103,8 @@ Route::get('/collections/{collection}', [StorefrontController::class, 'collectio
     ->name('collections.show');
 Route::get('/brands', BrandDirectoryController::class)->name('brands.index');
 Route::get('/brands/{brand}', [StorefrontController::class, 'brand'])->name('brands.show');
+Route::get('/guides', [GuideController::class, 'index'])->name('guides.index');
+Route::get('/guides/{guide}', [GuideController::class, 'show'])->name('guides.show');
 Route::get('/listings/recent', [StorefrontController::class, 'recent'])->name('listings.recent');
 Route::get('/listings/{listing}', [StorefrontController::class, 'show'])->name('listings.show');
 Route::get('/compare', [ComparisonController::class, 'index'])->name('compare.index');
@@ -209,6 +220,10 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): void {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/features', [AdminFeatureSettingsController::class, 'index'])->name('features.index');
+    Route::resource('/guides', AdminGuideController::class)->except(['show']);
+    Route::post('/guides/{guide}/restore', [AdminGuideController::class, 'restore'])->whereNumber('guide')->name('guides.restore');
+    Route::resource('/seo-redirects', AdminSeoRedirectController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::post('/seo-redirects/{seoRedirect}/restore', [AdminSeoRedirectController::class, 'restore'])->whereNumber('seoRedirect')->name('seo-redirects.restore');
     Route::put('/features', [AdminFeatureSettingsController::class, 'update'])->name('features.update');
     Route::get('/orders', [AdminOrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/export.xlsx', [AdminOrderController::class, 'downloadExport'])->name('orders.export');
@@ -283,3 +298,5 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/seller/store', [SellerStoreController::class, 'edit'])->name('seller.store.edit');
     Route::put('/seller/store', [SellerStoreController::class, 'update'])->name('seller.store.update');
 });
+
+Route::fallback(SeoRedirectController::class);

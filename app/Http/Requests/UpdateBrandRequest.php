@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\NormalizesSeoSupportingQueries;
 use App\Models\Brand;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -9,12 +10,17 @@ use Illuminate\Validation\Rule;
 
 class UpdateBrandRequest extends FormRequest
 {
+    use NormalizesSeoSupportingQueries;
+
     protected function prepareForValidation(): void
     {
         $brand = $this->route('brand');
 
         $this->merge([
             'is_featured' => $this->input('is_featured', $brand instanceof Brand ? $brand->is_featured : false),
+            'seo_supporting_queries' => $this->normalizeSeoSupportingQueries(
+                $this->input('seo_supporting_queries', $brand instanceof Brand ? $brand->seo_supporting_queries : []),
+            ),
         ]);
     }
 
@@ -39,6 +45,10 @@ class UpdateBrandRequest extends FormRequest
             'seo_title' => ['nullable', 'string', 'max:255'],
             'seo_description' => ['nullable', 'string', 'max:320'],
             'seo_intro' => ['nullable', 'string', 'max:5000'],
+            'seo_focus_query' => ['nullable', 'string', 'max:255'],
+            'seo_supporting_queries' => ['nullable', 'array', 'max:20'],
+            'seo_supporting_queries.*' => ['required', 'string', 'max:255', 'distinct'],
+            'seo_researched_at' => ['nullable', 'date', 'before_or_equal:today'],
             'logo' => ['nullable', 'image', 'max:2048'],
             'is_featured' => ['required', 'boolean'],
             'homepage_order' => ['nullable', 'integer', 'min:0', 'max:65535'],

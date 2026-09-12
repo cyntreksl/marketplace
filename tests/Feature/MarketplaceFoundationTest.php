@@ -7,6 +7,7 @@ use App\Models\Listing;
 use App\Models\ListingMedia;
 use App\Models\Role;
 use App\Models\SellerProfile;
+use App\Models\SeoRedirect;
 use App\Models\User;
 use App\Services\PlaceBidService;
 
@@ -112,4 +113,18 @@ test('a verified account can submit seller onboarding details for review', funct
         ->assertRedirect(route('seller.onboarding.edit', absolute: false));
 
     expect(SellerProfile::query()->where('user_id', $user->id)->firstOrFail()->status)->toBe('pending_review');
+
+    $this->actingAs($user)
+        ->put(route('seller.onboarding.update'), [
+            'seller_type' => 'individual',
+            'store_name' => 'Colombo Device Store',
+            'phone' => '0771234567',
+            'bank_account_name' => 'Test User',
+            'bank_account_details' => 'Account 123',
+            'accept_terms' => 'on',
+        ])
+        ->assertRedirect(route('seller.onboarding.edit', absolute: false));
+
+    expect(SeoRedirect::query()->where('source_path', '/stores/colombo-devices-'.$user->id)->value('destination_path'))
+        ->toBe('/stores/colombo-device-store-'.$user->id);
 });

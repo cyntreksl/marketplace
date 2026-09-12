@@ -189,6 +189,8 @@ run_migrations() {
         "${remote_script} migrate ${RELEASE_ID}"
     ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" \
         "${remote_script} migrate-media ${RELEASE_ID}"
+    ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" \
+        "${remote_script} seed-seo ${RELEASE_ID}"
 }
 
 activate_release() {
@@ -207,6 +209,18 @@ restart_services() {
     local worker_restart_pid="$!"
 
     wait_for_processes "$web_restart_pid" "$worker_restart_pid"
+}
+
+disable_cloudflare_managed_robots() {
+    ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" \
+        'cd /var/www/prodeals/current && php8.4 artisan seo:disable-cloudflare-managed-robots --no-interaction'
+}
+
+submit_search_console_sitemap() {
+    if ! ssh "${ssh_options[@]}" "${DEPLOY_USER}@${WEB_HOST}" \
+        'cd /var/www/prodeals/current && php8.4 artisan seo:submit-search-console-sitemap --no-interaction'; then
+        echo 'Warning: Search Console sitemap submission failed; the healthy deployment remains active.' >&2
+    fi
 }
 
 verify_hosts() {
@@ -254,6 +268,40 @@ smoke_mcp() {
     grep -q '"protocolVersion":"2025-06-18"' "$response_path"
 }
 
+smoke_discovery() {
+    local sitemap_headers="${runtime_dir}/sitemap-headers.txt"
+    local robots_headers="${runtime_dir}/robots-headers.txt"
+    local merchant_headers="${runtime_dir}/merchant-headers.txt"
+    local robots_body="${runtime_dir}/robots.txt"
+
+    curl --fail --silent --show-error --max-time 30 --dump-header "$sitemap_headers" \
+        --output /dev/null https://prodeals.lk/sitemap.xml
+    grep -iq 'cache-control:.*public' "$sitemap_headers"
+    grep -iq 'cache-control:.*max-age=300' "$sitemap_headers"
+    grep -iq 'cache-control:.*s-maxage=3600' "$sitemap_headers"
+    grep -iq 'cache-control:.*stale-while-revalidate=86400' "$sitemap_headers"
+    grep -iq '^etag:' "$sitemap_headers"
+
+    curl --fail --silent --show-error --max-time 30 --dump-header "$robots_headers" \
+        https://prodeals.lk/robots.txt > "$robots_body"
+    test "$(grep -c '^Sitemap: https://prodeals.lk/sitemap.xml$' "$robots_body")" -eq 1
+    grep -q '^User-agent: \*$' "$robots_body"
+    grep -q '^User-agent: Google-Extended$' "$robots_body"
+    grep -q '^User-agent: OAI-SearchBot$' "$robots_body"
+    grep -iq 'cache-control:.*public' "$robots_headers"
+    grep -iq 'cache-control:.*max-age=300' "$robots_headers"
+    grep -iq 'cache-control:.*s-maxage=3600' "$robots_headers"
+    grep -iq 'cache-control:.*stale-while-revalidate=86400' "$robots_headers"
+
+    curl --fail --silent --show-error --max-time 30 --dump-header "$merchant_headers" \
+        --output /dev/null https://prodeals.lk/feeds/google-merchant.xml
+    grep -iq 'cache-control:.*no-cache' "$merchant_headers"
+
+    curl --fail --silent --show-error --max-time 30 https://prodeals.lk/sitemaps/guides.xml \
+        | grep -q '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+    test "$(curl --silent --show-error --max-time 30 --output /dev/null --write-out '%{http_code}' https://prodeals.lk/shop)" -eq 301
+}
+
 run_external_smoke_tests() {
     curl --fail --silent --show-error --output /dev/null --retry 20 --retry-delay 3 --retry-max-time 90 \
         --retry-connrefused --retry-all-errors https://prodeals.lk/up
@@ -264,7 +312,9 @@ run_external_smoke_tests() {
     local product_pid="$!"
     smoke_mcp &
     local mcp_pid="$!"
-    wait_for_processes "$homepage_pid" "$product_pid" "$mcp_pid"
+    smoke_discovery &
+    local discovery_pid="$!"
+    wait_for_processes "$homepage_pid" "$product_pid" "$mcp_pid" "$discovery_pid"
 }
 
 cleanup_release() {
@@ -295,8 +345,10 @@ run_stage 'Run database and media migrations' run_migrations
 run_stage 'Activate releases' run_on_hosts activate_release
 run_stage 'Restart services' restart_services
 run_stage 'Verify hosts' verify_hosts
+run_stage 'Disable Cloudflare Managed Robots' disable_cloudflare_managed_robots
 run_stage 'Resume order creation' resume_order_creation
 run_stage 'Run production smoke tests' run_external_smoke_tests
+run_stage 'Submit sitemap to Search Console' submit_search_console_sitemap
 run_stage 'Clean old releases' run_on_hosts cleanup_release
 
 trap - ERR

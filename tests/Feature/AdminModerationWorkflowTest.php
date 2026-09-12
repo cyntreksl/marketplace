@@ -7,6 +7,7 @@ use App\Models\Listing;
 use App\Models\ListingMedia;
 use App\Models\Role;
 use App\Models\SellerProfile;
+use App\Models\SeoRedirect;
 use App\Models\User;
 
 test('an operations admin can approve sellers and listings with an audit trail', function () {
@@ -188,6 +189,7 @@ test('an operations admin can edit complete product details without changing mod
         'is_new_arrival' => true,
     ]);
     ListingMedia::factory()->for($listing)->create();
+    $oldSlug = $listing->slug;
     $description = '<p>Updated description with a comparison table.</p><table><tbody><tr><th>Finish</th><td>Black</td></tr></tbody></table>';
     $specifications = '<table><thead><tr><th>Feature</th><th>Value</th></tr></thead><tbody><tr><td>Power</td><td>100W</td></tr></tbody></table>';
 
@@ -228,7 +230,9 @@ test('an operations admin can edit complete product details without changing mod
         ->is_featured->toBeTrue()
         ->is_best_seller->toBeTrue()
         ->is_new_arrival->toBeTrue()
-        ->and(AuditLog::query()->where('action', 'listing.details_updated_by_admin')->exists())->toBeTrue();
+        ->and(AuditLog::query()->where('action', 'listing.details_updated_by_admin')->exists())->toBeTrue()
+        ->and(SeoRedirect::query()->where('source_path', '/listings/'.$oldSlug)->value('destination_path'))
+        ->toBe('/listings/'.$listing->slug);
 });
 
 test('a buyer cannot view or edit an admin listing review', function () {

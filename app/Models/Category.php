@@ -9,11 +9,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['parent_id', 'google_product_category_id', 'name', 'slug', 'seo_title', 'seo_description', 'seo_intro', 'commission_percentage', 'return_window_days', 'cod_enabled', 'is_active', 'is_selectable', 'is_popular', 'homepage_order', 'sort_order'])]
+#[Fillable(['parent_id', 'google_product_category_id', 'name', 'slug', 'seo_title', 'seo_description', 'seo_intro', 'seo_focus_query', 'seo_supporting_queries', 'seo_researched_at', 'commission_percentage', 'return_window_days', 'cod_enabled', 'is_active', 'is_selectable', 'is_popular', 'homepage_order', 'sort_order'])]
 class Category extends Model
 {
     /** @use HasFactory<CategoryFactory> */
@@ -22,6 +23,8 @@ class Category extends Model
     protected function casts(): array
     {
         return [
+            'seo_supporting_queries' => 'array',
+            'seo_researched_at' => 'date',
             'cod_enabled' => 'boolean',
             'is_active' => 'boolean',
             'is_taxonomy_available' => 'boolean',
@@ -48,6 +51,15 @@ class Category extends Model
     public function listings(): HasMany
     {
         return $this->hasMany(Listing::class);
+    }
+
+    /** @return BelongsToMany<Guide, $this> */
+    public function guides(): BelongsToMany
+    {
+        return $this->belongsToMany(Guide::class)
+            ->withPivot('sort_order')
+            ->withTimestamps()
+            ->orderByPivot('sort_order');
     }
 
     /**

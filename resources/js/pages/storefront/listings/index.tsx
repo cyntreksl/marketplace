@@ -18,6 +18,7 @@ import {
 import { trackEvent } from '@/lib/tracking';
 import { home } from '@/routes';
 import { show as categoryShow } from '@/routes/categories';
+import { show as guideShow } from '@/routes/guides';
 import type {
     StorefrontBrand,
     StorefrontBreadcrumbItem,
@@ -157,6 +158,7 @@ export default function ListingsIndex({
     pageHeading,
     intro,
     browseUrl,
+    relatedGuides = [],
     catalogMode = 'retail',
 }: {
     listings: StorefrontListingPaginator;
@@ -167,6 +169,7 @@ export default function ListingsIndex({
     pageHeading: string;
     intro: string;
     browseUrl: string;
+    relatedGuides?: { title: string; slug: string; excerpt: string }[];
     catalogMode?: 'retail' | 'wholesale';
 }) {
     const filterCount = activeFilterCount(filters);
@@ -242,9 +245,14 @@ export default function ListingsIndex({
                     <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
                         {pageHeading}
                     </h1>
-                    <p className="mt-3 text-base leading-7 text-slate-600">
-                        {intro}
-                    </p>
+                    <div className="mt-3 space-y-3 text-base leading-7 text-slate-600">
+                        {intro
+                            .split(/\n\s*\n/)
+                            .filter(Boolean)
+                            .map((paragraph) => (
+                                <p key={paragraph}>{paragraph}</p>
+                            ))}
+                    </div>
                 </header>
 
                 <CategoryStrip
@@ -398,6 +406,30 @@ export default function ListingsIndex({
                         )}
                     </div>
                 </section>
+
+                {relatedGuides.length > 0 && (
+                    <section className="border-t border-slate-200 py-12">
+                        <h2 className="text-2xl font-black tracking-tight text-slate-950">
+                            Related buying guides
+                        </h2>
+                        <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            {relatedGuides.map((guide) => (
+                                <Link
+                                    key={guide.slug}
+                                    href={guideShow(guide.slug)}
+                                    className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-[#FF6D00]/40 hover:shadow-md"
+                                >
+                                    <h3 className="font-extrabold text-slate-950">
+                                        {guide.title}
+                                    </h3>
+                                    <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
+                                        {guide.excerpt}
+                                    </p>
+                                </Link>
+                            ))}
+                        </div>
+                    </section>
+                )}
             </main>
         </StorefrontLayout>
     );

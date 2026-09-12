@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\Repositories\CatalogRepository;
+use App\Contracts\Repositories\GuideRepository;
 use App\Contracts\Repositories\ListingRepository;
 use App\Contracts\Repositories\SellerStoreRepository;
 use App\Models\Listing;
@@ -14,6 +15,7 @@ class SitemapService
         private readonly ListingRepository $listings,
         private readonly CatalogRepository $catalog,
         private readonly SellerStoreRepository $sellers,
+        private readonly GuideRepository $guides,
     ) {}
 
     public function index(): string
@@ -23,6 +25,7 @@ class SitemapService
             ['url' => route('sitemap.static'), 'lastmod' => null],
             ['url' => route('sitemap.categories'), 'lastmod' => $this->catalog->sitemapCategories()->max('updated_at')],
             ['url' => route('sitemap.brands'), 'lastmod' => $this->catalog->sitemapBrands()->max('updated_at')],
+            ['url' => route('sitemap.guides'), 'lastmod' => $this->guides->sitemapGuides()->max('updated_at')],
         ];
         $perPage = $this->productChunkSize();
         $pageCount = (int) ceil($this->listings->sitemapProductCount() / $perPage);
@@ -44,6 +47,7 @@ class SitemapService
             'home', 'about', 'contact', 'help', 'faq', 'buying', 'selling', 'brands.index',
             'policies.shipping', 'policies.returns', 'policies.sellers', 'policies.prohibited',
             'legal.terms', 'legal.privacy', 'legal.cookies',
+            'guides.index',
         ];
 
         if ($this->listings->retailProductCount() > 0) {
@@ -87,6 +91,14 @@ class SitemapService
     {
         return $this->urlSet($this->sellers->sitemapStores()->map(fn ($seller): array => [
             'url' => route('stores.show', $seller->slug), 'lastmod' => $seller->updated_at,
+        ]));
+    }
+
+    public function guides(): string
+    {
+        return $this->urlSet($this->guides->sitemapGuides()->map(fn ($guide): array => [
+            'url' => route('guides.show', $guide->slug),
+            'lastmod' => $guide->updated_at,
         ]));
     }
 

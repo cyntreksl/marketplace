@@ -5,6 +5,7 @@ namespace App\Services;
 use App\AuctionStatus;
 use App\AuctionType;
 use App\Contracts\Repositories\CatalogRepository;
+use App\Contracts\Repositories\GuideRepository;
 use App\Contracts\Repositories\ListingRepository;
 use App\Contracts\Repositories\ProductQuestionRepository;
 use App\Contracts\Repositories\PromotionRepository;
@@ -13,6 +14,7 @@ use App\Contracts\Repositories\SellerStoreRepository;
 use App\Contracts\Repositories\WatchlistRepository;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Guide;
 use App\Models\Listing;
 use App\Models\ProductQuestion;
 use App\Models\User;
@@ -33,6 +35,7 @@ class StorefrontService
         private readonly SellerStoreRepository $sellers,
         private readonly SellerSummaryService $sellerSummaries,
         private readonly MarketplaceSettingsService $settings,
+        private readonly GuideRepository $guides,
     ) {}
 
     /** @return array<string, mixed> */
@@ -255,6 +258,9 @@ class StorefrontService
             'browseUrl' => route('categories.show', $slug),
             'pageHeading' => $category->name,
             'intro' => filled($category->seo_intro) ? $category->seo_intro : $description,
+            'relatedGuides' => $this->guides->publishedForCategory((int) $category->id)
+                ->map(fn ($guide): array => $this->guideLinkData($guide))
+                ->values(),
             'seo' => $seo,
             'head' => $this->seo->tags($seo),
         ];
@@ -292,6 +298,9 @@ class StorefrontService
             'browseUrl' => route('brands.show', $slug),
             'pageHeading' => $brand->name,
             'intro' => filled($brand->seo_intro) ? $brand->seo_intro : $description,
+            'relatedGuides' => $this->guides->publishedForBrand((int) $brand->id)
+                ->map(fn ($guide): array => $this->guideLinkData($guide))
+                ->values(),
             'seo' => $seo,
             'head' => $this->seo->tags($seo),
         ];
@@ -421,6 +430,11 @@ class StorefrontService
             ],
             'relatedListings' => $this->listings->related($listing, $channel)->map(fn (Listing $related): array => $this->listingData($related, channel: $channel))->values(),
             'sellerListings' => $this->listings->otherListingsFromSeller($listing, $channel)->map(fn (Listing $sellerListing): array => $this->listingData($sellerListing, channel: $channel))->values(),
+            'relatedGuides' => $listing->category_id === null
+                ? []
+                : $this->guides->publishedForCategory((int) $listing->category_id)
+                    ->map(fn ($guide): array => $this->guideLinkData($guide))
+                    ->values(),
         ];
     }
 
@@ -615,6 +629,16 @@ class StorefrontService
             'askedBy' => $question->asker->name,
             'answeredBy' => $question->answerer?->name,
             'answeredAt' => $question->answered_at?->toIso8601String(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function guideLinkData(Guide $guide): array
+    {
+        return [
+            'title' => $guide->title,
+            'slug' => $guide->slug,
+            'excerpt' => $guide->excerpt,
         ];
     }
 

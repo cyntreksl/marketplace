@@ -19,6 +19,7 @@ import { StorefrontMobileNavigation } from '@/components/storefront-mobile-navig
 import { home, login } from '@/routes';
 import { index as auctionsIndex } from '@/routes/auctions';
 import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
+import { index as guidesIndex } from '@/routes/guides';
 import { index as listingsIndex } from '@/routes/listings';
 import {
     dashboard as sellerDashboard,
@@ -86,6 +87,7 @@ export function StorefrontLayout({
             : []),
         ['Deals', '/collections/deals'],
         ['Brands', '/brands'],
+        ['Guides', guidesIndex.url()],
         ['Buying', '/buying'],
         ['Selling', '/selling'],
     ] as const;
