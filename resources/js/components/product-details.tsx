@@ -734,13 +734,8 @@ export function ProductQuestionRow({
                     onClick={() => setOpen((current) => !current)}
                     className="flex min-h-14 w-full items-center justify-between gap-4 p-4 text-left"
                 >
-                    <span>
-                        <span className="block text-base font-bold text-slate-950">
-                            {question.question}
-                        </span>
-                        <span className="mt-1 block text-xs text-slate-500">
-                            Asked by {question.askedBy}
-                        </span>
+                    <span className="block text-base font-bold text-slate-950">
+                        {question.question}
                     </span>
                     <ChevronDown
                         className={

@@ -221,7 +221,7 @@ test('question rows distinguish verified answers from viewer pending questions',
                 id: 1,
                 question: 'Does it include a cable?',
                 answer: 'Yes, one charging cable is included.',
-                askedBy: 'Buyer',
+                askedBy: 'Answered question author',
                 answeredBy: 'Seller',
                 answeredAt: '2026-09-12T10:00:00Z',
             },
@@ -234,7 +234,7 @@ test('question rows distinguish verified answers from viewer pending questions',
                 id: 2,
                 question: 'Will it work with my phone?',
                 answer: null,
-                askedBy: 'You',
+                askedBy: 'Pending question author',
                 answeredBy: null,
                 answeredAt: null,
             },
@@ -243,8 +243,12 @@ test('question rows distinguish verified answers from viewer pending questions',
 
     assert.match(answered, /Verified seller answer/);
     assert.match(answered, /charging cable is included/);
+    assert.doesNotMatch(answered, /Asked by/);
+    assert.doesNotMatch(answered, /Answered question author/);
     assert.match(pending, /Your question · awaiting answer/);
     assert.match(pending, /visible only to you/);
+    assert.doesNotMatch(pending, /Asked by/);
+    assert.doesNotMatch(pending, /Pending question author/);
 });
 
 test('conversion UI source keeps one mobile panel open and supports keyboard tabs', async () => {
