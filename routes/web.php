@@ -36,6 +36,7 @@ use App\Http\Controllers\ComparisonController;
 use App\Http\Controllers\GuestOrderClaimController;
 use App\Http\Controllers\GuideController;
 use App\Http\Controllers\MerchantFeedController;
+use App\Http\Controllers\MetaTestSessionController;
 use App\Http\Controllers\OrderTrackingController;
 use App\Http\Controllers\ProductQuestionController;
 use App\Http\Controllers\ProductQuestionQueueController;
@@ -65,6 +66,9 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::get('/', [StorefrontController::class, 'home'])->name('home');
+Route::get('/meta/conversions/test-checkout-session', MetaTestSessionController::class)
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('meta.conversions.test_session');
 Route::middleware('cache.headers:public;max_age=300;s_maxage=3600;stale_while_revalidate=86400;etag')
     ->withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, PreventRequestForgery::class])
     ->group(function (): void {

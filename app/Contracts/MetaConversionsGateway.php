@@ -3,8 +3,9 @@
 namespace App\Contracts;
 
 use App\Support\MetaConversionEvent;
+use App\Support\MetaConversionReceipt;
 
 interface MetaConversionsGateway
 {
-    public function send(MetaConversionEvent $event, ?string $testEventCode = null): void;
+    public function send(MetaConversionEvent $event, ?string $testEventCode = null): MetaConversionReceipt;
 }

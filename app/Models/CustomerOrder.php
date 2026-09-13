@@ -22,6 +22,8 @@ use Illuminate\Support\Carbon;
  * @property array<string, string|null> $shipping_address
  * @property array<string, string|null>|null $billing_address
  * @property array<string, string|null>|null $meta_attribution
+ * @property Carbon|null $meta_purchase_sent_at
+ * @property string|null $meta_purchase_trace_id
  * @property Carbon|null $created_at
  * @property User|null $buyer
  */
@@ -34,7 +36,7 @@ class CustomerOrder extends Model
 
     protected function casts(): array
     {
-        return ['subtotal' => 'decimal:2', 'shipping_total' => 'decimal:2', 'total' => 'decimal:2', 'shipping_address' => 'array', 'billing_address' => 'array', 'marketing_opt_in' => 'boolean', 'meta_attribution' => 'encrypted:array'];
+        return ['subtotal' => 'decimal:2', 'shipping_total' => 'decimal:2', 'total' => 'decimal:2', 'shipping_address' => 'array', 'billing_address' => 'array', 'marketing_opt_in' => 'boolean', 'meta_attribution' => 'encrypted:array', 'meta_purchase_sent_at' => 'datetime'];
     }
 
     /** @return BelongsTo<User, $this> */

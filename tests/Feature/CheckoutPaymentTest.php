@@ -12,6 +12,7 @@ use App\Notifications\OrderAcknowledgmentNotification;
 use App\Notifications\PaymentConfirmedNotification;
 use App\Notifications\SellerOrderReadyNotification;
 use App\Support\MetaConversionEvent;
+use App\Support\MetaConversionReceipt;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Notification;
@@ -135,7 +136,7 @@ test('verified card payment remains successful during a Meta outage', function (
     ]);
     app()->instance(MetaConversionsGateway::class, new class implements MetaConversionsGateway
     {
-        public function send(MetaConversionEvent $event, ?string $testEventCode = null): void
+        public function send(MetaConversionEvent $event, ?string $testEventCode = null): MetaConversionReceipt
         {
             throw new RuntimeException('Simulated Meta outage');
         }

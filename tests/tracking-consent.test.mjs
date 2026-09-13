@@ -57,6 +57,11 @@ before(async () => {
         sessionStorage: {
             getItem: (key) => sessionValues.get(key) ?? null,
             setItem: (key, value) => sessionValues.set(key, value),
+            removeItem: (key) => sessionValues.delete(key),
+            key: (index) => [...sessionValues.keys()][index] ?? null,
+            get length() {
+                return sessionValues.size;
+            },
         },
     };
     server = await createServer({
@@ -174,6 +179,83 @@ test('purchase events are deduplicated by stable transaction ID', () => {
             transaction_id: 'SO-100',
         },
     });
+});
+
+test('purchase waits in session until consent is granted and then delivers once', () => {
+    cookies.delete(tracking.consentCookieName);
+    sessionValues.clear();
+    const purchaseCount = trackedEvents('purchase').length;
+
+    tracking.trackPurchase('PRO-PENDING', {
+        value: 2800,
+        currency: 'LKR',
+        email: 'must-not-be-stored@example.com',
+        items: [{ item_id: '42', price: 2200, quantity: 1 }],
+    });
+
+    const pending = sessionValues.get(
+        'prodeals.pending_purchase.PRO-PENDING',
+    );
+    assert.equal(trackedEvents('purchase').length, purchaseCount);
+    assert.equal(typeof pending, 'string');
+    assert.equal(pending.includes('must-not-be-stored@example.com'), false);
+
+    tracking.saveConsent(false, false);
+    assert.equal(trackedEvents('purchase').length, purchaseCount);
+    assert.equal(
+        sessionValues.has('prodeals.pending_purchase.PRO-PENDING'),
+        true,
+    );
+
+    tracking.saveConsent(true, true);
+    tracking.trackPurchase('PRO-PENDING', { value: 2800 });
+
+    assert.equal(trackedEvents('purchase').length, purchaseCount + 1);
+    assert.equal(
+        sessionValues.has('prodeals.pending_purchase.PRO-PENDING'),
+        false,
+    );
+    assert.equal(sessionValues.get('prodeals.purchase.PRO-PENDING'), '1');
+});
+
+test('tracking initialization recovers a consent-blocked purchase after reload', () => {
+    cookies.delete(tracking.consentCookieName);
+    sessionValues.clear();
+    const purchaseCount = trackedEvents('purchase').length;
+
+    tracking.trackPurchase('PRO-RELOAD', {
+        value: 2800,
+        currency: 'LKR',
+    });
+    cookies.set(
+        tracking.consentCookieName,
+        encodeURIComponent(
+            JSON.stringify({
+                version: 1,
+                analytics: true,
+                marketing: true,
+                decidedAt: '2026-09-13T05:30:00.000Z',
+            }),
+        ),
+    );
+
+    tracking.initializeTracking();
+    tracking.initializeTracking();
+
+    assert.equal(trackedEvents('purchase').length, purchaseCount + 1);
+    assert.deepEqual(trackedEvents('purchase').at(-1), {
+        event: 'purchase',
+        eventModel: {
+            value: 2800,
+            currency: 'LKR',
+            event_id: 'Purchase:PRO-RELOAD',
+            transaction_id: 'PRO-RELOAD',
+        },
+    });
+    assert.equal(
+        sessionValues.has('prodeals.pending_purchase.PRO-RELOAD'),
+        false,
+    );
 });
 
 test('checkout event models use the confirmed cart values', () => {

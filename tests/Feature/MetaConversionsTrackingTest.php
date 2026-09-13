@@ -8,12 +8,15 @@ use App\Models\Listing;
 use App\Models\User;
 use App\Services\MetaConversionsService;
 use App\Services\MetaParameterBuilderService;
+use App\Services\MetaTestSessionService;
 use App\Support\MetaConversionEvent;
+use App\Support\MetaConversionReceipt;
 use App\Support\TrackingConsent;
 use FacebookAds\ParamBuilder;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\URL;
 
 beforeEach(function (): void {
     config([
@@ -368,7 +371,7 @@ test('confirmed COD orders queue Purchase and store attribution encrypted', func
     Queue::assertPushed(SendMetaPurchase::class, 1);
 });
 
-test('Purchase uses a stable event id hashes PII and clears accepted attribution', function (): void {
+test('Purchase retries with a stable event id and atomically records Meta acceptance', function (): void {
     Queue::fake();
     $buyer = User::factory()->create(['email' => 'buyer@example.com', 'name' => 'Buyer Person']);
     $listing = Listing::factory()->create(['price' => '1000.00', 'sale_price' => null]);
@@ -388,41 +391,74 @@ test('Purchase uses a stable event id hashes PII and clears accepted attribution
     $review = checkoutReviewData();
     $referrer = 'https://www.facebook.com/prodeals-ad';
     Queue::fake();
+    $this->get(app(MetaTestSessionService::class)->createCheckoutLink('TEST123'))
+        ->assertRedirect(route('home'));
     $this->withHeader('Referer', $referrer)->post(route('checkout.review.store'), $review);
     $order = CustomerOrder::sole();
+    $rawAttribution = DB::table('customer_orders')->where('id', $order->id)->value('meta_attribution');
+    expect($order->meta_attribution['test_event_code'])->toBe('TEST123')
+        ->and($rawAttribution)->not->toContain('TEST123');
 
     $gateway = new class implements MetaConversionsGateway
     {
-        public ?MetaConversionEvent $event = null;
+        /** @var list<MetaConversionEvent> */
+        public array $events = [];
 
-        public function send(MetaConversionEvent $event, ?string $testEventCode = null): void
+        /** @var list<string|null> */
+        public array $testEventCodes = [];
+
+        public bool $shouldFail = true;
+
+        public function send(MetaConversionEvent $event, ?string $testEventCode = null): MetaConversionReceipt
         {
-            $this->event = $event;
+            $this->events[] = $event;
+            $this->testEventCodes[] = $testEventCode;
+
+            if ($this->shouldFail) {
+                throw new RuntimeException('Simulated ambiguous Meta response');
+            }
+
+            return new MetaConversionReceipt(1, 'trace_purchase_123', []);
         }
     };
     app()->instance(MetaConversionsGateway::class, $gateway);
+
+    expect(fn () => app(MetaConversionsService::class)->sendPurchase($order->id))
+        ->toThrow(RuntimeException::class, 'Simulated ambiguous Meta response');
+    expect($order->fresh()->meta_attribution)->not->toBeNull()
+        ->and($order->fresh()->meta_purchase_sent_at)->toBeNull()
+        ->and($order->fresh()->meta_purchase_trace_id)->toBeNull();
+
+    $gateway->shouldFail = false;
+    app(MetaConversionsService::class)->sendPurchase($order->id);
     app(MetaConversionsService::class)->sendPurchase($order->id);
 
-    $serialized = json_encode($gateway->event?->toArray(), JSON_THROW_ON_ERROR);
-    expect($gateway->event?->id)->toBe('Purchase:'.$order->number)
-        ->and($gateway->event?->customData['order_id'])->toBe($order->number)
-        ->and($gateway->event?->customData['currency'])->toBe('LKR')
-        ->and($gateway->event?->customData['value'])->toBe(1600.0)
-        ->and($gateway->event?->customData['contents'][0]['item_price'])->toBe(1000.0)
-        ->and($gateway->event?->sourceUrl)->toStartWith(route('checkout.review.store'))
-        ->and($gateway->event?->referrerUrl)->toStartWith($referrer.'.')
-        ->and($gateway->event?->userData['em'][0])->toMatch('/^'.hash('sha256', 'buyer@example.com').'\.[A-Za-z0-9_-]{8}$/')
-        ->and($gateway->event?->userData['external_id'][0])->toMatch('/^'.hash('sha256', (string) $buyer->id).'\.[A-Za-z0-9_-]{8}$/')
-        ->and($gateway->event?->userData['ph'][0])->toMatch('/^'.hash('sha256', '94771234567').'\.[A-Za-z0-9_-]{8}$/')
-        ->and($gateway->event?->userData['fn'][0])->toMatch('/^'.hash('sha256', 'buyer').'\.[A-Za-z0-9_-]{8}$/')
-        ->and($gateway->event?->userData['ln'][0])->toMatch('/^'.hash('sha256', 'person').'\.[A-Za-z0-9_-]{8}$/')
-        ->and($gateway->event?->userData['ct'][0])->toMatch('/^'.hash('sha256', 'colombo').'\.[A-Za-z0-9_-]{8}$/')
-        ->and($gateway->event?->userData['zp'][0])->toMatch('/^'.hash('sha256', '01000').'\.[A-Za-z0-9_-]{8}$/')
-        ->and($gateway->event?->userData['country'][0])->toMatch('/^'.hash('sha256', 'lk').'\.[A-Za-z0-9_-]{8}$/')
-        ->and($gateway->event?->userData['fbc'])->toBe($fbc)
+    $event = $gateway->events[1];
+    $serialized = json_encode($event->toArray(), JSON_THROW_ON_ERROR);
+    expect($gateway->events)->toHaveCount(2)
+        ->and($gateway->events[0]->id)->toBe($event->id)
+        ->and($gateway->testEventCodes)->toBe(['TEST123', 'TEST123'])
+        ->and($event->id)->toBe('Purchase:'.$order->number)
+        ->and($event->customData['order_id'])->toBe($order->number)
+        ->and($event->customData['currency'])->toBe('LKR')
+        ->and($event->customData['value'])->toBe(1600.0)
+        ->and($event->customData['contents'][0]['item_price'])->toBe(1000.0)
+        ->and($event->sourceUrl)->toStartWith(route('checkout.review.store'))
+        ->and($event->referrerUrl)->toStartWith($referrer.'.')
+        ->and($event->userData['em'][0])->toMatch('/^'.hash('sha256', 'buyer@example.com').'\.[A-Za-z0-9_-]{8}$/')
+        ->and($event->userData['external_id'][0])->toMatch('/^'.hash('sha256', (string) $buyer->id).'\.[A-Za-z0-9_-]{8}$/')
+        ->and($event->userData['ph'][0])->toMatch('/^'.hash('sha256', '94771234567').'\.[A-Za-z0-9_-]{8}$/')
+        ->and($event->userData['fn'][0])->toMatch('/^'.hash('sha256', 'buyer').'\.[A-Za-z0-9_-]{8}$/')
+        ->and($event->userData['ln'][0])->toMatch('/^'.hash('sha256', 'person').'\.[A-Za-z0-9_-]{8}$/')
+        ->and($event->userData['ct'][0])->toMatch('/^'.hash('sha256', 'colombo').'\.[A-Za-z0-9_-]{8}$/')
+        ->and($event->userData['zp'][0])->toMatch('/^'.hash('sha256', '01000').'\.[A-Za-z0-9_-]{8}$/')
+        ->and($event->userData['country'][0])->toMatch('/^'.hash('sha256', 'lk').'\.[A-Za-z0-9_-]{8}$/')
+        ->and($event->userData['fbc'])->toBe($fbc)
         ->and($serialized)->not->toContain('buyer@example.com')
         ->and($serialized)->not->toContain('0771234567')
-        ->and($order->fresh()->meta_attribution)->toBeNull();
+        ->and($order->fresh()->meta_attribution)->toBeNull()
+        ->and($order->fresh()->meta_purchase_sent_at)->not->toBeNull()
+        ->and($order->fresh()->meta_purchase_trace_id)->toBe('trace_purchase_123');
 });
 
 test('guest Purchase hashes the order contact email without an external id', function (): void {
@@ -449,9 +485,11 @@ test('guest Purchase hashes the order contact email without an external id', fun
     {
         public ?MetaConversionEvent $event = null;
 
-        public function send(MetaConversionEvent $event, ?string $testEventCode = null): void
+        public function send(MetaConversionEvent $event, ?string $testEventCode = null): MetaConversionReceipt
         {
             $this->event = $event;
+
+            return new MetaConversionReceipt(1, null, []);
         }
     };
     app()->instance(MetaConversionsGateway::class, $gateway);
@@ -485,7 +523,7 @@ test('queued jobs are unique and use bounded retry settings', function (): void 
 test('commerce still succeeds when a synchronous Meta delivery fails', function (): void {
     app()->instance(MetaConversionsGateway::class, new class implements MetaConversionsGateway
     {
-        public function send(MetaConversionEvent $event, ?string $testEventCode = null): void
+        public function send(MetaConversionEvent $event, ?string $testEventCode = null): MetaConversionReceipt
         {
             throw new RuntimeException('Simulated Meta outage');
         }
@@ -518,10 +556,12 @@ test('synthetic command requires a temporary code and never displays credentials
 
         public ?string $testEventCode = null;
 
-        public function send(MetaConversionEvent $event, ?string $testEventCode = null): void
+        public function send(MetaConversionEvent $event, ?string $testEventCode = null): MetaConversionReceipt
         {
             $this->event = $event;
             $this->testEventCode = $testEventCode;
+
+            return new MetaConversionReceipt(1, 'trace_test_123', []);
         }
     };
     app()->instance(MetaConversionsGateway::class, $gateway);
@@ -537,4 +577,30 @@ test('synthetic command requires a temporary code and never displays credentials
         ->and($gateway->event?->userData['em'][0])->toMatch('/^'.hash('sha256', 'meta-test@prodeals.lk').'\.[A-Za-z0-9_-]{8}$/')
         ->and(json_encode($gateway->event?->toArray(), JSON_THROW_ON_ERROR))->not->toContain('meta-test@prodeals.lk')
         ->and($gateway->testEventCode)->toBe('TEST123');
+});
+
+test('checkout test links are short lived signed and do not expose the Meta code', function (): void {
+    $link = app(MetaTestSessionService::class)->createCheckoutLink('TEST123');
+
+    expect($link)->toContain('/meta/conversions/test-checkout-session')
+        ->and($link)->not->toContain('TEST123');
+
+    $this->get($link)
+        ->assertRedirect(route('home'))
+        ->assertSessionHas('meta_conversions.test_event_code', 'TEST123');
+    $this->get($link.'&changed=1')->assertForbidden();
+    $invalidPayloadLink = URL::temporarySignedRoute(
+        'meta.conversions.test_session',
+        now()->addMinutes(15),
+        ['payload' => 'invalid'],
+    );
+    $this->get($invalidPayloadLink)->assertNotFound();
+
+    $this->artisan('meta:conversions:test-checkout-link')->assertFailed();
+    $this->artisan('meta:conversions:test-checkout-link', ['--test-event-code' => 'invalid code'])
+        ->assertFailed();
+    $this->artisan('meta:conversions:test-checkout-link', ['--test-event-code' => 'TEST123'])
+        ->expectsOutputToContain('/meta/conversions/test-checkout-session')
+        ->doesntExpectOutput('TEST123')
+        ->assertSuccessful();
 });

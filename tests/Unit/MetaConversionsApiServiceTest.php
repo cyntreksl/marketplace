@@ -37,10 +37,14 @@ test('gateway sends the expected v25 payload with bearer authentication and time
     Http::fake(['graph.facebook.com/*' => function (Request $request, array $requestOptions) use (&$options) {
         $options = $requestOptions;
 
-        return Http::response(['events_received' => 1]);
+        return Http::response([
+            'events_received' => 1,
+            'fbtrace_id' => 'trace_123',
+            'messages' => [['message' => 'Accepted buyer@example.com token=secret-value']],
+        ]);
     }]);
 
-    (new MetaConversionsApiService)->send(metaTestEvent(), 'TEST123');
+    $receipt = (new MetaConversionsApiService)->send(metaTestEvent(), 'TEST123');
 
     Http::assertSent(function (Request $request): bool {
         $body = $request->data();
@@ -58,8 +62,26 @@ test('gateway sends the expected v25 payload with bearer authentication and time
             && ! str_contains($request->body(), 'buyer@example.com');
     });
     expect($options['connect_timeout'])->toBe(3)
-        ->and($options['timeout'])->toBe(10);
+        ->and($options['timeout'])->toBe(10)
+        ->and($receipt->eventsReceived)->toBe(1)
+        ->and($receipt->fbtraceId)->toBe('trace_123')
+        ->and($receipt->messages)->toBe(['Accepted [redacted] [redacted]']);
 });
+
+test('gateway rejects ambiguous Meta acknowledgements', function (mixed $eventsReceived): void {
+    $response = $eventsReceived === 'missing'
+        ? []
+        : ['events_received' => $eventsReceived];
+    Http::fake(['graph.facebook.com/*' => Http::response($response)]);
+
+    expect(fn () => (new MetaConversionsApiService)->send(metaTestEvent()))
+        ->toThrow(RuntimeException::class, 'did not acknowledge exactly one event');
+})->with([
+    'missing count' => 'missing',
+    'zero events' => 0,
+    'multiple events' => 2,
+    'string count' => '1',
+]);
 
 test('gateway retries transient responses but not permanent Meta errors', function (): void {
     Http::fakeSequence('graph.facebook.com/*')

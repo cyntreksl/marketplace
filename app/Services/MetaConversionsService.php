@@ -9,6 +9,7 @@ use App\Jobs\SendMetaPurchase;
 use App\Models\CustomerOrder;
 use App\Models\User;
 use App\Support\MetaConversionEvent;
+use App\Support\MetaConversionReceipt;
 use App\Support\MetaParameterContext;
 use Carbon\CarbonInterface;
 use Illuminate\Http\Request;
@@ -23,6 +24,7 @@ class MetaConversionsService
         private readonly CustomerOrderRepository $orders,
         private readonly MetaParameterBuilderService $parameterBuilder,
         private readonly HumanPageViewService $pageViews,
+        private readonly MetaTestSessionService $testSession,
     ) {}
 
     public function isEnabled(): bool
@@ -148,12 +150,13 @@ class MetaConversionsService
             'fbc' => $context->fbc,
             'source_url' => $context->sourceUrl ?? $request->fullUrl(),
             'referrer_url' => $context->referrerUrl,
+            'test_event_code' => $this->testSession->consume($request),
         ];
     }
 
     public function trackPurchase(CustomerOrder $order): void
     {
-        if (! $this->isEnabled() || $order->meta_attribution === null) {
+        if (! $this->isEnabled() || $order->meta_attribution === null || $order->meta_purchase_sent_at !== null) {
             return;
         }
 
@@ -171,7 +174,7 @@ class MetaConversionsService
     {
         $order = $this->orders->findForMetaConversion($orderId);
 
-        if ($order === null || $order->meta_attribution === null) {
+        if ($order === null || $order->meta_attribution === null || $order->meta_purchase_sent_at !== null) {
             return;
         }
 
@@ -194,7 +197,7 @@ class MetaConversionsService
         }
 
         $attribution = $order->meta_attribution;
-        $this->gateway->send(new MetaConversionEvent(
+        $event = new MetaConversionEvent(
             name: 'Purchase',
             id: 'Purchase:'.$order->number,
             occurredAt: $eventTime,
@@ -210,13 +213,26 @@ class MetaConversionsService
                 'contents' => $contents,
             ],
             referrerUrl: $attribution['referrer_url'] ?? null,
-        ));
-        $this->orders->clearMetaAttribution($order);
+        );
+        $receipt = null;
+
+        try {
+            $receipt = $this->gateway->send($event, $attribution['test_event_code'] ?? null);
+            $this->orders->markMetaPurchaseDelivered($order, $receipt);
+        } catch (Throwable $exception) {
+            Log::warning('Meta Purchase event delivery failed.', $this->purchaseLogContext($order, $event, $receipt) + [
+                'exception' => $exception::class,
+            ]);
+
+            throw $exception;
+        }
+
+        Log::info('Meta Purchase event delivered.', $this->purchaseLogContext($order, $event, $receipt));
     }
 
-    public function sendTest(MetaConversionEvent $event, string $testEventCode): void
+    public function sendTest(MetaConversionEvent $event, string $testEventCode): MetaConversionReceipt
     {
-        $this->gateway->send($event, $testEventCode);
+        return $this->gateway->send($event, $testEventCode);
     }
 
     /** @return array<string, mixed> */
@@ -299,6 +315,20 @@ class MetaConversionsService
         $value = trim($value);
 
         return $value !== '' && mb_strlen($value) <= 500 ? $value : null;
+    }
+
+    /** @return array{order_id: int, event_id: string, events_received: int|null, trace_id: string|null} */
+    private function purchaseLogContext(
+        CustomerOrder $order,
+        MetaConversionEvent $event,
+        ?MetaConversionReceipt $receipt,
+    ): array {
+        return [
+            'order_id' => $order->id,
+            'event_id' => $event->id,
+            'events_received' => $receipt?->eventsReceived,
+            'trace_id' => $receipt?->fbtraceId,
+        ];
     }
 
     private function queue(MetaConversionEvent $event): void

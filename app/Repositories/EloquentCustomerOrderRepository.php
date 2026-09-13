@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Contracts\Repositories\CustomerOrderRepository;
 use App\Models\CustomerOrder;
 use App\Models\User;
+use App\Support\MetaConversionReceipt;
 
 class EloquentCustomerOrderRepository implements CustomerOrderRepository
 {
@@ -33,9 +34,13 @@ class EloquentCustomerOrderRepository implements CustomerOrderRepository
         ]);
     }
 
-    public function clearMetaAttribution(CustomerOrder $customerOrder): void
+    public function markMetaPurchaseDelivered(CustomerOrder $customerOrder, MetaConversionReceipt $receipt): void
     {
-        $customerOrder->forceFill(['meta_attribution' => null])->save();
+        $customerOrder->forceFill([
+            'meta_attribution' => null,
+            'meta_purchase_sent_at' => now(),
+            'meta_purchase_trace_id' => $receipt->fbtraceId,
+        ])->save();
     }
 
     public function lockForClaim(int $id): CustomerOrder

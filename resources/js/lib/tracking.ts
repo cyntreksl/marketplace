@@ -31,6 +31,7 @@ export const consentCookieName = 'prodeals_consent';
 export const consentVersion = 1;
 
 const containerId = import.meta.env.VITE_GTM_CONTAINER_ID as string | undefined;
+const pendingPurchasePrefix = 'prodeals.pending_purchase.';
 let lastPageViewUrl: string | null = null;
 let consentDefaultsInitialized = false;
 
@@ -149,6 +150,7 @@ function updateConsent(consent: ConsentState): void {
 
     if (consent.analytics || consent.marketing) {
         loadGtm();
+        flushPendingPurchases();
     }
 }
 
@@ -226,13 +228,13 @@ export function trackEvent(
     event: CommerceEventName,
     parameters: Record<string, unknown> = {},
     category: 'analytics' | 'marketing' | 'either' = 'either',
-): void {
+): boolean {
     if (
         !commerceEvents.includes(event) ||
         !hasWindow() ||
         isExcludedTrackingPath()
     ) {
-        return;
+        return false;
     }
 
     const consent = readConsent();
@@ -244,7 +246,7 @@ export function trackEvent(
               : consent?.analytics || consent?.marketing;
 
     if (!permitted) {
-        return;
+        return false;
     }
 
     ensureConsentDefaults();
@@ -257,7 +259,7 @@ export function trackEvent(
             : null;
 
     if (deliveryKey && window.sessionStorage.getItem(deliveryKey)) {
-        return;
+        return false;
     }
 
     window.dataLayer.push({ event, eventModel });
@@ -265,6 +267,8 @@ export function trackEvent(
     if (deliveryKey) {
         window.sessionStorage.setItem(deliveryKey, '1');
     }
+
+    return true;
 }
 
 function normalizeEventModel(
@@ -416,21 +420,89 @@ export function trackPurchase(
         return;
     }
 
-    const storageKey = `prodeals.purchase.${transactionId}`;
+    const normalizedTransactionId = transactionId.trim();
 
-    if (window.sessionStorage.getItem(storageKey)) {
+    if (!normalizedTransactionId) {
         return;
     }
 
-    trackEvent('purchase', {
+    const pendingKey = `${pendingPurchasePrefix}${normalizedTransactionId}`;
+    const purchaseKey = `prodeals.purchase.${normalizedTransactionId}`;
+
+    if (window.sessionStorage.getItem(purchaseKey)) {
+        window.sessionStorage.removeItem(pendingKey);
+
+        return;
+    }
+
+    const eventModel = normalizeEventModel('purchase', {
         ...parameters,
-        event_id: `Purchase:${transactionId}`,
-        transaction_id: transactionId,
+        event_id: `Purchase:${normalizedTransactionId}`,
+        transaction_id: normalizedTransactionId,
     });
 
-    const consent = readConsent();
+    window.sessionStorage.setItem(pendingKey, JSON.stringify(eventModel));
+    deliverPendingPurchase(eventModel);
+}
 
-    if (consent?.analytics || consent?.marketing) {
-        window.sessionStorage.setItem(storageKey, '1');
+function flushPendingPurchases(): void {
+    if (!hasWindow()) {
+        return;
+    }
+
+    const pendingKeys: string[] = [];
+
+    for (let index = 0; index < window.sessionStorage.length; index++) {
+        const key = window.sessionStorage.key(index);
+
+        if (key?.startsWith(pendingPurchasePrefix)) {
+            pendingKeys.push(key);
+        }
+    }
+
+    for (const key of pendingKeys) {
+        const stored = window.sessionStorage.getItem(key);
+
+        if (!stored) {
+            continue;
+        }
+
+        try {
+            const eventModel = JSON.parse(stored) as Record<string, unknown>;
+            const transactionId = eventModel.transaction_id;
+
+            if (
+                typeof transactionId !== 'string' ||
+                key !== `${pendingPurchasePrefix}${transactionId}` ||
+                eventModel.event_id !== `Purchase:${transactionId}`
+            ) {
+                window.sessionStorage.removeItem(key);
+
+                continue;
+            }
+
+            deliverPendingPurchase(normalizeEventModel('purchase', eventModel));
+        } catch {
+            window.sessionStorage.removeItem(key);
+        }
+    }
+}
+
+function deliverPendingPurchase(eventModel: Record<string, unknown>): void {
+    const transactionId = eventModel.transaction_id;
+    const eventId = eventModel.event_id;
+
+    if (typeof transactionId !== 'string' || typeof eventId !== 'string') {
+        return;
+    }
+
+    const pendingKey = `${pendingPurchasePrefix}${transactionId}`;
+    const purchaseKey = `prodeals.purchase.${transactionId}`;
+
+    trackEvent('purchase', eventModel);
+
+    if (window.sessionStorage.getItem(`prodeals.event.purchase.${eventId}`)) {
+        window.sessionStorage.setItem(purchaseKey, '1');
+        window.sessionStorage.removeItem(pendingKey);
     }
 }
