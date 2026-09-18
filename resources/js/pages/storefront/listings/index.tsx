@@ -411,19 +411,20 @@ export default function ListingsIndex({
                                 <Link
                                     key={collection.id}
                                     href={`/collections/${collection.slug}`}
-                                    className="group flex h-36 w-32 shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF6D00]/40 hover:shadow-md motion-reduce:transform-none sm:h-40 sm:w-36"
+                                    className="group relative w-28 shrink-0 snap-start overflow-hidden rounded-2xl shadow-sm transition hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none sm:w-32"
+                                    style={{ aspectRatio: '9/16' }}
                                 >
                                     {collection.image_url ? (
                                         <img
                                             src={collection.image_url}
                                             alt={collection.name}
-                                            className="h-24 w-full object-cover sm:h-28"
+                                            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
                                         />
                                     ) : (
-                                        <div className="h-24 w-full bg-orange-50 sm:h-28" />
+                                        <div className="h-full w-full bg-gradient-to-br from-orange-50 to-slate-100" />
                                     )}
-                                    <div className="flex flex-1 items-center px-2 py-1.5">
-                                        <span className="line-clamp-2 text-xs font-bold text-slate-800 transition group-hover:text-[#FF6D00] sm:text-sm">
+                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-3">
+                                        <span className="line-clamp-2 text-xs font-bold text-white sm:text-sm">
                                             {collection.name}
                                         </span>
                                     </div>

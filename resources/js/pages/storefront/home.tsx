@@ -305,59 +305,35 @@ function CollectionBannerSection({
     section: StorefrontCollectionSection;
 }) {
     const { collection, listings } = section;
-    const row = useRef<HTMLDivElement>(null);
-    const scroll = (direction: number) =>
-        row.current?.scrollBy({
-            left: direction * Math.max(row.current.clientWidth * 0.8, 260),
-            behavior: 'smooth',
-        });
-
-    const bannerEl = collection.bannerImageUrl ? (
-        <Link
-            href={`/collections/${collection.slug}`}
-            className="shrink-0 self-stretch overflow-hidden rounded-xl sm:w-48 lg:w-56"
-        >
-            <img
-                src={collection.bannerImageUrl}
-                alt={collection.name}
-                className="size-full object-cover"
-            />
-        </Link>
-    ) : null;
-
-    const productsEl = (
-        <div
-            ref={row}
-            className="flex min-w-0 snap-x snap-mandatory [scrollbar-width:none] gap-3 overflow-x-auto pb-2"
-        >
-            {listings.map((listing) => (
-                <div
-                    key={listing.id}
-                    className="w-[calc((100%-0.75rem)/2)] shrink-0 snap-start sm:w-44 lg:w-[calc((100%-3.75rem)/5)]"
-                >
-                    <ListingCard listing={listing} />
-                </div>
-            ))}
-        </div>
-    );
+    const isRight = collection.bannerSide === 'right';
 
     return (
         <div>
             <SectionTitle
                 title={collection.name}
                 href={`/collections/${collection.slug}`}
-                onScrollLeft={
-                    listings.length > 4 ? () => scroll(-1) : undefined
-                }
-                onScrollRight={
-                    listings.length > 4 ? () => scroll(1) : undefined
-                }
             />
-            <div
-                className={`flex gap-3 ${collection.bannerSide === 'right' ? 'flex-col sm:flex-row' : 'flex-col sm:flex-row-reverse'}`}
-            >
-                {bannerEl}
-                {productsEl}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                {collection.bannerImageUrl && (
+                    <Link
+                        href={`/collections/${collection.slug}`}
+                        className={`col-span-2 overflow-hidden rounded-xl sm:col-span-3 ${isRight ? 'lg:col-span-3 lg:col-start-4' : 'lg:col-span-3'}`}
+                    >
+                        <img
+                            src={collection.bannerImageUrl}
+                            alt={collection.name}
+                            className="aspect-[2/1] w-full object-cover lg:aspect-auto lg:h-full"
+                        />
+                    </Link>
+                )}
+                {listings.slice(0, 15).map((listing, index) => (
+                    <div
+                        key={listing.id}
+                        className={index >= 6 ? 'hidden lg:block' : undefined}
+                    >
+                        <ListingCard listing={listing} />
+                    </div>
+                ))}
             </div>
         </div>
     );

@@ -492,8 +492,8 @@ export default function CollectionShow({
                     <CollectionDetailsForm collection={collection} />
                     <div className="grid gap-6">
                         <ArtworkCard
-                            title="Homepage tile image"
-                            description="Square image shown in the homepage tile row."
+                            title="Homepage tile & collection card image"
+                            description="1:1 square — minimum 800 × 800 px. Used as the collection card image throughout the site."
                             uploaderId={`collection-image-${collection.id}`}
                             aspect={1}
                             minimumWidth={800}
@@ -504,7 +504,7 @@ export default function CollectionShow({
                         />
                         <ArtworkCard
                             title="Collection page banner"
-                            description="Wide banner shown at the top of the collection page."
+                            description="16:5 landscape — minimum 1600 × 500 px. Shown at the top of the collection page and as the homepage section banner."
                             uploaderId={`collection-banner-${collection.id}`}
                             aspect={1600 / 500}
                             minimumWidth={1600}
