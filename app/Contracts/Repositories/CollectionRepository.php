@@ -19,6 +19,9 @@ interface CollectionRepository
     /** @return SupportCollection<int, Collection> */
     public function homepageGridCollections(): SupportCollection;
 
+    /** @return SupportCollection<int, Collection> */
+    public function allActiveWithImages(?int $excludeId = null): SupportCollection;
+
     /** @return LengthAwarePaginator<int, Collection> */
     public function paginateForAdmin(): LengthAwarePaginator;
 

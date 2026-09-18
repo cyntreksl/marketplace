@@ -13,7 +13,6 @@ import {
 } from '@/routes/listings';
 import type {
     StorefrontCollectionSection,
-    StorefrontCollectionTile,
     StorefrontHomepageCategory,
     StorefrontListing,
     StorefrontPromotion,
@@ -42,7 +41,6 @@ type HomeProps = {
     newArrivals: StorefrontListing[];
     topBrands: Brand[];
     flashSale: FlashSale | null;
-    collectionTiles: StorefrontCollectionTile[];
     collectionSections: StorefrontCollectionSection[];
 };
 
@@ -301,6 +299,66 @@ function Countdown({ endsAt }: { endsAt: string }) {
     );
 }
 
+function CollectionBannerSection({
+    section,
+}: {
+    section: StorefrontCollectionSection;
+}) {
+    const { collection, listings } = section;
+    const row = useRef<HTMLDivElement>(null);
+    const scroll = (direction: number) =>
+        row.current?.scrollBy({
+            left: direction * Math.max(row.current.clientWidth * 0.8, 260),
+            behavior: 'smooth',
+        });
+
+    const bannerEl = collection.bannerImageUrl ? (
+        <Link
+            href={`/collections/${collection.slug}`}
+            className="shrink-0 self-stretch overflow-hidden rounded-xl sm:w-48 lg:w-56"
+        >
+            <img
+                src={collection.bannerImageUrl}
+                alt={collection.name}
+                className="size-full object-cover"
+            />
+        </Link>
+    ) : null;
+
+    const productsEl = (
+        <div
+            ref={row}
+            className="flex min-w-0 snap-x snap-mandatory [scrollbar-width:none] gap-3 overflow-x-auto pb-2"
+        >
+            {listings.map((listing) => (
+                <div
+                    key={listing.id}
+                    className="w-[calc((100%-0.75rem)/2)] shrink-0 snap-start sm:w-44 lg:w-[calc((100%-3.75rem)/5)]"
+                >
+                    <ListingCard listing={listing} />
+                </div>
+            ))}
+        </div>
+    );
+
+    return (
+        <div>
+            <SectionTitle
+                title={collection.name}
+                href={`/collections/${collection.slug}`}
+                onScrollLeft={listings.length > 4 ? () => scroll(-1) : undefined}
+                onScrollRight={listings.length > 4 ? () => scroll(1) : undefined}
+            />
+            <div
+                className={`flex gap-3 ${collection.bannerSide === 'right' ? 'flex-col sm:flex-row' : 'flex-col sm:flex-row-reverse'}`}
+            >
+                {bannerEl}
+                {productsEl}
+            </div>
+        </div>
+    );
+}
+
 function readRecentIds(): number[] {
     try {
         const value = JSON.parse(
@@ -353,7 +411,6 @@ export default function StorefrontHome({
     newArrivals,
     topBrands,
     flashSale,
-    collectionTiles,
     collectionSections,
 }: HomeProps) {
     return (
@@ -402,29 +459,6 @@ export default function StorefrontHome({
                         View All
                     </Link>
                 </section>
-
-                {collectionTiles.length > 0 && (
-                    <section
-                        className="mt-4 flex snap-x snap-mandatory [scrollbar-width:none] gap-3 overflow-x-auto pb-2"
-                        aria-label="Shop collections"
-                    >
-                        {collectionTiles.map((collection) => (
-                            <Link
-                                key={collection.id}
-                                href={`/collections/${collection.slug}`}
-                                className="group flex h-30 w-28 shrink-0 snap-start flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF6D00]/40 hover:shadow-md motion-reduce:transform-none sm:h-32 sm:w-[8.6rem]"
-                            >
-                                <StorefrontCategoryArtwork
-                                    category={collection}
-                                    className="size-16 rounded-lg bg-slate-50 text-[#FF6D00] ring-0 sm:size-20"
-                                />
-                                <span className="mt-2 line-clamp-1 text-xs font-bold sm:text-sm">
-                                    {collection.name}
-                                </span>
-                            </Link>
-                        ))}
-                    </section>
-                )}
 
                 <section className="mt-5">
                     <ProductGrid
@@ -524,11 +558,15 @@ export default function StorefrontHome({
 
                 {collectionSections.map((section) => (
                     <section key={section.collection.slug} className="mt-6">
-                        <ProductGrid
-                            title={section.collection.name}
-                            href={`/collections/${section.collection.slug}`}
-                            listings={section.listings}
-                        />
+                        {section.collection.bannerSide ? (
+                            <CollectionBannerSection section={section} />
+                        ) : (
+                            <ProductGrid
+                                title={section.collection.name}
+                                href={`/collections/${section.collection.slug}`}
+                                listings={section.listings}
+                            />
+                        )}
                     </section>
                 ))}
 

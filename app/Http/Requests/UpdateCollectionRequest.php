@@ -41,6 +41,7 @@ class UpdateCollectionRequest extends FormRequest
             'seo_title' => ['nullable', 'string', 'max:255'],
             'seo_description' => ['nullable', 'string', 'max:320'],
             'seo_intro' => ['nullable', 'string', 'max:5000'],
+            'homepage_banner_side' => ['nullable', Rule::in(['left', 'right'])],
             'listing_ids' => [$collection->isManual() ? 'required' : 'nullable', 'array', 'max:200'],
             'listing_ids.*' => ['integer', 'distinct', Rule::exists('listings', 'id')],
             'reason' => ['required', 'string', 'min:5', 'max:1000'],

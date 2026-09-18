@@ -44,6 +44,17 @@ class EloquentCollectionRepository implements CollectionRepository
             ->get();
     }
 
+    public function allActiveWithImages(?int $excludeId = null): SupportCollection
+    {
+        return Collection::query()
+            ->where('is_active', true)
+            ->whereNotNull('image_path')
+            ->when($excludeId !== null, fn ($q) => $q->where('id', '!=', $excludeId))
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+    }
+
     public function paginateForAdmin(): LengthAwarePaginator
     {
         return Collection::withTrashed()->withCount('listings')->orderBy('type')->orderBy('sort_order')->paginate(20);

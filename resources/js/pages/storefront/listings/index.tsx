@@ -23,6 +23,7 @@ import type {
     StorefrontBrowseFilters,
     StorefrontCategory,
     StorefrontCategoryContext,
+    StorefrontCollectionLink,
     StorefrontListingPaginator,
 } from '@/types';
 
@@ -158,6 +159,9 @@ export default function ListingsIndex({
     browseUrl,
     relatedGuides = [],
     catalogMode = 'retail',
+    collectionBannerUrl,
+    otherCollections,
+    hideCategories,
 }: {
     listings: StorefrontListingPaginator;
     categories: StorefrontCategory[];
@@ -169,6 +173,9 @@ export default function ListingsIndex({
     browseUrl: string;
     relatedGuides?: { title: string; slug: string; excerpt: string }[];
     catalogMode?: 'retail' | 'wholesale';
+    collectionBannerUrl?: string | null;
+    otherCollections?: StorefrontCollectionLink[];
+    hideCategories?: boolean;
 }) {
     const filterCount = activeFilterCount(filters);
     const pageTitle = pageHeading;
@@ -183,6 +190,16 @@ export default function ListingsIndex({
             activeCategorySlugs={trail.map((category) => category.slug)}
         >
             <main className="storefront-container py-6 lg:py-8">
+                {collectionBannerUrl && (
+                    <div className="overflow-hidden rounded-2xl">
+                        <img
+                            src={collectionBannerUrl}
+                            alt={pageHeading}
+                            className="aspect-[3/1] w-full object-cover"
+                        />
+                    </div>
+                )}
+
                 <StorefrontBreadcrumbs
                     items={breadcrumbItems(
                         categoryContext,
@@ -206,12 +223,14 @@ export default function ListingsIndex({
                     </div>
                 </header>
 
-                <CategoryStrip
-                    categories={categories}
-                    categoryContext={categoryContext}
-                    browseUrl={browseUrl}
-                    catalogMode={catalogMode}
-                />
+                {!hideCategories && (
+                    <CategoryStrip
+                        categories={categories}
+                        categoryContext={categoryContext}
+                        browseUrl={browseUrl}
+                        catalogMode={catalogMode}
+                    />
+                )}
 
                 <section id="results" className="scroll-mt-40 pt-4 pb-14">
                     <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -376,6 +395,38 @@ export default function ListingsIndex({
                                     <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-600">
                                         {guide.excerpt}
                                     </p>
+                                </Link>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {otherCollections && otherCollections.length > 0 && (
+                    <section className="border-t border-slate-100 pt-10 pb-4">
+                        <h2 className="text-xl font-extrabold tracking-tight text-slate-950 sm:text-2xl">
+                            More Collections
+                        </h2>
+                        <div className="mt-4 flex snap-x snap-mandatory [scrollbar-width:none] gap-3 overflow-x-auto pb-2">
+                            {otherCollections.map((collection) => (
+                                <Link
+                                    key={collection.id}
+                                    href={`/collections/${collection.slug}`}
+                                    className="group flex h-36 w-32 shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF6D00]/40 hover:shadow-md motion-reduce:transform-none sm:h-40 sm:w-36"
+                                >
+                                    {collection.image_url ? (
+                                        <img
+                                            src={collection.image_url}
+                                            alt={collection.name}
+                                            className="h-24 w-full object-cover sm:h-28"
+                                        />
+                                    ) : (
+                                        <div className="h-24 w-full bg-orange-50 sm:h-28" />
+                                    )}
+                                    <div className="flex flex-1 items-center px-2 py-1.5">
+                                        <span className="line-clamp-2 text-xs font-bold text-slate-800 transition group-hover:text-[#FF6D00] sm:text-sm">
+                                            {collection.name}
+                                        </span>
+                                    </div>
                                 </Link>
                             ))}
                         </div>

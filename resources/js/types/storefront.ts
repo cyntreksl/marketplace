@@ -173,8 +173,20 @@ export type StorefrontCollectionTile = {
 };
 
 export type StorefrontCollectionSection = {
-    collection: { name: string; slug: string };
+    collection: {
+        name: string;
+        slug: string;
+        bannerImageUrl: string | null;
+        bannerSide: 'left' | 'right' | null;
+    };
     listings: StorefrontListing[];
+};
+
+export type StorefrontCollectionLink = {
+    id: number;
+    name: string;
+    slug: string;
+    image_url: string | null;
 };
 
 export type StorefrontReview = {

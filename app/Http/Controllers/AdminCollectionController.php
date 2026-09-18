@@ -159,6 +159,7 @@ class AdminCollectionController extends Controller
             'rule_key' => $collection->rule_key,
             'image_url' => $collection->imageUrl(),
             'banner_image_url' => $collection->bannerImageUrl(),
+            'homepage_banner_side' => $collection->homepage_banner_side,
             'is_active' => $collection->is_active,
             'show_on_homepage_tile' => $collection->show_on_homepage_tile,
             'show_on_homepage_grid' => $collection->show_on_homepage_grid,

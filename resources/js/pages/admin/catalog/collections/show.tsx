@@ -25,6 +25,7 @@ type AdminCollection = {
     rule_key: string | null;
     image_url: string | null;
     banner_image_url: string | null;
+    homepage_banner_side: 'left' | 'right' | null;
     is_active: boolean;
     show_on_homepage_tile: boolean;
     show_on_homepage_grid: boolean;
@@ -173,6 +174,29 @@ function CollectionDetailsForm({
                                 Show in header nav &amp; footer
                             </label>
                         </div>
+
+                        <label className="grid gap-1 text-sm font-bold">
+                            Homepage banner side
+                            <select
+                                name="homepage_banner_side"
+                                defaultValue={
+                                    collection.homepage_banner_side ?? ''
+                                }
+                                className={inputClassName}
+                            >
+                                <option value="">None (grid only)</option>
+                                <option value="left">
+                                    Banner left, products right
+                                </option>
+                                <option value="right">
+                                    Products left, banner right
+                                </option>
+                            </select>
+                        </label>
+                        <p className="text-xs text-slate-500">
+                            When set, the collection banner image is shown
+                            alongside products on the homepage section.
+                        </p>
 
                         <label className="grid gap-1 text-sm font-bold">
                             Sort order

@@ -77,19 +77,13 @@ class StorefrontService
                 'logoUrl' => $brand->getAttribute('logo_url'),
             ])->values(),
             'flashSale' => $this->flashSaleData(),
-            'collectionTiles' => $this->collections->homepageTileCollections()
-                ->map(fn (Collection $collection): array => [
-                    'id' => $collection->id,
-                    'name' => $collection->name,
-                    'slug' => $collection->slug,
-                    'image_url' => $collection->imageUrl(),
-                ])
-                ->values(),
             'collectionSections' => $this->collections->homepageGridCollections()
                 ->map(fn (Collection $collection): array => [
                     'collection' => [
                         'name' => $collection->name,
                         'slug' => $collection->slug,
+                        'bannerImageUrl' => $collection->bannerImageUrl(),
+                        'bannerSide' => $collection->homepage_banner_side,
                     ],
                     'listings' => $this->listings->sampleForCollection($collection, 12)
                         ->map(fn (Listing $listing): array => $this->listingData($listing))
@@ -350,11 +344,24 @@ class StorefrontService
             items: $this->catalogItems($data),
         );
 
+        $otherCollections = $this->collections->allActiveWithImages((int) $collection->id)
+            ->map(fn (Collection $c): array => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'slug' => $c->slug,
+                'image_url' => $c->imageUrl(),
+            ])
+            ->values()
+            ->all();
+
         return [
             ...$data,
             'browseUrl' => route('collections.show', $collection->slug),
             'pageHeading' => $label,
             'intro' => filled($collection->seo_intro) ? $collection->seo_intro : 'Fresh marketplace picks selected from approved ProDeals.lk sellers.',
+            'collectionBannerUrl' => $collection->bannerImageUrl(),
+            'otherCollections' => $otherCollections,
+            'hideCategories' => true,
             'seo' => $seo,
             'head' => $this->seo->tags($seo),
         ];
