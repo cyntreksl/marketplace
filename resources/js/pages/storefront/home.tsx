@@ -346,8 +346,12 @@ function CollectionBannerSection({
             <SectionTitle
                 title={collection.name}
                 href={`/collections/${collection.slug}`}
-                onScrollLeft={listings.length > 4 ? () => scroll(-1) : undefined}
-                onScrollRight={listings.length > 4 ? () => scroll(1) : undefined}
+                onScrollLeft={
+                    listings.length > 4 ? () => scroll(-1) : undefined
+                }
+                onScrollRight={
+                    listings.length > 4 ? () => scroll(1) : undefined
+                }
             />
             <div
                 className={`flex gap-3 ${collection.bannerSide === 'right' ? 'flex-col sm:flex-row' : 'flex-col sm:flex-row-reverse'}`}

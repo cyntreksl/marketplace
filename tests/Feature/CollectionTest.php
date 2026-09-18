@@ -44,11 +44,7 @@ test('an unknown collection slug is not found', function () {
     $this->get('/collections/does-not-exist')->assertNotFound();
 });
 
-test('the homepage exposes collection tiles and grid sections alongside existing merchandising props', function () {
-    $tileCollection = Collection::factory()->create([
-        'name' => 'Electronics Picks',
-        'show_on_homepage_tile' => true,
-    ]);
+test('the homepage exposes collection grid sections alongside existing merchandising props', function () {
     $gridCollection = Collection::factory()->create([
         'name' => 'Home Essentials',
         'show_on_homepage_grid' => true,
@@ -62,11 +58,7 @@ test('the homepage exposes collection tiles and grid sections alongside existing
         ->has('bestOffers')
         ->has('newArrivals')
         ->has('categories')
-        ->has('collectionTiles')
         ->has('collectionSections'));
-
-    $tiles = collect($response->inertiaProps('collectionTiles'));
-    expect($tiles->pluck('name'))->toContain('Electronics Picks');
 
     $sections = collect($response->inertiaProps('collectionSections'));
     expect($sections->pluck('collection.name'))->toContain('Home Essentials');

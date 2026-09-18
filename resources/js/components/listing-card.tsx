@@ -94,13 +94,19 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
                             >
                                 <span
                                     className="font-black text-white"
-                                    style={{ fontSize: 'clamp(0.7rem, 4.5cqi, 0.875rem)' }}
+                                    style={{
+                                        fontSize:
+                                            'clamp(0.7rem, 4.5cqi, 0.875rem)',
+                                    }}
                                 >
                                     {discountPct}%
                                 </span>
                                 <span
                                     className="font-bold tracking-widest text-orange-100 uppercase"
-                                    style={{ fontSize: 'clamp(0.4rem, 2cqi, 0.55rem)' }}
+                                    style={{
+                                        fontSize:
+                                            'clamp(0.4rem, 2cqi, 0.55rem)',
+                                    }}
                                 >
                                     off
                                 </span>
@@ -130,7 +136,7 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
                             )}
                         </p>
                         {hasOriginalPrice && (
-                            <p className="text-xs font-medium leading-none text-slate-400 line-through">
+                            <p className="text-xs leading-none font-medium text-slate-400 line-through">
                                 {formatPrice(listing.price)}
                             </p>
                         )}
@@ -146,7 +152,9 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
                                 className="size-3.5 shrink-0 fill-current"
                                 aria-hidden="true"
                             />
-                            <span>You save {formatPrice(savings.toString())}</span>
+                            <span>
+                                You save {formatPrice(savings.toString())}
+                            </span>
                         </p>
                     )}
                 </div>
