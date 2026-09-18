@@ -165,6 +165,18 @@ export type StorefrontCategorySection = {
     listings: StorefrontListing[];
 };
 
+export type StorefrontCollectionTile = {
+    id: number;
+    name: string;
+    slug: string;
+    image_url: string | null;
+};
+
+export type StorefrontCollectionSection = {
+    collection: { name: string; slug: string };
+    listings: StorefrontListing[];
+};
+
 export type StorefrontReview = {
     id: number;
     rating: number;

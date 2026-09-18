@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { BrandLogo } from '@/components/brand-logo';
 
 const footerFaqs = [
@@ -17,6 +17,17 @@ const footerFaqs = [
 ] as const;
 
 export function StorefrontFooter({ className = '' }: { className?: string }) {
+    const { navigationCollections } = usePage().props;
+    const shopLinks = [
+        ['All products', '/listings'],
+        ...navigationCollections.map(
+            (collection) =>
+                [collection.name, `/collections/${collection.slug}`] as const,
+        ),
+        ['Brands', '/brands'],
+        ['Track order', '/order-tracking'],
+    ];
+
     return (
         <footer className={`mt-12 bg-white ${className}`}>
             <div className="storefront-container">
@@ -79,15 +90,7 @@ export function StorefrontFooter({ className = '' }: { className?: string }) {
                         aria-label="Footer"
                     >
                         {[
-                            [
-                                'Shop',
-                                [
-                                    ['All products', '/listings'],
-                                    ['Deals', '/collections/deals'],
-                                    ['Brands', '/brands'],
-                                    ['Track order', '/order-tracking'],
-                                ],
-                            ],
+                            ['Shop', shopLinks],
                             [
                                 'Help',
                                 [

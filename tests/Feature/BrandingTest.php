@@ -16,7 +16,9 @@ test('the storefront home shares the ProDeals.lk identity', function () {
             ->has('popularCategories')
             ->has('bestOffers')
             ->has('newArrivals')
-            ->has('categories'));
+            ->has('categories')
+            ->has('collectionTiles')
+            ->has('collectionSections'));
 });
 
 test('runtime site images use the configured Cloudflare media domain', function () {

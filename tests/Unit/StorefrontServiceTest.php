@@ -1,6 +1,7 @@
 <?php
 
 use App\Contracts\Repositories\CatalogRepository;
+use App\Contracts\Repositories\CollectionRepository;
 use App\Contracts\Repositories\GuideRepository;
 use App\Contracts\Repositories\ListingRepository;
 use App\Contracts\Repositories\ProductQuestionRepository;
@@ -39,7 +40,7 @@ test('browse data combines listing results navigation context and filter options
         $mock->shouldReceive('availableBrands')->once()->with('retail')->andReturn(collect());
     });
 
-    $data = (new StorefrontService($listingRepository, $catalogRepository, Mockery::mock(PromotionRepository::class), Mockery::mock(ReviewRepository::class), Mockery::mock(SeoHeadService::class), Mockery::mock(StaticMediaService::class), Mockery::mock(ProductQuestionRepository::class), Mockery::mock(WatchlistRepository::class), Mockery::mock(SellerStoreRepository::class), new SellerSummaryService, Mockery::mock(MarketplaceSettingsService::class), Mockery::mock(GuideRepository::class)))->browseData([
+    $data = (new StorefrontService($listingRepository, $catalogRepository, Mockery::mock(PromotionRepository::class), Mockery::mock(ReviewRepository::class), Mockery::mock(SeoHeadService::class), Mockery::mock(StaticMediaService::class), Mockery::mock(ProductQuestionRepository::class), Mockery::mock(WatchlistRepository::class), Mockery::mock(SellerStoreRepository::class), new SellerSummaryService, Mockery::mock(MarketplaceSettingsService::class), Mockery::mock(GuideRepository::class), Mockery::mock(CollectionRepository::class)))->browseData([
         'category' => 'fashion',
         'sort' => 'newest',
     ]);
@@ -111,7 +112,7 @@ test('listing details include an empty media collection and category trail', fun
         $mock->shouldReceive('activeFlashSale')->once()->andReturnNull();
     });
 
-    $data = (new StorefrontService($listingRepository, $catalogRepository, $promotionRepository, $reviewRepository, $seo, Mockery::mock(StaticMediaService::class), $questionRepository, Mockery::mock(WatchlistRepository::class), Mockery::mock(SellerStoreRepository::class), new SellerSummaryService, Mockery::mock(MarketplaceSettingsService::class), Mockery::mock(GuideRepository::class)))->listingDetailsData('modern-laptop');
+    $data = (new StorefrontService($listingRepository, $catalogRepository, $promotionRepository, $reviewRepository, $seo, Mockery::mock(StaticMediaService::class), $questionRepository, Mockery::mock(WatchlistRepository::class), Mockery::mock(SellerStoreRepository::class), new SellerSummaryService, Mockery::mock(MarketplaceSettingsService::class), Mockery::mock(GuideRepository::class), Mockery::mock(CollectionRepository::class)))->listingDetailsData('modern-laptop');
 
     expect($data['listing']['media'])->toBeEmpty()
         ->and($data['head'])->toHaveCount(1)

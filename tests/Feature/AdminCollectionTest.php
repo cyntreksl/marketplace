@@ -1,0 +1,139 @@
+<?php
+
+use App\Models\Collection;
+use App\Models\Listing;
+use App\Models\Role;
+use App\Models\User;
+
+function actingAdmin(): User
+{
+    $admin = User::factory()->create();
+    $admin->roles()->attach(Role::factory()->create(['name' => Role::Admin, 'label' => 'Administrator']));
+
+    return $admin;
+}
+
+test('an admin can view the collections list and a collection detail page, including archived ones', function () {
+    $admin = actingAdmin();
+    $collection = Collection::factory()->create(['name' => 'Kids']);
+    $archived = Collection::factory()->create(['name' => 'Old Season']);
+    $archived->delete();
+
+    $this->actingAs($admin)->get(route('admin.collections.index'))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/catalog/collections/index')
+            ->has('collections.data', 2 + 5));
+
+    $this->actingAs($admin)->get(route('admin.collections.show', $collection))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('admin/catalog/collections/show')
+            ->where('collection.name', 'Kids'));
+
+    $this->actingAs($admin)->get(route('admin.collections.show', $archived->id))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('collection.name', 'Old Season')
+            ->where('collection.deleted_at', fn (?string $value): bool => $value !== null));
+});
+
+test('an admin can create a manual collection with curated products in order', function () {
+    $admin = actingAdmin();
+    $listings = Listing::factory()->count(2)->create();
+
+    $this->actingAs($admin)->post(route('admin.collections.store'), [
+        'type' => 'manual',
+        'name' => "Women's",
+        'is_active' => true,
+        'show_on_homepage_tile' => false,
+        'show_on_homepage_grid' => false,
+        'show_in_navigation' => false,
+        'sort_order' => 0,
+        'listing_ids' => $listings->reverse()->pluck('id')->all(),
+        'reason' => 'Launch the new curated collection',
+    ])->assertRedirect();
+
+    $collection = Collection::query()->where('type', 'manual')->sole();
+    expect($collection->type->value)->toBe('manual')
+        ->and($collection->listings()->pluck('listings.id')->all())->toBe($listings->reverse()->pluck('id')->all());
+    $this->assertDatabaseHas('audit_logs', ['actor_id' => $admin->id, 'action' => 'collection.created']);
+});
+
+test('creating a rule type collection from the admin panel is rejected', function () {
+    $admin = actingAdmin();
+
+    $this->actingAs($admin)->post(route('admin.collections.store'), [
+        'type' => 'rule',
+        'name' => 'Ad hoc rule collection',
+        'is_active' => true,
+        'show_on_homepage_tile' => false,
+        'show_on_homepage_grid' => false,
+        'show_in_navigation' => false,
+        'sort_order' => 0,
+        'reason' => 'Attempt to add a new rule collection',
+    ])->assertInvalid(['type']);
+
+    expect(Collection::query()->where('name', 'Ad hoc rule collection')->exists())->toBeFalse();
+});
+
+test('non operations users cannot manage collections', function () {
+    $this->actingAs(User::factory()->create())->post(route('admin.collections.store'), [
+        'type' => 'manual',
+        'name' => 'Unauthorized',
+        'is_active' => true,
+        'show_on_homepage_tile' => false,
+        'show_on_homepage_grid' => false,
+        'show_in_navigation' => false,
+        'sort_order' => 0,
+        'listing_ids' => [],
+        'reason' => 'Attempt unauthorized collection write',
+    ])->assertForbidden();
+});
+
+test('updating a manual collection re-syncs its curated products', function () {
+    $admin = actingAdmin();
+    $collection = Collection::factory()->create(['name' => 'Kitchen']);
+    $kept = Listing::factory()->create();
+    $removed = Listing::factory()->create();
+    $collection->listings()->sync([$kept->id => ['position' => 0], $removed->id => ['position' => 1]]);
+    $added = Listing::factory()->create();
+
+    $this->actingAs($admin)->patch(route('admin.collections.update', $collection), [
+        'name' => 'Kitchen & Dining',
+        'is_active' => true,
+        'show_on_homepage_tile' => false,
+        'show_on_homepage_grid' => false,
+        'show_in_navigation' => false,
+        'sort_order' => 0,
+        'listing_ids' => [$added->id, $kept->id],
+        'reason' => 'Refresh the curated product list',
+    ])->assertRedirect();
+
+    $collection->refresh();
+    expect($collection->listings()->pluck('listings.id')->all())->toBe([$added->id, $kept->id]);
+});
+
+test('renaming a collection slug records a storefront redirect', function () {
+    $admin = actingAdmin();
+    $collection = Collection::factory()->create(['name' => 'Toys', 'slug' => 'toys']);
+    $listing = Listing::factory()->create();
+    $collection->listings()->attach($listing, ['position' => 0]);
+
+    $this->actingAs($admin)->patch(route('admin.collections.update', $collection), [
+        'name' => 'Toys & Games',
+        'slug' => 'toys-and-games',
+        'is_active' => true,
+        'show_on_homepage_tile' => false,
+        'show_on_homepage_grid' => false,
+        'show_in_navigation' => false,
+        'sort_order' => 0,
+        'listing_ids' => [$listing->id],
+        'reason' => 'Rename the collection for clarity',
+    ])->assertRedirect();
+
+    $this->assertDatabaseHas('seo_redirects', [
+        'source_path' => '/collections/toys',
+        'destination_path' => '/collections/toys-and-games',
+    ]);
+});

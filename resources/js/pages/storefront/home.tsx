@@ -12,6 +12,8 @@ import {
     recent as recentListings,
 } from '@/routes/listings';
 import type {
+    StorefrontCollectionSection,
+    StorefrontCollectionTile,
     StorefrontHomepageCategory,
     StorefrontListing,
     StorefrontPromotion,
@@ -40,6 +42,8 @@ type HomeProps = {
     newArrivals: StorefrontListing[];
     topBrands: Brand[];
     flashSale: FlashSale | null;
+    collectionTiles: StorefrontCollectionTile[];
+    collectionSections: StorefrontCollectionSection[];
 };
 
 function HeroBanner({ slides }: { slides: StorefrontPromotion[] }) {
@@ -349,6 +353,8 @@ export default function StorefrontHome({
     newArrivals,
     topBrands,
     flashSale,
+    collectionTiles,
+    collectionSections,
 }: HomeProps) {
     return (
         <StorefrontLayout
@@ -396,6 +402,29 @@ export default function StorefrontHome({
                         View All
                     </Link>
                 </section>
+
+                {collectionTiles.length > 0 && (
+                    <section
+                        className="mt-4 flex snap-x snap-mandatory [scrollbar-width:none] gap-3 overflow-x-auto pb-2"
+                        aria-label="Shop collections"
+                    >
+                        {collectionTiles.map((collection) => (
+                            <Link
+                                key={collection.id}
+                                href={`/collections/${collection.slug}`}
+                                className="group flex h-30 w-28 shrink-0 snap-start flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF6D00]/40 hover:shadow-md motion-reduce:transform-none sm:h-32 sm:w-[8.6rem]"
+                            >
+                                <StorefrontCategoryArtwork
+                                    category={collection}
+                                    className="size-16 rounded-lg bg-slate-50 text-[#FF6D00] ring-0 sm:size-20"
+                                />
+                                <span className="mt-2 line-clamp-1 text-xs font-bold sm:text-sm">
+                                    {collection.name}
+                                </span>
+                            </Link>
+                        ))}
+                    </section>
+                )}
 
                 <section className="mt-5">
                     <ProductGrid
@@ -492,6 +521,17 @@ export default function StorefrontHome({
                         listings={newArrivals}
                     />
                 </section>
+
+                {collectionSections.map((section) => (
+                    <section key={section.collection.slug} className="mt-6">
+                        <ProductGrid
+                            title={section.collection.name}
+                            href={`/collections/${section.collection.slug}`}
+                            listings={section.listings}
+                        />
+                    </section>
+                ))}
+
                 <RecentlyViewed />
             </main>
         </StorefrontLayout>

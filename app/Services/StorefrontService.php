@@ -5,6 +5,7 @@ namespace App\Services;
 use App\AuctionStatus;
 use App\AuctionType;
 use App\Contracts\Repositories\CatalogRepository;
+use App\Contracts\Repositories\CollectionRepository;
 use App\Contracts\Repositories\GuideRepository;
 use App\Contracts\Repositories\ListingRepository;
 use App\Contracts\Repositories\ProductQuestionRepository;
@@ -14,12 +15,13 @@ use App\Contracts\Repositories\SellerStoreRepository;
 use App\Contracts\Repositories\WatchlistRepository;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Collection;
 use App\Models\Guide;
 use App\Models\Listing;
 use App\Models\ProductQuestion;
 use App\Models\User;
 use App\Models\WholesalePriceTier;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 
 class StorefrontService
 {
@@ -36,6 +38,7 @@ class StorefrontService
         private readonly SellerSummaryService $sellerSummaries,
         private readonly MarketplaceSettingsService $settings,
         private readonly GuideRepository $guides,
+        private readonly CollectionRepository $collections,
     ) {}
 
     /** @return array<string, mixed> */
@@ -74,25 +77,38 @@ class StorefrontService
                 'logoUrl' => $brand->getAttribute('logo_url'),
             ])->values(),
             'flashSale' => $this->flashSaleData(),
+            'collectionTiles' => $this->collections->homepageTileCollections()
+                ->map(fn (Collection $collection): array => [
+                    'id' => $collection->id,
+                    'name' => $collection->name,
+                    'slug' => $collection->slug,
+                    'image_url' => $collection->imageUrl(),
+                ])
+                ->values(),
+            'collectionSections' => $this->collections->homepageGridCollections()
+                ->map(fn (Collection $collection): array => [
+                    'collection' => [
+                        'name' => $collection->name,
+                        'slug' => $collection->slug,
+                    ],
+                    'listings' => $this->listings->sampleForCollection($collection, 12)
+                        ->map(fn (Listing $listing): array => $this->listingData($listing))
+                        ->values(),
+                ])
+                ->filter(fn (array $section): bool => $section['listings']->isNotEmpty())
+                ->values(),
         ];
     }
 
-    /** @return array<int, array<string, mixed>> */
-    public function homepageCategorySections(): array
+    /** @return array<int, array{id: int, name: string, slug: string}> */
+    public function navigationCollections(): array
     {
-        return $this->catalog->featuredHomepageCategories()
-            ->map(fn (Category $category, int $index): array => [
-                'category' => [
-                    ...$category->only(['id', 'name', 'slug']),
-                    'image_url' => $category->imageUrl(),
-                    'banner_image_url' => $category->bannerImageUrl(),
-                ],
-                'variant' => ['image', 'tinted', 'clean'][$index % 3],
-                'listings' => $this->listings->homepageForCategory($category->slug)
-                    ->map(fn (Listing $listing): array => $this->listingData($listing))
-                    ->values(),
+        return $this->collections->navigationCollections()
+            ->map(fn (Collection $collection): array => [
+                'id' => $collection->id,
+                'name' => $collection->name,
+                'slug' => $collection->slug,
             ])
-            ->filter(fn (array $section): bool => $section['listings']->isNotEmpty())
             ->values()
             ->all();
     }
@@ -309,37 +325,36 @@ class StorefrontService
     /** @param array<string, mixed> $filters
      * @return array<string, mixed>
      */
-    public function collectionData(string $collection, array $filters): array
+    public function collectionData(Collection $collection, array $filters): array
     {
-        $labels = [
-            'featured' => 'Featured Products',
-            'deals' => 'Latest Deals',
-            'best-sellers' => 'Best Sellers',
-            'new-arrivals' => 'New Arrivals',
-            'clearance' => 'Clearance Deals',
-        ];
-        $label = $labels[$collection] ?? 'Products';
+        abort_unless($collection->is_active, 404);
+
+        $label = $collection->name;
         $data = $this->browseData([...$filters, 'collection' => $collection]);
         $page = max(1, (int) request()->query('page', 1));
-        $canonical = route('collections.show', $collection).($page > 1 ? '?page='.$page : '');
+        $canonical = route('collections.show', $collection->slug).($page > 1 ? '?page='.$page : '');
+        $title = filled($collection->seo_title) ? $collection->seo_title : $label.' in Sri Lanka - '.config('app.name');
+        $description = filled($collection->seo_description)
+            ? $collection->seo_description
+            : 'Discover '.$label.' from approved sellers across Sri Lanka on '.config('app.name').'.';
         $seo = $this->seo->catalogPayload(
-            title: $label.' in Sri Lanka - '.config('app.name'),
-            description: 'Discover '.$label.' from approved sellers across Sri Lanka on '.config('app.name').'.',
+            title: $title,
+            description: $description,
             canonical: $canonical,
             breadcrumbs: [
                 ['name' => 'Home', 'url' => route('home')],
-                ['name' => $label, 'url' => route('collections.show', $collection)],
+                ['name' => $label, 'url' => route('collections.show', $collection->slug)],
             ],
             indexable: collect(request()->query())->except('page')->filter()->isEmpty()
-                && in_array($collection, $this->listings->indexableCollectionSlugs(), true),
+                && in_array($collection->slug, $this->listings->indexableCollectionSlugs(), true),
             items: $this->catalogItems($data),
         );
 
         return [
             ...$data,
-            'browseUrl' => route('collections.show', $collection),
+            'browseUrl' => route('collections.show', $collection->slug),
             'pageHeading' => $label,
-            'intro' => 'Fresh marketplace picks selected from approved ProDeals.lk sellers.',
+            'intro' => filled($collection->seo_intro) ? $collection->seo_intro : 'Fresh marketplace picks selected from approved ProDeals.lk sellers.',
             'seo' => $seo,
             'head' => $this->seo->tags($seo),
         ];
@@ -464,8 +479,8 @@ class StorefrontService
             ->all();
     }
 
-    /** @return Collection<int, array<string, mixed>> */
-    public function navigationCategories(): Collection
+    /** @return SupportCollection<int, array<string, mixed>> */
+    public function navigationCategories(): SupportCollection
     {
         return $this->storefrontCategories();
     }
@@ -476,8 +491,8 @@ class StorefrontService
         return $this->listingData($listing);
     }
 
-    /** @return Collection<int, array<string, mixed>> */
-    private function storefrontCategories(string $channel = 'retail'): Collection
+    /** @return SupportCollection<int, array<string, mixed>> */
+    private function storefrontCategories(string $channel = 'retail'): SupportCollection
     {
         return $this->catalog->activeTopLevelCategories($channel)
             ->map(fn (Category $category): array => $this->storefrontCategoryData($category));
@@ -610,10 +625,10 @@ class StorefrontService
         ];
     }
 
-    /** @param Collection<int, WholesalePriceTier> $tiers
+    /** @param SupportCollection<int, WholesalePriceTier> $tiers
      * @return array<int, array{minimumQuantity: int, unitPrice: string}>
      */
-    private function wholesaleTierData(Collection $tiers): array
+    private function wholesaleTierData(SupportCollection $tiers): array
     {
         return $tiers
             ->sortBy('minimum_quantity')

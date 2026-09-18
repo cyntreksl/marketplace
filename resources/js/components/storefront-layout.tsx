@@ -85,12 +85,18 @@ export function StorefrontLayout({
         ...(props.auctionFlags.enabled
             ? ([['Auctions', auctionsIndex.url()]] as const)
             : []),
-        ['Deals', '/collections/deals'],
+        ...props.navigationCollections.map(
+            (collection) =>
+                [collection.name, `/collections/${collection.slug}`] as const,
+        ),
         ['Brands', '/brands'],
         ['Guides', guidesIndex.url()],
         ['Buying', '/buying'],
         ['Selling', '/selling'],
     ] as const;
+    const hotNavLabel = props.navigationCollections.find(
+        (collection) => collection.slug === 'deals',
+    )?.name;
 
     return (
         <div
@@ -239,14 +245,14 @@ export function StorefrontLayout({
                         </div>
                     )}
                     <div className="flex min-w-0 flex-1 [scrollbar-width:none] items-center gap-5 overflow-x-auto text-sm font-bold whitespace-nowrap lg:justify-between lg:gap-3">
-                        {navigation.map(([label, href], index) => (
+                        {navigation.map(([label, href]) => (
                             <Link
                                 key={href}
                                 href={href}
                                 className="flex items-center gap-1.5 py-2 hover:text-[#FF6D00]"
                             >
                                 {label}
-                                {index === 2 && (
+                                {label === hotNavLabel && (
                                     <span className="rounded-full bg-[#FF6D00] px-1.5 py-0.5 text-[8px] font-black text-white uppercase">
                                         Hot
                                     </span>

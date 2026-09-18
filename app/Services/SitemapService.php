@@ -62,10 +62,10 @@ class SitemapService
             $routes[] = 'auctions.index';
         }
 
-        $entries = collect($routes)->map(fn (string $name): array => ['url' => route($name), 'lastmod' => null]);
+        $entries = collect($routes)->map(fn (string $name): array => ['url' => route($name), 'lastmod' => null])->all();
 
-        foreach ($this->listings->indexableCollectionSlugs() as $collection) {
-            $entries->push(['url' => route('collections.show', $collection), 'lastmod' => null]);
+        foreach ($this->listings->indexableCollections() as $collection) {
+            $entries[] = ['url' => route('collections.show', $collection->slug), 'lastmod' => $collection->updated_at];
         }
 
         return $this->urlSet($entries);

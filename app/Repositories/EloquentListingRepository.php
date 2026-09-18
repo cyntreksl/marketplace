@@ -3,8 +3,10 @@
 namespace App\Repositories;
 
 use App\AuctionStatus;
+use App\CollectionType;
 use App\Contracts\Repositories\CatalogRepository;
 use App\Contracts\Repositories\ListingRepository;
+use App\Models\Collection;
 use App\Models\Listing;
 use App\Models\ListingMedia;
 use App\Models\ListingVariant;
@@ -12,7 +14,7 @@ use App\Models\SellerProfile;
 use App\SellerOrderStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\LazyCollection;
 
 class EloquentListingRepository implements ListingRepository
@@ -52,15 +54,8 @@ class EloquentListingRepository implements ListingRepository
                     ->where('auctions.status', '=', AuctionStatus::Live->value)
                     ->whereNull('auctions.deleted_at');
             })
-            ->when($filters['collection'] ?? null, function (Builder $query, string $collection): void {
-                match ($collection) {
-                    'featured' => $query->where('listings.is_featured', true),
-                    'deals' => $query->where('listings.is_best_offer', true)->whereNotNull('listings.sale_price')->whereColumn('listings.sale_price', '<', 'listings.price'),
-                    'best-sellers' => $query->where('listings.is_best_seller', true),
-                    'new-arrivals' => $query->where('listings.is_new_arrival', true),
-                    'clearance' => $query->where('listings.is_clearance', true)->whereNotNull('listings.sale_price')->whereColumn('listings.sale_price', '<', 'listings.price'),
-                    default => null,
-                };
+            ->when($filters['collection'] ?? null, function (Builder $query, Collection $collection): void {
+                $this->applyCollectionScope($query, $collection);
             })
             ->when($filters['seller_id'] ?? null, fn ($query, int $sellerId) => $query->where('listings.seller_profile_id', $sellerId))
             ->when($filters['search'] ?? null, fn ($query, string $search) => $query->where('listings.title', 'like', "%{$search}%"))
@@ -72,10 +67,53 @@ class EloquentListingRepository implements ListingRepository
             ->when($filters['min_price'] ?? null, fn ($query, int|float|string $minimum) => $query->whereRaw("{$effectivePrice} >= ?", [$minimum]))
             ->when($filters['max_price'] ?? null, fn ($query, int|float|string $maximum) => $query->whereRaw("{$effectivePrice} <= ?", [$maximum]));
 
-        $this->applySort($query, (string) ($filters['sort'] ?? 'newest'), $channel);
+        $sort = (string) ($filters['sort'] ?? 'newest');
+        $collection = $filters['collection'] ?? null;
+
+        if ($collection instanceof Collection && $collection->type === CollectionType::Manual && $sort === 'newest') {
+            $query->orderBy('clp.position');
+        } else {
+            $this->applySort($query, $sort, $channel);
+        }
 
         return $query->paginate($perPage)
             ->withQueryString();
+    }
+
+    /** @param Builder<Listing> $query */
+    private function applyCollectionScope(Builder $query, Collection $collection): void
+    {
+        if ($collection->type === CollectionType::Manual) {
+            $query->join('collection_listing as clp', function ($join) use ($collection): void {
+                $join->on('clp.listing_id', '=', 'listings.id')
+                    ->where('clp.collection_id', '=', $collection->id);
+            });
+
+            return;
+        }
+
+        match ($collection->rule_key) {
+            'featured' => $query->where('listings.is_featured', true),
+            'deals' => $query->where('listings.is_best_offer', true)->whereNotNull('listings.sale_price')->whereColumn('listings.sale_price', '<', 'listings.price'),
+            'best-sellers' => $query->where('listings.is_best_seller', true),
+            'new-arrivals' => $query->where('listings.is_new_arrival', true),
+            'clearance' => $query->where('listings.is_clearance', true)->whereNotNull('listings.sale_price')->whereColumn('listings.sale_price', '<', 'listings.price'),
+            default => $query->whereRaw('1 = 0'),
+        };
+    }
+
+    public function sampleForCollection(Collection $collection, int $limit = 12): SupportCollection
+    {
+        $query = $this->publicQuery();
+        $this->applyCollectionScope($query, $collection);
+
+        if ($collection->type === CollectionType::Manual) {
+            $query->orderBy('clp.position');
+        } else {
+            $query->latest('listings.created_at');
+        }
+
+        return $query->limit($limit)->get();
     }
 
     public function findPublicBySlug(string $slug): Listing
@@ -122,34 +160,22 @@ class EloquentListingRepository implements ListingRepository
 
     public function indexableCollectionSlugs(): array
     {
-        $collections = ['featured', 'deals', 'best-sellers', 'new-arrivals', 'clearance'];
+        return $this->indexableCollections()->pluck('slug')->values()->all();
+    }
 
-        return collect($collections)
-            ->filter(function (string $collection): bool {
+    public function indexableCollections(): SupportCollection
+    {
+        return Collection::query()->where('is_active', true)->get()
+            ->filter(function (Collection $collection): bool {
                 $query = Listing::query()->retailVisible();
-
-                match ($collection) {
-                    'featured' => $query->where('listings.is_featured', true),
-                    'deals' => $query->where('listings.is_best_offer', true)
-                        ->where('listings.listing_type', 'buy_now')
-                        ->whereNotNull('listings.sale_price')
-                        ->whereColumn('listings.sale_price', '<', 'listings.price'),
-                    'best-sellers' => $query->where('listings.is_best_seller', true),
-                    'new-arrivals' => $query->where('listings.is_new_arrival', true),
-                    'clearance' => $query->where('listings.is_clearance', true)
-                        ->where('listings.listing_type', 'buy_now')
-                        ->whereNotNull('listings.sale_price')
-                        ->whereColumn('listings.sale_price', '<', 'listings.price'),
-                    default => $query->whereRaw('1 = 0'),
-                };
+                $this->applyCollectionScope($query, $collection);
 
                 return $query->exists();
             })
-            ->values()
-            ->all();
+            ->values();
     }
 
-    public function sitemapProducts(int $page, int $perPage): Collection
+    public function sitemapProducts(int $page, int $perPage): SupportCollection
     {
         return Listing::query()
             ->select(['id', 'title', 'slug', 'updated_at'])
@@ -174,7 +200,7 @@ class EloquentListingRepository implements ListingRepository
             ->lazyById(column: 'listings.id', alias: 'id');
     }
 
-    public function homepageBestOffers(int $limit = 18): Collection
+    public function homepageBestOffers(int $limit = 18): SupportCollection
     {
         return $this->publicQuery()
             ->where('listings.is_best_offer', true)
@@ -186,7 +212,7 @@ class EloquentListingRepository implements ListingRepository
             ->get();
     }
 
-    public function homepageNewArrivals(int $limit = 18): Collection
+    public function homepageNewArrivals(int $limit = 18): SupportCollection
     {
         return $this->publicQuery()
             ->where('listings.is_new_arrival', true)
@@ -195,7 +221,7 @@ class EloquentListingRepository implements ListingRepository
             ->get();
     }
 
-    public function homepageForCategory(string $categorySlug, int $limit = 6): Collection
+    public function homepageForCategory(string $categorySlug, int $limit = 6): SupportCollection
     {
         return $this->publicQuery()
             ->whereIn('listings.category_id', $this->catalog->activeDescendantIdsForSlug($categorySlug))
@@ -204,7 +230,7 @@ class EloquentListingRepository implements ListingRepository
             ->get();
     }
 
-    public function findPublicByIds(array $listingIds): Collection
+    public function findPublicByIds(array $listingIds): SupportCollection
     {
         if ($listingIds === []) {
             return collect();
@@ -311,17 +337,17 @@ class EloquentListingRepository implements ListingRepository
         Listing::query()->whereKey($listingId)->toBase()->increment('view_count');
     }
 
-    public function featuredDeals(int $limit = 18): Collection
+    public function featuredDeals(int $limit = 18): SupportCollection
     {
         return $this->publicQuery()->where('listings.is_featured', true)->latest('listings.created_at')->limit($limit)->get();
     }
 
-    public function bestSellers(int $limit = 10): Collection
+    public function bestSellers(int $limit = 10): SupportCollection
     {
         return $this->publicQuery()->where('listings.is_best_seller', true)->latest('listings.created_at')->limit($limit)->get();
     }
 
-    public function clearance(int $limit = 10): Collection
+    public function clearance(int $limit = 10): SupportCollection
     {
         return $this->publicQuery()
             ->where('listings.is_clearance', true)
@@ -331,7 +357,7 @@ class EloquentListingRepository implements ListingRepository
             ->latest('listings.created_at')->limit($limit)->get();
     }
 
-    public function related(Listing $listing, string $channel = 'retail', int $limit = 6): Collection
+    public function related(Listing $listing, string $channel = 'retail', int $limit = 6): SupportCollection
     {
         return $this->publicQuery($channel)
             ->whereKeyNot($listing->id)
@@ -345,7 +371,7 @@ class EloquentListingRepository implements ListingRepository
             ->get();
     }
 
-    public function otherListingsFromSeller(Listing $listing, string $channel = 'retail', int $limit = 6): Collection
+    public function otherListingsFromSeller(Listing $listing, string $channel = 'retail', int $limit = 6): SupportCollection
     {
         return $this->publicQuery($channel)
             ->whereKeyNot($listing->id)
@@ -446,7 +472,7 @@ class EloquentListingRepository implements ListingRepository
         return (int) $listing->media()->max('sort_order') + 1;
     }
 
-    public function mediaForListing(Listing $listing, array $mediaIds): Collection
+    public function mediaForListing(Listing $listing, array $mediaIds): SupportCollection
     {
         return $listing->media()->whereKey($mediaIds)->get();
     }

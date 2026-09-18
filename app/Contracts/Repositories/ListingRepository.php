@@ -2,12 +2,13 @@
 
 namespace App\Contracts\Repositories;
 
+use App\Models\Collection;
 use App\Models\Listing;
 use App\Models\ListingMedia;
 use App\Models\ListingVariant;
 use App\Models\SellerProfile;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\LazyCollection;
 
 interface ListingRepository
@@ -31,25 +32,31 @@ interface ListingRepository
     /** @return array<int, string> */
     public function indexableCollectionSlugs(): array;
 
-    /** @return Collection<int, Listing> */
-    public function sitemapProducts(int $page, int $perPage): Collection;
+    /** @return SupportCollection<int, Collection> */
+    public function indexableCollections(): SupportCollection;
+
+    /** @return SupportCollection<int, Listing> */
+    public function sampleForCollection(Collection $collection, int $limit = 12): SupportCollection;
+
+    /** @return SupportCollection<int, Listing> */
+    public function sitemapProducts(int $page, int $perPage): SupportCollection;
 
     /** @return LazyCollection<int, Listing> */
     public function merchantProducts(): LazyCollection;
 
-    /** @return Collection<int, Listing> */
-    public function homepageBestOffers(int $limit = 18): Collection;
+    /** @return SupportCollection<int, Listing> */
+    public function homepageBestOffers(int $limit = 18): SupportCollection;
 
-    /** @return Collection<int, Listing> */
-    public function homepageNewArrivals(int $limit = 18): Collection;
+    /** @return SupportCollection<int, Listing> */
+    public function homepageNewArrivals(int $limit = 18): SupportCollection;
 
-    /** @return Collection<int, Listing> */
-    public function homepageForCategory(string $categorySlug, int $limit = 6): Collection;
+    /** @return SupportCollection<int, Listing> */
+    public function homepageForCategory(string $categorySlug, int $limit = 6): SupportCollection;
 
     /** @param array<int, int> $listingIds
-     * @return Collection<int, Listing>
+     * @return SupportCollection<int, Listing>
      */
-    public function findPublicByIds(array $listingIds): Collection;
+    public function findPublicByIds(array $listingIds): SupportCollection;
 
     /**
      * @param  array<string, mixed>  $filters
@@ -71,20 +78,20 @@ interface ListingRepository
 
     public function incrementViewCount(int $listingId): void;
 
-    /** @return Collection<int, Listing> */
-    public function featuredDeals(int $limit = 18): Collection;
+    /** @return SupportCollection<int, Listing> */
+    public function featuredDeals(int $limit = 18): SupportCollection;
 
-    /** @return Collection<int, Listing> */
-    public function bestSellers(int $limit = 10): Collection;
+    /** @return SupportCollection<int, Listing> */
+    public function bestSellers(int $limit = 10): SupportCollection;
 
-    /** @return Collection<int, Listing> */
-    public function clearance(int $limit = 10): Collection;
+    /** @return SupportCollection<int, Listing> */
+    public function clearance(int $limit = 10): SupportCollection;
 
-    /** @return Collection<int, Listing> */
-    public function related(Listing $listing, string $channel = 'retail', int $limit = 6): Collection;
+    /** @return SupportCollection<int, Listing> */
+    public function related(Listing $listing, string $channel = 'retail', int $limit = 6): SupportCollection;
 
-    /** @return Collection<int, Listing> */
-    public function otherListingsFromSeller(Listing $listing, string $channel = 'retail', int $limit = 6): Collection;
+    /** @return SupportCollection<int, Listing> */
+    public function otherListingsFromSeller(Listing $listing, string $channel = 'retail', int $limit = 6): SupportCollection;
 
     /** @return LengthAwarePaginator<int, Listing> */
     /**
@@ -115,9 +122,9 @@ interface ListingRepository
     public function nextMediaSortOrder(Listing $listing): int;
 
     /** @param array<int, int> $mediaIds
-     * @return Collection<int, ListingMedia>
+     * @return SupportCollection<int, ListingMedia>
      */
-    public function mediaForListing(Listing $listing, array $mediaIds): Collection;
+    public function mediaForListing(Listing $listing, array $mediaIds): SupportCollection;
 
     public function deleteMedia(ListingMedia $media): void;
 

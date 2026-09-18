@@ -27,6 +27,11 @@ declare module '@inertiajs/core' {
             marketplace: MarketplaceDetails;
             auctionFlags: AuctionFlags;
             reviewFlags: ReviewFlags;
+            navigationCollections: {
+                id: number;
+                name: string;
+                slug: string;
+            }[];
             seo: SeoPayload;
             sidebarOpen: boolean;
             [key: string]: unknown;

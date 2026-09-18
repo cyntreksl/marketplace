@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\RecentlyViewedListingsRequest;
 use App\Http\Requests\StorefrontBrowseRequest;
+use App\Models\Collection;
 use App\Services\HumanPageViewService;
 use App\Services\MetaConversionsService;
 use App\Services\SearchAnalyticsService;
@@ -80,11 +81,11 @@ class StorefrontController extends Controller
         return $this->renderListingIndex($data);
     }
 
-    public function collection(StorefrontBrowseRequest $request, string $collection): Response
+    public function collection(StorefrontBrowseRequest $request, Collection $collection): Response
     {
         $filters = $request->filters();
         $data = $this->storefront->collectionData($collection, $filters);
-        $this->searchAnalytics->track($request, [...$filters, 'collection' => $collection], 'collection', $data['listings']->total());
+        $this->searchAnalytics->track($request, [...$filters, 'collection' => $collection->slug], 'collection', $data['listings']->total());
 
         return $this->renderListingIndex($data);
     }

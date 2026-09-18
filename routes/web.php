@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminAuctionSettingsController;
 use App\Http\Controllers\AdminBrandController;
 use App\Http\Controllers\AdminCategoryBrowseController;
 use App\Http\Controllers\AdminCategoryController;
+use App\Http\Controllers\AdminCollectionController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminFeatureSettingsController;
 use App\Http\Controllers\AdminGuideController;
@@ -103,9 +104,7 @@ Route::inertia('/policies/prohibited-items', 'storefront/content/show', ['docume
 Route::get('/listings', [StorefrontController::class, 'index'])->name('listings.index');
 Route::get('/wholesale', [StorefrontController::class, 'wholesale'])->name('wholesale.index');
 Route::get('/auctions', [StorefrontController::class, 'auctions'])->name('auctions.index');
-Route::get('/collections/{collection}', [StorefrontController::class, 'collection'])
-    ->whereIn('collection', ['featured', 'deals', 'best-sellers', 'new-arrivals', 'clearance'])
-    ->name('collections.show');
+Route::get('/collections/{collection:slug}', [StorefrontController::class, 'collection'])->name('collections.show');
 Route::get('/brands', BrandDirectoryController::class)->name('brands.index');
 Route::get('/brands/{brand}', [StorefrontController::class, 'brand'])->name('brands.show');
 Route::get('/guides', [GuideController::class, 'index'])->name('guides.index');
@@ -293,6 +292,18 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): v
     Route::patch('/catalog/brands/{brand}', [AdminBrandController::class, 'update'])->name('brands.update');
     Route::delete('/catalog/brands/{brand}', [AdminBrandController::class, 'destroy'])->name('brands.destroy');
     Route::post('/catalog/brands/{brand}/restore', [AdminBrandController::class, 'restore'])->name('brands.restore');
+    Route::get('/catalog/collections', [AdminCollectionController::class, 'index'])->name('collections.index');
+    Route::get('/catalog/collections/listings', [AdminCollectionController::class, 'listings'])->name('collections.listings.search');
+    Route::get('/catalog/collections/{collection}', [AdminCollectionController::class, 'show'])->whereNumber('collection')->name('collections.show');
+    Route::post('/catalog/collections', [AdminCollectionController::class, 'store'])->name('collections.store');
+    Route::patch('/catalog/collections/{collection}', [AdminCollectionController::class, 'update'])->name('collections.update');
+    Route::post('/catalog/collections/{collection}/image', [AdminCollectionController::class, 'storeImage'])->name('collections.image.store');
+    Route::delete('/catalog/collections/{collection}/image', [AdminCollectionController::class, 'destroyImage'])->name('collections.image.destroy');
+    Route::post('/catalog/collections/{collection}/banner-image', [AdminCollectionController::class, 'storeBannerImage'])->name('collections.banner_image.store');
+    Route::delete('/catalog/collections/{collection}/banner-image', [AdminCollectionController::class, 'destroyBannerImage'])->name('collections.banner_image.destroy');
+    Route::patch('/catalog/collections/{collection}/activation', [AdminCollectionController::class, 'updateActivation'])->name('collections.activation.update');
+    Route::delete('/catalog/collections/{collection}', [AdminCollectionController::class, 'destroy'])->name('collections.destroy');
+    Route::post('/catalog/collections/{collection}/restore', [AdminCollectionController::class, 'restore'])->name('collections.restore');
     Route::get('/taxonomy', [AdminTaxonomyController::class, 'index'])->name('taxonomy.index');
     Route::post('/taxonomy', [AdminTaxonomyController::class, 'store'])->name('taxonomy.store');
     Route::post('/taxonomy/{taxonomy}/activate', [AdminTaxonomyController::class, 'activate'])->name('taxonomy.activate');
