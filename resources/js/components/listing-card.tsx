@@ -42,6 +42,19 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
               100
             : 0;
 
+    const discountPct =
+        listing.discountPercentage !== null &&
+        listing.discountPercentage !== undefined &&
+        listing.discountPercentage > 0
+            ? Math.round(listing.discountPercentage)
+            : null;
+
+    const hasOriginalPrice =
+        discountPct !== null &&
+        listing.price !== null &&
+        listing.effectivePrice !== null &&
+        listing.price !== listing.effectivePrice;
+
     return (
         <article className="group @container flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-100/50">
             <div className="relative">
@@ -68,6 +81,31 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
                             Product image coming soon
                         </div>
                     )}
+                    {discountPct !== null &&
+                        listing.stockStatus !== 'out_of_stock' && (
+                            <div
+                                className="absolute top-2 right-2 z-10 flex flex-col items-center justify-center rounded-md px-1.5 py-1 leading-none select-none"
+                                style={{
+                                    background:
+                                        'linear-gradient(135deg, #dc2626 0%, #ea580c 100%)',
+                                    minWidth: '2.75rem',
+                                }}
+                                aria-label={`${discountPct}% off`}
+                            >
+                                <span
+                                    className="font-black text-white"
+                                    style={{ fontSize: 'clamp(0.7rem, 4.5cqi, 0.875rem)' }}
+                                >
+                                    {discountPct}%
+                                </span>
+                                <span
+                                    className="font-bold tracking-widest text-orange-100 uppercase"
+                                    style={{ fontSize: 'clamp(0.4rem, 2cqi, 0.55rem)' }}
+                                >
+                                    off
+                                </span>
+                            </div>
+                        )}
                 </Link>
             </div>
 
@@ -80,28 +118,35 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
                     {listing.title}
                 </Link>
 
-                <div className="mt-2 flex flex-col gap-1">
-                    <p className="text-[clamp(1rem,12cqi,1.5rem)] leading-8 font-bold tracking-tight break-words text-slate-950">
-                        {isWholesale && listing.effectivePrice && 'From '}
-                        <ListingPrice value={listing.effectivePrice} />
-                        {isWholesale && listing.effectivePrice && (
-                            <span className="ml-1 text-xs font-semibold tracking-normal text-slate-500">
-                                /unit
-                            </span>
+                <div className="mt-2 flex flex-col gap-0.5">
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                        <p className="text-[clamp(1rem,12cqi,1.5rem)] leading-8 font-bold tracking-tight text-slate-950">
+                            {isWholesale && listing.effectivePrice && 'From '}
+                            <ListingPrice value={listing.effectivePrice} />
+                            {isWholesale && listing.effectivePrice && (
+                                <span className="ml-1 text-xs font-semibold tracking-normal text-slate-500">
+                                    /unit
+                                </span>
+                            )}
+                        </p>
+                        {hasOriginalPrice && (
+                            <p className="text-xs font-medium leading-none text-slate-400 line-through">
+                                {formatPrice(listing.price)}
+                            </p>
                         )}
-                    </p>
+                    </div>
                     {isWholesale && (
                         <p className="text-xs font-bold text-[#FF6D00]">
                             {listing.wholesaleMinimumQuantity ?? 2}+ units
                         </p>
                     )}
                     {Number.isFinite(savings) && savings > 0 && (
-                        <p className="flex items-start gap-1 text-xs leading-5 font-bold text-rose-600 @min-[180px]:text-sm">
+                        <p className="flex items-center gap-1 text-xs leading-5 font-bold text-rose-600 @min-[180px]:text-sm">
                             <Zap
-                                className="mt-0.5 size-3.5 shrink-0 fill-current"
+                                className="size-3.5 shrink-0 fill-current"
                                 aria-hidden="true"
                             />
-                            <span>Save {formatPrice(savings.toString())}</span>
+                            <span>You save {formatPrice(savings.toString())}</span>
                         </p>
                     )}
                 </div>
