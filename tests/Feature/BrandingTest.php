@@ -93,7 +93,7 @@ test('storefront listing pages share the category listing card', function () {
     $listingShow = file_get_contents(resource_path('js/pages/storefront/listings/show.tsx'));
 
     expect($listingCard)
-        ->toContain('export function ListingCard({ listing }: { listing: StorefrontListing })')
+        ->toContain('export function ListingCard({', 'listing: StorefrontListing;', 'fillHeightOnDesktop?: boolean;')
         ->toContain('src={image.cardUrl}', 'alt={listing.title}', '{listing.title}')
         ->toContain('href={detailHref}', 'wholesale: true', '<ListingPrice value={listing.effectivePrice} />')
         ->toContain('mr-1 text-sm font-semibold tracking-normal')
