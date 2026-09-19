@@ -2,7 +2,7 @@ import { Link, useHttp } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, Grid2X2, Zap } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { ListingCard } from '@/components/listing-card';
-import { StorefrontCategoryArtwork } from '@/components/storefront-category-artwork';
+import { StorefrontCategoryCard } from '@/components/storefront-category-card';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import type { StorefrontCategory } from '@/components/storefront-layout';
 import { show as brandShow } from '@/routes/brands';
@@ -418,29 +418,24 @@ export default function StorefrontHome({
                 </section>
 
                 <section
-                    className="mt-4 flex snap-x snap-mandatory [scrollbar-width:none] gap-3 overflow-x-auto pb-2"
+                    className="-mx-1 mt-3 flex snap-x snap-mandatory scroll-px-1 [scrollbar-width:none] gap-3 overflow-x-auto px-1 pt-1 pb-3 sm:gap-4 lg:grid lg:grid-cols-[repeat(8,minmax(0,1fr))_5.5rem] lg:overflow-visible"
                     aria-label="Popular categories"
                 >
                     {popularCategories.slice(0, 8).map((category) => (
-                        <Link
+                        <StorefrontCategoryCard
                             key={category.id}
+                            category={category}
                             href={categoryShow(category.slug)}
-                            className="group flex h-30 w-28 shrink-0 snap-start flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF6D00]/40 hover:shadow-md motion-reduce:transform-none sm:h-32 sm:w-[8.6rem]"
-                        >
-                            <StorefrontCategoryArtwork
-                                category={category}
-                                className="size-16 rounded-lg bg-slate-50 text-[#FF6D00] ring-0 sm:size-20"
-                            />
-                            <span className="mt-2 line-clamp-1 text-xs font-bold sm:text-sm">
-                                {category.name}
-                            </span>
-                        </Link>
+                            className="w-36 sm:w-40 lg:w-auto"
+                        />
                     ))}
                     <Link
                         href={listingsIndex()}
-                        className="grid h-30 w-24 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white text-xs font-bold shadow-sm transition hover:border-[#FF6D00]/40 hover:text-[#FF6D00] sm:h-32"
+                        className="group flex w-24 shrink-0 snap-start flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-white text-sm font-semibold text-slate-700 transition hover:border-[#FF6D00]/60 hover:text-[#FF6D00] focus-visible:ring-2 focus-visible:ring-[#FF6D00] focus-visible:ring-offset-2 focus-visible:outline-none lg:w-auto"
                     >
-                        <Grid2X2 className="size-6 text-[#FF6D00]" />
+                        <span className="grid size-10 place-items-center rounded-full bg-orange-50 text-[#FF6D00] transition group-hover:bg-[#FF6D00] group-hover:text-white">
+                            <Grid2X2 className="size-5" />
+                        </span>
                         View All
                     </Link>
                 </section>

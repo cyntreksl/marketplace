@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useRef } from 'react';
 import { StorefrontBreadcrumbs } from '@/components/storefront-breadcrumbs';
-import { StorefrontCategoryArtwork } from '@/components/storefront-category-artwork';
+import { StorefrontCategoryCard } from '@/components/storefront-category-card';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { StorefrontListingFilters } from '@/components/storefront-listing-filters';
 import { StorefrontProductGrid } from '@/components/storefront-product-grid';
@@ -203,27 +203,19 @@ function CategoryStrip({
                     Shop by category
                 </span>
             </div>
-            <div className="flex snap-x snap-mandatory [scrollbar-width:none] gap-3 overflow-x-auto pb-2">
+            <div className="-mx-1 flex snap-x snap-mandatory scroll-px-1 [scrollbar-width:none] gap-3 overflow-x-auto px-1 pt-1 pb-3 sm:gap-4">
                 {items.slice(0, 10).map(({ category, hasChildren }) => (
-                    <Link
+                    <StorefrontCategoryCard
                         key={category.id}
+                        category={category}
                         href={
                             catalogMode === 'wholesale'
                                 ? `${browseUrl}?category=${encodeURIComponent(category.slug)}`
                                 : categoryShow(category.slug)
                         }
-                        prefetch
-                        aria-label={`${category.name}${hasChildren ? ', browse subcategories' : ''}`}
-                        className="group flex h-30 w-28 shrink-0 snap-start flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-2 text-center shadow-sm transition hover:-translate-y-0.5 hover:border-[#FF6D00]/40 hover:shadow-md focus-visible:ring-2 focus-visible:ring-[#FF6D00] focus-visible:ring-offset-2 focus-visible:outline-none motion-reduce:transform-none sm:h-32 sm:w-[8.6rem]"
-                    >
-                        <StorefrontCategoryArtwork
-                            category={category}
-                            className="size-16 rounded-lg bg-slate-50 text-[#FF6D00] ring-0 sm:size-20"
-                        />
-                        <h2 className="mt-2 line-clamp-1 w-full text-xs font-bold text-slate-800 transition group-hover:text-[#FF6D00] sm:text-sm">
-                            {category.name}
-                        </h2>
-                    </Link>
+                        ariaLabel={`${category.name}${hasChildren ? ', browse subcategories' : ''}`}
+                        className="w-36 sm:w-40 lg:w-[calc((100%-7rem)/8)]"
+                    />
                 ))}
             </div>
         </section>

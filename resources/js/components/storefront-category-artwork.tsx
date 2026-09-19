@@ -78,10 +78,12 @@ export function StorefrontCategoryArtwork({
     category,
     fallback = 'icon',
     className,
+    imageClassName,
 }: {
     category: CategoryArtworkData;
     fallback?: 'icon' | 'initial';
     className?: string;
+    imageClassName?: string;
 }) {
     return (
         <span
@@ -94,7 +96,10 @@ export function StorefrontCategoryArtwork({
                 <img
                     src={category.image_url}
                     alt=""
-                    className="size-full object-cover transition duration-500 group-hover:scale-105"
+                    className={cn(
+                        'size-full object-cover transition duration-500 group-hover:scale-105',
+                        imageClassName,
+                    )}
                 />
             ) : fallback === 'initial' ? (
                 category.name.charAt(0).toUpperCase()
