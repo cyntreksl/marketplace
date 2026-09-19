@@ -117,6 +117,35 @@ class CollectionService
         return $this->removeArtwork($actor, $collection, $reason, 'vertical_image_path', 'vertical_image_disk', 'collection.vertical_image_removed');
     }
 
+    public function refreshOpenGraphImage(Collection $collection): Collection
+    {
+        $oldPath = $collection->open_graph_image_path;
+        $oldDisk = $collection->open_graph_image_disk;
+        $stored = $this->artwork->storeOpenGraph($collection);
+
+        $collection->forceFill([
+            'open_graph_image_path' => $stored['path'] ?? null,
+            'open_graph_image_disk' => $stored['disk'] ?? null,
+        ]);
+        $this->collections->save($collection);
+
+        if (is_string($oldPath) && $oldPath !== ($stored['path'] ?? null)) {
+            $this->artwork->delete(is_string($oldDisk) ? $oldDisk : null, $oldPath);
+        }
+
+        return $collection;
+    }
+
+    /** A failed share image must never block an artwork change; the storefront falls back to the raw artwork. */
+    private function refreshOpenGraphImageSafely(Collection $collection): void
+    {
+        try {
+            $this->refreshOpenGraphImage($collection);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+    }
+
     /**
      * @param  array<int, int>  $listingIds
      *
@@ -175,6 +204,8 @@ class CollectionService
             $this->artwork->delete(is_string($oldDisk) ? $oldDisk : null, $oldPath);
         }
 
+        $this->refreshOpenGraphImageSafely($collection);
+
         return $collection;
     }
 
@@ -198,6 +229,8 @@ class CollectionService
         if (is_string($oldPath)) {
             $this->artwork->delete(is_string($oldDisk) ? $oldDisk : null, $oldPath);
         }
+
+        $this->refreshOpenGraphImageSafely($collection);
 
         return $collection;
     }

@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Storage;
 /**
  * @property CollectionType $type
  */
-#[Fillable(['name', 'slug', 'description', 'type', 'rule_key', 'image_path', 'image_disk', 'banner_image_path', 'banner_image_disk', 'vertical_image_path', 'vertical_image_disk', 'homepage_banner_side', 'is_active', 'show_on_homepage_tile', 'show_on_homepage_grid', 'show_in_navigation', 'sort_order', 'seo_title', 'seo_description', 'seo_intro'])]
+#[Fillable(['name', 'slug', 'description', 'type', 'rule_key', 'image_path', 'image_disk', 'banner_image_path', 'banner_image_disk', 'vertical_image_path', 'vertical_image_disk', 'open_graph_image_path', 'open_graph_image_disk', 'homepage_banner_side', 'is_active', 'show_on_homepage_tile', 'show_on_homepage_grid', 'show_in_navigation', 'sort_order', 'seo_title', 'seo_description', 'seo_intro'])]
 class Collection extends Model
 {
     /** @use HasFactory<CollectionFactory> */
@@ -58,6 +58,11 @@ class Collection extends Model
     public function verticalImageUrl(): ?string
     {
         return $this->artworkUrl($this->vertical_image_path, $this->vertical_image_disk);
+    }
+
+    public function openGraphImageUrl(): ?string
+    {
+        return $this->artworkUrl($this->open_graph_image_path, $this->open_graph_image_disk);
     }
 
     private function artworkUrl(?string $path, ?string $disk): ?string

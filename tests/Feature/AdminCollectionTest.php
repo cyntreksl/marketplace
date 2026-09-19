@@ -179,3 +179,33 @@ test('uploading a collection vertical image with the wrong crop ratio is rejecte
         'reason' => 'Attempt a square crop for a portrait tile',
     ])->assertSessionHasErrors('crop');
 });
+
+test('collection artwork changes regenerate an uncropped 1200x630 open graph image', function () {
+    Storage::fake('public');
+    config(['filesystems.media' => 'public']);
+    $admin = actingAdmin();
+    $collection = Collection::factory()->create(['slug' => 'women']);
+
+    $this->actingAs($admin)->post(route('admin.collections.banner_image.store', $collection), [
+        'image' => UploadedFile::fake()->image('banner.jpg', 1600, 500),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 1600, 'height' => 500],
+        'reason' => 'Add the approved collection banner',
+    ])->assertRedirect(route('admin.collections.show', $collection));
+
+    $firstPath = $collection->refresh()->open_graph_image_path;
+    expect($firstPath)->toStartWith("collections/{$collection->id}/open-graph/")->toEndWith('.jpg');
+    Storage::disk('public')->assertExists($firstPath);
+    expect(getimagesizefromstring(Storage::disk('public')->get($firstPath)))->toMatchArray([0 => 1200, 1 => 630]);
+
+    $head = implode('', $this->get('/collections/women')->assertOk()->inertiaProps('head'));
+    expect($head)->toContain('property="og:image" content="'.e($collection->openGraphImageUrl()).'"')
+        ->toContain('property="og:image:width" content="1200"')
+        ->toContain('property="og:image:height" content="630"');
+
+    $this->actingAs($admin)->delete(route('admin.collections.banner_image.destroy', $collection), [
+        'reason' => 'Remove the collection banner',
+    ])->assertRedirect(route('admin.collections.show', $collection));
+
+    expect($collection->refresh()->open_graph_image_path)->toBeNull();
+    Storage::disk('public')->assertMissing($firstPath);
+});

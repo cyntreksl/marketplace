@@ -332,6 +332,7 @@ class StorefrontService
             ? $collection->seo_description
             : 'Discover '.$label.' from approved sellers across Sri Lanka on '.config('app.name').'.';
         [$image, $imageWidth, $imageHeight] = match (true) {
+            $collection->openGraphImageUrl() !== null => [$collection->openGraphImageUrl(), CollectionArtworkService::OPEN_GRAPH_WIDTH, CollectionArtworkService::OPEN_GRAPH_HEIGHT],
             $collection->bannerImageUrl() !== null => [$collection->bannerImageUrl(), 1600, 500],
             $collection->imageUrl() !== null => [$collection->imageUrl(), 800, 800],
             $collection->verticalImageUrl() !== null => [$collection->verticalImageUrl(), 900, 1600],

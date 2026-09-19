@@ -7,6 +7,8 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Intervention\Image\Alignment;
+use Intervention\Image\Encoders\JpegEncoder;
 use Intervention\Image\Encoders\WebpEncoder;
 use Intervention\Image\Interfaces\ImageInterface;
 use Intervention\Image\Interfaces\ImageManagerInterface;
@@ -15,6 +17,10 @@ use RuntimeException;
 class CollectionArtworkService
 {
     private const CACHE_CONTROL = 'public, max-age=31536000, immutable';
+
+    public const OPEN_GRAPH_WIDTH = 1200;
+
+    public const OPEN_GRAPH_HEIGHT = 630;
 
     public function __construct(private readonly ImageManagerInterface $images) {}
 
@@ -42,6 +48,53 @@ class CollectionArtworkService
 
         if ($stored === false) {
             throw new RuntimeException('The collection artwork could not be stored.');
+        }
+
+        return ['disk' => $disk, 'path' => $path];
+    }
+
+    /**
+     * Builds a 1200x630 share image that shows the whole artwork uncropped over a blurred
+     * copy of itself, so link previews (which crop to 1.91:1) never cut the artwork off.
+     *
+     * @return array{disk: string, path: string}|null
+     */
+    public function storeOpenGraph(Collection $collection): ?array
+    {
+        $source = collect([
+            [$collection->banner_image_path, $collection->banner_image_disk],
+            [$collection->image_path, $collection->image_disk],
+            [$collection->vertical_image_path, $collection->vertical_image_disk],
+        ])->first(fn (array $artwork): bool => is_string($artwork[0]) && $artwork[0] !== '');
+
+        if ($source === null) {
+            return null;
+        }
+
+        $binary = Storage::disk($source[1] ?: $this->mediaDisk())->get($source[0]);
+
+        if (! is_string($binary) || $binary === '') {
+            throw new RuntimeException('The collection artwork could not be read.');
+        }
+
+        $canvas = $this->images->decodeBinary($binary)
+            ->cover(self::OPEN_GRAPH_WIDTH, self::OPEN_GRAPH_HEIGHT)
+            ->blur(35)
+            ->brightness(-20);
+        $canvas->insert(
+            $this->images->decodeBinary($binary)->scale(self::OPEN_GRAPH_WIDTH, self::OPEN_GRAPH_HEIGHT),
+            alignment: Alignment::CENTER,
+        );
+
+        $disk = $this->mediaDisk();
+        $path = "collections/{$collection->getKey()}/open-graph/".Str::uuid().'.jpg';
+        $stored = Storage::disk($disk)->put($path, (string) $canvas->encode(new JpegEncoder(quality: 88, progressive: true, strip: true)), [
+            'CacheControl' => self::CACHE_CONTROL,
+            'ContentType' => 'image/jpeg',
+        ]);
+
+        if ($stored === false) {
+            throw new RuntimeException('The collection open graph image could not be stored.');
         }
 
         return ['disk' => $disk, 'path' => $path];
