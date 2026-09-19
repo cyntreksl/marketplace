@@ -526,9 +526,7 @@ export default function CollectionShow({
                             minimumWidth={900}
                             minimumHeight={1600}
                             existingUrl={collection.vertical_image_url}
-                            storeAction={storeVerticalImage.form(
-                                collection.id,
-                            )}
+                            storeAction={storeVerticalImage.form(collection.id)}
                             destroyAction={destroyVerticalImage.form(
                                 collection.id,
                             )}
