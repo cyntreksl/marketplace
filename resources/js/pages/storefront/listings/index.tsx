@@ -1,5 +1,14 @@
 import { Form, Link } from '@inertiajs/react';
-import { Filter, LayoutGrid, PackageSearch, Search, Store } from 'lucide-react';
+import {
+    ChevronLeft,
+    ChevronRight,
+    Filter,
+    LayoutGrid,
+    PackageSearch,
+    Search,
+    Store,
+} from 'lucide-react';
+import { useRef } from 'react';
 import { StorefrontBreadcrumbs } from '@/components/storefront-breadcrumbs';
 import { StorefrontCategoryArtwork } from '@/components/storefront-category-artwork';
 import { StorefrontLayout } from '@/components/storefront-layout';
@@ -26,6 +35,79 @@ import type {
     StorefrontCollectionLink,
     StorefrontListingPaginator,
 } from '@/types';
+
+function MoreCollections({
+    collections,
+}: {
+    collections: StorefrontCollectionLink[];
+}) {
+    const track = useRef<HTMLDivElement>(null);
+    const slide = (direction: number) =>
+        track.current?.scrollBy({
+            left: direction * track.current.clientWidth,
+            behavior: 'smooth',
+        });
+
+    return (
+        <section className="border-t border-slate-100 pt-10 pb-4">
+            <div className="flex items-center justify-between">
+                <h2 className="text-xl font-extrabold tracking-tight text-slate-950 sm:text-2xl">
+                    More Collections
+                </h2>
+                {collections.length > 5 && (
+                    <div className="hidden items-center gap-1 lg:flex">
+                        <button
+                            type="button"
+                            onClick={() => slide(-1)}
+                            className="grid size-8 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-[#FF6D00] hover:text-[#FF6D00]"
+                            aria-label="Previous collections"
+                        >
+                            <ChevronLeft className="size-4" />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => slide(1)}
+                            className="grid size-8 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-[#FF6D00] hover:text-[#FF6D00]"
+                            aria-label="Next collections"
+                        >
+                            <ChevronRight className="size-4" />
+                        </button>
+                    </div>
+                )}
+            </div>
+            {/* Mobile: 3 columns x 2 rows per slide. Desktop: single row of 5. */}
+            <div
+                ref={track}
+                className="mt-4 grid snap-x snap-mandatory [scrollbar-width:none] auto-cols-[calc((100%-1.5rem)/3)] grid-flow-col grid-rows-2 gap-3 overflow-x-auto overscroll-x-contain scroll-smooth pb-2 lg:auto-cols-[calc((100%-4rem)/5)] lg:grid-rows-1 lg:gap-4 [&::-webkit-scrollbar]:hidden"
+            >
+                {collections.map((collection, index) => (
+                    <Link
+                        key={collection.id}
+                        href={`/collections/${collection.slug}`}
+                        className={`group relative overflow-hidden rounded-2xl shadow-sm transition hover:shadow-md lg:snap-start ${index % 6 < 2 ? 'snap-start' : ''}`}
+                        style={{ aspectRatio: '9/16' }}
+                    >
+                        {collection.image_url ? (
+                            <img
+                                src={collection.image_url}
+                                alt={collection.name}
+                                loading="lazy"
+                                className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                            />
+                        ) : (
+                            <div className="h-full w-full bg-gradient-to-br from-orange-50 to-slate-100" />
+                        )}
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-3 sm:px-4 sm:py-4">
+                            <span className="line-clamp-2 text-xs font-bold text-white sm:text-base">
+                                {collection.name}
+                            </span>
+                        </div>
+                    </Link>
+                ))}
+            </div>
+        </section>
+    );
+}
 
 function BrowseHiddenInputs({
     filters,
@@ -402,36 +484,7 @@ export default function ListingsIndex({
                 )}
 
                 {otherCollections && otherCollections.length > 0 && (
-                    <section className="border-t border-slate-100 pt-10 pb-4">
-                        <h2 className="text-xl font-extrabold tracking-tight text-slate-950 sm:text-2xl">
-                            More Collections
-                        </h2>
-                        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                            {otherCollections.map((collection) => (
-                                <Link
-                                    key={collection.id}
-                                    href={`/collections/${collection.slug}`}
-                                    className="group relative overflow-hidden rounded-2xl shadow-sm transition hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none"
-                                    style={{ aspectRatio: '9/16' }}
-                                >
-                                    {collection.image_url ? (
-                                        <img
-                                            src={collection.image_url}
-                                            alt={collection.name}
-                                            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-                                        />
-                                    ) : (
-                                        <div className="h-full w-full bg-gradient-to-br from-orange-50 to-slate-100" />
-                                    )}
-                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-4">
-                                        <span className="line-clamp-2 text-sm font-bold text-white sm:text-base">
-                                            {collection.name}
-                                        </span>
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
-                    </section>
+                    <MoreCollections collections={otherCollections} />
                 )}
             </main>
         </StorefrontLayout>
