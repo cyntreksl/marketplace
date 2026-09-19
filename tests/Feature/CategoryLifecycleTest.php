@@ -5,6 +5,7 @@ use App\Models\Category;
 use App\Models\Listing;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\AuditLogService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -48,6 +49,7 @@ test('an admin can create replace and remove independently cropped category artw
         ->and(getimagesizefromstring(Storage::disk('public')->get($originalBannerPath)))->toMatchArray([900, 1200])
         ->and(image_type_to_mime_type(getimagesizefromstring(Storage::disk('public')->get($originalBannerPath))[2]))->toBe('image/webp');
     Storage::disk('public')->assertExists([$originalPath, $originalBannerPath]);
+    expect(getimagesizefromstring(Storage::disk('public')->get($category->openGraphImagePath())))->toMatchArray([1200, 630]);
 
     $this->actingAs($admin)->post(route('admin.categories.image.store', $category), [
         'image' => UploadedFile::fake()->image('replacement.webp', 1000, 1000),
@@ -90,6 +92,119 @@ test('an admin can create replace and remove independently cropped category artw
         ->and(AuditLog::query()->where('auditable_id', $category->id)->pluck('action')->all())
         ->toContain('category.banner_image_removed');
     Storage::disk('public')->assertMissing($replacementBannerPath);
+});
+
+test('category artwork changes keep an uncropped 1200x630 open graph image in step', function () {
+    Storage::fake('public');
+    config()->set('filesystems.media', 'public');
+    $admin = categoryAdmin();
+    $category = Category::factory()->create(['slug' => 'electronics', 'image_path' => null, 'banner_image_path' => null]);
+
+    $head = implode('', $this->get(route('categories.show', 'electronics'))->assertOk()->inertiaProps('head'));
+    expect($head)->not->toContain('og:image')
+        ->toContain('name="twitter:card" content="summary"');
+
+    $this->actingAs($admin)->post(route('admin.categories.image.store', $category), [
+        'image' => UploadedFile::fake()->image('electronics.jpg', 1000, 1000),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 1000, 'height' => 1000],
+        'reason' => 'Add the approved category image',
+    ])->assertRedirect(route('admin.categories.index', ['category' => $category->id]));
+
+    $imagePath = $category->refresh()->image_path;
+    $imageOpenGraph = $category->openGraphImagePath();
+    expect($imageOpenGraph)->toBe("categories/{$category->id}/open-graph/".pathinfo($imagePath, PATHINFO_FILENAME).'.jpg');
+    expect(getimagesizefromstring(Storage::disk('public')->get($imageOpenGraph)))->toMatchArray([0 => 1200, 1 => 630, 'mime' => 'image/jpeg']);
+
+    $head = implode('', $this->get(route('categories.show', 'electronics'))->assertOk()->inertiaProps('head'));
+    expect($head)->toContain('property="og:image" content="'.e($category->openGraphImageUrl()).'"')
+        ->toContain('property="og:image:width" content="1200"')
+        ->toContain('property="og:image:height" content="630"')
+        ->toContain('name="twitter:card" content="summary_large_image"');
+
+    $this->actingAs($admin)->post(route('admin.categories.banner_image.store', $category), [
+        'image' => UploadedFile::fake()->image('electronics-banner.jpg', 900, 1200),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 900, 'height' => 1200],
+        'reason' => 'Add the approved category banner',
+    ])->assertRedirect(route('admin.categories.index', ['category' => $category->id]));
+
+    expect($category->refresh()->openGraphImagePath())->toBe($imageOpenGraph);
+    Storage::disk('public')->assertExists($imageOpenGraph);
+
+    $this->actingAs($admin)->delete(route('admin.categories.image.destroy', $category), [
+        'reason' => 'Remove the category image',
+    ])->assertRedirect(route('admin.categories.index', ['category' => $category->id]));
+
+    $bannerOpenGraph = $category->refresh()->openGraphImagePath();
+    expect($bannerOpenGraph)->toBe("categories/{$category->id}/open-graph/".pathinfo($category->banner_image_path, PATHINFO_FILENAME).'.jpg');
+    Storage::disk('public')->assertMissing($imageOpenGraph);
+    Storage::disk('public')->assertExists($bannerOpenGraph);
+
+    $this->actingAs($admin)->delete(route('admin.categories.banner_image.destroy', $category), [
+        'reason' => 'Remove the category banner',
+    ])->assertRedirect(route('admin.categories.index', ['category' => $category->id]));
+
+    expect($category->refresh()->openGraphImagePath())->toBeNull();
+    Storage::disk('public')->assertMissing($bannerOpenGraph);
+    expect(Storage::disk('public')->allFiles("categories/{$category->id}"))->toBe([]);
+});
+
+test('a failed category artwork save removes the files it generated and keeps the previous artwork', function () {
+    Storage::fake('public');
+    config()->set('filesystems.media', 'public');
+    $admin = categoryAdmin();
+    $category = Category::factory()->create(['slug' => 'electronics', 'image_path' => null, 'banner_image_path' => null]);
+
+    $this->actingAs($admin)->post(route('admin.categories.image.store', $category), [
+        'image' => UploadedFile::fake()->image('electronics.jpg', 1000, 1000),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 1000, 'height' => 1000],
+        'reason' => 'Add the approved category image',
+    ]);
+    $this->actingAs($admin)->post(route('admin.categories.banner_image.store', $category), [
+        'image' => UploadedFile::fake()->image('electronics-banner.jpg', 900, 1200),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 900, 'height' => 1200],
+        'reason' => 'Add the approved category banner',
+    ]);
+    $category->refresh();
+    $files = Storage::disk('public')->allFiles("categories/{$category->id}");
+    expect($files)->toHaveCount(3);
+
+    $this->mock(AuditLogService::class, fn ($mock) => $mock->shouldReceive('record')->andThrow(new RuntimeException('Audit log unavailable')));
+    $this->withoutExceptionHandling();
+
+    expect(fn () => $this->actingAs($admin)->post(route('admin.categories.image.store', $category), [
+        'image' => UploadedFile::fake()->image('replacement.jpg', 1000, 1000),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 1000, 'height' => 1000],
+        'reason' => 'Replace the category image',
+    ]))->toThrow(RuntimeException::class, 'Audit log unavailable');
+
+    expect(fn () => $this->actingAs($admin)->delete(route('admin.categories.image.destroy', $category), [
+        'reason' => 'Remove the category image',
+    ]))->toThrow(RuntimeException::class, 'Audit log unavailable');
+
+    expect($category->fresh()->only(['image_path', 'banner_image_path']))->toBe($category->only(['image_path', 'banner_image_path']))
+        ->and(Storage::disk('public')->allFiles("categories/{$category->id}"))->toEqualCanonicalizing($files);
+});
+
+test('removing category artwork is refused when the remaining artwork cannot be read for sharing', function () {
+    Storage::fake('public');
+    config()->set('filesystems.media', 'public');
+    $admin = categoryAdmin();
+    Storage::disk('public')->put('categories/1/image/square.webp', 'square');
+    $category = Category::factory()->create([
+        'slug' => 'electronics',
+        'image_path' => 'categories/1/image/square.webp',
+        'image_disk' => 'public',
+        'banner_image_path' => 'categories/1/banner/missing.webp',
+        'banner_image_disk' => 'public',
+    ]);
+    $this->withoutExceptionHandling();
+
+    expect(fn () => $this->actingAs($admin)->delete(route('admin.categories.image.destroy', $category), [
+        'reason' => 'Remove the category image',
+    ]))->toThrow(RuntimeException::class, 'The category artwork could not be read.');
+
+    expect($category->fresh()->image_path)->toBe('categories/1/image/square.webp');
+    Storage::disk('public')->assertExists('categories/1/image/square.webp');
 });
 
 test('category artwork only accepts supported images and authorized admins', function () {

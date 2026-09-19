@@ -261,6 +261,9 @@ class StorefrontService
             breadcrumbs: $breadcrumbs,
             indexable: $indexable,
             items: $this->catalogItems($data),
+            image: $category->openGraphImageUrl(),
+            imageWidth: CategoryArtworkService::OPEN_GRAPH_WIDTH,
+            imageHeight: CategoryArtworkService::OPEN_GRAPH_HEIGHT,
         );
 
         return [

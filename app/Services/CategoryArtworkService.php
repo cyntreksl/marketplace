@@ -7,6 +7,8 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Intervention\Image\Alignment;
+use Intervention\Image\Encoders\JpegEncoder;
 use Intervention\Image\Encoders\WebpEncoder;
 use Intervention\Image\Interfaces\ImageInterface;
 use Intervention\Image\Interfaces\ImageManagerInterface;
@@ -15,6 +17,10 @@ use RuntimeException;
 class CategoryArtworkService
 {
     private const CACHE_CONTROL = 'public, max-age=31536000, immutable';
+
+    public const OPEN_GRAPH_WIDTH = 1200;
+
+    public const OPEN_GRAPH_HEIGHT = 630;
 
     public function __construct(private readonly ImageManagerInterface $images) {}
 
@@ -45,6 +51,50 @@ class CategoryArtworkService
         }
 
         return ['disk' => $disk, 'path' => $path];
+    }
+
+    /**
+     * Builds a 1200x630 share image that shows the whole artwork uncropped over a blurred
+     * copy of itself, so link previews (which crop to 1.91:1) never cut the artwork off.
+     *
+     * @return array{disk: string, path: string}|null
+     */
+    public function storeOpenGraph(Category $category): ?array
+    {
+        $source = $category->openGraphSourceArtwork();
+        $path = $category->openGraphImagePath();
+
+        if ($source === null || $path === null) {
+            return null;
+        }
+
+        $sourceDisk = $source['disk'] ?? $this->mediaDisk();
+        $binary = Storage::disk($sourceDisk)->get($source['path']);
+
+        if (! is_string($binary) || $binary === '') {
+            throw new RuntimeException('The category artwork could not be read.');
+        }
+
+        $canvas = $this->images->decodeBinary($binary)
+            ->cover(self::OPEN_GRAPH_WIDTH, self::OPEN_GRAPH_HEIGHT)
+            ->blur(35)
+            ->brightness(-20);
+        $canvas->insert(
+            $this->images->decodeBinary($binary)->scale(self::OPEN_GRAPH_WIDTH, self::OPEN_GRAPH_HEIGHT),
+            alignment: Alignment::CENTER,
+        );
+
+        // Stored beside the source artwork so Category::openGraphImageUrl() resolves it on the same disk.
+        $stored = Storage::disk($sourceDisk)->put($path, (string) $canvas->encode(new JpegEncoder(quality: 88, progressive: true, strip: true)), [
+            'CacheControl' => self::CACHE_CONTROL,
+            'ContentType' => 'image/jpeg',
+        ]);
+
+        if ($stored === false) {
+            throw new RuntimeException('The category open graph image could not be stored.');
+        }
+
+        return ['disk' => $sourceDisk, 'path' => $path];
     }
 
     public function delete(?string $disk, ?string $path): void

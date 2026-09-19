@@ -101,6 +101,39 @@ class Category extends Model
         return $this->artworkUrl($this->banner_image_path, $this->banner_image_disk);
     }
 
+    /**
+     * The artwork the 1200x630 share image is built from: the square image, else the banner.
+     *
+     * @return array{path: string, disk: string|null}|null
+     */
+    public function openGraphSourceArtwork(): ?array
+    {
+        foreach ([[$this->image_path, $this->image_disk], [$this->banner_image_path, $this->banner_image_disk]] as [$path, $disk]) {
+            if (is_string($path) && $path !== '') {
+                return ['path' => $path, 'disk' => is_string($disk) && $disk !== '' ? $disk : null];
+            }
+        }
+
+        return null;
+    }
+
+    /** Share images are named after their source artwork, so they need no columns of their own. */
+    public function openGraphImagePath(): ?string
+    {
+        $source = $this->openGraphSourceArtwork();
+
+        if ($source === null) {
+            return null;
+        }
+
+        return "categories/{$this->getKey()}/open-graph/".pathinfo($source['path'], PATHINFO_FILENAME).'.jpg';
+    }
+
+    public function openGraphImageUrl(): ?string
+    {
+        return $this->artworkUrl($this->openGraphImagePath(), $this->openGraphSourceArtwork()['disk'] ?? null);
+    }
+
     private function artworkUrl(?string $path, ?string $disk): ?string
     {
         if ($path === null) {

@@ -73,6 +73,12 @@ class AdminCatalogService
                 }
 
                 if ($storedArtwork !== []) {
+                    $storedOpenGraph = $this->artwork->storeOpenGraph($category);
+
+                    if ($storedOpenGraph !== null) {
+                        $storedArtwork[] = $storedOpenGraph;
+                    }
+
                     $this->catalog->saveCategory($category);
                 }
 
@@ -304,15 +310,19 @@ class AdminCatalogService
         $auditAction = $type === 'banner' ? 'category.banner_image_updated' : 'category.image_updated';
         $oldPath = $category->getAttribute($pathAttribute);
         $oldDisk = $category->getAttribute($diskAttribute);
+        $oldOpenGraphPath = $category->openGraphImagePath();
+        $oldOpenGraphDisk = $category->openGraphSourceArtwork()['disk'] ?? null;
         $stored = $this->artwork->store($category, $image, $crop, $type);
+        $storedOpenGraph = null;
 
         try {
-            $category = DB::transaction(function () use ($actor, $category, $pathAttribute, $diskAttribute, $auditAction, $stored, $reason): Category {
+            $category = DB::transaction(function () use ($actor, $category, $pathAttribute, $diskAttribute, $auditAction, $stored, $reason, $oldOpenGraphPath, &$storedOpenGraph): Category {
                 $before = $category->getAttributes();
                 $category->forceFill([
                     $pathAttribute => $stored['path'],
                     $diskAttribute => $stored['disk'],
                 ]);
+                $storedOpenGraph = $this->refreshCategoryOpenGraphImage($category, $oldOpenGraphPath);
                 $this->catalog->saveCategory($category);
                 $this->auditLogs->record($actor, $auditAction, $category, $before, $category->getAttributes(), $reason);
 
@@ -321,12 +331,18 @@ class AdminCatalogService
         } catch (Throwable $exception) {
             $this->artwork->delete($stored['disk'], $stored['path']);
 
+            if ($storedOpenGraph !== null) {
+                $this->artwork->delete($storedOpenGraph['disk'], $storedOpenGraph['path']);
+            }
+
             throw $exception;
         }
 
         if (is_string($oldPath) && $oldPath !== $stored['path']) {
             $this->artwork->delete(is_string($oldDisk) ? $oldDisk : null, $oldPath);
         }
+
+        $this->deleteStaleCategoryOpenGraphImage($category, $oldOpenGraphPath, $oldOpenGraphDisk);
 
         return $category;
     }
@@ -338,23 +354,58 @@ class AdminCatalogService
         $auditAction = $type === 'banner' ? 'category.banner_image_removed' : 'category.image_removed';
         $oldPath = $category->getAttribute($pathAttribute);
         $oldDisk = $category->getAttribute($diskAttribute);
+        $oldOpenGraphPath = $category->openGraphImagePath();
+        $oldOpenGraphDisk = $category->openGraphSourceArtwork()['disk'] ?? null;
+        $storedOpenGraph = null;
 
-        $category = DB::transaction(function () use ($actor, $category, $pathAttribute, $diskAttribute, $auditAction, $reason): Category {
-            $before = $category->getAttributes();
-            $category->forceFill([
-                $pathAttribute => null,
-                $diskAttribute => null,
-            ]);
-            $this->catalog->saveCategory($category);
-            $this->auditLogs->record($actor, $auditAction, $category, $before, $category->getAttributes(), $reason);
+        try {
+            $category = DB::transaction(function () use ($actor, $category, $pathAttribute, $diskAttribute, $auditAction, $reason, $oldOpenGraphPath, &$storedOpenGraph): Category {
+                $before = $category->getAttributes();
+                $category->forceFill([
+                    $pathAttribute => null,
+                    $diskAttribute => null,
+                ]);
+                $storedOpenGraph = $this->refreshCategoryOpenGraphImage($category, $oldOpenGraphPath);
+                $this->catalog->saveCategory($category);
+                $this->auditLogs->record($actor, $auditAction, $category, $before, $category->getAttributes(), $reason);
 
-            return $category;
-        });
+                return $category;
+            });
+        } catch (Throwable $exception) {
+            if ($storedOpenGraph !== null) {
+                $this->artwork->delete($storedOpenGraph['disk'], $storedOpenGraph['path']);
+            }
+
+            throw $exception;
+        }
 
         if (is_string($oldPath)) {
             $this->artwork->delete(is_string($oldDisk) ? $oldDisk : null, $oldPath);
         }
 
+        $this->deleteStaleCategoryOpenGraphImage($category, $oldOpenGraphPath, $oldOpenGraphDisk);
+
         return $category;
+    }
+
+    /**
+     * Rebuilds the share image only when the artwork it is built from changed.
+     *
+     * @return array{disk: string, path: string}|null
+     */
+    private function refreshCategoryOpenGraphImage(Category $category, ?string $previousPath): ?array
+    {
+        if ($category->openGraphImagePath() === $previousPath) {
+            return null;
+        }
+
+        return $this->artwork->storeOpenGraph($category);
+    }
+
+    private function deleteStaleCategoryOpenGraphImage(Category $category, ?string $previousPath, ?string $previousDisk): void
+    {
+        if ($previousPath !== null && $previousPath !== $category->openGraphImagePath()) {
+            $this->artwork->delete($previousDisk, $previousPath);
+        }
     }
 }
