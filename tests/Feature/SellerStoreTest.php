@@ -16,7 +16,7 @@ test('public stores expose only public seller fields and eligible products', fun
     $product = Listing::factory()->for($seller)->create();
     Listing::factory()->create();
     Listing::factory()->for($seller)->create(['status' => 'draft']);
-    $soldOutProduct = Listing::factory()->for($seller)->create(['stock_quantity' => 0, 'reserved_quantity' => 0]);
+    $soldOutProduct = Listing::factory()->for($seller)->create(['stock_quantity' => 0, 'reserved_quantity' => 0, 'created_at' => $product->created_at->subMinute()]);
     $this->get(route('stores.show', $seller->slug))->assertOk()->assertHeaderMissing('X-Robots-Tag')->assertInertia(fn (Assert $page) => $page
         ->component('storefront/stores/show')
         ->where('seller.store_name', $seller->store_name)
