@@ -317,12 +317,12 @@ function CollectionBannerSection({
                 {collection.bannerImageUrl && (
                     <Link
                         href={`/collections/${collection.slug}`}
-                        className={`col-span-2 self-start overflow-hidden rounded-xl sm:col-span-3 ${isRight ? 'lg:order-last lg:col-span-3 lg:col-start-4' : 'lg:col-span-3'}`}
+                        className={`relative col-span-2 self-start overflow-hidden rounded-xl sm:col-span-3 lg:self-stretch ${isRight ? 'lg:order-last lg:col-span-3 lg:col-start-4' : 'lg:col-span-3'}`}
                     >
                         <img
                             src={collection.bannerImageUrl}
                             alt={collection.name}
-                            className="aspect-[16/5] w-full object-cover"
+                            className="aspect-[16/5] w-full object-cover lg:absolute lg:inset-0 lg:aspect-auto lg:h-full"
                         />
                     </Link>
                 )}
