@@ -76,6 +76,13 @@ class CollectionArtworkService
                 'minimum_width' => 1600,
                 'minimum_height' => 500,
             ],
+            'vertical' => [
+                'directory' => 'vertical',
+                'width' => 900,
+                'height' => 1600,
+                'minimum_width' => 900,
+                'minimum_height' => 1600,
+            ],
             default => throw new RuntimeException('Unsupported collection artwork type.'),
         };
     }
@@ -96,8 +103,16 @@ class CollectionArtworkService
             && $image->height() >= $crop['y'] + $crop['height'];
 
         if ($ratioDifference > $ratioTolerance || ! $isInsideImage) {
-            $label = $type === 'banner' ? 'collection banner' : 'collection tile image';
-            $ratio = $type === 'banner' ? '16:5' : '1:1';
+            $label = match ($type) {
+                'banner' => 'collection banner',
+                'vertical' => 'collection vertical image',
+                default => 'collection tile image',
+            };
+            $ratio = match ($type) {
+                'banner' => '16:5',
+                'vertical' => '9:16',
+                default => '1:1',
+            };
 
             throw ValidationException::withMessages([
                 'crop' => "The {$label} must use a valid {$ratio} crop inside the uploaded image.",

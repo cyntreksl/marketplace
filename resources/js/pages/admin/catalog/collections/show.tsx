@@ -4,10 +4,12 @@ import {
     destroy,
     destroyBannerImage,
     destroyImage,
+    destroyVerticalImage,
     index,
     restore,
     storeBannerImage,
     storeImage,
+    storeVerticalImage,
     update,
     updateActivation,
 } from '@/actions/App/Http/Controllers/AdminCollectionController';
@@ -25,6 +27,7 @@ type AdminCollection = {
     rule_key: string | null;
     image_url: string | null;
     banner_image_url: string | null;
+    vertical_image_url: string | null;
     homepage_banner_side: 'left' | 'right' | null;
     is_active: boolean;
     show_on_homepage_tile: boolean;
@@ -512,6 +515,21 @@ export default function CollectionShow({
                             existingUrl={collection.banner_image_url}
                             storeAction={storeBannerImage.form(collection.id)}
                             destroyAction={destroyBannerImage.form(
+                                collection.id,
+                            )}
+                        />
+                        <ArtworkCard
+                            title="More Collections tile (portrait)"
+                            description="9:16 portrait — minimum 900 × 1600 px. Used for the “More Collections” tile on collection pages. Falls back to the square image above when not set."
+                            uploaderId={`collection-vertical-${collection.id}`}
+                            aspect={9 / 16}
+                            minimumWidth={900}
+                            minimumHeight={1600}
+                            existingUrl={collection.vertical_image_url}
+                            storeAction={storeVerticalImage.form(
+                                collection.id,
+                            )}
+                            destroyAction={destroyVerticalImage.form(
                                 collection.id,
                             )}
                         />

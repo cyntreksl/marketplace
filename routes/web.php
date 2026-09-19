@@ -301,6 +301,8 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function (): v
     Route::delete('/catalog/collections/{collection}/image', [AdminCollectionController::class, 'destroyImage'])->name('collections.image.destroy');
     Route::post('/catalog/collections/{collection}/banner-image', [AdminCollectionController::class, 'storeBannerImage'])->name('collections.banner_image.store');
     Route::delete('/catalog/collections/{collection}/banner-image', [AdminCollectionController::class, 'destroyBannerImage'])->name('collections.banner_image.destroy');
+    Route::post('/catalog/collections/{collection}/vertical-image', [AdminCollectionController::class, 'storeVerticalImage'])->name('collections.vertical_image.store');
+    Route::delete('/catalog/collections/{collection}/vertical-image', [AdminCollectionController::class, 'destroyVerticalImage'])->name('collections.vertical_image.destroy');
     Route::patch('/catalog/collections/{collection}/activation', [AdminCollectionController::class, 'updateActivation'])->name('collections.activation.update');
     Route::delete('/catalog/collections/{collection}', [AdminCollectionController::class, 'destroy'])->name('collections.destroy');
     Route::post('/catalog/collections/{collection}/restore', [AdminCollectionController::class, 'restore'])->name('collections.restore');

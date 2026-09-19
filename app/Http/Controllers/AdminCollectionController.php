@@ -8,6 +8,7 @@ use App\Http\Requests\RemoveCollectionImageRequest;
 use App\Http\Requests\StoreCollectionBannerImageRequest;
 use App\Http\Requests\StoreCollectionImageRequest;
 use App\Http\Requests\StoreCollectionRequest;
+use App\Http\Requests\StoreCollectionVerticalImageRequest;
 use App\Http\Requests\UpdateCollectionActivationRequest;
 use App\Http\Requests\UpdateCollectionRequest;
 use App\Models\Collection;
@@ -123,6 +124,24 @@ class AdminCollectionController extends Controller
         return to_route('admin.collections.show', $collection)->with('status', 'Collection banner removed.');
     }
 
+    public function storeVerticalImage(StoreCollectionVerticalImageRequest $request, Collection $collection, CollectionService $collections): RedirectResponse
+    {
+        /** @var UploadedFile $image */
+        $image = $request->file('image');
+        /** @var array{x: int, y: int, width: int, height: int} $crop */
+        $crop = $request->validated('crop');
+        $collections->replaceVerticalImage($request->user(), $collection, $image, $crop, $request->validated('reason'));
+
+        return to_route('admin.collections.show', $collection)->with('status', 'Collection vertical image updated.');
+    }
+
+    public function destroyVerticalImage(RemoveCollectionImageRequest $request, Collection $collection, CollectionService $collections): RedirectResponse
+    {
+        $collections->removeVerticalImage($request->user(), $collection, $request->validated('reason'));
+
+        return to_route('admin.collections.show', $collection)->with('status', 'Collection vertical image removed.');
+    }
+
     public function updateActivation(UpdateCollectionActivationRequest $request, Collection $collection, CollectionService $collections): RedirectResponse
     {
         $collections->updateActivation($request->user(), $collection, $request->boolean('is_active'), $request->validated('reason'));
@@ -159,6 +178,7 @@ class AdminCollectionController extends Controller
             'rule_key' => $collection->rule_key,
             'image_url' => $collection->imageUrl(),
             'banner_image_url' => $collection->bannerImageUrl(),
+            'vertical_image_url' => $collection->verticalImageUrl(),
             'homepage_banner_side' => $collection->homepage_banner_side,
             'is_active' => $collection->is_active,
             'show_on_homepage_tile' => $collection->show_on_homepage_tile,

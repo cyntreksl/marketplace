@@ -349,7 +349,7 @@ class StorefrontService
                 'id' => $c->id,
                 'name' => $c->name,
                 'slug' => $c->slug,
-                'image_url' => $c->imageUrl(),
+                'image_url' => $c->verticalImageUrl() ?? $c->imageUrl(),
             ])
             ->values()
             ->all();

@@ -406,12 +406,12 @@ export default function ListingsIndex({
                         <h2 className="text-xl font-extrabold tracking-tight text-slate-950 sm:text-2xl">
                             More Collections
                         </h2>
-                        <div className="mt-4 flex snap-x snap-mandatory [scrollbar-width:none] gap-3 overflow-x-auto pb-2">
+                        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                             {otherCollections.map((collection) => (
                                 <Link
                                     key={collection.id}
                                     href={`/collections/${collection.slug}`}
-                                    className="group relative w-28 shrink-0 snap-start overflow-hidden rounded-2xl shadow-sm transition hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none sm:w-32"
+                                    className="group relative overflow-hidden rounded-2xl shadow-sm transition hover:-translate-y-0.5 hover:shadow-md motion-reduce:transform-none"
                                     style={{ aspectRatio: '9/16' }}
                                 >
                                     {collection.image_url ? (
@@ -423,8 +423,8 @@ export default function ListingsIndex({
                                     ) : (
                                         <div className="h-full w-full bg-gradient-to-br from-orange-50 to-slate-100" />
                                     )}
-                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 py-3">
-                                        <span className="line-clamp-2 text-xs font-bold text-white sm:text-sm">
+                                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-4">
+                                        <span className="line-clamp-2 text-sm font-bold text-white sm:text-base">
                                             {collection.name}
                                         </span>
                                     </div>

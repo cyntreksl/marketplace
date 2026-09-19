@@ -106,6 +106,17 @@ class CollectionService
         return $this->removeArtwork($actor, $collection, $reason, 'banner_image_path', 'banner_image_disk', 'collection.banner_image_removed');
     }
 
+    /** @param array{x: int, y: int, width: int, height: int} $crop */
+    public function replaceVerticalImage(User $actor, Collection $collection, UploadedFile $image, array $crop, string $reason): Collection
+    {
+        return $this->replaceArtwork($actor, $collection, $image, $crop, $reason, 'vertical', 'vertical_image_path', 'vertical_image_disk');
+    }
+
+    public function removeVerticalImage(User $actor, Collection $collection, string $reason): Collection
+    {
+        return $this->removeArtwork($actor, $collection, $reason, 'vertical_image_path', 'vertical_image_disk', 'collection.vertical_image_removed');
+    }
+
     /**
      * @param  array<int, int>  $listingIds
      *
@@ -133,7 +144,11 @@ class CollectionService
         string $pathAttribute,
         string $diskAttribute,
     ): Collection {
-        $auditAction = $type === 'banner' ? 'collection.banner_image_updated' : 'collection.image_updated';
+        $auditAction = match ($type) {
+            'banner' => 'collection.banner_image_updated',
+            'vertical' => 'collection.vertical_image_updated',
+            default => 'collection.image_updated',
+        };
         $oldPath = $collection->getAttribute($pathAttribute);
         $oldDisk = $collection->getAttribute($diskAttribute);
         $stored = $this->artwork->store($collection, $image, $crop, $type);

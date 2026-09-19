@@ -4,6 +4,8 @@ use App\Models\Collection;
 use App\Models\Listing;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 function actingAdmin(): User
 {
@@ -136,4 +138,44 @@ test('renaming a collection slug records a storefront redirect', function () {
         'source_path' => '/collections/toys',
         'destination_path' => '/collections/toys-and-games',
     ]);
+});
+
+test('an admin can upload and remove a collection vertical image, and the storefront falls back to the square tile image', function () {
+    Storage::fake('public');
+    config()->set('filesystems.media', 'public');
+    $admin = actingAdmin();
+    $collection = Collection::factory()->create(['name' => 'Kids']);
+
+    $this->actingAs($admin)->post(route('admin.collections.vertical_image.store', $collection), [
+        'image' => UploadedFile::fake()->image('kids-vertical.jpg', 900, 1600),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 900, 'height' => 1600],
+        'reason' => 'Add the More Collections portrait tile',
+    ])->assertRedirect();
+
+    $collection->refresh();
+    expect($collection->vertical_image_path)->not->toBeNull()
+        ->and($collection->vertical_image_disk)->toBe('public')
+        ->and(getimagesizefromstring(Storage::disk('public')->get($collection->vertical_image_path)))->toMatchArray([900, 1600]);
+    $this->assertDatabaseHas('audit_logs', ['actor_id' => $admin->id, 'action' => 'collection.vertical_image_updated']);
+
+    $verticalPath = $collection->vertical_image_path;
+
+    $this->actingAs($admin)->delete(route('admin.collections.vertical_image.destroy', $collection), [
+        'reason' => 'Remove the portrait tile',
+    ])->assertRedirect();
+
+    expect($collection->refresh()->vertical_image_path)->toBeNull();
+    Storage::disk('public')->assertMissing($verticalPath);
+    $this->assertDatabaseHas('audit_logs', ['actor_id' => $admin->id, 'action' => 'collection.vertical_image_removed']);
+});
+
+test('uploading a collection vertical image with the wrong crop ratio is rejected', function () {
+    $admin = actingAdmin();
+    $collection = Collection::factory()->create(['name' => 'Kids']);
+
+    $this->actingAs($admin)->post(route('admin.collections.vertical_image.store', $collection), [
+        'image' => UploadedFile::fake()->image('kids-vertical.jpg', 1200, 1200),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 1200, 'height' => 1200],
+        'reason' => 'Attempt a square crop for a portrait tile',
+    ])->assertSessionHasErrors('crop');
 });
