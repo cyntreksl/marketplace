@@ -104,3 +104,17 @@ test('an active collection with matching listings is sitemapped with its own las
 
     expect($response->getContent())->toContain('<lastmod>'.$collection->refresh()->updated_at->format('c').'</lastmod>');
 });
+
+test('homepage collection sections include up to 14 listings', function () {
+    $collection = Collection::factory()->create([
+        'name' => "Men's Collection",
+        'show_on_homepage_grid' => true,
+    ]);
+    Listing::factory()->count(18)->create()->each(
+        fn (Listing $listing, int $index) => $collection->listings()->attach($listing, ['position' => $index]),
+    );
+
+    $sections = collect($this->get('/')->assertOk()->inertiaProps('collectionSections'));
+
+    expect($sections->firstWhere('collection.name', "Men's Collection")['listings'])->toHaveCount(14);
+});

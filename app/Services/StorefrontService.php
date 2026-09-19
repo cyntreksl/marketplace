@@ -85,7 +85,7 @@ class StorefrontService
                         'bannerImageUrl' => $collection->bannerImageUrl(),
                         'bannerSide' => $collection->homepage_banner_side,
                     ],
-                    'listings' => $this->listings->sampleForCollection($collection, 12)
+                    'listings' => $this->listings->sampleForCollection($collection, 14)
                         ->map(fn (Listing $listing): array => $this->listingData($listing))
                         ->values(),
                 ])
