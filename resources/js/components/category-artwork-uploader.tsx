@@ -210,7 +210,7 @@ export function CategoryArtworkUploader({
     const isWideArtwork = aspect >= 3;
 
     return (
-        <div className="@container grid gap-3">
+        <div className="grid gap-3">
             <div>
                 <p className="text-sm font-black">{label}</p>
                 <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
@@ -222,8 +222,8 @@ export function CategoryArtworkUploader({
                 className={cn(
                     'grid gap-3',
                     isWideArtwork
-                        ? '@lg:grid-cols-[18rem_minmax(0,1fr)] @lg:items-start'
-                        : '@sm:grid-cols-[9rem_minmax(0,1fr)] @sm:items-stretch',
+                        ? 'sm:grid-cols-[18rem_minmax(0,1fr)] sm:items-start'
+                        : 'sm:grid-cols-[9rem_minmax(0,1fr)] sm:items-stretch',
                 )}
             >
                 <div
