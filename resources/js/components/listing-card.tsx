@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Zap } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { show as listingShow } from '@/routes/listings';
 import type { StorefrontListing } from '@/types';
 
@@ -26,7 +27,14 @@ function ListingPrice({ value }: { value: string | null }) {
     );
 }
 
-export function ListingCard({ listing }: { listing: StorefrontListing }) {
+export function ListingCard({
+    listing,
+    fillHeightOnDesktop = false,
+}: {
+    listing: StorefrontListing;
+    /** On lg+, shrink the image so the card fills its grid row instead of setting its height. */
+    fillHeightOnDesktop?: boolean;
+}) {
     const isWholesale = usePage().url.split('?')[0] === '/wholesale';
     const detailHref = listingShow(listing.slug, {
         query: isWholesale ? { wholesale: true } : {},
@@ -57,7 +65,12 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
 
     return (
         <article className="group @container flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-100/50">
-            <div className="relative">
+            <div
+                className={cn(
+                    'relative',
+                    fillHeightOnDesktop && 'lg:flex lg:min-h-0 lg:flex-1',
+                )}
+            >
                 {listing.stockStatus === 'out_of_stock' && (
                     <span className="absolute top-3 left-3 z-10 rounded-full bg-slate-900 px-3 py-1 text-xs font-bold text-white shadow-sm">
                         Out of stock
@@ -65,7 +78,11 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
                 )}
                 <Link
                     href={detailHref}
-                    className="relative block aspect-[1.02/1] overflow-hidden bg-gradient-to-br from-white via-orange-50/50 to-slate-50"
+                    className={cn(
+                        'relative block aspect-[1.02/1] overflow-hidden bg-gradient-to-br from-white via-orange-50/50 to-slate-50',
+                        fillHeightOnDesktop &&
+                            'lg:aspect-auto lg:min-h-0 lg:w-full lg:flex-1',
+                    )}
                 >
                     {image ? (
                         <img
@@ -74,7 +91,10 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
                             sizes="(min-width: 1280px) 18vw, (min-width: 640px) 30vw, 70vw"
                             alt={listing.title}
                             loading="lazy"
-                            className="size-full object-contain p-4 transition duration-300 group-hover:scale-[1.03]"
+                            className={cn(
+                                'size-full object-contain p-4 transition duration-300 group-hover:scale-[1.03]',
+                                fillHeightOnDesktop && 'lg:absolute lg:inset-0',
+                            )}
                         />
                     ) : (
                         <div className="flex size-full items-center justify-center px-8 text-center text-sm text-slate-400">
@@ -115,7 +135,12 @@ export function ListingCard({ listing }: { listing: StorefrontListing }) {
                 </Link>
             </div>
 
-            <div className="flex flex-1 flex-col p-3 @min-[180px]:p-4">
+            <div
+                className={cn(
+                    'flex flex-1 flex-col p-3 @min-[180px]:p-4',
+                    fillHeightOnDesktop && 'lg:flex-none',
+                )}
+            >
                 <Link
                     href={detailHref}
                     title={listing.title}

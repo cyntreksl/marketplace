@@ -317,21 +317,26 @@ function CollectionBannerSection({
                 {collection.bannerImageUrl && (
                     <Link
                         href={`/collections/${collection.slug}`}
-                        className={`relative col-span-2 self-start overflow-hidden rounded-xl sm:col-span-3 lg:self-stretch ${isRight ? 'lg:order-last lg:col-span-3 lg:col-start-4' : 'lg:col-span-3'}`}
+                        className={`col-span-2 overflow-hidden rounded-xl sm:col-span-3 lg:col-span-4 lg:row-start-1 ${isRight ? 'lg:col-start-3' : 'lg:col-start-1'}`}
                     >
                         <img
                             src={collection.bannerImageUrl}
                             alt={collection.name}
-                            className="aspect-[16/5] w-full object-cover lg:absolute lg:inset-0 lg:aspect-auto lg:h-full"
+                            className="aspect-[16/5] w-full object-cover"
                         />
                     </Link>
                 )}
-                {listings.slice(0, 15).map((listing, index) => (
+                {listings.slice(0, 14).map((listing, index) => (
                     <div
                         key={listing.id}
                         className={index >= 6 ? 'hidden lg:block' : undefined}
                     >
-                        <ListingCard listing={listing} />
+                        <ListingCard
+                            listing={listing}
+                            fillHeightOnDesktop={
+                                collection.bannerImageUrl !== null && index < 2
+                            }
+                        />
                     </div>
                 ))}
             </div>
