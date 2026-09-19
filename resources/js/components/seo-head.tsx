@@ -9,7 +9,7 @@ export type SeoPayload = {
         siteName: string;
         type: string;
         locale: string;
-        image: string;
+        image: string | null;
         imageWidth: number | null;
         imageHeight: number | null;
     };
@@ -77,19 +77,21 @@ export function SeoHead() {
                 property="og:description"
                 content={seo.description}
             />
-            <meta
-                head-key="og:image"
-                property="og:image"
-                content={seo.openGraph.image}
-            />
-            {seo.openGraph.imageWidth !== null && (
+            {seo.openGraph.image && (
+                <meta
+                    head-key="og:image"
+                    property="og:image"
+                    content={seo.openGraph.image}
+                />
+            )}
+            {seo.openGraph.image && seo.openGraph.imageWidth !== null && (
                 <meta
                     head-key="og:image:width"
                     property="og:image:width"
                     content={String(seo.openGraph.imageWidth)}
                 />
             )}
-            {seo.openGraph.imageHeight !== null && (
+            {seo.openGraph.image && seo.openGraph.imageHeight !== null && (
                 <meta
                     head-key="og:image:height"
                     property="og:image:height"
@@ -99,7 +101,9 @@ export function SeoHead() {
             <meta
                 head-key="twitter:card"
                 name="twitter:card"
-                content="summary_large_image"
+                content={
+                    seo.openGraph.image ? 'summary_large_image' : 'summary'
+                }
             />
             <meta
                 head-key="twitter:title"
@@ -111,11 +115,13 @@ export function SeoHead() {
                 name="twitter:description"
                 content={seo.description}
             />
-            <meta
-                head-key="twitter:image"
-                name="twitter:image"
-                content={seo.openGraph.image}
-            />
+            {seo.openGraph.image && (
+                <meta
+                    head-key="twitter:image"
+                    name="twitter:image"
+                    content={seo.openGraph.image}
+                />
+            )}
             {seo.product && (
                 <meta
                     head-key="product:price:amount"

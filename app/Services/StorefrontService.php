@@ -331,6 +331,12 @@ class StorefrontService
         $description = filled($collection->seo_description)
             ? $collection->seo_description
             : 'Discover '.$label.' from approved sellers across Sri Lanka on '.config('app.name').'.';
+        [$image, $imageWidth, $imageHeight] = match (true) {
+            $collection->bannerImageUrl() !== null => [$collection->bannerImageUrl(), 1600, 500],
+            $collection->imageUrl() !== null => [$collection->imageUrl(), 800, 800],
+            $collection->verticalImageUrl() !== null => [$collection->verticalImageUrl(), 900, 1600],
+            default => [null, null, null],
+        };
         $seo = $this->seo->catalogPayload(
             title: $title,
             description: $description,
@@ -342,6 +348,9 @@ class StorefrontService
             indexable: collect(request()->query())->except('page')->filter()->isEmpty()
                 && in_array($collection->slug, $this->listings->indexableCollectionSlugs(), true),
             items: $this->catalogItems($data),
+            image: $image,
+            imageWidth: $imageWidth,
+            imageHeight: $imageHeight,
         );
 
         $otherCollections = $this->collections->allActiveWithImages((int) $collection->id)

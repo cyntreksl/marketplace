@@ -12,7 +12,6 @@ use Illuminate\Support\Str;
 class SeoHeadService
 {
     public function __construct(
-        private readonly StaticMediaService $staticMedia,
         private readonly ProductStructuredDataService $structuredData,
         private readonly SeoIndexabilityService $indexability,
     ) {}
@@ -56,9 +55,9 @@ class SeoHeadService
             description: $description,
             canonical: $this->canonicalForRequest($request),
             type: 'website',
-            image: $this->staticMedia->url('prodeals-social-card.png'),
-            imageWidth: 1200,
-            imageHeight: 630,
+            image: null,
+            imageWidth: null,
+            imageHeight: null,
             robots: $this->robotsPolicy($request),
             graphs: $graphs,
         );
@@ -115,6 +114,9 @@ class SeoHeadService
         array $breadcrumbs,
         bool $indexable = true,
         array $items = [],
+        ?string $image = null,
+        ?int $imageWidth = null,
+        ?int $imageHeight = null,
     ): array {
         $this->indexability->mark(request(), $indexable);
 
@@ -123,9 +125,9 @@ class SeoHeadService
             description: $description,
             canonical: $canonical,
             type: 'website',
-            image: $this->staticMedia->url('prodeals-social-card.png'),
-            imageWidth: 1200,
-            imageHeight: 630,
+            image: $image,
+            imageWidth: $image === null ? null : $imageWidth,
+            imageHeight: $image === null ? null : $imageHeight,
             robots: $indexable ? 'index,follow,max-image-preview:large' : 'noindex,follow,max-image-preview:large',
             graphs: [
                 $this->structuredData->breadcrumbs($breadcrumbs),
@@ -138,7 +140,7 @@ class SeoHeadService
     public function guidePayload(Guide $guide): array
     {
         $this->indexability->mark(request(), true);
-        $image = $guide->heroImageUrl() ?: $this->staticMedia->url('prodeals-social-card.png');
+        $image = $guide->heroImageUrl() ?: null;
 
         return $this->payload(
             title: $this->plainText($guide->seo_title ?: $guide->title.' - '.config('app.name')),
@@ -146,8 +148,8 @@ class SeoHeadService
             canonical: route('guides.show', $guide->slug),
             type: 'article',
             image: $image,
-            imageWidth: $guide->heroImageUrl() === null ? 1200 : null,
-            imageHeight: $guide->heroImageUrl() === null ? 630 : null,
+            imageWidth: null,
+            imageHeight: null,
             robots: 'index,follow,max-image-preview:large',
             graphs: $this->structuredData->forGuide($guide),
         );
@@ -159,6 +161,7 @@ class SeoHeadService
     public function tags(array $payload): array
     {
         $openGraph = (array) $payload['openGraph'];
+        $hasImage = filled($openGraph['image'] ?? null);
         $tags = [
             $this->titleTag('title', (string) $payload['title']),
             $this->metaTag('description', 'name', 'description', (string) $payload['description']),
@@ -170,14 +173,17 @@ class SeoHeadService
             $this->metaTag('og:url', 'property', 'og:url', (string) $payload['canonicalUrl']),
             $this->metaTag('og:title', 'property', 'og:title', (string) $payload['title']),
             $this->metaTag('og:description', 'property', 'og:description', (string) $payload['description']),
-            $this->metaTag('og:image', 'property', 'og:image', (string) $openGraph['image']),
-            $this->metaTag('twitter:card', 'name', 'twitter:card', 'summary_large_image'),
+            $this->metaTag('twitter:card', 'name', 'twitter:card', $hasImage ? 'summary_large_image' : 'summary'),
             $this->metaTag('twitter:title', 'name', 'twitter:title', (string) $payload['title']),
             $this->metaTag('twitter:description', 'name', 'twitter:description', (string) $payload['description']),
-            $this->metaTag('twitter:image', 'name', 'twitter:image', (string) $openGraph['image']),
         ];
 
-        if ($openGraph['imageWidth'] !== null && $openGraph['imageHeight'] !== null) {
+        if ($hasImage) {
+            $tags[] = $this->metaTag('og:image', 'property', 'og:image', (string) $openGraph['image']);
+            $tags[] = $this->metaTag('twitter:image', 'name', 'twitter:image', (string) $openGraph['image']);
+        }
+
+        if ($hasImage && $openGraph['imageWidth'] !== null && $openGraph['imageHeight'] !== null) {
             $tags[] = $this->metaTag('og:image:width', 'property', 'og:image:width', (string) $openGraph['imageWidth']);
             $tags[] = $this->metaTag('og:image:height', 'property', 'og:image:height', (string) $openGraph['imageHeight']);
         }
@@ -206,7 +212,7 @@ class SeoHeadService
         string $description,
         string $canonical,
         string $type,
-        string $image,
+        ?string $image,
         ?int $imageWidth,
         ?int $imageHeight,
         string $robots,
@@ -251,11 +257,11 @@ class SeoHeadService
         return SeoText::plain($value);
     }
 
-    /** @return array{string, int|null, int|null} */
+    /** @return array{string|null, int|null, int|null} */
     private function listingImage(?ListingMedia $cover): array
     {
         if ($cover === null) {
-            return [$this->staticMedia->url('prodeals-social-card.png'), 1200, 630];
+            return [null, null, null];
         }
 
         $hasOpenGraphVariant = is_array($cover->variants) && isset($cover->variants['open_graph']);

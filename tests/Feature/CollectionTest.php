@@ -118,3 +118,28 @@ test('homepage collection sections include up to 14 listings', function () {
 
     expect($sections->firstWhere('collection.name', "Men's Collection")['listings'])->toHaveCount(14);
 });
+
+test('a collection page uses its own artwork as the open graph image', function () {
+    $collection = Collection::factory()->create([
+        'slug' => 'mens',
+        'image_path' => 'collections/1/tile/mens.webp',
+        'image_disk' => 'public',
+        'banner_image_path' => null,
+    ]);
+
+    $response = $this->get('/collections/mens')->assertOk();
+
+    expect($response->inertiaProps('seo.openGraph.image'))->toBe($collection->imageUrl())
+        ->and(implode('', $response->inertiaProps('head')))
+        ->toContain('property="og:image" content="'.e($collection->imageUrl()).'"')
+        ->not->toContain('prodeals-social-card.png');
+});
+
+test('a collection page without artwork omits the open graph image', function () {
+    Collection::factory()->create(['slug' => 'plain', 'image_path' => null, 'banner_image_path' => null, 'vertical_image_path' => null]);
+
+    $head = implode('', $this->get('/collections/plain')->assertOk()->inertiaProps('head'));
+
+    expect($head)->not->toContain('og:image')
+        ->toContain('name="twitter:card" content="summary"');
+});

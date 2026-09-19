@@ -91,7 +91,7 @@ class ProductStructuredDataService
                 'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => $url],
                 'headline' => $guide->title,
                 'description' => $guide->seo_description ?: $guide->excerpt,
-                'image' => $guide->heroImageUrl() ?: $staticMedia->url('prodeals-social-card.png'),
+                'image' => $guide->heroImageUrl() ?: null,
                 'datePublished' => $guide->published_at?->toIso8601String(),
                 'dateModified' => $guide->updated_at?->toIso8601String(),
                 'author' => ['@type' => 'Organization', 'name' => (string) config('app.name', 'ProDeals.lk')],

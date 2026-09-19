@@ -42,7 +42,7 @@ test('runtime site images use the configured Cloudflare media domain', function 
         ->and($home->inertiaProps('promotions.secondary.0.imageUrl'))
         ->toBe('https://media.prodeals.lk/promotions/cloudflare-secondary.jpg')
         ->and(implode('', $home->inertiaProps('head')))
-        ->toContain('https://media.prodeals.lk/site/prodeals-social-card.png')
+        ->not->toContain('prodeals-social-card.png')
         ->and($home->getContent())
         ->toContain('https://media.prodeals.lk/site/favicon.png')
         ->toContain('https://media.prodeals.lk/site/apple-touch-icon.png');

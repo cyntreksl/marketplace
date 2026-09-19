@@ -32,7 +32,7 @@ test('only published guides are public and included in their dedicated sitemap',
     $response->assertOk()
         ->assertDontSee('<script>alert(2)</script>', false)
         ->assertSee('"@type":"Article"', false)
-        ->assertSee('prodeals-social-card.png', false)
+        ->assertDontSee('prodeals-social-card.png', false)
         ->assertSee('"@type":"BreadcrumbList"', false)
         ->assertSee('name="robots" content="index,follow,max-image-preview:large"', false)
         ->assertInertia(fn ($page) => $page
