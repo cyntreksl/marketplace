@@ -6,6 +6,7 @@ use App\Models\Listing;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Services\CategoryArtworkService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -300,6 +301,31 @@ test('category artwork uses the configured media disk and rejects crops outside 
     Storage::disk('r2')->assertExists($category->image_path);
     Storage::forgetDisk('r2');
     expect($category->imageUrl())->toBe('https://media.prodeals.lk/'.$category->image_path);
+});
+
+test('category artwork reports media storage failures without replacing the existing image', function () {
+    Storage::fake('r2');
+    $admin = categoryAdmin();
+    $category = Category::factory()->create([
+        'image_path' => 'categories/existing/image.webp',
+        'image_disk' => 'r2',
+    ]);
+
+    $this->mock(CategoryArtworkService::class, function ($mock): void {
+        $mock->shouldReceive('store')
+            ->once()
+            ->andThrow(new RuntimeException('R2 rejected the write.'));
+    });
+
+    $this->actingAs($admin)->post(route('admin.categories.image.store', $category), [
+        'image' => UploadedFile::fake()->image('category.png', 1254, 1254)->size(2069),
+        'crop' => ['x' => 0, 'y' => 0, 'width' => 1254, 'height' => 1254],
+        'reason' => 'Use the approved square category image',
+    ])->assertSessionHasErrors([
+        'image' => 'The image could not be saved to media storage. Your existing category image is unchanged. Please try again or contact an administrator.',
+    ]);
+
+    expect($category->fresh()->image_path)->toBe('categories/existing/image.webp');
 });
 
 test('archiving and restoring a category preserves its artwork', function () {

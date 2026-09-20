@@ -9,6 +9,7 @@ test('production deployment is gated and uses atomic releases', function () {
     $ssrInstaller = file_get_contents(base_path('.github/deploy/install-web-ssr.sh'));
     $ssrService = file_get_contents(base_path('.github/deploy/prodeals-ssr.service'));
     $serverBootstrap = file_get_contents(base_path('.github/deploy/bootstrap-server.sh'));
+    $phpConfiguration = file_get_contents(base_path('public/.user.ini'));
     $viteConfiguration = file_get_contents(base_path('vite.config.ts'));
     $buildEnvironment = file_get_contents(base_path('.env.example'));
     $composer = json_decode(file_get_contents(base_path('composer.json')), true, flags: JSON_THROW_ON_ERROR);
@@ -73,6 +74,10 @@ test('production deployment is gated and uses atomic releases', function () {
 
     expect($serverBootstrap)
         ->toContain('/usr/bin/supervisorctl status prodeals-worker');
+
+    expect($phpConfiguration)
+        ->toContain('upload_max_filesize=10M')
+        ->toContain('post_max_size=12M');
 
     expect($viteConfiguration)
         ->toContain("host: '127.0.0.1'");

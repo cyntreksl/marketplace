@@ -14,6 +14,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Throwable;
 
@@ -312,7 +313,17 @@ class AdminCatalogService
         $oldDisk = $category->getAttribute($diskAttribute);
         $oldOpenGraphPath = $category->openGraphImagePath();
         $oldOpenGraphDisk = $category->openGraphSourceArtwork()['disk'] ?? null;
-        $stored = $this->artwork->store($category, $image, $crop, $type);
+        try {
+            $stored = $this->artwork->store($category, $image, $crop, $type);
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            report($exception);
+
+            throw ValidationException::withMessages([
+                'image' => 'The image could not be saved to media storage. Your existing category image is unchanged. Please try again or contact an administrator.',
+            ]);
+        }
         $storedOpenGraph = null;
 
         try {
