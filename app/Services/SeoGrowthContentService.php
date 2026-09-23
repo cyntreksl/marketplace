@@ -181,19 +181,22 @@ class SeoGrowthContentService
 
     private function seedRedirects(): int
     {
-        $existing = $this->redirects->bySource('/shop');
+        $created = 0;
 
-        if ($existing !== null) {
-            return 0;
+        foreach (['/shop' => '/listings', '/collections/mens' => '/collections/men'] as $source => $destination) {
+            if ($this->redirects->bySource($source) !== null) {
+                continue;
+            }
+
+            $this->redirectService->create([
+                'source_path' => $source,
+                'destination_path' => $destination,
+                'is_active' => true,
+            ]);
+            $created++;
         }
 
-        $this->redirectService->create([
-            'source_path' => '/shop',
-            'destination_path' => '/listings',
-            'is_active' => true,
-        ]);
-
-        return 1;
+        return $created;
     }
 
     /**

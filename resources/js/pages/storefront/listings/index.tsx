@@ -168,7 +168,7 @@ function breadcrumbItems(
     ];
 }
 
-function CategoryStrip({
+export function CategoryStrip({
     categories,
     categoryContext,
     browseUrl,
@@ -204,7 +204,7 @@ function CategoryStrip({
                 </span>
             </div>
             <div className="-mx-1 flex snap-x snap-mandatory scroll-px-1 [scrollbar-width:none] gap-3 overflow-x-auto px-1 pt-1 pb-3 sm:gap-4">
-                {items.slice(0, 10).map(({ category, hasChildren }) => (
+                {items.map(({ category, hasChildren }) => (
                     <StorefrontCategoryCard
                         key={category.id}
                         category={category}
@@ -222,6 +222,45 @@ function CategoryStrip({
     );
 }
 
+export function CatalogPagination({
+    listings,
+}: {
+    listings: StorefrontListingPaginator;
+}) {
+    if (!listings.prev_page_url && !listings.next_page_url) {
+        return null;
+    }
+
+    return (
+        <nav
+            aria-label="Product pages"
+            className="mt-8 flex items-center justify-center gap-5 text-sm font-semibold"
+        >
+            {listings.prev_page_url && (
+                <Link
+                    href={listings.prev_page_url}
+                    rel="prev"
+                    className="text-[#FF6D00] hover:underline"
+                >
+                    Previous page
+                </Link>
+            )}
+            <span className="text-slate-500">
+                Page {listings.current_page} of {listings.last_page}
+            </span>
+            {listings.next_page_url && (
+                <Link
+                    href={listings.next_page_url}
+                    rel="next"
+                    className="text-[#FF6D00] hover:underline"
+                >
+                    Next page
+                </Link>
+            )}
+        </nav>
+    );
+}
+
 export default function ListingsIndex({
     listings,
     categories,
@@ -236,6 +275,7 @@ export default function ListingsIndex({
     collectionBannerUrl,
     otherCollections,
     hideCategories,
+    seo,
 }: {
     listings: StorefrontListingPaginator;
     categories: StorefrontCategory[];
@@ -250,6 +290,7 @@ export default function ListingsIndex({
     collectionBannerUrl?: string | null;
     otherCollections?: StorefrontCollectionLink[];
     hideCategories?: boolean;
+    seo: { robots: string };
 }) {
     const filterCount = activeFilterCount(filters);
     const pageTitle = pageHeading;
@@ -447,6 +488,9 @@ export default function ListingsIndex({
                                     <Link href={browseUrl}>Clear filters</Link>
                                 </Button>
                             </div>
+                        )}
+                        {seo.robots.startsWith('index,') && (
+                            <CatalogPagination listings={listings} />
                         )}
                     </div>
                 </section>

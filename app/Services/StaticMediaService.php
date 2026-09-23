@@ -15,6 +15,7 @@ class StaticMediaService
         'prodeals-email-logo.png',
         'prodeals-logo.svg',
         'prodeals-social-card.png',
+        'media-robots.txt',
         'images/storefront/home-deals-banner.png',
         'images/storefront/hero-home-appliances.webp',
         'images/storefront/hero-marketplace.jpg',
@@ -34,6 +35,10 @@ class StaticMediaService
 
     public function objectPath(string $path): string
     {
+        if ($path === 'media-robots.txt') {
+            return 'robots.txt';
+        }
+
         return 'site/'.ltrim($path, '/');
     }
 }

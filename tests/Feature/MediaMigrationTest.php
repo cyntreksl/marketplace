@@ -35,6 +35,7 @@ test('the media migration dry run validates objects without changing files or re
     expect($category->fresh()->image_disk)->toBe('public');
     Storage::disk('r2')->assertMissing($category->image_path);
     Storage::disk('r2')->assertDirectoryEmpty('site');
+    Storage::disk('r2')->assertMissing('robots.txt');
 });
 
 test('the media migration copies every runtime image and updates disk ownership idempotently', function () {
@@ -73,9 +74,11 @@ test('the media migration copies every runtime image and updates disk ownership 
         ->assertSuccessful();
 
     Storage::disk('r2')->assertExists($paths);
+    $staticMedia = app(StaticMediaService::class);
     foreach (StaticMediaService::ASSETS as $asset) {
-        Storage::disk('r2')->assertExists('site/'.$asset);
+        Storage::disk('r2')->assertExists($staticMedia->objectPath($asset));
     }
+    expect(Storage::disk('r2')->get('robots.txt'))->toBe("User-agent: *\nAllow: /\n");
 
     $category->refresh();
     expect($listingMedia->fresh()->disk)->toBe('r2')

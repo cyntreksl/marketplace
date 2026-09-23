@@ -44,6 +44,7 @@ prepare_release() {
     mkdir -p "$release_dir" "${shared_dir}/storage/app/private" "${shared_dir}/storage/framework/cache" \
         "${shared_dir}/storage/framework/sessions" "${shared_dir}/storage/framework/views" "${shared_dir}/storage/logs"
     tar -xzf "$artifact_path" -C "$release_dir"
+    share_build_assets
     chmod 2750 "$release_dir"
     ln -s "${shared_dir}/.env" "${release_dir}/.env"
     ln -s "${shared_dir}/storage" "${release_dir}/storage"
@@ -58,6 +59,37 @@ prepare_release() {
         cd "$release_dir"
         php8.4 artisan optimize
     )
+}
+
+share_build_assets() {
+    local shared_assets_dir="${shared_dir}/build/assets"
+    local asset_dir
+    local retained_release
+
+    mkdir -p "$shared_assets_dir"
+
+    for retained_release in "${releases_dir}"/*; do
+        asset_dir="${retained_release}/public/build/assets"
+
+        if [[ -d "$asset_dir" ]] && [[ ! -L "$asset_dir" ]]; then
+            cp -a "${asset_dir}/." "$shared_assets_dir/"
+        fi
+    done
+
+    for retained_release in "${releases_dir}"/*; do
+        asset_dir="${retained_release}/public/build/assets"
+
+        if [[ -d "$asset_dir" ]] && [[ ! -L "$asset_dir" ]]; then
+            mv "$asset_dir" "${asset_dir}.pre-shared"
+            ln -s "$shared_assets_dir" "$asset_dir"
+            rm -rf -- "${asset_dir}.pre-shared"
+        fi
+    done
+
+    if [[ ! -L "${release_dir}/public/build/assets" ]]; then
+        echo "Release build assets are missing at ${release_dir}/public/build/assets." >&2
+        exit 1
+    fi
 }
 
 maintenance_down() {

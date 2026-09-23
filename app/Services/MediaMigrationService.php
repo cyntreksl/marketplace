@@ -250,7 +250,7 @@ class MediaMigrationService
         try {
             $mimeType = mime_content_type($sourcePath);
             $stored = $destination->writeStream($destinationPath, $stream, [
-                'CacheControl' => self::CACHE_CONTROL,
+                'CacheControl' => $asset === 'media-robots.txt' ? 'public, max-age=300' : self::CACHE_CONTROL,
                 'ContentType' => is_string($mimeType) ? $mimeType : 'application/octet-stream',
             ]);
         } finally {

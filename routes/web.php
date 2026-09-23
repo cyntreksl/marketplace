@@ -104,6 +104,7 @@ Route::inertia('/policies/prohibited-items', 'storefront/content/show', ['docume
 Route::get('/listings', [StorefrontController::class, 'index'])->name('listings.index');
 Route::get('/wholesale', [StorefrontController::class, 'wholesale'])->name('wholesale.index');
 Route::get('/auctions', [StorefrontController::class, 'auctions'])->name('auctions.index');
+Route::get('/collections/mens', SeoRedirectController::class);
 Route::get('/collections/{collection:slug}', [StorefrontController::class, 'collection'])->name('collections.show');
 Route::get('/brands', BrandDirectoryController::class)->name('brands.index');
 Route::get('/brands/{brand}', [StorefrontController::class, 'brand'])->name('brands.show');

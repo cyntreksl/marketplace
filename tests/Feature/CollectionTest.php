@@ -19,7 +19,7 @@ test('rule based collection pages filter listings exactly like the underlying fl
 });
 
 test('a manual collection shows only its assigned listings in curated order', function () {
-    $collection = Collection::factory()->create(['name' => "Men's", 'slug' => 'mens']);
+    $collection = Collection::factory()->create(['name' => "Men's", 'slug' => 'mens-curated']);
     $first = Listing::factory()->create();
     $second = Listing::factory()->create();
     Listing::factory()->create();
@@ -28,7 +28,7 @@ test('a manual collection shows only its assigned listings in curated order', fu
         $first->id => ['position' => 1],
     ]);
 
-    $response = $this->get('/collections/mens')->assertOk();
+    $response = $this->get('/collections/mens-curated')->assertOk();
 
     $listingIds = collect($response->inertiaProps('listings.data'))->pluck('id');
     expect($listingIds->all())->toBe([$second->id, $first->id]);
@@ -87,7 +87,7 @@ test('a manual collection page uses its custom seo fields when set and falls bac
 });
 
 test('an active collection with matching listings is sitemapped with its own lastmod, inactive ones are not', function () {
-    $collection = Collection::factory()->create(['name' => "Men's", 'slug' => 'mens']);
+    $collection = Collection::factory()->create(['name' => "Men's", 'slug' => 'mens-curated']);
     $collection->listings()->attach(Listing::factory()->create(), ['position' => 0]);
     $collection->touch();
 
@@ -98,7 +98,7 @@ test('an active collection with matching listings is sitemapped with its own las
 
     $response = $this->get(route('sitemap.static'))
         ->assertOk()
-        ->assertSee(route('collections.show', 'mens'), false)
+        ->assertSee(route('collections.show', 'mens-curated'), false)
         ->assertDontSee(route('collections.show', 'archived-picks'), false)
         ->assertDontSee(route('collections.show', 'empty-picks'), false);
 
@@ -121,13 +121,13 @@ test('homepage collection sections include up to 14 listings', function () {
 
 test('a collection page uses its own artwork as the open graph image', function () {
     $collection = Collection::factory()->create([
-        'slug' => 'mens',
+        'slug' => 'mens-curated',
         'image_path' => 'collections/1/tile/mens.webp',
         'image_disk' => 'public',
         'banner_image_path' => null,
     ]);
 
-    $response = $this->get('/collections/mens')->assertOk();
+    $response = $this->get('/collections/mens-curated')->assertOk();
 
     expect($response->inertiaProps('seo.openGraph.image'))->toBe($collection->imageUrl())
         ->and(implode('', $response->inertiaProps('head')))

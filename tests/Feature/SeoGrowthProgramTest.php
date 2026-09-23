@@ -253,11 +253,14 @@ test('initial trends content seed is idempotent and preserves existing editorial
     expect(Guide::query()->count())->toBe(5)
         ->and(Guide::query()->where('status', 'published')->count())->toBe(5)
         ->and(SeoRedirect::query()->where('source_path', '/shop')->where('destination_path', '/listings')->count())->toBe(1)
+        ->and(SeoRedirect::query()->where('source_path', '/collections/mens')->where('destination_path', '/collections/men')->count())->toBe(1)
         ->and($blenders->fresh()->seo_title)->toBe('Existing editor title')
         ->and($blenders->fresh()->seo_focus_query)->toBe('blender price in sri lanka')
         ->and($blenders->fresh()->seo_intro)->toContain("\n\n")
         ->and($blenders->fresh()->seo_intro)->not->toContain('\n')
         ->and($seller->fresh()->about)->toContain('Browse products currently available');
+
+    $this->get('/collections/mens')->assertRedirect('/collections/men')->assertStatus(301);
 
     $archivedGuide = Guide::query()->firstOrFail();
     $archivedGuide->delete();

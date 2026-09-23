@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -19,6 +19,89 @@ const externalSmoke = source.match(
     /run_external_smoke_tests\(\) \{[\s\S]*?\n\}/,
 )?.[0];
 assert.ok(externalSmoke);
+const remoteRelease = await readFile(
+    new URL('../.github/deploy/remote-release.sh', import.meta.url),
+    'utf8',
+);
+
+test('shared build assets survive activation and rollback', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'prodeals-assets-'));
+    const oldReleaseId = 'a'.repeat(40);
+    const newReleaseId = 'b'.repeat(40);
+    const oldRelease = join(directory, 'releases', oldReleaseId);
+    const newRelease = join(directory, 'releases', newReleaseId);
+    const oldAssets = join(oldRelease, 'public', 'build', 'assets');
+    const newAssets = join(newRelease, 'public', 'build', 'assets');
+
+    try {
+        await mkdir(oldAssets, { recursive: true });
+        await mkdir(newAssets, { recursive: true });
+        await writeFile(join(oldAssets, 'old-hash.js'), 'old release');
+        await writeFile(join(newAssets, 'new-hash.js'), 'new release');
+        await writeFile(join(oldRelease, 'public', 'build', 'manifest.json'), 'old manifest');
+        await writeFile(join(newRelease, 'public', 'build', 'manifest.json'), 'new manifest');
+        await symlink(oldRelease, join(directory, 'current'));
+
+        const functions = ['share_build_assets', 'activate_release', 'rollback_release']
+            .map((name) => {
+                const definition = remoteRelease.match(
+                    new RegExp(`${name}\\(\\) \\{[\\s\\S]*?\\n\\}`),
+                )?.[0];
+                assert.ok(definition, `${name} must exist`);
+
+                return definition;
+            })
+            .join('\n');
+        const result = spawnSync(
+            'bash',
+            [
+                '-c',
+                `set -Eeuo pipefail
+app_root="$1"
+releases_dir="\${app_root}/releases"
+shared_dir="\${app_root}/shared"
+current_link="\${app_root}/current"
+release_id="$2"
+release_dir="\${releases_dir}/\${release_id}"
+mv() {
+    if [[ "\${1:-}" == '-Tf' ]]; then
+        rm -f -- "$3"
+        command mv -f -- "$2" "$3"
+        return
+    fi
+
+    command mv "$@"
+}
+${functions}
+share_build_assets
+activate_release
+rollback_release
+`,
+                'asset-test',
+                directory,
+                newReleaseId,
+            ],
+            { encoding: 'utf8' },
+        );
+        assert.equal(result.status, 0, result.stderr);
+
+        for (const release of [newRelease, join(directory, 'current')]) {
+            assert.equal(
+                await readFile(join(release, 'public', 'build', 'assets', 'old-hash.js'), 'utf8'),
+                'old release',
+            );
+            assert.equal(
+                await readFile(join(release, 'public', 'build', 'assets', 'new-hash.js'), 'utf8'),
+                'new release',
+            );
+        }
+
+        assert.equal(await readFile(join(oldRelease, 'public', 'build', 'manifest.json'), 'utf8'), 'old manifest');
+        assert.equal(await readFile(join(newRelease, 'public', 'build', 'manifest.json'), 'utf8'), 'new manifest');
+    } finally {
+        await rm(directory, { recursive: true, force: true });
+    }
+});
 
 test('product smoke checks consume large sitemaps without breaking the pipe', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'prodeals-smoke-'));
@@ -203,9 +286,5 @@ test('deployment verifies authoritative cached discovery and keeps Search Consol
             stages.indexOf("'Submit sitemap to Search Console'"),
     );
 
-    const remoteRelease = await readFile(
-        new URL('../.github/deploy/remote-release.sh', import.meta.url),
-        'utf8',
-    );
     assert.match(remoteRelease, /seo:seed-growth-content --no-interaction/);
 });
