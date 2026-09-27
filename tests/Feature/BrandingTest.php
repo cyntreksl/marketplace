@@ -87,6 +87,14 @@ test('portal controls use semantic colors and consistent corner radii', function
         ->not->toContain('rounded-full bg-amber-400');
 });
 
+test('storefront utility bar hides the shop deals shortcut', function () {
+    $storefrontLayout = file_get_contents(resource_path('js/components/storefront-layout.tsx'));
+
+    expect($storefrontLayout)
+        ->not->toContain('href="/collections/deals"')
+        ->not->toContain('Shop Deals');
+});
+
 test('storefront listing pages share the category listing card', function () {
     $listingCard = file_get_contents(resource_path('js/components/listing-card.tsx'));
     $productGrid = file_get_contents(resource_path('js/components/storefront-product-grid.tsx'));

@@ -117,15 +117,6 @@ export function StorefrontLayout({
                         <span className="flex min-w-0 items-center border-l border-white/25 pl-3">
                             Islandwide Delivery
                         </span>
-                        <Link
-                            href="/collections/deals"
-                            className="flex min-w-0 items-center border-l border-white/25 pl-3"
-                        >
-                            Shop Deals
-                            <span className="ml-1 text-[10px] opacity-80">
-                                →
-                            </span>
-                        </Link>
                     </div>
                     <div className="flex shrink-0 items-center gap-4">
                         <Link
