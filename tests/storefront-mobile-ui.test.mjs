@@ -84,6 +84,19 @@ test('product page keeps three columns with a compact deal presentation', async 
     assert.match(productPage, /instanceId="desktop"/);
 });
 
+test('product page temporarily hides more listings from the seller', async () => {
+    const productPage = await readFile(
+        resourcePath('pages/storefront/listings/show.tsx'),
+        'utf8',
+    );
+
+    assert.match(productPage, /const showMoreFromSeller = false;/);
+    assert.match(
+        productPage,
+        /showMoreFromSeller && sellerListings\.length > 0/,
+    );
+});
+
 test('checkout flow keeps its focused mobile actions unobstructed', async () => {
     const focusedPages = [
         'pages/buyer/checkout.tsx',

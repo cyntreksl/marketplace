@@ -45,6 +45,7 @@ import type {
 } from '@/types';
 
 const recentStorageKey = 'prodeals.recentlyViewedListingIds';
+const showMoreFromSeller = false;
 type Question = {
     id: number;
     question: string;
@@ -844,7 +845,7 @@ export default function ListingShow({
                             </section>
                         )}
 
-                        {sellerListings.length > 0 && (
+                        {showMoreFromSeller && sellerListings.length > 0 && (
                             <section className="mt-6">
                                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
                                     <h2 className="text-lg font-black tracking-tight">
