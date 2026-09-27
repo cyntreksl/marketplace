@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
 import { CartDrawer } from '@/components/cart-drawer';
+import { DeliveryDetailsModal } from '@/components/delivery-details-modal';
 import {
     categoryContainsSlug,
     DesktopStorefrontCategoryMenu,
@@ -106,6 +107,7 @@ export function StorefrontLayout({
                     : ''
             }`}
         >
+            <DeliveryDetailsModal />
             <div className="hidden bg-[#FF6D00] text-white lg:block">
                 <div className="storefront-container flex min-h-10 items-center justify-between gap-4 overflow-x-auto text-xs whitespace-nowrap">
                     <div className="flex shrink-0 items-center gap-3 font-medium sm:gap-6">
