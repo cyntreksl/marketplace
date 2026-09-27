@@ -1,8 +1,8 @@
 import { Form, Head } from '@inertiajs/react';
 import { Landmark, ShieldCheck, Store } from 'lucide-react';
-import { update } from '@/actions/App/Http/Controllers/SellerOnboardingController';
 import { SellerPageHeader } from '@/components/seller-page-header';
 import { SellerPortalLayout } from '@/components/seller-portal-layout';
+import { update } from '@/actions/App/Http/Controllers/SellerOnboardingController';
 
 export default function SellerOnboarding({
     seller,

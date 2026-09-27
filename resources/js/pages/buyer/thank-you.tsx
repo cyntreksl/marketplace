@@ -15,13 +15,13 @@ import { useEffect } from 'react';
 import { OrderPaymentStatus } from '@/components/order-payment-status';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { buildCatalogItem, trackPurchase } from '@/lib/tracking';
-import { home, register } from '@/routes';
-import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
 import type {
     CheckoutConfirmationOrder,
     CheckoutPaymentMethod,
     ShippingAddress,
 } from '@/types';
+import { home, register } from '@/routes';
+import { index as buyerOrdersIndex } from '@/routes/buyer/orders';
 
 const paymentMethods: Record<
     CheckoutPaymentMethod,

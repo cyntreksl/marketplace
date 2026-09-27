@@ -1,5 +1,4 @@
 import { Head } from '@inertiajs/react';
-import { update } from '@/actions/App/Http/Controllers/SellerAuctionController';
 import { AuctionForm } from '@/components/auction-form';
 import { SellerPortalLayout } from '@/components/seller-portal-layout';
 import type {
@@ -7,6 +6,7 @@ import type {
     AuctionRecord,
     SellerAuctionListing,
 } from '@/types';
+import { update } from '@/actions/App/Http/Controllers/SellerAuctionController';
 
 export default function EditAuction(props: {
     auction: AuctionRecord;

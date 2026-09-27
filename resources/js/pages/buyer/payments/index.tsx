@@ -4,9 +4,9 @@ import { BuyerPageHeader } from '@/components/buyer-page-header';
 import { BuyerPagination } from '@/components/buyer-pagination';
 import { BuyerPortalLayout } from '@/components/buyer-portal-layout';
 import { BuyerStatusBadge } from '@/components/buyer-status-badge';
+import type { Paginated, PaymentAttempt } from '@/types';
 import { show as orderShow } from '@/routes/buyer/orders';
 import { index } from '@/routes/buyer/payments';
-import type { Paginated, PaymentAttempt } from '@/types';
 
 const filters = [
     { value: 'all', label: 'All' },

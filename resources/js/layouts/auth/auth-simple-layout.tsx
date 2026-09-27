@@ -1,8 +1,8 @@
 import { Link } from '@inertiajs/react';
 import { Check, ShoppingBag, Sparkles } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
-import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';
+import { home } from '@/routes';
 
 export default function AuthSimpleLayout({
     children,

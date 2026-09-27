@@ -2,8 +2,8 @@ import { Form, Link } from '@inertiajs/react';
 import { RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { index as listingsIndex } from '@/routes/listings';
 import type { StorefrontBrand, StorefrontBrowseFilters } from '@/types';
+import { index as listingsIndex } from '@/routes/listings';
 
 function HiddenBrowseContext({
     filters,

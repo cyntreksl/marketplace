@@ -1,7 +1,7 @@
 import { Head } from '@inertiajs/react';
-import { store } from '@/actions/App/Http/Controllers/SellerListingController';
 import { SellerPortalLayout } from '@/components/seller-portal-layout';
 import { SellerProductForm } from '@/components/seller-product-form';
+import { store } from '@/actions/App/Http/Controllers/SellerListingController';
 
 type Brand = { id: number; name: string };
 

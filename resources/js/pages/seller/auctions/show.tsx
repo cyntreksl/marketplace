@@ -1,8 +1,8 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { destroy } from '@/actions/App/Http/Controllers/SellerAuctionController';
 import { SellerPortalLayout } from '@/components/seller-portal-layout';
-import { edit } from '@/routes/seller/auctions';
 import type { AuctionRecord } from '@/types';
+import { destroy } from '@/actions/App/Http/Controllers/SellerAuctionController';
+import { edit } from '@/routes/seller/auctions';
 
 export default function SellerAuctionDetails({
     auction,

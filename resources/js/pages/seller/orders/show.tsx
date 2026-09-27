@@ -7,6 +7,10 @@ import {
     PackageCheck,
     Truck,
 } from 'lucide-react';
+import { SellerPageHeader } from '@/components/seller-page-header';
+import { SellerPortalLayout } from '@/components/seller-portal-layout';
+import { SellerStatusBadge } from '@/components/seller-status-badge';
+import type { SellerOrder } from '@/types';
 import {
     cancel,
     delivered,
@@ -14,11 +18,7 @@ import {
     ready,
     shipped,
 } from '@/actions/App/Http/Controllers/SellerOrderController';
-import { SellerPageHeader } from '@/components/seller-page-header';
-import { SellerPortalLayout } from '@/components/seller-portal-layout';
-import { SellerStatusBadge } from '@/components/seller-status-badge';
 import { index } from '@/routes/seller/orders';
-import type { SellerOrder } from '@/types';
 
 function ActionPanel({ order }: { order: SellerOrder }) {
     if (!order.next_action) {

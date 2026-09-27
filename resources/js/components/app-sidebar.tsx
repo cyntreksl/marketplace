@@ -13,8 +13,8 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { home } from '@/routes';
 import type { NavItem } from '@/types';
+import { home } from '@/routes';
 
 const mainNavItems: NavItem[] = [
     {

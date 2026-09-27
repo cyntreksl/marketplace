@@ -1,7 +1,7 @@
 import { Form, Head } from '@inertiajs/react';
-import { update } from '@/actions/App/Http/Controllers/AdminAuctionSettingsController';
 import { PortalLayout } from '@/components/portal-layout';
 import type { AuctionFlags } from '@/types';
+import { update } from '@/actions/App/Http/Controllers/AdminAuctionSettingsController';
 
 export default function AuctionSettings({ flags }: { flags: AuctionFlags }) {
     return (

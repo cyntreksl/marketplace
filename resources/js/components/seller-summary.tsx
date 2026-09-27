@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { ArrowUpRight, BadgeCheck } from 'lucide-react';
-import { show as storeShow } from '@/routes/stores';
 import type { PublicSellerSummary } from '@/types';
+import { show as storeShow } from '@/routes/stores';
 
 export function SellerLogo({
     seller,

@@ -1,8 +1,8 @@
 import { useHttp } from '@inertiajs/react';
 import { PackageSearch } from 'lucide-react';
-import { store as trackOrder } from '@/actions/App/Http/Controllers/OrderTrackingController';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import type { StorefrontCategory } from '@/types';
+import { store as trackOrder } from '@/actions/App/Http/Controllers/OrderTrackingController';
 
 type TrackingResult = {
     order: {

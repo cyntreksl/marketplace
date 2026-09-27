@@ -31,6 +31,7 @@ import {
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
+import type { Auth } from '@/types';
 import { home } from '@/routes';
 import { index as questionIndex } from '@/routes/product-questions';
 import { dashboard } from '@/routes/seller';
@@ -42,7 +43,6 @@ import { index as returnsIndex } from '@/routes/seller/returns';
 import { edit as storeEdit } from '@/routes/seller/store';
 import { index as walletIndex } from '@/routes/seller/wallet';
 import { index as wholesaleIndex } from '@/routes/seller/wholesale';
-import type { Auth } from '@/types';
 
 type SellerRoute = ReturnType<typeof dashboard>;
 type PageProps = { auth: Auth };

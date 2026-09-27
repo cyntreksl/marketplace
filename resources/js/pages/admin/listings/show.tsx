@@ -14,15 +14,15 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { AdminListingMerchandisingForm } from '@/components/admin-listing-merchandising-form';
+import type { AdminListingEngagement } from '@/components/admin-listing-merchandising-form';
+import { PortalLayout } from '@/components/portal-layout';
+import { RichTextContent } from '@/components/rich-text-editor';
 import {
     edit,
     index as listingIndex,
     update,
 } from '@/actions/App/Http/Controllers/AdminListingController';
-import { AdminListingMerchandisingForm } from '@/components/admin-listing-merchandising-form';
-import type { AdminListingEngagement } from '@/components/admin-listing-merchandising-form';
-import { PortalLayout } from '@/components/portal-layout';
-import { RichTextContent } from '@/components/rich-text-editor';
 
 type ListingMedia = { id: number; url: string };
 type WholesalePriceTier = {

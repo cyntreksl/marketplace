@@ -1,8 +1,8 @@
 import { Form } from '@inertiajs/react';
-import { destroy } from '@/actions/App/Http/Controllers/WatchlistController';
 import { ListingCard } from '@/components/listing-card';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import type { StorefrontCategory, StorefrontListing } from '@/types';
+import { destroy } from '@/actions/App/Http/Controllers/WatchlistController';
 
 export default function Watchlist({
     categories,

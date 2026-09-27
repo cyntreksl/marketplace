@@ -1,7 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { StorefrontLayout } from '@/components/storefront-layout';
-import { show as brandShow } from '@/routes/brands';
 import type { StorefrontCategory } from '@/types';
+import { show as brandShow } from '@/routes/brands';
 
 type Brand = {
     id: number;

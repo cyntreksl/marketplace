@@ -7,10 +7,10 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import type { Auth } from '@/types';
 import { update as updateBuyerProfile } from '@/routes/buyer/settings/profile';
 import { edit, update as updateProfile } from '@/routes/profile';
 import { send } from '@/routes/verification';
-import type { Auth } from '@/types';
 
 type PageProps = {
     auth: Auth;

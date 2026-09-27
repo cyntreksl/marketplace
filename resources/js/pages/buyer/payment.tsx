@@ -4,13 +4,13 @@ import { CartTotals } from '@/components/cart-contents';
 import { CheckoutProgress } from '@/components/checkout-progress';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { cn } from '@/lib/utils';
-import { show as checkoutShow } from '@/routes/checkout';
-import { store as paymentStore } from '@/routes/checkout/payment';
 import type {
     CheckoutCart,
     CheckoutPaymentMethod,
     ShippingAddress,
 } from '@/types';
+import { show as checkoutShow } from '@/routes/checkout';
+import { store as paymentStore } from '@/routes/checkout/payment';
 
 export default function BuyerPayment({
     cart,

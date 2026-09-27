@@ -1,8 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import { PortalLayout } from '@/components/portal-layout';
+import type { AuctionRecord } from '@/types';
 import { show } from '@/routes/admin/auctions';
 import { index as settings } from '@/routes/admin/auctions/settings';
-import type { AuctionRecord } from '@/types';
 
 export default function AdminAuctions({
     auctions,

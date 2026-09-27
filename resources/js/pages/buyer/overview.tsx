@@ -14,18 +14,18 @@ import { BuyerPageHeader } from '@/components/buyer-page-header';
 import { BuyerPortalLayout } from '@/components/buyer-portal-layout';
 import { BuyerStatusBadge } from '@/components/buyer-status-badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { index as addressesIndex } from '@/routes/buyer/addresses';
-import { index as feedbackIndex } from '@/routes/buyer/feedback';
-import { index as ordersIndex, show as orderShow } from '@/routes/buyer/orders';
-import { index as paymentsIndex } from '@/routes/buyer/payments';
-import { index as returnsIndex } from '@/routes/buyer/returns';
-import { edit as securityEdit } from '@/routes/buyer/settings/security';
 import type {
     BuyerAddress,
     BuyerOrder,
     BuyerOrderStage,
     PaymentAttempt,
 } from '@/types';
+import { index as addressesIndex } from '@/routes/buyer/addresses';
+import { index as feedbackIndex } from '@/routes/buyer/feedback';
+import { index as ordersIndex, show as orderShow } from '@/routes/buyer/orders';
+import { index as paymentsIndex } from '@/routes/buyer/payments';
+import { index as returnsIndex } from '@/routes/buyer/returns';
+import { edit as securityEdit } from '@/routes/buyer/settings/security';
 
 type Summary = {
     order_counts: Record<BuyerOrderStage, number>;

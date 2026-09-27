@@ -3,9 +3,9 @@ import { Image } from 'lucide-react';
 import { SellerPageHeader } from '@/components/seller-page-header';
 import { SellerPagination } from '@/components/seller-pagination';
 import { SellerPortalLayout } from '@/components/seller-portal-layout';
+import type { SellerPaginator } from '@/types';
 import { show as evidenceShow } from '@/routes/returns/evidence';
 import { index, update } from '@/routes/seller/returns';
-import type { SellerPaginator } from '@/types';
 
 type SellerReturn = {
     id: number;

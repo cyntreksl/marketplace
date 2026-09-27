@@ -1,8 +1,8 @@
 import { Head } from '@inertiajs/react';
-import { store } from '@/actions/App/Http/Controllers/SellerAuctionController';
 import { AuctionForm } from '@/components/auction-form';
 import { SellerPortalLayout } from '@/components/seller-portal-layout';
 import type { AuctionFlags, SellerAuctionListing } from '@/types';
+import { store } from '@/actions/App/Http/Controllers/SellerAuctionController';
 
 export default function CreateAuction(props: {
     listings: SellerAuctionListing[];

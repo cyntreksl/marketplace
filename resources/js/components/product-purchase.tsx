@@ -1,7 +1,7 @@
 import { Form } from '@inertiajs/react';
 import { Minus, Plus, ShoppingCart, ArrowRight } from 'lucide-react';
-import { store as addCartItem } from '@/actions/App/Http/Controllers/CartController';
 import { buildCatalogItem, trackEvent, withMetaEventId } from '@/lib/tracking';
+import { store as addCartItem } from '@/actions/App/Http/Controllers/CartController';
 
 export function ProductPurchase({
     listingId,

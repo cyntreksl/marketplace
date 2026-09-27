@@ -4,9 +4,9 @@ import { BuyerPageHeader } from '@/components/buyer-page-header';
 import { BuyerPagination } from '@/components/buyer-pagination';
 import { BuyerPortalLayout } from '@/components/buyer-portal-layout';
 import { Button } from '@/components/ui/button';
+import type { FeedbackItem, Paginated } from '@/types';
 import { index } from '@/routes/buyer/feedback';
 import { store as storeReview } from '@/routes/buyer/reviews';
-import type { FeedbackItem, Paginated } from '@/types';
 
 export default function BuyerFeedback({
     feedback,

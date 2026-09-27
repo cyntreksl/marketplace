@@ -11,11 +11,11 @@ import {
 import { BuyerPortalLayout } from '@/components/buyer-portal-layout';
 import { BuyerStatusBadge } from '@/components/buyer-status-badge';
 import { Button } from '@/components/ui/button';
+import type { BuyerOrder, CheckoutAddress } from '@/types';
 import { index as feedbackIndex } from '@/routes/buyer/feedback';
 import { index as ordersIndex } from '@/routes/buyer/orders';
 import { index as returnsIndex } from '@/routes/buyer/returns';
 import { retry } from '@/routes/checkout/card';
-import type { BuyerOrder, CheckoutAddress } from '@/types';
 
 function money(value: string): string {
     return `LKR ${Number(value).toLocaleString('en-LK', { minimumFractionDigits: 2 })}`;

@@ -1,5 +1,9 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
+import { CategoryArtworkUploader } from '@/components/category-artwork-uploader';
+import { ListingPicker } from '@/components/listing-picker';
+import { PortalLayout } from '@/components/portal-layout';
+import { Badge } from '@/components/ui/badge';
 import {
     destroy,
     destroyBannerImage,
@@ -13,10 +17,6 @@ import {
     update,
     updateActivation,
 } from '@/actions/App/Http/Controllers/AdminCollectionController';
-import { CategoryArtworkUploader } from '@/components/category-artwork-uploader';
-import { ListingPicker } from '@/components/listing-picker';
-import { PortalLayout } from '@/components/portal-layout';
-import { Badge } from '@/components/ui/badge';
 
 type AdminCollection = {
     id: number;

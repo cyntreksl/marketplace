@@ -14,17 +14,17 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { CheckoutProgress } from '@/components/checkout-progress';
 import { StorefrontLayout } from '@/components/storefront-layout';
-import { show as cartShow } from '@/routes/cart';
-import { show as checkoutShow } from '@/routes/checkout';
-import { show as paymentShow } from '@/routes/checkout/payment';
-import { store as reviewStore } from '@/routes/checkout/review';
-import { terms } from '@/routes/legal';
 import type {
     CheckoutCart,
     CheckoutCartItem,
     CheckoutPaymentMethod,
     ShippingAddress,
 } from '@/types';
+import { show as cartShow } from '@/routes/cart';
+import { show as checkoutShow } from '@/routes/checkout';
+import { show as paymentShow } from '@/routes/checkout/payment';
+import { store as reviewStore } from '@/routes/checkout/review';
+import { terms } from '@/routes/legal';
 
 const paymentMethods: Record<
     CheckoutPaymentMethod,
