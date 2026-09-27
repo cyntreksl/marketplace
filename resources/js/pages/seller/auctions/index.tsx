@@ -1,8 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import { Gavel, Plus } from 'lucide-react';
 import { SellerPortalLayout } from '@/components/seller-portal-layout';
-import type { AuctionRecord } from '@/types';
 import { create, show } from '@/routes/seller/auctions';
+import type { AuctionRecord } from '@/types';
 
 export default function SellerAuctions({
     auctions,

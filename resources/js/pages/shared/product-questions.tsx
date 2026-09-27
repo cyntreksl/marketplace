@@ -1,13 +1,13 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { HelpCircle, Search } from 'lucide-react';
+import { update } from '@/actions/App/Http/Controllers/ProductQuestionController';
 import { PortalLayout } from '@/components/portal-layout';
 import { SellerPageHeader } from '@/components/seller-page-header';
 import { SellerPagination } from '@/components/seller-pagination';
 import { SellerPortalLayout } from '@/components/seller-portal-layout';
-import type { SellerPaginator } from '@/types';
-import { update } from '@/actions/App/Http/Controllers/ProductQuestionController';
 import { show as listingShow } from '@/routes/listings';
 import { index } from '@/routes/product-questions';
+import type { SellerPaginator } from '@/types';
 
 type Question = {
     id: number;

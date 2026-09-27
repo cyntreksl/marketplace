@@ -4,12 +4,12 @@ import { useEffect } from 'react';
 import { richTextPlainText } from '@/components/rich-text-editor';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { useProductComparison } from '@/hooks/use-product-comparison';
-import type { StorefrontCategory, StorefrontListing } from '@/types';
 import {
     index as compareIndex,
     listings as comparisonListings,
 } from '@/routes/compare';
 import { show as listingShow } from '@/routes/listings';
+import type { StorefrontCategory, StorefrontListing } from '@/types';
 
 export default function Compare({
     categories,

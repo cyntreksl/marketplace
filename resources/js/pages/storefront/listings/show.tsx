@@ -12,6 +12,11 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { store as placeBid } from '@/actions/App/Http/Controllers/AuctionBidController';
+import {
+    destroy as removeWish,
+    store as addWish,
+} from '@/actions/App/Http/Controllers/WatchlistController';
 import { ListingCard } from '@/components/listing-card';
 import { ProductDetails } from '@/components/product-details';
 import { ProductEngagement } from '@/components/product-engagement';
@@ -22,19 +27,6 @@ import { StorefrontBreadcrumbs } from '@/components/storefront-breadcrumbs';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { useProductComparison } from '@/hooks/use-product-comparison';
 import { buildCatalogItem, trackEvent, withMetaEventId } from '@/lib/tracking';
-import type {
-    PublicSellerSummary,
-    StorefrontCategory,
-    StorefrontCategoryNode,
-    StorefrontEngagement,
-    StorefrontListing,
-    StorefrontReview,
-} from '@/types';
-import { store as placeBid } from '@/actions/App/Http/Controllers/AuctionBidController';
-import {
-    destroy as removeWish,
-    store as addWish,
-} from '@/actions/App/Http/Controllers/WatchlistController';
 import { home, login } from '@/routes';
 import { show as brandShow } from '@/routes/brands';
 import { show as categoryShow } from '@/routes/categories';
@@ -43,6 +35,14 @@ import { index as listingsIndex } from '@/routes/listings';
 import { show as listingShow } from '@/routes/listings';
 import { shipping, returns } from '@/routes/policies';
 import { show as storeShow } from '@/routes/stores';
+import type {
+    PublicSellerSummary,
+    StorefrontCategory,
+    StorefrontCategoryNode,
+    StorefrontEngagement,
+    StorefrontListing,
+    StorefrontReview,
+} from '@/types';
 
 const recentStorageKey = 'prodeals.recentlyViewedListingIds';
 const showMoreFromSeller = false;

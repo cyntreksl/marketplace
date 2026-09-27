@@ -1,4 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
+import {
+    show,
+    updateDetails,
+} from '@/actions/App/Http/Controllers/AdminListingController';
 import { AdminListingMerchandisingForm } from '@/components/admin-listing-merchandising-form';
 import type {
     AdminListingEngagement,
@@ -8,10 +12,6 @@ import type { CategoryOption } from '@/components/category-picker';
 import { PortalLayout } from '@/components/portal-layout';
 import { SellerProductForm } from '@/components/seller-product-form';
 import type { SellerProductFormListing } from '@/components/seller-product-form';
-import {
-    show,
-    updateDetails,
-} from '@/actions/App/Http/Controllers/AdminListingController';
 
 type Brand = { id: number; name: string };
 

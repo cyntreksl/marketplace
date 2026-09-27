@@ -2,8 +2,8 @@ import { Head, Link } from '@inertiajs/react';
 import { Search, SearchX, Users } from 'lucide-react';
 import { PortalLayout } from '@/components/portal-layout';
 import { cn } from '@/lib/utils';
-import type { SearchInsightsPageProps, SearchInsightsTerm } from '@/types';
 import { index as searchInsightsIndex } from '@/routes/admin/search-insights';
+import type { SearchInsightsPageProps, SearchInsightsTerm } from '@/types';
 
 function formatDate(value: string): string {
     return new Intl.DateTimeFormat(undefined, {

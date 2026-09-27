@@ -1,12 +1,12 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { ExternalLink } from 'lucide-react';
 import { useState } from 'react';
+import { update } from '@/actions/App/Http/Controllers/SellerStoreController';
 import { CategoryArtworkUploader } from '@/components/category-artwork-uploader';
 import { SellerPageHeader } from '@/components/seller-page-header';
 import { SellerPortalLayout } from '@/components/seller-portal-layout';
-import type { PublicSellerSummary } from '@/types';
-import { update } from '@/actions/App/Http/Controllers/SellerStoreController';
 import { show as storeShow } from '@/routes/stores';
+import type { PublicSellerSummary } from '@/types';
 
 export default function StoreSettings({
     seller,

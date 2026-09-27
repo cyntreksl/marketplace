@@ -1,14 +1,14 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { Search, Users } from 'lucide-react';
+import {
+    downloadExport,
+    index,
+} from '@/actions/App/Http/Controllers/AdminUserController';
 import { AdminExportDialog } from '@/components/admin-export-dialog';
 import type { ExportColumnOption } from '@/components/admin-export-dialog';
 import { AdminPagination } from '@/components/admin-pagination';
 import { PortalLayout } from '@/components/portal-layout';
 import type { PaginationLink } from '@/types';
-import {
-    downloadExport,
-    index,
-} from '@/actions/App/Http/Controllers/AdminUserController';
 
 type AdminUser = {
     id: number;

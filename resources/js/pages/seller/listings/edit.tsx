@@ -1,13 +1,13 @@
 import { Head, Link } from '@inertiajs/react';
+import {
+    show,
+    update,
+} from '@/actions/App/Http/Controllers/SellerListingController';
 import type { CategoryOption } from '@/components/category-picker';
 import { SellerInternalDetailsForm } from '@/components/seller-internal-details-form';
 import { SellerPortalLayout } from '@/components/seller-portal-layout';
 import { SellerProductForm } from '@/components/seller-product-form';
 import type { SellerProductFormListing } from '@/components/seller-product-form';
-import {
-    show,
-    update,
-} from '@/actions/App/Http/Controllers/SellerListingController';
 
 type Brand = { id: number; name: string };
 

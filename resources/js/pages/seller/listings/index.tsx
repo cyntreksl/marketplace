@@ -1,20 +1,20 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { Plus, Search } from 'lucide-react';
-import { SellerPageHeader } from '@/components/seller-page-header';
-import { SellerPagination } from '@/components/seller-pagination';
-import { SellerPortalLayout } from '@/components/seller-portal-layout';
-import type { SellerPaginator } from '@/types';
 import {
     create,
     destroy,
     edit,
     show,
 } from '@/actions/App/Http/Controllers/SellerListingController';
+import { SellerPageHeader } from '@/components/seller-page-header';
+import { SellerPagination } from '@/components/seller-pagination';
+import { SellerPortalLayout } from '@/components/seller-portal-layout';
 import { index } from '@/routes/seller/listings';
 import {
     create as createWholesale,
     index as wholesaleIndex,
 } from '@/routes/seller/wholesale';
+import type { SellerPaginator } from '@/types';
 
 type Listing = {
     id: number;

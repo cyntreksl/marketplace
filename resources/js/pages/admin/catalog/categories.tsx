@@ -12,8 +12,6 @@ import {
     X,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CategoryArtworkUploader } from '@/components/category-artwork-uploader';
-import { PortalLayout } from '@/components/portal-layout';
 import {
     children,
     context,
@@ -31,6 +29,8 @@ import {
     update,
     updateActivation,
 } from '@/actions/App/Http/Controllers/AdminCategoryController';
+import { CategoryArtworkUploader } from '@/components/category-artwork-uploader';
+import { PortalLayout } from '@/components/portal-layout';
 
 type Category = {
     id: number;

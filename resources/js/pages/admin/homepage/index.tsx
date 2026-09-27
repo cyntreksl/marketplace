@@ -1,15 +1,15 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import { GripVertical, Image, Tag, X } from 'lucide-react';
 import { useState } from 'react';
-import { CategoryPicker } from '@/components/category-picker';
-import type { CategoryOption } from '@/components/category-picker';
-import { PortalLayout } from '@/components/portal-layout';
 import { updateCategories } from '@/actions/App/Http/Controllers/AdminHomepageController';
 import {
     destroy as destroyPromotion,
     store as storePromotion,
     update as updatePromotion,
 } from '@/actions/App/Http/Controllers/AdminPromotionController';
+import { CategoryPicker } from '@/components/category-picker';
+import type { CategoryOption } from '@/components/category-picker';
+import { PortalLayout } from '@/components/portal-layout';
 import { index as adminCategoriesIndex } from '@/routes/admin/categories';
 
 type SelectedCategory = {

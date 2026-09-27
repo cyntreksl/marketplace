@@ -13,7 +13,6 @@ import { SellerPageHeader } from '@/components/seller-page-header';
 import { SellerPortalLayout } from '@/components/seller-portal-layout';
 import { SellerStatusBadge } from '@/components/seller-status-badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { SellerOrder } from '@/types';
 import { index as questionIndex } from '@/routes/product-questions';
 import {
     index as listingsIndex,
@@ -22,6 +21,7 @@ import {
 import { index as orderIndex, show as orderShow } from '@/routes/seller/orders';
 import { index as returnsIndex } from '@/routes/seller/returns';
 import { index as walletIndex } from '@/routes/seller/wallet';
+import type { SellerOrder } from '@/types';
 
 type Metrics = {
     monthly_completed_earnings: string;

@@ -1,6 +1,6 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { PortalLayout } from '@/components/portal-layout';
 import { update } from '@/actions/App/Http/Controllers/AdminSellerController';
+import { PortalLayout } from '@/components/portal-layout';
 import { dashboard } from '@/routes/admin';
 
 type Seller = {

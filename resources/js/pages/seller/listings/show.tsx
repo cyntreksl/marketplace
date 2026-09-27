@@ -14,9 +14,9 @@ import {
     Tag,
 } from 'lucide-react';
 import { useState } from 'react';
+import { edit } from '@/actions/App/Http/Controllers/SellerListingController';
 import { RichTextContent } from '@/components/rich-text-editor';
 import { SellerPortalLayout } from '@/components/seller-portal-layout';
-import { edit } from '@/actions/App/Http/Controllers/SellerListingController';
 import { show as storefrontProduct } from '@/routes/listings';
 import { index as productsIndex } from '@/routes/seller/listings';
 

@@ -29,9 +29,9 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FocusEvent, KeyboardEvent } from 'react';
-import type { StorefrontCategory } from '@/types';
 import { show as categoryShow } from '@/routes/categories';
 import { index as listingsIndex } from '@/routes/listings';
+import type { StorefrontCategory } from '@/types';
 
 export type { StorefrontCategory } from '@/types';
 

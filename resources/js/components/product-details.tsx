@@ -15,12 +15,12 @@ import type {
     ReactNode,
 } from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { store as askQuestion } from '@/actions/App/Http/Controllers/ProductQuestionController';
 import { RichTextContent } from '@/components/rich-text-editor';
 import { useStorefrontHeaderHeight } from '@/hooks/use-storefront-header-height';
-import type { StorefrontListing, StorefrontReview } from '@/types';
-import { store as askQuestion } from '@/actions/App/Http/Controllers/ProductQuestionController';
 import { login } from '@/routes';
 import { shipping, returns } from '@/routes/policies';
+import type { StorefrontListing, StorefrontReview } from '@/types';
 
 export type ProductQuestion = {
     id: number;

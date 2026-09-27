@@ -1,8 +1,8 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { BuyerPortalLayout } from '@/components/buyer-portal-layout';
-import type { AuctionOffer } from '@/types';
 import { accept } from '@/actions/App/Http/Controllers/BuyerAuctionOfferController';
+import { BuyerPortalLayout } from '@/components/buyer-portal-layout';
 import { show as orderShow } from '@/routes/buyer/orders';
+import type { AuctionOffer } from '@/types';
 
 export default function AuctionOfferDetails({
     offer,

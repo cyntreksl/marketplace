@@ -30,8 +30,6 @@ import {
 import { UserMenuContent } from '@/components/user-menu-content';
 import { useInitials } from '@/hooks/use-initials';
 import { cn } from '@/lib/utils';
-import type { Auth } from '@/types';
-import type { ReviewFlags } from '@/types/reviews';
 import { home } from '@/routes';
 import { dashboard } from '@/routes/buyer';
 import { index as addressesIndex } from '@/routes/buyer/addresses';
@@ -42,6 +40,8 @@ import { index as paymentsIndex } from '@/routes/buyer/payments';
 import { index as returnsIndex } from '@/routes/buyer/returns';
 import { edit as settingsEdit } from '@/routes/buyer/settings/profile';
 import { show as cartShow } from '@/routes/cart';
+import type { Auth } from '@/types';
+import type { ReviewFlags } from '@/types/reviews';
 
 type BuyerRoute = ReturnType<typeof dashboard>;
 type PageProps = {

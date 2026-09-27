@@ -4,14 +4,14 @@ import { SellerLogo } from '@/components/seller-summary';
 import { StorefrontBreadcrumbs } from '@/components/storefront-breadcrumbs';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import { StorefrontProductGrid } from '@/components/storefront-product-grid';
+import { home } from '@/routes';
+import { show as storeShow } from '@/routes/stores';
 import type {
     PublicSellerSummary,
     StorefrontCategory,
     StorefrontListingPaginator,
     StorefrontBrowseFilters,
 } from '@/types';
-import { home } from '@/routes';
-import { show as storeShow } from '@/routes/stores';
 
 export default function StoreShow({
     seller,

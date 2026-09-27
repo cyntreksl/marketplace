@@ -22,14 +22,14 @@ import {
     trackEvent,
     withMetaEventId,
 } from '@/lib/tracking';
+import { show as cartShow } from '@/routes/cart';
+import { store as checkoutStore } from '@/routes/checkout';
 import type {
     BuyerAddress,
     CheckoutCart,
     CheckoutCartItem,
     ShippingAddress,
 } from '@/types';
-import { show as cartShow } from '@/routes/cart';
-import { store as checkoutStore } from '@/routes/checkout';
 
 type CheckoutSectionProps = {
     number: number;

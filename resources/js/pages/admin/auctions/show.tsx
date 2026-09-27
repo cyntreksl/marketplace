@@ -1,7 +1,7 @@
 import { Form, Head } from '@inertiajs/react';
+import { cancel } from '@/actions/App/Http/Controllers/AdminAuctionController';
 import { PortalLayout } from '@/components/portal-layout';
 import type { AuctionRecord } from '@/types';
-import { cancel } from '@/actions/App/Http/Controllers/AdminAuctionController';
 
 export default function AdminAuctionDetails({
     auction,

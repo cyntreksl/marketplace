@@ -1,8 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import { Gavel } from 'lucide-react';
 import { BuyerPortalLayout } from '@/components/buyer-portal-layout';
-import type { AuctionOffer } from '@/types';
 import { show } from '@/routes/buyer/auction-offers';
+import type { AuctionOffer } from '@/types';
 
 export default function BuyerAuctionOffers({
     offers,

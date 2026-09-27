@@ -23,6 +23,9 @@ import {
     SheetTitle,
     SheetTrigger,
 } from '@/components/ui/sheet';
+import { home } from '@/routes';
+import { show as categoryShow } from '@/routes/categories';
+import { show as guideShow } from '@/routes/guides';
 import type {
     StorefrontBrand,
     StorefrontBreadcrumbItem,
@@ -32,9 +35,6 @@ import type {
     StorefrontCollectionLink,
     StorefrontListingPaginator,
 } from '@/types';
-import { home } from '@/routes';
-import { show as categoryShow } from '@/routes/categories';
-import { show as guideShow } from '@/routes/guides';
 
 function MoreCollections({
     collections,

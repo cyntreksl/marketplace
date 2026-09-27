@@ -5,18 +5,18 @@ import { ListingCard } from '@/components/listing-card';
 import { StorefrontCategoryCard } from '@/components/storefront-category-card';
 import { StorefrontLayout } from '@/components/storefront-layout';
 import type { StorefrontCategory } from '@/components/storefront-layout';
-import type {
-    StorefrontCollectionSection,
-    StorefrontHomepageCategory,
-    StorefrontListing,
-    StorefrontPromotion,
-} from '@/types';
 import { show as brandShow } from '@/routes/brands';
 import { show as categoryShow } from '@/routes/categories';
 import {
     index as listingsIndex,
     recent as recentListings,
 } from '@/routes/listings';
+import type {
+    StorefrontCollectionSection,
+    StorefrontHomepageCategory,
+    StorefrontListing,
+    StorefrontPromotion,
+} from '@/types';
 
 const recentStorageKey = 'prodeals.recentlyViewedListingIds';
 

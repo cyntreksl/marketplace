@@ -1,10 +1,10 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import { store } from '@/actions/App/Http/Controllers/SellerWalletController';
 import { SellerPageHeader } from '@/components/seller-page-header';
 import { SellerPagination } from '@/components/seller-pagination';
 import { SellerPortalLayout } from '@/components/seller-portal-layout';
-import type { SellerPaginator } from '@/types';
-import { store } from '@/actions/App/Http/Controllers/SellerWalletController';
 import { index as ordersIndex } from '@/routes/seller/orders';
+import type { SellerPaginator } from '@/types';
 
 type Entry = {
     id: number;

@@ -1,8 +1,8 @@
 import { useForm } from '@inertiajs/react';
+import { update } from '@/actions/App/Http/Controllers/SellerListingInternalDetailsController';
 import { ProductInternalFields } from '@/components/product-internal-fields';
 import type { SellerProductFormListing } from '@/components/seller-product-form';
 import { Button } from '@/components/ui/button';
-import { update } from '@/actions/App/Http/Controllers/SellerListingInternalDetailsController';
 
 export function SellerInternalDetailsForm({
     listing,

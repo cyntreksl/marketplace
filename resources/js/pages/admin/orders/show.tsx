@@ -6,9 +6,6 @@ import {
     ShieldCheck,
     Truck,
 } from 'lucide-react';
-import { PortalLayout } from '@/components/portal-layout';
-import { SellerStatusBadge } from '@/components/seller-status-badge';
-import type { AdminOrder, SellerOrder } from '@/types';
 import {
     cancel,
     delivered,
@@ -17,7 +14,10 @@ import {
     refund,
     shipped,
 } from '@/actions/App/Http/Controllers/AdminOrderController';
+import { PortalLayout } from '@/components/portal-layout';
+import { SellerStatusBadge } from '@/components/seller-status-badge';
 import { index } from '@/routes/admin/orders';
+import type { AdminOrder, SellerOrder } from '@/types';
 
 function money(value: string): string {
     return `LKR ${Number(value).toLocaleString('en-LK', { minimumFractionDigits: 2 })}`;

@@ -4,8 +4,8 @@ import { SellerPageHeader } from '@/components/seller-page-header';
 import { SellerPagination } from '@/components/seller-pagination';
 import { SellerPortalLayout } from '@/components/seller-portal-layout';
 import { SellerStatusBadge } from '@/components/seller-status-badge';
-import type { SellerOrder, SellerPaginator } from '@/types';
 import { index, show } from '@/routes/seller/orders';
+import type { SellerOrder, SellerPaginator } from '@/types';
 
 type Filters = { q: string; status: string; sort: string };
 type Status = { value: string; label: string };

@@ -1,7 +1,7 @@
 import { Form, Head } from '@inertiajs/react';
+import { update } from '@/actions/App/Http/Controllers/AdminFeatureSettingsController';
 import { PortalLayout } from '@/components/portal-layout';
 import type { ReviewFlags } from '@/types/reviews';
-import { update } from '@/actions/App/Http/Controllers/AdminFeatureSettingsController';
 
 export default function FeatureSettings({ flags }: { flags: ReviewFlags }) {
     return (

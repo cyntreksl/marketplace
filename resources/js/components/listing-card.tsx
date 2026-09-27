@@ -1,8 +1,8 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { StorefrontListing } from '@/types';
 import { show as listingShow } from '@/routes/listings';
+import type { StorefrontListing } from '@/types';
 
 function formatPrice(value: string | null): string {
     if (!value) {

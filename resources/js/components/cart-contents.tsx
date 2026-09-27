@@ -1,10 +1,10 @@
 import { Link, router, useForm } from '@inertiajs/react';
 import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import type { CheckoutCart, CheckoutCartItem } from '@/types';
 import { destroy, update } from '@/routes/cart/items';
 import { show as checkoutShow } from '@/routes/checkout';
 import { index as listingsIndex, show as listingShow } from '@/routes/listings';
+import type { CheckoutCart, CheckoutCartItem } from '@/types';
 
 export function cartMoney(value: string | number): string {
     return `LKR ${Number(value).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

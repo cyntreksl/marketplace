@@ -12,13 +12,13 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import type { BuyerAddress } from '@/types';
 import {
     destroy,
     defaultMethod,
     store,
     update,
 } from '@/routes/buyer/addresses';
+import type { BuyerAddress } from '@/types';
 
 function AddressFields({ address }: { address?: BuyerAddress }) {
     const fields: {
