@@ -39,6 +39,8 @@ test('runtime site images use the configured Cloudflare media domain', function 
 
     expect($home->inertiaProps('promotions.hero.0.imageUrl'))
         ->toBe('https://media.prodeals.lk/site/images/storefront/home-deals-banner.png?v='.hash_file('sha256', public_path('images/storefront/home-deals-banner.png')))
+        ->and($home->inertiaProps('deliveryArtworkUrl'))
+        ->toBe('https://media.prodeals.lk/site/images/storefront/delivery-sri-lanka.png?v='.hash_file('sha256', public_path('images/storefront/delivery-sri-lanka.png')))
         ->and($home->inertiaProps('promotions.secondary.0.imageUrl'))
         ->toBe('https://media.prodeals.lk/promotions/cloudflare-secondary.jpg')
         ->and(implode('', $home->inertiaProps('head')))

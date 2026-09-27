@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Services\CartService;
 use App\Services\MarketplaceSettingsService;
 use App\Services\SeoHeadService;
+use App\Services\StaticMediaService;
 use App\Services\StorefrontService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -14,6 +15,7 @@ class HandleInertiaRequests extends Middleware
 {
     public function __construct(
         private readonly SeoHeadService $seo,
+        private readonly StaticMediaService $staticMedia,
         private readonly CartService $carts,
         private readonly StorefrontService $storefront,
         private readonly MarketplaceSettingsService $settings,
@@ -54,6 +56,7 @@ class HandleInertiaRequests extends Middleware
             'head' => $this->seo->tags($seo),
             'seo' => $seo,
             'name' => config('app.name'),
+            'deliveryArtworkUrl' => fn (): string => $this->staticMedia->url('images/storefront/delivery-sri-lanka.png', versioned: true),
             ...($request->route('component') === 'storefront/content/show' ? [
                 'categories' => fn () => $this->storefront->navigationCategories(),
             ] : []),

@@ -17,6 +17,7 @@ class StaticMediaService
         'prodeals-social-card.png',
         'media-robots.txt',
         'images/storefront/home-deals-banner.png',
+        'images/storefront/delivery-sri-lanka.png',
         'images/storefront/hero-home-appliances.webp',
         'images/storefront/hero-marketplace.jpg',
         'images/storefront/home-lifestyle.jpg',

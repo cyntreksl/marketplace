@@ -78,3 +78,18 @@ test('the shared storefront layout mounts the accessible delivery modal', async 
     assert.match(modal, /claimDeliveryDetailsModal\(window\.localStorage\)/);
     assert.match(modal, /Start Shopping/);
 });
+
+test('desktop artwork is responsive while the offer and action remain HTML', async () => {
+    const modal = await readFile(
+        new URL('../resources/js/components/delivery-details-modal.tsx', import.meta.url),
+        'utf8',
+    );
+
+    assert.match(modal, /lg:max-w-\[1000px\]/);
+    assert.match(modal, /media="\(min-width: 1024px\)"/);
+    assert.match(modal, /srcSet=\{deliveryArtworkUrl\}/);
+    assert.match(modal, /Rs\. 200/);
+    assert.match(modal, /href=\{listingsIndex\(\)\}/);
+    assert.match(modal, /onClick=\{\(\) => setOpen\(false\)\}/);
+    assert.doesNotMatch(modal, /clipPath|function DeliveryIllustration/);
+});

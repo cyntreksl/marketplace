@@ -16,6 +16,7 @@ declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
             name: string;
+            deliveryArtworkUrl: string;
             auth: Auth;
             commerce: {
                 cart_quantity: number;

@@ -1,7 +1,9 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
+    ChevronRight,
     MapPin,
+    Package,
     PackageCheck,
     ShieldCheck,
     Truck,
@@ -21,81 +23,30 @@ const deliveryBenefits = [
         icon: ShieldCheck,
         title: 'Safe & secure',
         description: 'Protected delivery',
+        desktopIcon: ShieldCheck,
+        desktopTitle: 'Safe & Secure',
+        desktopDescription: 'Delivery',
     },
     {
         icon: MapPin,
         title: 'All locations',
         description: 'Across Sri Lanka',
+        desktopIcon: MapPin,
+        desktopTitle: 'To All',
+        desktopDescription: 'Locations',
     },
     {
         icon: PackageCheck,
         title: 'Handled with care',
         description: 'Your order, our priority',
+        desktopIcon: Package,
+        desktopTitle: 'Your Orders,',
+        desktopDescription: 'Our Priority',
     },
 ] as const;
 
-function DeliveryIllustration() {
-    return (
-        <div
-            aria-hidden="true"
-            className="relative hidden min-h-[36rem] overflow-hidden bg-[radial-gradient(circle_at_68%_28%,#fff7d6_0,transparent_24%),linear-gradient(145deg,#fff7ed_0%,#ffedd5_45%,#fdba74_100%)] lg:block"
-        >
-            <div className="absolute top-12 left-12 h-12 w-28 rounded-full bg-white/70 blur-sm" />
-            <div className="absolute top-24 right-10 h-8 w-20 rounded-full bg-white/75 blur-sm" />
-
-            <div
-                className="absolute top-10 left-1/2 h-[27rem] w-52 -translate-x-1/2 rotate-[-7deg] bg-gradient-to-b from-orange-200 via-orange-300 to-orange-400 shadow-[0_30px_70px_rgba(234,88,12,0.22)]"
-                style={{
-                    clipPath:
-                        'polygon(48% 0, 64% 8%, 71% 20%, 86% 31%, 80% 43%, 95% 57%, 86% 69%, 81% 85%, 62% 100%, 48% 92%, 39% 78%, 22% 65%, 29% 51%, 15% 36%, 27% 25%, 31% 10%)',
-                }}
-            />
-
-            <svg
-                viewBox="0 0 220 330"
-                className="absolute top-20 left-1/2 h-80 w-52 -translate-x-1/2 overflow-visible"
-            >
-                <path
-                    d="M78 32 C154 75, 164 118, 91 142 S60 211, 144 224 S158 278, 105 300"
-                    fill="none"
-                    stroke="#f0440b"
-                    strokeDasharray="7 9"
-                    strokeLinecap="round"
-                    strokeWidth="2"
-                />
-            </svg>
-
-            {[
-                ['top-20', 'left-[49%]'],
-                ['top-52', 'left-[64%]'],
-                ['top-80', 'left-[45%]'],
-                ['top-[25rem]', 'left-[62%]'],
-            ].map(([top, left], index) => (
-                <span
-                    key={`${top}-${left}`}
-                    className={`absolute ${top} ${left} grid size-10 -translate-x-1/2 place-items-center rounded-full bg-[#ff4b0a] text-white shadow-lg ring-4 ring-white/35`}
-                >
-                    <MapPin className="size-5 fill-current" />
-                    <span className="sr-only">Delivery point {index + 1}</span>
-                </span>
-            ))}
-
-            <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-white via-white/90 to-transparent" />
-            <div className="absolute right-6 bottom-12 left-8 flex items-end justify-center gap-3">
-                <span className="grid size-20 place-items-center rounded-2xl border-4 border-white bg-orange-500 text-white shadow-xl">
-                    <PackageCheck className="size-10" />
-                </span>
-                <span className="relative flex h-28 w-72 items-center justify-center rounded-[2.25rem] border-4 border-white bg-[#ff5a0a] text-white shadow-2xl">
-                    <Truck className="size-24" strokeWidth={1.7} />
-                    <span className="absolute -bottom-3 left-12 size-7 rounded-full border-4 border-white bg-slate-800" />
-                    <span className="absolute right-12 -bottom-3 size-7 rounded-full border-4 border-white bg-slate-800" />
-                </span>
-            </div>
-        </div>
-    );
-}
-
 export function DeliveryDetailsModal() {
+    const { deliveryArtworkUrl } = usePage().props;
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
@@ -110,51 +61,80 @@ export function DeliveryDetailsModal() {
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent className="max-h-[92dvh] gap-0 overflow-y-auto rounded-3xl border-0 bg-white p-0 shadow-[0_32px_100px_rgba(15,23,42,0.38)] sm:max-w-[calc(100%-3rem)] lg:max-w-6xl [&>button]:top-4 [&>button]:right-4 [&>button]:z-20 [&>button]:grid [&>button]:size-10 [&>button]:place-items-center [&>button]:rounded-full [&>button]:bg-white/90 [&>button]:text-slate-700 [&>button]:opacity-100 [&>button]:shadow-md [&>button]:hover:bg-white [&>button_svg]:size-5">
-                <div className="grid lg:grid-cols-[1.08fr_0.92fr]">
-                    <div className="flex flex-col justify-center px-6 py-10 sm:px-10 sm:py-12 lg:px-14 lg:py-14">
-                        <p className="text-xs font-black tracking-[0.25em] text-[#f0440b] uppercase sm:text-sm">
+            <DialogContent className="max-h-[92dvh] gap-0 overflow-y-auto rounded-3xl border-0 bg-white p-0 shadow-[0_32px_100px_rgba(15,23,42,0.38)] sm:max-w-[calc(100%-3rem)] lg:max-w-[1000px] lg:rounded-xl [&>button]:top-4 [&>button]:right-4 [&>button]:z-20 [&>button]:grid [&>button]:size-10 [&>button]:place-items-center [&>button]:rounded-full [&>button]:bg-white/90 [&>button]:text-slate-700 [&>button]:opacity-100 [&>button]:shadow-md [&>button]:hover:bg-white lg:[&>button]:bg-transparent lg:[&>button]:shadow-none [&>button_svg]:size-5 lg:[&>button_svg]:size-7">
+                <div className="relative isolate grid lg:min-h-[618px] lg:overflow-hidden lg:[font-family:Arial,sans-serif]">
+                    <div className="flex flex-col justify-center px-6 py-10 sm:px-10 sm:py-12 lg:block lg:px-12 lg:pt-28 lg:pb-32">
+                        <p className="text-xs font-black tracking-[0.25em] text-[#f0440b] uppercase sm:text-sm lg:text-base lg:font-semibold lg:tracking-[0.18em]">
                             Shop anywhere in Sri Lanka
                         </p>
-                        <DialogTitle className="mt-3 text-4xl leading-[0.96] font-black tracking-[-0.05em] text-[#08264c] sm:text-5xl lg:text-6xl">
+                        <DialogTitle className="mt-3 text-4xl leading-[0.96] font-black tracking-[-0.05em] text-[#08264c] sm:text-5xl lg:relative lg:z-10 lg:mt-2 lg:text-[60px] lg:leading-[1.1] lg:tracking-[-0.055em] lg:whitespace-nowrap">
                             Island Wide{' '}
                             <span className="text-[#f0440b]">Delivery</span>
                         </DialogTitle>
-                        <DialogDescription className="mt-5 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
-                            Your favourite products, delivered safely to your
-                            doorstep — anywhere in Sri Lanka.
+                        <DialogDescription className="mt-5 max-w-xl text-base leading-7 text-slate-600 sm:text-lg lg:relative lg:z-10 lg:mt-3 lg:max-w-[490px] lg:text-[19px] lg:leading-[1.35] lg:text-[#505050]">
+                            <span className="lg:hidden">
+                                Your favourite products, delivered safely to
+                                your doorstep — anywhere in Sri Lanka.
+                            </span>
+                            <span className="hidden lg:inline">
+                                Your favourite products, delivered to your
+                                doorstep — anywhere in Sri Lanka.
+                            </span>
                         </DialogDescription>
 
-                        <div className="mt-7 flex items-center gap-4 rounded-3xl border border-orange-100 bg-gradient-to-r from-orange-50 to-amber-50 px-5 py-5 sm:gap-6 sm:px-7">
-                            <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-white text-[#f0440b] shadow-sm sm:size-20">
-                                <Truck className="size-9 sm:size-11" />
+                        <div className="mt-7 flex items-center gap-4 rounded-3xl border border-orange-100 bg-gradient-to-r from-orange-50 to-amber-50 px-5 py-5 sm:gap-6 sm:px-7 lg:relative lg:z-10 lg:mt-5 lg:h-[136px] lg:w-[510px] lg:gap-3 lg:rounded-[22px] lg:border-0 lg:bg-[#fff3ed] lg:bg-none lg:px-5 lg:py-4">
+                            <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-white text-[#f0440b] shadow-sm sm:size-20 lg:w-28 lg:bg-transparent lg:shadow-none">
+                                <Truck
+                                    aria-hidden="true"
+                                    className="size-9 sm:size-11 lg:size-24 lg:stroke-[1.4]"
+                                />
                             </span>
-                            <div>
-                                <p className="text-sm font-black text-[#08264c] sm:text-base">
+                            <div className="lg:relative lg:flex lg:flex-wrap lg:items-start lg:gap-x-1">
+                                <p className="text-sm font-black text-[#08264c] sm:text-base lg:pt-1 lg:text-[25px] lg:tracking-tight">
                                     Only
                                 </p>
-                                <p className="text-4xl leading-none font-black tracking-[-0.05em] text-[#f0440b] sm:text-5xl">
+                                <p className="text-4xl leading-none font-black tracking-[-0.05em] text-[#f0440b] sm:text-5xl lg:text-[72px] lg:leading-none lg:tracking-[-0.055em]">
                                     Rs. 200
                                 </p>
-                                <p className="mt-1 text-sm font-bold text-[#08264c] sm:text-base">
+                                <p className="mt-1 text-sm font-bold text-[#08264c] sm:text-base lg:mt-0 lg:ml-auto lg:text-[18px] lg:tracking-tight">
                                     Island Wide Delivery Charges
                                 </p>
                             </div>
                         </div>
 
-                        <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-slate-200">
+                        <div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-0 sm:divide-x sm:divide-slate-200 lg:relative lg:z-10 lg:mt-8 lg:w-[510px]">
                             {deliveryBenefits.map(
-                                ({ icon: Icon, title, description }) => (
+                                ({
+                                    icon: Icon,
+                                    title,
+                                    description,
+                                    desktopIcon: DesktopIcon,
+                                    desktopTitle,
+                                    desktopDescription,
+                                }) => (
                                     <div
                                         key={title}
-                                        className="flex items-center gap-3 sm:px-4 sm:first:pl-0 sm:last:pr-0"
+                                        className="flex items-center gap-3 sm:px-4 sm:first:pl-0 sm:last:pr-0 lg:gap-2 lg:px-5"
                                     >
-                                        <Icon className="size-8 shrink-0 text-[#f0440b]" />
-                                        <span className="text-sm leading-5 text-[#08264c]">
+                                        <Icon
+                                            aria-hidden="true"
+                                            className="size-8 shrink-0 text-[#f0440b] lg:hidden"
+                                        />
+                                        <DesktopIcon
+                                            aria-hidden="true"
+                                            className="hidden size-10 shrink-0 text-[#ff4b0a] lg:block"
+                                            strokeWidth={1.8}
+                                        />
+                                        <span className="text-sm leading-5 text-[#08264c] lg:hidden">
                                             <strong className="block font-extrabold">
                                                 {title}
                                             </strong>
                                             {description}
+                                        </span>
+                                        <span className="hidden text-[14px] leading-[1.2] text-[#061d40] lg:block">
+                                            {desktopTitle}
+                                            <br />
+                                            {desktopDescription}
                                         </span>
                                     </div>
                                 ),
@@ -164,14 +144,36 @@ export function DeliveryDetailsModal() {
                         <Link
                             href={listingsIndex()}
                             onClick={() => setOpen(false)}
-                            className="mt-8 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ff4b0a] to-[#ff6d00] px-8 text-base font-black text-white shadow-[0_12px_28px_rgba(240,68,11,0.25)] transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#f0440b] focus-visible:ring-offset-2 focus-visible:outline-none sm:w-fit sm:min-w-72 sm:text-lg"
+                            className="mt-8 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#ff4b0a] to-[#ff6d00] px-8 text-base font-black text-white shadow-[0_12px_28px_rgba(240,68,11,0.25)] transition hover:brightness-95 focus-visible:ring-2 focus-visible:ring-[#f0440b] focus-visible:ring-offset-2 focus-visible:outline-none sm:w-fit sm:min-w-72 sm:text-lg lg:absolute lg:bottom-7 lg:left-1/2 lg:z-10 lg:mt-0 lg:h-[60px] lg:w-[308px] lg:-translate-x-1/2 lg:gap-4 lg:bg-[#ff4b00] lg:bg-none lg:text-[23px] lg:font-semibold lg:shadow-none"
                         >
                             Start Shopping
-                            <ArrowRight className="size-5" />
+                            <ArrowRight
+                                aria-hidden="true"
+                                className="size-5 lg:hidden"
+                            />
+                            <ChevronRight
+                                aria-hidden="true"
+                                className="hidden size-7 lg:block"
+                            />
                         </Link>
                     </div>
 
-                    <DeliveryIllustration />
+                    <picture
+                        className="pointer-events-none absolute top-5 right-0 -z-10 hidden h-[565px] w-[460px] lg:block"
+                        aria-hidden="true"
+                    >
+                        <source
+                            media="(min-width: 1024px)"
+                            srcSet={deliveryArtworkUrl}
+                        />
+                        <img
+                            src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
+                            alt=""
+                            width={1145}
+                            height={1374}
+                            className="size-full object-contain"
+                        />
+                    </picture>
                 </div>
             </DialogContent>
         </Dialog>
