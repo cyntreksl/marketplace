@@ -1,8 +1,8 @@
 import { Link, usePage } from '@inertiajs/react';
 import { Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { show as listingShow } from '@/routes/listings';
 import type { StorefrontListing } from '@/types';
+import { show as listingShow } from '@/routes/listings';
 
 function formatPrice(value: string | null): string {
     if (!value) {
@@ -144,7 +144,7 @@ export function ListingCard({
                 <Link
                     href={detailHref}
                     title={listing.title}
-                    className="truncate text-sm leading-6 font-normal text-slate-900 transition hover:text-[#FF6D00] @min-[180px]:text-base"
+                    className="line-clamp-2 min-h-12 text-sm leading-6 font-normal text-slate-900 transition hover:text-[#FF6D00] @min-[180px]:text-base"
                 >
                     {listing.title}
                 </Link>

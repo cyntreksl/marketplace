@@ -14,3 +14,8 @@ test('listing cards render the currency label smaller than the price amount', ()
     );
     assert.match(source, /<ListingPrice value=\{listing\.effectivePrice\} \/>/);
 });
+
+test('listing cards show product names across two aligned lines', () => {
+    assert.match(source, /className="line-clamp-2 min-h-12 text-sm leading-6/);
+    assert.doesNotMatch(source, /className="truncate text-sm leading-6/);
+});
