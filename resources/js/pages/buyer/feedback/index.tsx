@@ -121,15 +121,9 @@ export default function BuyerFeedback({
                                                     <select
                                                         name="rating"
                                                         required
-                                                        defaultValue=""
+                                                        defaultValue="5"
                                                         className="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900"
                                                     >
-                                                        <option
-                                                            value=""
-                                                            disabled
-                                                        >
-                                                            Choose
-                                                        </option>
                                                         {[5, 4, 3, 2, 1].map(
                                                             (rating) => (
                                                                 <option

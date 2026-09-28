@@ -17,15 +17,15 @@ function featureSettingsAdmin(): User
     return $admin;
 }
 
-test('review feature flags are disabled by default and exposed to inertia', function (): void {
+test('product reviews are enabled by default and seller reviews remain disabled', function (): void {
     $this->get(route('home'))->assertInertia(fn (Assert $page) => $page
-        ->where('reviewFlags.product', false)
+        ->where('reviewFlags.product', true)
         ->where('reviewFlags.seller', false));
 
     $product = MarketplaceSetting::query()->where('key', 'reviews.product.enabled')->firstOrFail();
     $seller = MarketplaceSetting::query()->where('key', 'reviews.seller.enabled')->firstOrFail();
 
-    expect($product->value)->toBeFalse()
+    expect($product->value)->toBeTrue()
         ->and($product->group)->toBe('reviews')
         ->and($seller->value)->toBeFalse()
         ->and($seller->group)->toBe('reviews');
@@ -44,6 +44,7 @@ test('review feature flag migration preserves an existing operator choice', func
 
 test('admins can manage independent review flags with an audit trail', function (): void {
     $admin = featureSettingsAdmin();
+    MarketplaceSetting::query()->where('key', 'reviews.product.enabled')->update(['value' => false]);
 
     $this->actingAs($admin)
         ->get(route('admin.features.index'))

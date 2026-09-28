@@ -38,6 +38,7 @@ test('a buyer can review each delivered order item once', function () {
 });
 
 test('disabled product reviews redirect the feedback page without blocking direct submissions', function (): void {
+    MarketplaceSetting::query()->where('key', 'reviews.product.enabled')->update(['value' => false]);
     $buyer = User::factory()->create();
     $item = deliveredItemFor($buyer);
 
@@ -94,4 +95,29 @@ test('verified review aggregates appear on products while the homepage review wa
             ->has('deferredContent.reviews', 1)));
 
     $this->get(route('home'))->assertInertia(fn (Assert $page) => $page->missing('socialProof'));
+});
+
+test('unreviewed products start at five and use actual customer averages after submission', function (): void {
+    $buyer = User::factory()->create();
+    $item = deliveredItemFor($buyer);
+    $listing = $item->listing;
+
+    $this->get(route('listings.show', $listing->slug))->assertInertia(fn (Assert $page) => $page
+        ->where('reviewFlags.product', true)
+        ->where('listing.ratingAverage', 5)
+        ->where('listing.reviewCount', 0));
+
+    $this->actingAs($buyer)->post(route('buyer.reviews.store', $item), ['rating' => 3])->assertRedirect();
+
+    $this->get(route('listings.show', $listing->slug))->assertInertia(fn (Assert $page) => $page
+        ->where('listing.ratingAverage', 3)
+        ->where('listing.reviewCount', 1));
+
+    $secondItem = deliveredItemFor($buyer);
+    $secondItem->update(['listing_id' => $listing->id]);
+    $this->post(route('buyer.reviews.store', $secondItem), ['rating' => 4])->assertRedirect();
+
+    $this->get(route('listings.show', $listing->slug))->assertInertia(fn (Assert $page) => $page
+        ->where('listing.ratingAverage', 3.5)
+        ->where('listing.reviewCount', 2));
 });

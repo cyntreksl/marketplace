@@ -8,6 +8,7 @@ import { createServer } from 'vite';
 let server;
 let ProductDetails;
 let BuyerOverview;
+let BuyerFeedback;
 let BuyerOrderDetail;
 let inertiaState;
 
@@ -52,7 +53,7 @@ before(async () => {
                             });
                             export const Head = () => null;
                             export const Link = ({ href, children, ...props }) => createElement('a', { ...props, href: href?.url ?? href }, children);
-                            export const Form = ({ children, ...props }) => createElement('form', props, typeof children === 'function' ? children({ errors: {}, processing: false }) : children);
+                            export const Form = ({ children, resetOnSuccess: _resetOnSuccess, ...props }) => createElement('form', props, typeof children === 'function' ? children({ errors: {}, processing: false }) : children);
                             export const Deferred = ({ children }) => children;
                         `;
                     }
@@ -75,15 +76,18 @@ before(async () => {
     ({ ProductDetails } = await server.ssrLoadModule(
         '/resources/js/components/product-details.tsx',
     ));
+    BuyerFeedback = (
+        await server.ssrLoadModule(
+            '/resources/js/pages/buyer/feedback/index.tsx',
+        )
+    ).default;
     BuyerOverview = (
         await server.ssrLoadModule('/resources/js/pages/buyer/overview.tsx')
     ).default;
     BuyerOrderDetail = (
         await server.ssrLoadModule('/resources/js/pages/buyer/orders/show.tsx')
     ).default;
-    inertiaState = (
-        await server.ssrLoadModule('\0review-flags-inertia')
-    ).state;
+    inertiaState = (await server.ssrLoadModule('\0review-flags-inertia')).state;
 });
 
 after(async () => {
@@ -211,4 +215,35 @@ test('buyer orders hide review actions and submitted ratings while disabled', ()
     assert.doesNotMatch(disabled, /5\/5 submitted/);
     assert.match(enabled, /Leave feedback/);
     assert.match(enabled, /5\/5 submitted/);
+});
+
+test('feedback forms select five stars by default while offering lower ratings', () => {
+    const html = renderToStaticMarkup(
+        createElement(BuyerFeedback, {
+            view: 'awaiting',
+            pending_count: 1,
+            feedback: {
+                data: [
+                    {
+                        id: 1,
+                        title: 'Purchased product',
+                        store_name: 'Test store',
+                        order_number: 'PRO-1',
+                    },
+                ],
+                links: [],
+                current_page: 1,
+                last_page: 1,
+            },
+        }),
+    );
+
+    assert.match(html, /<option value="5" selected="">5 stars<\/option>/);
+
+    for (const rating of [1, 2, 3, 4]) {
+        assert.match(
+            html,
+            new RegExp(`<option value="${rating}">${rating} stars</option>`),
+        );
+    }
 });

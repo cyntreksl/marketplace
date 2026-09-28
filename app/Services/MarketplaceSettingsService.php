@@ -42,7 +42,7 @@ class MarketplaceSettingsService
 
     public function productReviewsEnabled(): bool
     {
-        return $this->boolean('reviews.product.enabled');
+        return $this->boolean('reviews.product.enabled', true);
     }
 
     public function sellerReviewsEnabled(): bool

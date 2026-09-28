@@ -430,8 +430,9 @@ export default function ListingShow({
                                 <>
                                     <span className="flex items-center gap-1 font-bold text-amber-500">
                                         <Star className="size-4 fill-current" />
-                                        {listing.ratingAverage?.toFixed(1) ??
-                                            'New'}
+                                        {(listing.ratingAverage ?? 5).toFixed(
+                                            1,
+                                        )}
                                     </span>
                                     <span className="text-slate-400">
                                         ({listing.reviewCount} reviews)

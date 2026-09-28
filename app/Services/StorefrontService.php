@@ -573,7 +573,7 @@ class StorefrontService
                 ? $this->wholesaleTierData($listing->wholesalePriceTiers)
                 : [],
             'discountPercentage' => $this->discountPercentage($listing),
-            'ratingAverage' => $listing->getAttribute('rating_average') === null ? null : round((float) $listing->getAttribute('rating_average'), 1),
+            'ratingAverage' => $listing->getAttribute('rating_average') === null ? 5.0 : round((float) $listing->getAttribute('rating_average'), 1),
             'reviewCount' => (int) $listing->getAttribute('reviews_count'),
             'location' => $listing->location,
             'warranty' => $listing->warranty,

@@ -267,9 +267,7 @@ export function ProductDetails({
                 <div className="self-start rounded-2xl bg-orange-50 p-5">
                     <Star className="size-6 text-orange-500" />
                     <p className="mt-3 text-3xl font-black">
-                        {listing.reviewCount
-                            ? listing.ratingAverage?.toFixed(1)
-                            : 'New'}
+                        {(listing.ratingAverage ?? 5).toFixed(1)}
                     </p>
                     <p className="mt-1 text-sm text-slate-600">
                         {listing.reviewCount
