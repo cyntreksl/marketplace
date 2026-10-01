@@ -3,6 +3,7 @@ paths:
   - 'app/Services/**'
   - app/Services/ListingService.php
   - 'app/Services/Seo*CheckService.php'
+  - 'app/Services/IndexNow*.php'
 ---
 
 # Services
@@ -27,3 +28,6 @@ Public stores and seller summaries must use SellerSummaryService's explicit allo
 
 ## Reconcile Merchant imports only against a stable catalog
 Discovery XML is generated live; keep the scheduled Merchant URL source as the only catalog upload path. Merchant offers include active variants, so reconcile offer IDs/counts separately from canonical sitemap URLs. Compare Google's processed count only when a successful pre-import baseline precedes the upload and its fingerprint still matches; pending reconciliation must not produce a false recovery notice. Never expose credentials or raw provider errors in monitoring logs or alerts.
+
+## Baseline IndexNow before notifying changes
+IndexNow establishes a sitemap snapshot on its first run instead of resubmitting historical pages. Submit only differences after that baseline, including URLs removed from the sitemap; advance the snapshot only after every batch is accepted so failures retry. Keep production submissions gated and use the root-host verification route.

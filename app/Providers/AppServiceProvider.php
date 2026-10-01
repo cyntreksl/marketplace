@@ -7,6 +7,7 @@ use App\Contracts\GoogleMerchantGateway;
 use App\Contracts\GoogleMerchantTokenProvider;
 use App\Contracts\GoogleSearchConsoleGateway;
 use App\Contracts\GoogleSearchConsoleTokenProvider;
+use App\Contracts\IndexNowGateway;
 use App\Contracts\MetaConversionsGateway;
 use App\Contracts\PaymentGateway;
 use App\Contracts\Repositories\AdminUserRepository;
@@ -76,6 +77,7 @@ use App\Services\GoogleMerchantApiService;
 use App\Services\GoogleMerchantTokenService;
 use App\Services\GoogleSearchConsoleApiService;
 use App\Services\GoogleSearchConsoleTokenService;
+use App\Services\IndexNowApiService;
 use App\Services\MetaConversionsApiService;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -98,6 +100,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(IndexNowGateway::class, IndexNowApiService::class);
         $this->app->bind(AdminUserRepository::class, EloquentAdminUserRepository::class);
         $this->app->bind(SeoMonitoringRepository::class, CacheSeoMonitoringRepository::class);
         $this->app->bind(GoogleMerchantTokenProvider::class, GoogleMerchantTokenService::class);

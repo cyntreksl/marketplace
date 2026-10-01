@@ -13,6 +13,6 @@ Before planning or editing, find the row whose globs match the file's path and r
 | resources/** | .ai/rules/resources.md |
 | app/{Services,Repositories,Jobs,Models}/** | .ai/rules/services-repositories-jobs-models.md |
 | app/{Services,Repositories,Models}/** | .ai/rules/services-repositories-models.md |
-| app/Services/**, app/Services/ListingService.php, app/Services/Seo*CheckService.php | .ai/rules/services.md |
+| app/Services/**, app/Services/ListingService.php, app/Services/Seo*CheckService.php, app/Services/IndexNow*.php | .ai/rules/services.md |
 | tests/** | .ai/rules/tests.md |
 | .github/deploy/**,.github/workflows/** | .ai/rules/workflows.md |

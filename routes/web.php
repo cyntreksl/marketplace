@@ -36,6 +36,7 @@ use App\Http\Controllers\CheckoutPaymentController;
 use App\Http\Controllers\ComparisonController;
 use App\Http\Controllers\GuestOrderClaimController;
 use App\Http\Controllers\GuideController;
+use App\Http\Controllers\IndexNowKeyController;
 use App\Http\Controllers\MerchantFeedController;
 use App\Http\Controllers\MetaTestSessionController;
 use App\Http\Controllers\OrderTrackingController;
@@ -73,6 +74,7 @@ Route::get('/meta/conversions/test-checkout-session', MetaTestSessionController:
 Route::middleware('cache.headers:public;max_age=300;s_maxage=3600;stale_while_revalidate=86400;etag')
     ->withoutMiddleware([StartSession::class, ShareErrorsFromSession::class, PreventRequestForgery::class])
     ->group(function (): void {
+        Route::get('/7832bff8224749298729a9e886772b23.txt', IndexNowKeyController::class)->name('indexnow.key');
         Route::get('/sitemap.xml', [SeoDiscoveryController::class, 'sitemap'])->name('sitemap.index');
         Route::get('/sitemaps/static.xml', [SeoDiscoveryController::class, 'staticPages'])->name('sitemap.static');
         Route::get('/sitemaps/categories.xml', [SeoDiscoveryController::class, 'categories'])->name('sitemap.categories');

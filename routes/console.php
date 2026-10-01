@@ -13,6 +13,10 @@ Schedule::job(new ProcessAuctionLifecycle)->name('process-auction-lifecycle')->e
 
 Schedule::command('checkout:reconcile-payments')->everyMinute()->withoutOverlapping()->onOneServer();
 
+Schedule::command('seo:submit-indexnow')->everyFifteenMinutes()
+    ->environments('production')->when(fn (): bool => (bool) config('indexnow.enabled'))
+    ->withoutOverlapping(30)->onOneServer()->runInBackground();
+
 Schedule::command('seo:check-catalog')->dailyAt('01:45')->timezone('Asia/Colombo')
     ->environments('production')->when(fn (): bool => (bool) config('seo-monitoring.enabled'))
     ->withoutOverlapping(30)->onOneServer()->runInBackground();
